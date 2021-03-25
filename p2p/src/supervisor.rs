@@ -138,42 +138,55 @@ impl Supervisor {
         {
             let input_tx = input_tx.clone();
             let state = state.clone();
-            thread::spawn(move || loop {
-                if accept_rx.recv().is_err() {
-                    // TODO(xla): The other end is dropped, likely indicating the supervisor was
-                    // torn down. In any case we can't continue, but maybe log.
-                    return;
-                }
-
-                let conn = incoming.next().unwrap().unwrap();
-                let id = match conn.public_key() {
-                    PublicKey::Ed25519(ed25519) => node::Id::from(ed25519),
-                    _ => panic!(),
-                };
-
-                let mut state = state.lock().expect("unable to recover from poisoned lock");
-
-                match state.connected.entry(id) {
-                    Entry::Vacant(entry) => {
-                        entry.insert(transport::Direction::Incoming(conn));
-
-                        if input_tx.send(Input::Accepted(id)).is_err() {
+            thread::spawn(move || {
+                loop {
+                    match accept_rx.recv() {
+                        Ok(_) => {}
+                        Err(flume::RecvError::Disconnected) => {
                             // TODO(xla): The other end dropped, likely due to the supervisor
                             // gone. In any case we can't continue, but maybe log.
-                            return;
+                            break;
                         }
                     }
-                    Entry::Occupied(_entry) => {
-                        if input_tx
-                            .send(Input::DuplicateConnRejected(id, conn.close().err()))
-                            .is_err()
-                        {
-                            // TODO(xla): The other end is dropped, likely indicating the supervisor was
-                            // torn down. In any case we can't continue, but maybe log.
-                            return;
+
+                    match incoming.next() {
+                        // Incoming stream is finished, there is nothing left to do for this
+                        // subroutine.
+                        None => return,
+                        Some(Err(_err)) => todo!(),
+                        Some(Ok(conn)) => {
+                            match node::Id::try_from(conn.public_key()) {
+                                Err(_err) => todo!(),
+                                Ok(id) => {
+                                    let mut state =
+                                        state.lock().expect("unable to recover from poisoned lock");
+
+                                    let msg = match state.connected.entry(id) {
+                                        Entry::Vacant(entry) => {
+                                            entry.insert(transport::Direction::Incoming(conn));
+                                            Input::Accepted(id)
+                                        }
+                                        Entry::Occupied(_entry) => {
+                                            Input::DuplicateConnRejected(id, conn.close().err())
+                                        }
+                                    };
+
+                                    match input_tx.try_send(msg) {
+                                        Ok(_) => {}
+                                        Err(flume::TrySendError::Disconnected(_)) => {
+                                            // TODO(xla): The other end is gone, likely indicating the supervisor was
+                                            // torn down. In any case we can't continue, but maybe log.
+                                            break;
+                                        }
+                                        Err(flume::TrySendError::Full(_)) => todo!(),
+                                    }
+                                }
+                            }
                         }
                     }
                 }
+
+                // TODO(xla): Log to indicate the accept subroutine is done.
             });
         }
 
@@ -182,25 +195,54 @@ impl Supervisor {
         {
             let input_tx = input_tx.clone();
             let state = state.clone();
-            thread::spawn(move || loop {
-                let info = connect_rx.recv().unwrap();
+            thread::spawn(move || {
+                loop {
+                    let info = match connect_rx.recv() {
+                        Ok(info) => info,
+                        Err(flume::RecvError::Disconnected) => {
+                            // TODO(xla): The other end dropped, likely due to the supervisor
+                            // gone. In any case we can't continue, but maybe log.
+                            break;
+                        }
+                    };
 
-                let conn = endpoint.connect(info).unwrap();
-                let id = match conn.public_key() {
-                    PublicKey::Ed25519(ed25519) => node::Id::from(ed25519),
-                    _ => panic!(),
-                };
+                    match endpoint.connect(info) {
+                        Err(_err) => todo!(),
+                        Ok(conn) => {
+                            match node::Id::try_from(conn.public_key()) {
+                                Err(_err) => todo!(),
+                                Ok(id) => {
+                                    let mut state =
+                                        state.lock().expect("unable to recover from poisned lock");
 
-                // TODO(xla): Define and account for the case whwere a connection is present for
-                // the id.
-                state
-                    .lock()
-                    .unwrap()
-                    .connected
-                    .insert(id, transport::Direction::Outgoing(conn))
-                    .unwrap();
+                                    let msg = match state.connected.entry(id) {
+                                        Entry::Vacant(entry) => {
+                                            entry.insert(transport::Direction::Outgoing(conn));
+                                            Input::Connected(id)
+                                        }
+                                        Entry::Occupied(_entry) => {
+                                            // TODO(xla): Define and account for the case whwere a connection is present for
+                                            // the id.
+                                            todo!()
+                                        }
+                                    };
 
-                input_tx.send(Input::Connected(id)).unwrap();
+                                    match input_tx.try_send(msg) {
+                                        Ok(_) => {}
+                                        Err(flume::TrySendError::Disconnected(_)) => {
+                                            // TODO(xla): The other end is gone, likely indicating the supervisor was
+                                            // torn down. In any case we can't continue, but maybe log.
+                                            break;
+                                        }
+                                        Err(flume::TrySendError::Full(_)) => todo!(),
+                                    }
+                                }
+                            }
+                        }
+                    };
+                }
+
+                // TODO(xla): Log to indicate the connect subroutine is done.
             });
         }
 
@@ -208,19 +250,33 @@ impl Supervisor {
         let (send_tx, send_rx) = unbounded::<(node::Id, message::Send)>();
         {
             let state = state.clone();
-            thread::spawn(move || loop {
-                let (id, msg) = send_rx.recv().unwrap();
+            thread::spawn(move || {
+                loop {
+                    let (id, msg) = match send_rx.recv() {
+                        Ok((id, msg)) => (id, msg),
+                        Err(flume::RecvError::Disconnected) => {
+                            // TODO(xla): The other end dropped, likely due to the supervisor
+                            // gone. In any case we can't continue, but maybe log.
+                            break;
+                        }
+                    };
 
-                let state = state.lock().expect("unable to recover from poisoned lock");
+                    let state = state.lock().expect("unable to recover from poisoned lock");
 
-                match state.peers.get(&id) {
-                    // TODO(xla): Ideally acked that the message passed to the peer.
-                    Some(peer) => peer.send(msg).unwrap(),
-                    // TODO(xla): A missing peer needs to be bubbled up as that indicates there is
-                    // a mismatch between the protocol tracked peers and the ones the supervisor holds
-                    // onto. Something is afoot and it needs to be reconciled asap.
-                    None => {}
+                    match state.peers.get(&id) {
+                        // TODO(xla): Ideally acked that the message passed to the peer.
+                        // FIXME(xla): As the state lock is held up top, it's dangerous if send is
+                        // ever blocking for any amount of time, which makes this call sensitive to the
+                        // implementation details of send.
+                        Some(peer) => peer.send(msg).unwrap(),
+                        // TODO(xla): A missing peer needs to be bubbled up as that indicates there is
+                        // a mismatch between the protocol tracked peers and the ones the supervisor holds
+                        // onto. Something is afoot and it needs to be reconciled asap.
+                        None => todo!(),
+                    }
                 }
+
+                // TODO(xla): Log to indicate the send subroutine is done.
             });
         }
 
@@ -229,17 +285,46 @@ impl Supervisor {
         {
             let input_tx = input_tx.clone();
             let state = state.clone();
-            thread::spawn(move || loop {
-                let id = stop_rx.recv().unwrap();
+            thread::spawn(move || {
+                loop {
+                    let id = match stop_rx.recv() {
+                        Ok(id) => id,
+                        Err(flume::RecvError::Disconnected) => {
+                            // TODO(xla): The other end dropped, likely due to the supervisor
+                            // gone. In any case we can't continue, but maybe log.
+                            break;
+                        }
+                    };
 
-                // TOOD(xla): A missing peer needs to be bubbled up as that indicates there is
-                // a mismatch between the protocol tracked peers and the ones the supervisor holds
-                // onto. Something is afoot and it needs to be reconciled asap.
-                if let Some(peer) = state.lock().unwrap().peers.remove(&id) {
-                    input_tx
-                        .send(Input::Stopped(id, peer.stop().err()))
-                        .unwrap();
+                    let mut state = state.lock().expect("unable to recover from poisned lock");
+
+                    let msg = match state.peers.remove(&id) {
+                        Some(peer) => {
+                            // FIXME(xla): As the state lock is held up top, it's dangerous if stop is
+                            // ever blocking for any amount of time, which makes this call sensitive to the
+                            // implementation details of stop.
+                            Input::Stopped(id, peer.stop().err())
+                        }
+                        None => {
+                            // TOOD(xla): A missing peer needs to be bubbled up as that indicates there is
+                            // a mismatch between the protocol tracked peers and the ones the supervisor holds
+                            // onto. Something is afoot and it needs to be reconciled asap.
+                            todo!()
+                        }
+                    };
+
+                    match input_tx.try_send(msg) {
+                        Ok(_) => {}
+                        Err(flume::TrySendError::Disconnected(_)) => {
+                            // TODO(xla): The other end is gone, likely indicating the supervisor was
+                            // torn down. In any case we can't continue, but maybe log.
+                            return;
+                        }
+                        Err(flume::TrySendError::Full(_)) => todo!(),
+                    }
                 }
+
+                // TODO(xla): Log to indicate the stop subroutine is done.
             });
         }
 
@@ -248,32 +333,46 @@ impl Supervisor {
         {
             let input_tx = input_tx.clone();
             let state = state.clone();
-            thread::spawn(move || loop {
-                let peer_id = upgrade_rx.recv().unwrap();
-                let mut state = state.lock().unwrap();
-
-                if let Some(conn) = state.connected.remove(&peer_id) {
-                    let peer = peer::Peer::try_from(conn).unwrap();
-
-                    // TODO(xla): Provide actual (possibly configured) list of streams.
-                    match peer.run(vec![]) {
-                        Ok(peer) => {
-                            state.peers.insert(peer.id, peer).unwrap();
-
-                            input_tx.send(Input::Upgraded(peer_id)).unwrap();
+            thread::spawn(move || {
+                loop {
+                    let peer_id = match upgrade_rx.recv() {
+                        Ok(id) => id,
+                        Err(flume::RecvError::Disconnected) => {
+                            // TODO(xla): The other end dropped, likely due to the supervisor
+                            // gone. In any case we can't continue, but maybe log.
+                            break;
                         }
-                        Err(err) => {
-                            input_tx.send(Input::UpgradeFailed(peer_id, err)).unwrap();
+                    };
+                    let mut state = state.lock().expect("unable to recover from poisned lock");
+
+                    let msg = match state.connected.remove(&peer_id) {
+                        None => Input::UpgradeFailed(peer_id, Report::msg("connection not found")),
+                        Some(conn) => {
+                            let peer = peer::Peer::try_from(conn).unwrap();
+
+                            // TODO(xla): Provide actual (possibly configured) list of streams.
+                            match peer.run(vec![]) {
+                                Ok(peer) => {
+                                    state.peers.insert(peer.id, peer).unwrap();
+                                    Input::Upgraded(peer_id)
+                                }
+                                Err(err) => Input::UpgradeFailed(peer_id, err),
+                            }
                         }
+                    };
+
+                    match input_tx.try_send(msg) {
+                        Ok(_) => {}
+                        Err(flume::TrySendError::Disconnected(_)) => {
+                            // TODO(xla): The other end is gone, likely indicating the supervisor was
+                            // torn down. In any case we can't continue, but maybe log.
+                            return;
+                        }
+                        Err(flume::TrySendError::Full(_)) => todo!(),
                     }
-                } else {
-                    input_tx
-                        .send(Input::UpgradeFailed(
-                            peer_id,
-                            Report::msg("connection not found"),
-                        ))
-                        .unwrap();
                 }
+
+                // TODO(xla): Log to indicate the upgrade subroutine is done.
             });
         }
 

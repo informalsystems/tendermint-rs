@@ -20,6 +20,10 @@ pub enum Kind {
     #[error("invalid key")]
     InvalidKey,
 
+    /// Unsupported public key type.
+    #[error("unsupported key type")]
+    UnsupportedKeyType,
+
     /// Input/output error
     #[error("I/O error")]
     Io,
