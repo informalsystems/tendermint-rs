@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use tendermint::{block, validator};
 
 /// The default number of validators to return per page.
-pub const DEFAULT_VALIDATORS_PER_PAGE: usize = 30;
+pub const DEFAULT_VALIDATORS_PER_PAGE: u8 = 30;
 
 /// List validators for a specific block
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -15,8 +15,10 @@ pub struct Request {
     /// defaults to the latest height.
     pub height: Option<block::Height>,
     /// The number of the page to fetch.
+    #[serde(with = "tendermint_proto::serializers::optional_from_str")]
     pub page: Option<PageNumber>,
     /// The number of validators to fetch per page.
+    #[serde(with = "tendermint_proto::serializers::optional_from_str")]
     pub per_page: Option<PerPage>,
 }
 

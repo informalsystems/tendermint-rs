@@ -51,7 +51,6 @@ mod id;
 mod method;
 mod order;
 mod paging;
-mod positive_number;
 pub mod query;
 pub mod request;
 pub mod response;
