@@ -156,7 +156,7 @@ jobs:
           profile: minimal
           toolchain: nightly
           override: true
-      - run: cargo test --lib --all-features
+      - run: cargo test --all-features
         env:
           RUSTFLAGS: '-Zinstrument-coverage'
       - name: Install grcov
