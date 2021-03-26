@@ -133,10 +133,11 @@ impl StartCmd {
 
         status_info!(
             "start",
-            "highest trusted or verified height: {:?}",
+            "highest trusted or verified height: {}",
             light_store
                 .highest_trusted_or_verified()
-                .map(|b| b.signed_header.header.height),
+                .map(|b| b.signed_header.header.height.to_string())
+                .unwrap_or_else(|| "(none)".to_owned()),
         );
 
         let builder = LightClientBuilder::prod(
