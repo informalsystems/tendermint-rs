@@ -51,6 +51,6 @@ pub trait Transport {
     type Endpoint: Endpoint<Connection = <Self as Transport>::Connection>;
     type Incoming: Iterator<Item = Result<<Self as Transport>::Connection>> + Send;
 
-    fn bind(&self, bind_info: BindInfo) -> Result<(Self::Endpoint, Self::Incoming)>;
+    fn bind(self, bind_info: BindInfo) -> Result<(Self::Endpoint, Self::Incoming)>;
     fn shutdown(&self) -> Result<()>;
 }

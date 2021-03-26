@@ -107,6 +107,8 @@ struct State<Conn> {
 /// Wrapping a [`transport::Transport`] the `Supervisor` runs the p2p machinery to manage peers over
 /// physical connections. Offering multiplexing of ingress and egress messages and a surface to
 /// empower higher-level protocols to control the behaviour of the p2p substack.
+///
+/// TODO(xla): Document subroutine/thread hierarchy and data flow.
 pub struct Supervisor {
     command_tx: Sender<Command>,
     event_rx: Receiver<Event>,
@@ -121,272 +123,27 @@ impl Supervisor {
     /// # Errors
     ///
     /// * If the bind of the transport fails
-    #[allow(clippy::too_many_lines)]
-    pub fn run<T>(transport: &T, info: transport::BindInfo) -> Result<Self>
+    pub fn run<T>(transport: T, info: transport::BindInfo) -> Result<Self>
     where
         T: transport::Transport + Send + 'static,
     {
+        let (endpoint, incoming) = transport.bind(info)?;
         let (command_tx, command_rx) = unbounded();
         let (event_tx, event_rx) = unbounded();
-        let supervisor = Self {
+
+        thread::spawn(move || Self::main::<T>(command_rx, event_tx, endpoint, incoming));
+
+        Ok(Self {
             command_tx,
             event_rx,
-        };
-
-        let (endpoint, mut incoming) = transport.bind(info)?;
-
-        let (input_tx, input_rx) = unbounded();
-        let state: Arc<Mutex<State<<T as transport::Transport>::Connection>>> =
-            Arc::new(Mutex::new(State {
-                connected: HashMap::new(),
-                peers: HashMap::new(),
-            }));
-
-        // ACCEPT
-        let (accept_tx, accept_rx) = unbounded::<()>();
-        let accept_handle = {
-            let input_tx = input_tx.clone();
-            let state = state.clone();
-            thread::Builder::new()
-                .name("supervisor-accept".to_string())
-                .spawn(move || -> Result<()> {
-                    loop {
-                        accept_rx.recv()?;
-
-                        match incoming.next() {
-                            // Incoming stream is finished, there is nothing left to do for this
-                            // subroutine.
-                            None => return Ok(()),
-                            Some(Err(_err)) => todo!(),
-                            Some(Ok(conn)) => match node::Id::try_from(conn.public_key()) {
-                                Err(_err) => todo!(),
-                                Ok(id) => {
-                                    let mut state =
-                                        state.lock().map_err(|_| Error::StateLockPoisoned)?;
-
-                                    let msg = match state.connected.entry(id) {
-                                        Entry::Vacant(entry) => {
-                                            entry.insert(transport::Direction::Incoming(conn));
-                                            Input::Accepted(id)
-                                        }
-                                        // If the id in question is already connected we terminate
-                                        // the duplicate one and inform the protocol of it.
-                                        Entry::Occupied(_entry) => {
-                                            Input::DuplicateConnRejected(id, conn.close().err())
-                                        }
-                                    };
-
-                                    input_tx.try_send(msg)?;
-                                }
-                            },
-                        }
-                    }
-                })
-        };
-
-        // CONNECT
-        let (connect_tx, connect_rx) = unbounded::<transport::ConnectInfo>();
-        let connect_handle = {
-            let input_tx = input_tx.clone();
-            let state = state.clone();
-            thread::Builder::new()
-                .name("supervisor-connect".to_string())
-                .spawn(move || -> Result<()> {
-                    loop {
-                        let info = connect_rx.recv()?;
-
-                        match endpoint.connect(info) {
-                            Err(_err) => todo!(),
-                            Ok(conn) => {
-                                match node::Id::try_from(conn.public_key()) {
-                                    Err(_err) => todo!(),
-                                    Ok(id) => {
-                                        let mut state =
-                                            state.lock().map_err(|_| Error::StateLockPoisoned)?;
-
-                                        let msg = match state.connected.entry(id) {
-                                            Entry::Vacant(entry) => {
-                                                entry.insert(transport::Direction::Outgoing(conn));
-                                                Input::Connected(id)
-                                            }
-                                            Entry::Occupied(_entry) => {
-                                                // TODO(xla): Define and account for the case where a connection is present for
-                                                // the id.
-                                                todo!()
-                                            }
-                                        };
-
-                                        input_tx.try_send(msg)?;
-                                    }
-                                }
-                            }
-                        };
-                    }
-                })
-        };
-
-        // SEND
-        let (send_tx, send_rx) = unbounded::<(node::Id, message::Send)>();
-        let send_handle = {
-            let state = state.clone();
-            thread::Builder::new()
-                .name("supervisor-send".to_string())
-                .spawn(move || -> Result<()> {
-                    loop {
-                        let (id, msg) = send_rx.recv()?;
-
-                        let state = state.lock().map_err(|_| Error::StateLockPoisoned)?;
-
-                        match state.peers.get(&id) {
-                            // TODO(xla): Ideally acked that the message passed to the peer.
-                            // FIXME(xla): As the state lock is held up top, it's dangerous if send is
-                            // ever blocking for any amount of time, which makes this call sensitive to the
-                            // implementation details of send.
-                            Some(peer) => peer.send(msg).unwrap(),
-                            // TODO(xla): A missing peer needs to be bubbled up as that indicates there is
-                            // a mismatch between the tracked peers in the protocol and the ones the supervisor holds
-                            // onto. Something is afoot and it needs to be reconciled asap.
-                            None => todo!(),
-                        }
-                    }
-                })
-        };
-
-        // STOP
-        let (stop_tx, stop_rx) = unbounded::<node::Id>();
-        let stop_handle = {
-            let input_tx = input_tx.clone();
-            let state = state.clone();
-            thread::Builder::new()
-                .name("supervisor-stop".to_string())
-                .spawn(move || -> Result<()> {
-                    loop {
-                        let id = stop_rx.recv()?;
-
-                        // To avoid that the lock is held for too long this block is significant.
-                        let peer = {
-                            let mut state = state.lock().map_err(|_| Error::StateLockPoisoned)?;
-                            state.peers.remove(&id)
-                        };
-
-                        let msg = match peer {
-                            Some(peer) => Input::Stopped(id, peer.stop().err()),
-                            None => {
-                                // TOOD(xla): A missing peer needs to be bubbled up as that indicates there is
-                                // a mismatch between the protocol tracked peers and the ones the supervisor holds
-                                // onto. Something is afoot and it needs to be reconciled asap.
-                                todo!()
-                            }
-                        };
-
-                        input_tx.try_send(msg)?
-                    }
-                })
-        };
-
-        // UPGRADE
-        let (upgrade_tx, upgrade_rx) = unbounded();
-        let upgrade_handle = {
-            let input_tx = input_tx.clone();
-            let state = state.clone();
-            thread::Builder::new()
-                .name("supervisor-upgrade".to_string())
-                .spawn(move || -> Result<()> {
-                    loop {
-                        let peer_id = upgrade_rx.recv()?;
-                        let mut state = state.lock().map_err(|_| Error::StateLockPoisoned)?;
-
-                        let msg = match state.connected.remove(&peer_id) {
-                            None => {
-                                Input::UpgradeFailed(peer_id, Report::msg("connection not found"))
-                            }
-                            Some(conn) => {
-                                match peer::Peer::try_from(conn) {
-                                    Err(_err) => todo!(),
-                                    // TODO(xla): Provide actual (possibly configured) list of streams.
-                                    Ok(peer) => match peer.run(vec![]) {
-                                        Ok(peer) => match state.peers.entry(peer.id) {
-                                            Entry::Vacant(entry) => {
-                                                entry.insert(peer);
-                                                Input::Upgraded(peer_id)
-                                            }
-                                            Entry::Occupied(_entry) => todo!(),
-                                        },
-                                        Err(err) => Input::UpgradeFailed(peer_id, err),
-                                    },
-                                }
-                            }
-                        };
-
-                        input_tx.try_send(msg)?;
-                    }
-                })
-        };
-
-        // MAIN
-        thread::spawn(move || {
-            let mut protocol = Protocol {
-                connected: HashMap::new(),
-                stopped: HashSet::new(),
-                upgraded: HashSet::new(),
-            };
-
-            loop {
-                let input = {
-                    let state = match state.lock() {
-                        Ok(state) => state,
-                        Err(_err) => {
-                            // TODO(xla): The lock got poisoned and will stay in that state, we
-                            // need to terminate, but should log an error here.
-                            break;
-                        }
-                    };
-
-                    let mut selector = flume::Selector::new()
-                        .recv(&command_rx, |res| Input::Command(res.unwrap()))
-                        .recv(&input_rx, |input| input.unwrap());
-
-                    for (id, peer) in &state.peers {
-                        selector = selector.recv(&peer.state.receiver, move |res| match res {
-                            Ok(msg) => Input::Receive(*id, msg),
-                            Err(flume::RecvError::Disconnected) => todo!(),
-                        });
-                    }
-
-                    selector.wait()
-                };
-
-                for output in protocol.transition(input) {
-                    match output {
-                        Output::Event(event) => event_tx.send(event).unwrap(),
-                        Output::Internal(internal) => match internal {
-                            Internal::Accept => accept_tx.send(()).unwrap(),
-                            Internal::Connect(info) => connect_tx.send(info).unwrap(),
-                            Internal::SendMessage(peer_id, msg) => {
-                                send_tx.send((peer_id, msg)).unwrap()
-                            }
-                            Internal::Stop(peer_id) => stop_tx.send(peer_id).unwrap(),
-                            Internal::Upgrade(peer_id) => upgrade_tx.send(peer_id).unwrap(),
-                        },
-                    }
-                }
-            }
-
-            // TODO(xla): Log the termination of main subroutine. Signal termination to the caller.
-        });
-
-        Ok(supervisor)
+        })
     }
 
     /// Returns the next available message from the underlying channel.
     ///
-    /// # Errors
-    ///
-    /// * If
-    pub fn recv(&self) -> Result<Event> {
-        self.event_rx
-            .recv()
-            .map_err(|err| eyre!("sender disconnected: {}", err))
+    /// A `None` signals that the supervisor is stopped and no further events will arrive.
+    pub fn recv(&self) -> Option<Event> {
+        self.event_rx.recv().ok()
     }
 
     /// Instruct to execute the given [`Command`].
@@ -397,6 +154,290 @@ impl Supervisor {
     /// handle the caller holds isn't any good anymore and should be dropped entirely.
     pub fn command(&self, cmd: Command) -> Result<()> {
         self.command_tx.send(cmd).wrap_err("command send failed")
+    }
+}
+
+impl Supervisor {
+    fn main<T>(
+        command_rx: Receiver<Command>,
+        event_tx: Sender<Event>,
+        endpoint: <T as transport::Transport>::Endpoint,
+        incoming: <T as transport::Transport>::Incoming,
+    ) where
+        T: transport::Transport + Send + 'static,
+    {
+        let mut protocol = Protocol {
+            connected: HashMap::new(),
+            stopped: HashSet::new(),
+            upgraded: HashSet::new(),
+        };
+        let state: Arc<Mutex<State<<T as transport::Transport>::Connection>>> =
+            Arc::new(Mutex::new(State {
+                connected: HashMap::new(),
+                peers: HashMap::new(),
+            }));
+
+        let (input_tx, input_rx) = unbounded();
+
+        let (accept_tx, accept_rx) = unbounded::<()>();
+        let accept_handle = {
+            let input_tx = input_tx.clone();
+            let state = state.clone();
+            thread::Builder::new()
+                .name("supervisor-accept".to_string())
+                .spawn(|| Self::accept::<T>(accept_rx, incoming, input_tx, state))
+        };
+
+        let (connect_tx, connect_rx) = unbounded::<transport::ConnectInfo>();
+        let connect_handle = {
+            let input_tx = input_tx.clone();
+            let state = state.clone();
+            thread::Builder::new()
+                .name("supervisor-connect".to_string())
+                .spawn(|| Self::connect::<T>(connect_rx, endpoint, input_tx, state))
+        };
+
+        let (msg_tx, msg_rx) = unbounded::<(node::Id, message::Send)>();
+        let msg_handle = {
+            let input_tx = input_tx.clone();
+            let state = state.clone();
+            thread::Builder::new()
+                .name("supervisor-send".to_string())
+                .spawn(move || Self::message::<T>(input_tx, msg_rx, state))
+        };
+
+        let (stop_tx, stop_rx) = unbounded::<node::Id>();
+        let stop_handle = {
+            let input_tx = input_tx.clone();
+            let state = state.clone();
+            thread::Builder::new()
+                .name("supervisor-stop".to_string())
+                .spawn(move || Self::stop::<T>(input_tx, state, stop_rx))
+        };
+
+        let (upgrade_tx, upgrade_rx) = unbounded();
+        let upgrade_handle = {
+            let state = state.clone();
+            thread::Builder::new()
+                .name("supervisor-upgrade".to_string())
+                .spawn(move || Self::upgrade::<T>(input_tx, state, upgrade_rx))
+        };
+
+        loop {
+            let input = {
+                let state = match state.lock() {
+                    Ok(state) => state,
+                    Err(_err) => {
+                        // TODO(xla): The lock got poisoned and will stay in that state, we
+                        // need to terminate, but should log an error here.
+                        break;
+                    }
+                };
+
+                let mut selector = flume::Selector::new()
+                    .recv(&command_rx, |res| Input::Command(res.unwrap()))
+                    .recv(&input_rx, |input| input.unwrap());
+
+                for (id, peer) in &state.peers {
+                    selector = selector.recv(&peer.state.receiver, move |res| match res {
+                        Ok(msg) => Input::Receive(*id, msg),
+                        Err(flume::RecvError::Disconnected) => todo!(),
+                    });
+                }
+
+                selector.wait()
+            };
+
+            for output in protocol.transition(input) {
+                match output {
+                    Output::Event(event) => event_tx.send(event).unwrap(),
+                    Output::Internal(internal) => match internal {
+                        Internal::Accept => accept_tx.send(()).unwrap(),
+                        Internal::Connect(info) => connect_tx.send(info).unwrap(),
+                        Internal::SendMessage(peer_id, msg) => msg_tx.send((peer_id, msg)).unwrap(),
+                        Internal::Stop(peer_id) => stop_tx.send(peer_id).unwrap(),
+                        Internal::Upgrade(peer_id) => upgrade_tx.send(peer_id).unwrap(),
+                    },
+                }
+            }
+        }
+
+        // TODO(xla): Log the termination of main subroutine. Signal termination to the caller.
+    }
+
+    fn accept<T>(
+        accept_rx: Receiver<()>,
+        mut incoming: <T as transport::Transport>::Incoming,
+        input_tx: Sender<Input>,
+        state: Arc<Mutex<State<<T as transport::Transport>::Connection>>>,
+    ) -> Result<()>
+    where
+        T: transport::Transport + Send + 'static,
+    {
+        loop {
+            accept_rx.recv()?;
+
+            match incoming.next() {
+                // Incoming stream is finished, there is nothing left to do for this
+                // subroutine.
+                None => return Ok(()),
+                Some(Err(_err)) => todo!(),
+                Some(Ok(conn)) => match node::Id::try_from(conn.public_key()) {
+                    Err(_err) => todo!(),
+                    Ok(id) => {
+                        let mut state = state.lock().map_err(|_| Error::StateLockPoisoned)?;
+
+                        let msg = match state.connected.entry(id) {
+                            Entry::Vacant(entry) => {
+                                entry.insert(transport::Direction::Incoming(conn));
+                                Input::Accepted(id)
+                            }
+                            // If the id in question is already connected we terminate
+                            // the duplicate one and inform the protocol of it.
+                            Entry::Occupied(_entry) => {
+                                Input::DuplicateConnRejected(id, conn.close().err())
+                            }
+                        };
+
+                        input_tx.try_send(msg)?;
+                    }
+                },
+            }
+        }
+    }
+
+    fn connect<T>(
+        connect_rx: Receiver<transport::ConnectInfo>,
+        endpoint: <T as transport::Transport>::Endpoint,
+        input_tx: Sender<Input>,
+        state: Arc<Mutex<State<<T as transport::Transport>::Connection>>>,
+    ) -> Result<()>
+    where
+        T: transport::Transport + Send + 'static,
+    {
+        loop {
+            let info = connect_rx.recv()?;
+
+            match endpoint.connect(info) {
+                Err(_err) => todo!(),
+                Ok(conn) => {
+                    match node::Id::try_from(conn.public_key()) {
+                        Err(_err) => todo!(),
+                        Ok(id) => {
+                            let mut state = state.lock().map_err(|_| Error::StateLockPoisoned)?;
+
+                            let msg = match state.connected.entry(id) {
+                                Entry::Vacant(entry) => {
+                                    entry.insert(transport::Direction::Outgoing(conn));
+                                    Input::Connected(id)
+                                }
+                                Entry::Occupied(_entry) => {
+                                    // TODO(xla): Define and account for the case where a connection is present for
+                                    // the id.
+                                    todo!()
+                                }
+                            };
+
+                            input_tx.try_send(msg)?;
+                        }
+                    }
+                }
+            };
+        }
+    }
+
+    fn message<T>(
+        input_tx: Sender<Input>,
+        msg_rx: Receiver<(node::Id, message::Send)>,
+        state: Arc<Mutex<State<<T as transport::Transport>::Connection>>>,
+    ) -> Result<()>
+    where
+        T: transport::Transport + Send + 'static,
+    {
+        loop {
+            let (id, msg) = msg_rx.recv()?;
+
+            let state = state.lock().map_err(|_| Error::StateLockPoisoned)?;
+
+            match state.peers.get(&id) {
+                // TODO(xla): Ideally acked that the message passed to the peer.
+                // FIXME(xla): As the state lock is held up top, it's dangerous if send is
+                // ever blocking for any amount of time, which makes this call sensitive to the
+                // implementation details of send.
+                Some(peer) => peer.send(msg).unwrap(),
+                // TODO(xla): A missing peer needs to be bubbled up as that indicates there is
+                // a mismatch between the tracked peers in the protocol and the ones the supervisor holds
+                // onto. Something is afoot and it needs to be reconciled asap.
+                None => todo!(),
+            }
+        }
+    }
+
+    fn stop<T>(
+        input_tx: Sender<Input>,
+        state: Arc<Mutex<State<<T as transport::Transport>::Connection>>>,
+        stop_rx: Receiver<node::Id>,
+    ) -> Result<()>
+    where
+        T: transport::Transport + Send + 'static,
+    {
+        loop {
+            let id = stop_rx.recv()?;
+
+            // To avoid that the lock is held for too long this block is significant.
+            let peer = {
+                let mut state = state.lock().map_err(|_| Error::StateLockPoisoned)?;
+                state.peers.remove(&id)
+            };
+
+            let msg = match peer {
+                Some(peer) => Input::Stopped(id, peer.stop().err()),
+                None => {
+                    // TOOD(xla): A missing peer needs to be bubbled up as that indicates there is
+                    // a mismatch between the protocol tracked peers and the ones the supervisor holds
+                    // onto. Something is afoot and it needs to be reconciled asap.
+                    todo!()
+                }
+            };
+
+            input_tx.try_send(msg)?
+        }
+    }
+
+    fn upgrade<T>(
+        input_tx: Sender<Input>,
+        state: Arc<Mutex<State<<T as transport::Transport>::Connection>>>,
+        upgrade_rx: Receiver<node::Id>,
+    ) -> Result<()>
+    where
+        T: transport::Transport + Send + 'static,
+    {
+        loop {
+            let peer_id = upgrade_rx.recv()?;
+            let mut state = state.lock().map_err(|_| Error::StateLockPoisoned)?;
+
+            let msg = match state.connected.remove(&peer_id) {
+                None => Input::UpgradeFailed(peer_id, Report::msg("connection not found")),
+                Some(conn) => {
+                    match peer::Peer::try_from(conn) {
+                        Err(_err) => todo!(),
+                        // TODO(xla): Provide actual (possibly configured) list of streams.
+                        Ok(peer) => match peer.run(vec![]) {
+                            Ok(peer) => match state.peers.entry(peer.id) {
+                                Entry::Vacant(entry) => {
+                                    entry.insert(peer);
+                                    Input::Upgraded(peer_id)
+                                }
+                                Entry::Occupied(_entry) => todo!(),
+                            },
+                            Err(err) => Input::UpgradeFailed(peer_id, err),
+                        },
+                    }
+                }
+            };
+
+            input_tx.try_send(msg)?;
+        }
     }
 }
 
