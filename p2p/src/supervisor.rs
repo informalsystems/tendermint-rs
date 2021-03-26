@@ -157,6 +157,12 @@ impl Supervisor {
     }
 }
 
+type Connected<T: transport::Transport + Send + 'static> =
+    Arc<Mutex<HashMap<node::Id, transport::Direction<<T as transport::Transport>::Connection>>>>;
+type Peers<T: transport::Transport + Send + 'static> = Arc<
+    Mutex<HashMap<node::Id, peer::Peer<peer::Running<<T as transport::Transport>::Connection>>>>,
+>;
+
 impl Supervisor {
     fn main<T>(
         command_rx: Receiver<Command>,
@@ -166,67 +172,66 @@ impl Supervisor {
     ) where
         T: transport::Transport + Send + 'static,
     {
-        let mut protocol = Protocol {
-            connected: HashMap::new(),
-            stopped: HashSet::new(),
-            upgraded: HashSet::new(),
-        };
-        let state: Arc<Mutex<State<<T as transport::Transport>::Connection>>> =
-            Arc::new(Mutex::new(State {
-                connected: HashMap::new(),
-                peers: HashMap::new(),
-            }));
+        let connected: Connected<T> = Arc::new(Mutex::new(HashMap::new()));
+        let peers: Peers<T> = Arc::new(Mutex::new(HashMap::new()));
 
         let (input_tx, input_rx) = unbounded();
 
         let (accept_tx, accept_rx) = unbounded::<()>();
         let accept_handle = {
             let input_tx = input_tx.clone();
-            let state = state.clone();
+            let connected = connected.clone();
             thread::Builder::new()
                 .name("supervisor-accept".to_string())
-                .spawn(|| Self::accept::<T>(accept_rx, incoming, input_tx, state))
+                .spawn(|| Self::accept::<T>(accept_rx, connected, incoming, input_tx))
         };
 
         let (connect_tx, connect_rx) = unbounded::<transport::ConnectInfo>();
         let connect_handle = {
             let input_tx = input_tx.clone();
-            let state = state.clone();
+            let connected = connected.clone();
             thread::Builder::new()
                 .name("supervisor-connect".to_string())
-                .spawn(|| Self::connect::<T>(connect_rx, endpoint, input_tx, state))
+                .spawn(|| Self::connect::<T>(connected, connect_rx, endpoint, input_tx))
         };
 
         let (msg_tx, msg_rx) = unbounded::<(node::Id, message::Send)>();
         let msg_handle = {
             let input_tx = input_tx.clone();
-            let state = state.clone();
+            let peers = peers.clone();
             thread::Builder::new()
                 .name("supervisor-message".to_string())
-                .spawn(move || Self::message::<T>(input_tx, msg_rx, state))
+                .spawn(move || Self::message::<T>(input_tx, msg_rx, peers))
         };
 
         let (stop_tx, stop_rx) = unbounded::<node::Id>();
         let stop_handle = {
             let input_tx = input_tx.clone();
-            let state = state.clone();
+            let peers = peers.clone();
             thread::Builder::new()
                 .name("supervisor-stop".to_string())
-                .spawn(move || Self::stop::<T>(input_tx, state, stop_rx))
+                .spawn(move || Self::stop::<T>(input_tx, peers, stop_rx))
         };
 
         let (upgrade_tx, upgrade_rx) = unbounded();
         let upgrade_handle = {
-            let state = state.clone();
+            let connected = connected.clone();
+            let peers = peers.clone();
             thread::Builder::new()
                 .name("supervisor-upgrade".to_string())
-                .spawn(move || Self::upgrade::<T>(input_tx, state, upgrade_rx))
+                .spawn(move || Self::upgrade::<T>(connected, input_tx, peers, upgrade_rx))
+        };
+
+        let mut protocol = Protocol {
+            connected: HashMap::new(),
+            stopped: HashSet::new(),
+            upgraded: HashSet::new(),
         };
 
         loop {
             let input = {
-                let state = match state.lock() {
-                    Ok(state) => state,
+                let peers = match peers.lock() {
+                    Ok(peers) => peers,
                     Err(_err) => {
                         // TODO(xla): The lock got poisoned and will stay in that state, we
                         // need to terminate, but should log an error here.
@@ -238,7 +243,7 @@ impl Supervisor {
                     .recv(&command_rx, |res| Input::Command(res.unwrap()))
                     .recv(&input_rx, |input| input.unwrap());
 
-                for (id, peer) in &state.peers {
+                for (id, peer) in &*peers {
                     selector = selector.recv(&peer.state.receiver, move |res| match res {
                         Ok(msg) => Input::Receive(*id, msg),
                         Err(flume::RecvError::Disconnected) => todo!(),
@@ -267,9 +272,9 @@ impl Supervisor {
 
     fn accept<T>(
         accept_rx: Receiver<()>,
+        connected: Connected<T>,
         mut incoming: <T as transport::Transport>::Incoming,
         input_tx: Sender<Input>,
-        state: Arc<Mutex<State<<T as transport::Transport>::Connection>>>,
     ) -> Result<()>
     where
         T: transport::Transport + Send + 'static,
@@ -285,9 +290,10 @@ impl Supervisor {
                 Some(Ok(conn)) => match node::Id::try_from(conn.public_key()) {
                     Err(_err) => todo!(),
                     Ok(id) => {
-                        let mut state = state.lock().map_err(|_| Error::StateLockPoisoned)?;
+                        let mut connected =
+                            connected.lock().map_err(|_| Error::StateLockPoisoned)?;
 
-                        let msg = match state.connected.entry(id) {
+                        let msg = match connected.entry(id) {
                             Entry::Vacant(entry) => {
                                 entry.insert(transport::Direction::Incoming(conn));
                                 Input::Accepted(id)
@@ -307,10 +313,10 @@ impl Supervisor {
     }
 
     fn connect<T>(
+        connected: Connected<T>,
         connect_rx: Receiver<transport::ConnectInfo>,
         endpoint: <T as transport::Transport>::Endpoint,
         input_tx: Sender<Input>,
-        state: Arc<Mutex<State<<T as transport::Transport>::Connection>>>,
     ) -> Result<()>
     where
         T: transport::Transport + Send + 'static,
@@ -324,9 +330,10 @@ impl Supervisor {
                     match node::Id::try_from(conn.public_key()) {
                         Err(_err) => todo!(),
                         Ok(id) => {
-                            let mut state = state.lock().map_err(|_| Error::StateLockPoisoned)?;
+                            let mut connected =
+                                connected.lock().map_err(|_| Error::StateLockPoisoned)?;
 
-                            let msg = match state.connected.entry(id) {
+                            let msg = match connected.entry(id) {
                                 Entry::Vacant(entry) => {
                                     entry.insert(transport::Direction::Outgoing(conn));
                                     Input::Connected(id)
@@ -349,7 +356,7 @@ impl Supervisor {
     fn message<T>(
         input_tx: Sender<Input>,
         msg_rx: Receiver<(node::Id, message::Send)>,
-        state: Arc<Mutex<State<<T as transport::Transport>::Connection>>>,
+        peers: Peers<T>,
     ) -> Result<()>
     where
         T: transport::Transport + Send + 'static,
@@ -357,9 +364,9 @@ impl Supervisor {
         loop {
             let (id, msg) = msg_rx.recv()?;
 
-            let state = state.lock().map_err(|_| Error::StateLockPoisoned)?;
+            let peers = peers.lock().map_err(|_| Error::StateLockPoisoned)?;
 
-            match state.peers.get(&id) {
+            match peers.get(&id) {
                 // TODO(xla): Ideally acked that the message passed to the peer.
                 // FIXME(xla): As the state lock is held up top, it's dangerous if send is
                 // ever blocking for any amount of time, which makes this call sensitive to the
@@ -373,11 +380,7 @@ impl Supervisor {
         }
     }
 
-    fn stop<T>(
-        input_tx: Sender<Input>,
-        state: Arc<Mutex<State<<T as transport::Transport>::Connection>>>,
-        stop_rx: Receiver<node::Id>,
-    ) -> Result<()>
+    fn stop<T>(input_tx: Sender<Input>, peers: Peers<T>, stop_rx: Receiver<node::Id>) -> Result<()>
     where
         T: transport::Transport + Send + 'static,
     {
@@ -386,8 +389,8 @@ impl Supervisor {
 
             // To avoid that the lock is held for too long this block is significant.
             let peer = {
-                let mut state = state.lock().map_err(|_| Error::StateLockPoisoned)?;
-                state.peers.remove(&id)
+                let mut peers = peers.lock().map_err(|_| Error::StateLockPoisoned)?;
+                peers.remove(&id)
             };
 
             let msg = match peer {
@@ -405,8 +408,9 @@ impl Supervisor {
     }
 
     fn upgrade<T>(
+        connected: Connected<T>,
         input_tx: Sender<Input>,
-        state: Arc<Mutex<State<<T as transport::Transport>::Connection>>>,
+        peers: Peers<T>,
         upgrade_rx: Receiver<node::Id>,
     ) -> Result<()>
     where
@@ -414,22 +418,26 @@ impl Supervisor {
     {
         loop {
             let peer_id = upgrade_rx.recv()?;
-            let mut state = state.lock().map_err(|_| Error::StateLockPoisoned)?;
+            let mut connected = connected.lock().map_err(|_| Error::StateLockPoisoned)?;
 
-            let msg = match state.connected.remove(&peer_id) {
+            let msg = match connected.remove(&peer_id) {
                 None => Input::UpgradeFailed(peer_id, Report::msg("connection not found")),
                 Some(conn) => {
                     match peer::Peer::try_from(conn) {
                         Err(_err) => todo!(),
                         // TODO(xla): Provide actual (possibly configured) list of streams.
                         Ok(peer) => match peer.run(vec![]) {
-                            Ok(peer) => match state.peers.entry(peer.id) {
-                                Entry::Vacant(entry) => {
-                                    entry.insert(peer);
-                                    Input::Upgraded(peer_id)
+                            Ok(peer) => {
+                                let mut peers =
+                                    peers.lock().map_err(|_| Error::StateLockPoisoned)?;
+                                match peers.entry(peer.id) {
+                                    Entry::Vacant(entry) => {
+                                        entry.insert(peer);
+                                        Input::Upgraded(peer_id)
+                                    }
+                                    Entry::Occupied(_entry) => todo!(),
                                 }
-                                Entry::Occupied(_entry) => todo!(),
-                            },
+                            }
                             Err(err) => Input::UpgradeFailed(peer_id, err),
                         },
                     }
