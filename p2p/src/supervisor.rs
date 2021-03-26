@@ -15,6 +15,9 @@ use crate::message;
 use crate::peer;
 use crate::transport::{self, Connection, Endpoint as _};
 
+mod protocol;
+use protocol::Protocol;
+
 /// Indicates how a [`transport::Connection`] was established.
 pub enum Direction {
     /// Established by accepting a new connection from the [`transport::Transport`].
@@ -174,59 +177,76 @@ impl Supervisor {
     {
         let connected: Connected<T> = Arc::new(Mutex::new(HashMap::new()));
         let peers: Peers<T> = Arc::new(Mutex::new(HashMap::new()));
+        let mut handles: Vec<(String, thread::JoinHandle<Result<()>>)> = Vec::new();
 
         let (input_tx, input_rx) = unbounded();
 
         let (accept_tx, accept_rx) = unbounded::<()>();
-        let accept_handle = {
+        {
             let input_tx = input_tx.clone();
             let connected = connected.clone();
-            thread::Builder::new()
-                .name("supervisor-accept".to_string())
+            let name = "supervisor-accept".to_string();
+            let handle = thread::Builder::new()
+                .name(name.clone())
                 .spawn(|| Self::accept::<T>(accept_rx, connected, incoming, input_tx))
-        };
+                .unwrap();
+
+            handles.push((name, handle));
+        }
 
         let (connect_tx, connect_rx) = unbounded::<transport::ConnectInfo>();
-        let connect_handle = {
+        {
             let input_tx = input_tx.clone();
             let connected = connected.clone();
-            thread::Builder::new()
-                .name("supervisor-connect".to_string())
+            let name = "supervisor-connect".to_string();
+            let handle = thread::Builder::new()
+                .name(name.clone())
                 .spawn(|| Self::connect::<T>(connected, connect_rx, endpoint, input_tx))
-        };
+                .unwrap();
+
+            handles.push((name, handle));
+        }
 
         let (msg_tx, msg_rx) = unbounded::<(node::Id, message::Send)>();
-        let msg_handle = {
+        {
             let input_tx = input_tx.clone();
             let peers = peers.clone();
-            thread::Builder::new()
-                .name("supervisor-message".to_string())
+            let name = "supervisor-message".to_string();
+            let handle = thread::Builder::new()
+                .name(name.clone())
                 .spawn(move || Self::message::<T>(input_tx, msg_rx, peers))
+                .unwrap();
+
+            handles.push((name, handle));
         };
 
         let (stop_tx, stop_rx) = unbounded::<node::Id>();
-        let stop_handle = {
+        {
             let input_tx = input_tx.clone();
             let peers = peers.clone();
-            thread::Builder::new()
-                .name("supervisor-stop".to_string())
+            let name = "supervisor-stop".to_string();
+            let handle = thread::Builder::new()
+                .name(name.clone())
                 .spawn(move || Self::stop::<T>(input_tx, peers, stop_rx))
-        };
+                .unwrap();
+
+            handles.push((name, handle));
+        }
 
         let (upgrade_tx, upgrade_rx) = unbounded();
-        let upgrade_handle = {
+        {
             let connected = connected.clone();
             let peers = peers.clone();
-            thread::Builder::new()
-                .name("supervisor-upgrade".to_string())
+            let name = "supervisor-upgrade".to_string();
+            let handle = thread::Builder::new()
+                .name(name.clone())
                 .spawn(move || Self::upgrade::<T>(connected, input_tx, peers, upgrade_rx))
-        };
+                .unwrap();
 
-        let mut protocol = Protocol {
-            connected: HashMap::new(),
-            stopped: HashSet::new(),
-            upgraded: HashSet::new(),
-        };
+            handles.push((name, handle));
+        }
+
+        let mut protocol = Protocol::default();
 
         loop {
             let input = {
@@ -264,6 +284,16 @@ impl Supervisor {
                         Internal::Upgrade(peer_id) => upgrade_tx.send(peer_id).unwrap(),
                     },
                 }
+            }
+        }
+
+        for (_name, handle) in handles {
+            match handle.join() {
+                Ok(res) => match res {
+                    Ok(_) => todo!(),
+                    Err(err) => todo!(),
+                },
+                Err(err) => todo!(),
             }
         }
 
@@ -446,88 +476,5 @@ impl Supervisor {
 
             input_tx.try_send(msg)?;
         }
-    }
-}
-
-struct Protocol {
-    connected: HashMap<node::Id, Direction>,
-    stopped: HashSet<node::Id>,
-    upgraded: HashSet<node::Id>,
-}
-
-impl Protocol {
-    fn transition(&mut self, input: Input) -> Vec<Output> {
-        match input {
-            Input::Accepted(id) => self.handle_accepted(id),
-            Input::Command(command) => self.handle_command(command),
-            Input::Connected(id) => self.handle_connected(id),
-            Input::DuplicateConnRejected(_id, _report) => todo!(),
-            Input::Receive(id, msg) => self.handle_receive(id, msg),
-            Input::Stopped(id, report) => self.handle_stopped(id, report),
-            Input::Upgraded(id) => self.handle_upgraded(id),
-            Input::UpgradeFailed(id, err) => self.handle_upgrade_failed(id, err),
-        }
-    }
-
-    fn handle_accepted(&mut self, id: node::Id) -> Vec<Output> {
-        // TODO(xla): Ensure we only allow one connection per node. Unless a higher-level protocol
-        // like PEX is taking care of it.
-        self.connected.insert(id, Direction::Incoming);
-
-        vec![
-            Output::from(Event::Connected(id, Direction::Incoming)),
-            Output::from(Internal::Upgrade(id)),
-        ]
-    }
-
-    fn handle_command(&mut self, command: Command) -> Vec<Output> {
-        match command {
-            Command::Accept => vec![Output::from(Internal::Accept)],
-            Command::Connect(info) => vec![Output::from(Internal::Connect(info))],
-            Command::Disconnect(id) => {
-                vec![Output::Internal(Internal::Stop(id))]
-            }
-            Command::Msg(peer_id, msg) => match self.upgraded.get(&peer_id) {
-                Some(peer_id) => vec![Output::from(Internal::SendMessage(*peer_id, msg))],
-                None => vec![],
-            },
-        }
-    }
-
-    fn handle_connected(&mut self, id: node::Id) -> Vec<Output> {
-        // TODO(xla): Ensure we only allow one connection per node. Unless a higher-level protocol
-        // like PEX is taking care of it.
-        self.connected.insert(id, Direction::Outgoing);
-
-        vec![
-            Output::from(Event::Connected(id, Direction::Outgoing)),
-            Output::from(Internal::Upgrade(id)),
-        ]
-    }
-
-    fn handle_receive(&self, id: node::Id, msg: message::Receive) -> Vec<Output> {
-        vec![Output::from(Event::Message(id, msg))]
-    }
-
-    fn handle_stopped(&mut self, id: node::Id, report: Option<Report>) -> Vec<Output> {
-        self.upgraded.remove(&id);
-        self.stopped.insert(id);
-
-        vec![Output::from(Event::Disconnected(
-            id,
-            report.unwrap_or(Report::msg("successfully disconected")),
-        ))]
-    }
-
-    fn handle_upgraded(&mut self, id: node::Id) -> Vec<Output> {
-        self.upgraded.insert(id);
-
-        vec![Output::from(Event::Upgraded(id))]
-    }
-
-    fn handle_upgrade_failed(&mut self, id: node::Id, err: Report) -> Vec<Output> {
-        self.connected.remove(&id);
-
-        vec![Output::from(Event::UpgradeFailed(id, err))]
     }
 }
