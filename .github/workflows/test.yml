@@ -157,7 +157,9 @@ jobs:
           profile: minimal
           toolchain: nightly-2021-03-25
           override: true
-      - run: cargo test --all-features
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test-all-features
         env:
           RUSTFLAGS: '-Zinstrument-coverage'
           LLVM_PROFILE_FILE: '%m.profraw'
