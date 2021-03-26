@@ -169,7 +169,7 @@ jobs:
           curl -L https://github.com/mozilla/grcov/releases/download/v0.6.1/grcov-linux-x86_64.tar.bz2 | tar jxf -
       - name: Run grcov
         run: |
-          ./grcov . --source-dir . --binary-path ./target/debug/ --output-type lcov --output-path ./lcov.info --ignore-not-existing
+          ./grcov . --source-dir . --binary-path ./target/debug/ --output-type lcov --output-path ./lcov.info --branch --ignore-not-existing
       - name: Upload to Codecov
         run: |
           bash <(curl -s https://codecov.io/bash) -f ./lcov.info
