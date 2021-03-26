@@ -45,12 +45,12 @@ mod rpc {
 
     pub fn localhost_http_client() -> HttpClient {
         init_logging();
-        HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap()
+        HttpClient::new("http://127.0.0.1:26657").unwrap()
     }
 
     pub async fn localhost_websocket_client() -> (WebSocketClient, WebSocketClientDriver) {
         init_logging();
-        WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+        WebSocketClient::new("ws://127.0.0.1:26657/websocket")
             .await
             .unwrap()
     }

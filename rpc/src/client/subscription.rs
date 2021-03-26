@@ -12,8 +12,6 @@ use std::pin::Pin;
 
 /// A client that exclusively provides [`Event`] subscription capabilities,
 /// without any other RPC method support.
-///
-/// [`Event`]: event/struct.Event.html
 #[async_trait]
 pub trait SubscriptionClient {
     /// `/subscribe`: subscribe to receive events produced by the given query.
@@ -27,10 +25,12 @@ pub trait SubscriptionClient {
     /// no longer have access to the individual `Subscription` instances to
     /// terminate them separately.
     ///
-    /// [`Subscription`]: struct.Subscription.html
-    /// [`Query`]: struct.Query.html
     /// [`select_all`]: https://docs.rs/futures/*/futures/stream/fn.select_all.html
     async fn unsubscribe(&self, query: Query) -> Result<()>;
+
+    /// Subscription clients will usually have long-running underlying
+    /// transports that will need to be closed at some point.
+    fn close(self) -> Result<()>;
 }
 
 pub(crate) type SubscriptionTx = ChannelTx<Result<Event>>;
@@ -61,8 +61,6 @@ pub(crate) type SubscriptionRx = ChannelRx<Result<Event>>;
 ///     }
 /// }
 /// ```
-///
-/// [`Event`]: ./event/struct.Event.html
 #[pin_project]
 #[derive(Debug)]
 pub struct Subscription {

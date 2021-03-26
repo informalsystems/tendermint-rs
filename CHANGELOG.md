@@ -1,5 +1,24 @@
 ## Unreleased
 
+### BREAKING CHANGES
+
+* `[tendermint]` The `tendermint::block::CommitSig` enum's members have been
+  renamed to be consistent with Rust's naming conventions. For example,
+  `BlockIDFlagAbsent` is now renamed to `BlockIdFlagAbsent` ([#839])
+* `[tendermint-rpc]` The `SubscriptionClient` trait now requires a `close`
+  method, since it assumes that subscription clients will, in general, use
+  long-running connections. This should not, however, break any downstream
+  usage of the clients ([#820])
+* `[tendermint-rpc]` The `HttpClient` and `WebSocketClient` constructors now
+  take any input that can be converted to a `tendermint_rpc::Url`. This should
+  hopefully have minimal impact on projects using the code, but it might
+  require some minor code changes in some cases - see the crate docs for more
+  details ([#820])
+* `[tendermint-rpc]` The `event::EventData::GenericJSONEvent` member has been
+  renamed to `event::EventData::GenericJsonEvent` ([#839])
+* `[tendermint-testgen]` The `TMLightBlock` data structure has been renamed to
+  `TmLightBlock` to be consistent with Rust's naming conventions ([#839])
+
 ### FEATURES
 
 * `[tendermint-abci]` Release minimal framework for building ABCI applications
@@ -10,9 +29,16 @@
   method at present, exclusively provides access to block verification. This
   does not include network access or the Light Client's bisection algorithm
   ([#812])
+* `[tendermint-rpc]` Support for secure connections (`https://` and `wss://`)
+  has been added to the Tendermint RPC clients, as well as support for HTTP
+  proxies for HTTP clients ([#820])
+* `[tendermint-rpc]` A `tendermint-rpc` CLI has been added to simplify
+  interaction with RPC endpoints from the command line ([#820])
 
 [#794]: https://github.com/informalsystems/tendermint-rs/pull/794
 [#812]: https://github.com/informalsystems/tendermint-rs/pull/812
+[#820]: https://github.com/informalsystems/tendermint-rs/pull/820
+[#839]: https://github.com/informalsystems/tendermint-rs/pull/839
 
 ## v0.18.1
 

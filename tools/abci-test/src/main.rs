@@ -1,8 +1,6 @@
 //! ABCI key/value store integration test application.
 
 use futures::StreamExt;
-use log::{debug, error, info, LevelFilter};
-use simple_logger::SimpleLogger;
 use structopt::StructOpt;
 use tendermint::abci::Transaction;
 use tendermint::net::Address;
@@ -10,6 +8,8 @@ use tendermint_rpc::event::EventData;
 use tendermint_rpc::query::EventType;
 use tendermint_rpc::{Client, SubscriptionClient, WebSocketClient};
 use tokio::time::Duration;
+use tracing::level_filters::LevelFilter;
+use tracing::{debug, error, info};
 
 #[derive(Debug, StructOpt)]
 /// A harness for testing tendermint-abci through a full Tendermint node
@@ -30,14 +30,13 @@ struct Opt {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opt: Opt = Opt::from_args();
-    SimpleLogger::new()
-        .with_level(if opt.verbose {
-            LevelFilter::Debug
+    tracing_subscriber::fmt()
+        .with_max_level(if opt.verbose {
+            LevelFilter::DEBUG
         } else {
-            LevelFilter::Info
+            LevelFilter::INFO
         })
-        .init()
-        .unwrap();
+        .init();
 
     info!("Connecting to Tendermint node at {}:{}", opt.host, opt.port);
     let (mut client, driver) = WebSocketClient::new(Address::Tcp {
@@ -78,7 +77,7 @@ async fn run_tests(client: &mut WebSocketClient) -> Result<(), Box<dyn std::erro
     let raw_tx_key = "test-key".as_bytes().to_vec();
     let raw_tx_value = "test-value".as_bytes().to_vec();
     let mut raw_tx = raw_tx_key.clone();
-    raw_tx.push('=' as u8);
+    raw_tx.push(b'=');
     raw_tx.extend(raw_tx_value.clone());
 
     let _ = client

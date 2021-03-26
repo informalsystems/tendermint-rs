@@ -12,9 +12,9 @@ use tendermint_proto::types::CommitSig as RawCommitSig;
 #[derive(Clone, Debug, PartialEq)]
 pub enum CommitSig {
     /// no vote was received from a validator.
-    BlockIDFlagAbsent,
+    BlockIdFlagAbsent,
     /// voted for the Commit.BlockID.
-    BlockIDFlagCommit {
+    BlockIdFlagCommit {
         /// Validator address
         validator_address: account::Id,
         /// Timestamp of vote
@@ -23,7 +23,7 @@ pub enum CommitSig {
         signature: Signature,
     },
     /// voted for nil.
-    BlockIDFlagNil {
+    BlockIdFlagNil {
         /// Validator address
         validator_address: account::Id,
         /// Timestamp of vote
@@ -37,10 +37,10 @@ impl CommitSig {
     /// Get the address of this validator if a vote was received.
     pub fn validator_address(&self) -> Option<account::Id> {
         match self {
-            Self::BlockIDFlagCommit {
+            Self::BlockIdFlagCommit {
                 validator_address, ..
             } => Some(*validator_address),
-            Self::BlockIDFlagNil {
+            Self::BlockIdFlagNil {
                 validator_address, ..
             } => Some(*validator_address),
             _ => None,
@@ -49,17 +49,17 @@ impl CommitSig {
 
     /// Whether this signature is absent (no vote was received from validator)
     pub fn is_absent(&self) -> bool {
-        self == &Self::BlockIDFlagAbsent
+        self == &Self::BlockIdFlagAbsent
     }
 
     /// Whether this signature is a commit  (validator voted for the Commit.BlockId)
     pub fn is_commit(&self) -> bool {
-        matches!(self, Self::BlockIDFlagCommit { .. })
+        matches!(self, Self::BlockIdFlagCommit { .. })
     }
 
     /// Whether this signature is nil (validator voted for nil)
     pub fn is_nil(&self) -> bool {
-        matches!(self, Self::BlockIDFlagNil { .. })
+        matches!(self, Self::BlockIdFlagNil { .. })
     }
 }
 
@@ -82,7 +82,7 @@ impl TryFrom<RawCommitSig> for CommitSig {
             if !value.signature.is_empty() {
                 return Err(Kind::InvalidSignature.into());
             }
-            return Ok(CommitSig::BlockIDFlagAbsent);
+            return Ok(CommitSig::BlockIdFlagAbsent);
         }
         if value.block_id_flag == BlockIdFlag::Commit.to_i32().unwrap() {
             if value.signature.is_empty() {
@@ -93,7 +93,7 @@ impl TryFrom<RawCommitSig> for CommitSig {
             if value.validator_address.is_empty() {
                 return Err(Kind::InvalidValidatorAddress.into());
             }
-            return Ok(CommitSig::BlockIDFlagCommit {
+            return Ok(CommitSig::BlockIdFlagCommit {
                 validator_address: value.validator_address.try_into()?,
                 timestamp: value.timestamp.ok_or(Kind::NoTimestamp)?.try_into()?,
                 signature: value.signature.try_into()?,
@@ -108,7 +108,7 @@ impl TryFrom<RawCommitSig> for CommitSig {
             if value.validator_address.is_empty() {
                 return Err(Kind::InvalidValidatorAddress.into());
             }
-            return Ok(CommitSig::BlockIDFlagNil {
+            return Ok(CommitSig::BlockIdFlagNil {
                 validator_address: value.validator_address.try_into()?,
                 timestamp: value.timestamp.ok_or(Kind::NoTimestamp)?.try_into()?,
                 signature: value.signature.try_into()?,
@@ -121,13 +121,13 @@ impl TryFrom<RawCommitSig> for CommitSig {
 impl From<CommitSig> for RawCommitSig {
     fn from(commit: CommitSig) -> RawCommitSig {
         match commit {
-            CommitSig::BlockIDFlagAbsent => RawCommitSig {
+            CommitSig::BlockIdFlagAbsent => RawCommitSig {
                 block_id_flag: BlockIdFlag::Absent.to_i32().unwrap(),
                 validator_address: Vec::new(),
                 timestamp: None,
                 signature: Vec::new(),
             },
-            CommitSig::BlockIDFlagNil {
+            CommitSig::BlockIdFlagNil {
                 validator_address,
                 timestamp,
                 signature,
@@ -137,7 +137,7 @@ impl From<CommitSig> for RawCommitSig {
                 timestamp: Some(timestamp.into()),
                 signature: signature.into(),
             },
-            CommitSig::BlockIDFlagCommit {
+            CommitSig::BlockIdFlagCommit {
                 validator_address,
                 timestamp,
                 signature,

@@ -40,9 +40,9 @@ where
     let value_string = String::deserialize(deserializer)?;
     let value_datetime = DateTime::parse_from_rfc3339(value_string.as_str())
         .map_err(|e| D::Error::custom(format!("{}", e)))?;
-    Ok(Time::try_from(Timestamp {
+    Time::try_from(Timestamp {
         seconds: value_datetime.timestamp(),
         nanos: value_datetime.timestamp_subsec_nanos() as i32,
     })
-    .map_err(|e| D::Error::custom(format!("{}", e)))?)
+    .map_err(|e| D::Error::custom(format!("{}", e)))
 }
