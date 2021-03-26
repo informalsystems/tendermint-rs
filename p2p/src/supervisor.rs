@@ -202,7 +202,7 @@ impl Supervisor {
             let input_tx = input_tx.clone();
             let state = state.clone();
             thread::Builder::new()
-                .name("supervisor-send".to_string())
+                .name("supervisor-message".to_string())
                 .spawn(move || Self::message::<T>(input_tx, msg_rx, state))
         };
 
