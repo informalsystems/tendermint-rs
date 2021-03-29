@@ -9,6 +9,7 @@ pub const DEFAULT_VALIDATORS_PER_PAGE: u8 = 30;
 
 /// List validators for a specific block
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[non_exhaustive]
 pub struct Request {
     /// The height at which to retrieve the validator set. If not specified,
     /// defaults to the latest height.
@@ -65,6 +66,7 @@ impl crate::SimpleRequest for Request {}
 
 /// Validator responses
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[non_exhaustive]
 pub struct Response {
     /// Block height
     pub block_height: block::Height,
