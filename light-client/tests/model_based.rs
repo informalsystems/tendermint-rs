@@ -29,7 +29,11 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use tendermint::account::Id;
 use tendermint::block::CommitSig;
-use tendermint_pbt_gen::{height::arb_height, time::arb_datetime};
+use tendermint_pbt_gen::{
+    height::arb_height,
+    time::arb_datetime,
+    validator::{arb_validator, fuzz_set},
+};
 
 fn testgen_to_lb(tm_lb: TMLightBlock) -> LightBlock {
     LightBlock {
@@ -745,7 +749,22 @@ prop_compose! {
     fn arb_test_case(cases: Vec<SingleStepTestCase>)
     (case_num in 0..cases.len())
     -> SingleStepTestCase {
-        cases[case_num].clone()
+        let case = cases[case_num].clone();
+        println!("Picked case: {}", case. description);
+        case
+    }
+}
+
+prop_compose! {
+    fn arb_light_block(cases: Vec<SingleStepTestCase>)
+    (case in arb_test_case(cases))
+    (
+        case in Just(case.clone()),
+        block_num in 0..case.input.len()
+    )
+    -> (BlockVerdict, Initial) {
+        let arb_lb = case.input[block_num].clone();
+        (arb_lb, case.initial)
     }
 }
 
@@ -754,28 +773,27 @@ prop_compose! {
 // Should be arbitrarily fuzzing with more data fields than just time
 // One thought is to make use of prop_oneof! to arbitrarily fuzz with random data fields
 // Basically, we need a better "strategy" on how to fuzz with the complete data structure
-    fn arb_light_block(cases: Vec<SingleStepTestCase>)
-    (case in arb_test_case(cases))
+    fn fuzz_case(cases: Vec<SingleStepTestCase>)
+    ((arb_lb, initial) in arb_light_block(cases))
     (
-        case in Just(case.clone()),
         datetime in arb_datetime(),
-        block_num in 0..case.input.len(),
-        height in arb_height()
+        height in arb_height(),
+        set in fuzz_set(arb_lb.clone().block.validators),
+        (mut arb_lb, initial) in Just((arb_lb, initial)),
     )
     -> (BlockVerdict, Initial) {
         let time: Time = datetime.into();
-        let mut arb_lb = case.input[block_num].clone();
-
         arb_lb.block.signed_header.header.time = time;
         arb_lb.block.signed_header.header.height = height;
+        arb_lb.block.validators = set;
         arb_lb.verdict = LiteVerdict::Invalid;
-        (arb_lb, case.initial)
+        (arb_lb, initial)
     }
 }
 
 proptest! {
  #[test]
-    fn test_fuzzing(case in arb_light_block(fetch_tests())) {
+    fn test_fuzzing(case in fuzz_case(fetch_tests())) {
         let (input, initial) = case;
         let result = verify(input, initial);
 

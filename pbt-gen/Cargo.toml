@@ -21,3 +21,4 @@ time = ["chrono"]
 chrono = { version = "0.4", features = ["serde"], optional = true}
 proptest = "0.10.1"
 tendermint = { version = "0.18.1", path = "../tendermint" }
+ed25519-dalek = { version = "1", features = ["serde"] }
