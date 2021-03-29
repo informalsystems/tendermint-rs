@@ -4,14 +4,9 @@ use std::ops::Deref;
 use std::time::Duration;
 
 use crate::application::app_config;
-use crate::config::LightClientConfig;
-use crate::config::LightNodeConfig;
+use crate::config::{LightClientConfig, LightNodeConfig};
 
-use abscissa_core::status_err;
-use abscissa_core::status_warn;
-use abscissa_core::Command;
-use abscissa_core::Options;
-use abscissa_core::Runnable;
+use abscissa_core::{status_err, status_info, status_warn, Command, Options, Runnable};
 
 use tendermint::{hash, Hash};
 
@@ -57,6 +52,8 @@ impl Runnable for InitCmd {
         ) {
             status_err!("failed to initialize light client: {}", e);
             // TODO: Set exit code to 1
+        } else {
+            status_info!("init", "done");
         }
     }
 }
@@ -68,6 +65,20 @@ fn initialize_subjectively(
     config: &LightClientConfig,
     timeout: Option<Duration>,
 ) -> Result<Instance, String> {
+    status_info!(
+        "init",
+        "starting subjective initialization for height: {}",
+        height,
+    );
+    status_info!("init", "subjective header hash: {}", subjective_header_hash,);
+    status_info!(
+        "init",
+        "using sled store located at: {}",
+        config
+            .db_path
+            .to_str()
+            .ok_or("unable to obtain sled db path")?
+    );
     let light_store =
         SledStore::open(&config.db_path).map_err(|e| format!("could not open database: {}", e))?;
 
@@ -79,6 +90,11 @@ fn initialize_subjectively(
         );
     }
 
+    status_info!(
+        "init",
+        "Tendermint RPC address: {}",
+        config.address.to_string()
+    );
     let rpc_client = rpc::HttpClient::new(config.address.clone()).map_err(|e| e.to_string())?;
 
     let builder = LightClientBuilder::prod(

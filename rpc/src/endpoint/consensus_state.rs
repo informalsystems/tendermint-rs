@@ -13,7 +13,6 @@ const NIL_VOTE_STR: &str = "nil-Vote";
 
 /// Get the current consensus state.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
-#[non_exhaustive]
 pub struct Request;
 
 impl Request {
