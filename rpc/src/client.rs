@@ -18,7 +18,6 @@ use crate::paging::Paging;
 use crate::query::Query;
 use crate::{Order, Result, SimpleRequest};
 use async_trait::async_trait;
-use std::convert::TryInto;
 use tendermint::abci::{self, Transaction};
 use tendermint::block::Height;
 use tendermint::evidence::Evidence;
@@ -152,12 +151,12 @@ pub trait Client {
             Paging::All => {
                 let mut page_num = 1_usize;
                 let mut validators = Vec::new();
-                let per_page = DEFAULT_VALIDATORS_PER_PAGE.try_into()?;
+                let per_page = DEFAULT_VALIDATORS_PER_PAGE.into();
                 loop {
                     let response = self
                         .perform(validators::Request::new(
                             Some(height),
-                            Some(page_num.try_into()?),
+                            Some(page_num.into()),
                             Some(per_page),
                         ))
                         .await?;

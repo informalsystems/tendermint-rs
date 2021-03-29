@@ -12,6 +12,10 @@
   parameter. Previously, this wasn't possible and, if the network had more than
   30 validators (the default for the RPC endpoint), it only returned a subset
   of the validators ([#831])
+* `[tendermint-rpc]` The `Client::validators` method now requires a `Paging`
+  parameter. Previously, this wasn't possible and, if the network had more than
+  30 validators (the default for the RPC endpoint), it only returned a subset
+  of the validators ([#831])
 * `[tendermint-rpc]` The `SubscriptionClient` trait now requires a `close`
   method, since it assumes that subscription clients will, in general, use
   long-running connections. This should not, however, break any downstream
