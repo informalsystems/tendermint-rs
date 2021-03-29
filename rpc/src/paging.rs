@@ -2,7 +2,7 @@
 
 use crate::Error;
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryInto;
 use std::str::FromStr;
 
 /// Pagination control for those RPC client methods supporting pagination.
@@ -33,7 +33,7 @@ impl FromStr for PageNumber {
         let raw_usize: usize = raw.try_into().map_err(|_| {
             Error::client_internal_error(format!("page number out of range: {}", raw))
         })?;
-        raw_usize.try_into()
+        Ok(raw_usize.into())
     }
 }
 
@@ -43,11 +43,9 @@ impl std::fmt::Display for PageNumber {
     }
 }
 
-impl TryFrom<usize> for PageNumber {
-    type Error = Error;
-
-    fn try_from(value: usize) -> Result<Self, Self::Error> {
-        Ok(Self(value))
+impl From<usize> for PageNumber {
+    fn from(value: usize) -> Self {
+        Self(value)
     }
 }
 
@@ -63,7 +61,7 @@ impl FromStr for PerPage {
         let raw_u8: u8 = raw.try_into().map_err(|_| {
             Error::client_internal_error(format!("items per page out of range: {}", raw))
         })?;
-        raw_u8.try_into()
+        Ok(raw_u8.into())
     }
 }
 
@@ -73,10 +71,8 @@ impl std::fmt::Display for PerPage {
     }
 }
 
-impl TryFrom<u8> for PerPage {
-    type Error = Error;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        Ok(Self(value))
+impl From<u8> for PerPage {
+    fn from(value: u8) -> Self {
+        Self(value)
     }
 }

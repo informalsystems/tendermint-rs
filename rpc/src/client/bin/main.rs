@@ -1,7 +1,6 @@
 //! CLI for performing simple interactions against a Tendermint node's RPC.
 
 use futures::StreamExt;
-use std::convert::TryInto;
 use std::str::FromStr;
 use std::time::Duration;
 use structopt::StructOpt;
@@ -343,13 +342,10 @@ where
             let paging = if all {
                 Paging::All
             } else {
-                match page {
-                    Some(page) => match per_page {
-                        Some(per_page) => Paging::Specific {
-                            page_number: page.try_into()?,
-                            per_page: per_page.try_into()?,
-                        },
-                        None => Paging::Default,
+                match page.zip(per_page) {
+                    Some((page, per_page)) => Paging::Specific {
+                        page_number: page.into(),
+                        per_page: per_page.into(),
                     },
                     None => Paging::Default,
                 }
