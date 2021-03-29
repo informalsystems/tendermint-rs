@@ -1,6 +1,7 @@
 //! URL representation for RPC clients.
 
-use crate::{Error, Result};
+use serde::de::Error;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::TryFrom;
 use std::fmt;
 use std::str::FromStr;
@@ -26,15 +27,20 @@ impl fmt::Display for Scheme {
 }
 
 impl FromStr for Scheme {
-    type Err = Error;
+    type Err = crate::Error;
 
-    fn from_str(s: &str) -> Result<Self> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
             "http" | "tcp" => Scheme::Http,
             "https" => Scheme::Https,
             "ws" => Scheme::WebSocket,
             "wss" => Scheme::SecureWebSocket,
-            _ => return Err(Error::invalid_params(&format!("unsupported scheme: {}", s))),
+            _ => {
+                return Err(crate::Error::invalid_params(&format!(
+                    "unsupported scheme: {}",
+                    s
+                )))
+            }
         })
     }
 }
@@ -53,17 +59,22 @@ pub struct Url {
 }
 
 impl FromStr for Url {
-    type Err = Error;
+    type Err = crate::Error;
 
-    fn from_str(s: &str) -> Result<Self> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         let inner: url::Url = s.parse()?;
         let scheme: Scheme = inner.scheme().parse()?;
         let host = inner
             .host_str()
-            .ok_or_else(|| Error::invalid_params(&format!("URL is missing its host: {}", s)))?
+            .ok_or_else(|| {
+                crate::Error::invalid_params(&format!("URL is missing its host: {}", s))
+            })?
             .to_owned();
         let port = inner.port_or_known_default().ok_or_else(|| {
-            Error::invalid_params(&format!("cannot determine appropriate port for URL: {}", s))
+            crate::Error::invalid_params(&format!(
+                "cannot determine appropriate port for URL: {}",
+                s
+            ))
         })?;
         Ok(Self {
             inner,
@@ -124,9 +135,28 @@ impl fmt::Display for Url {
 }
 
 impl TryFrom<url::Url> for Url {
-    type Error = Error;
+    type Error = crate::Error;
 
-    fn try_from(value: url::Url) -> Result<Self> {
+    fn try_from(value: url::Url) -> Result<Self, Self::Error> {
         value.to_string().parse()
+    }
+}
+
+impl Serialize for Url {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.to_string().serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Url {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Url::from_str(&s).map_err(|e| D::Error::custom(e.to_string()))
     }
 }
