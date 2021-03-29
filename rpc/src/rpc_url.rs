@@ -7,7 +7,7 @@ use std::fmt;
 use std::str::FromStr;
 
 /// The various schemes supported by Tendermint RPC clients.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Scheme {
     Http,
     Https,
@@ -158,5 +158,97 @@ impl<'de> Deserialize<'de> for Url {
     {
         let s = String::deserialize(deserializer)?;
         Url::from_str(&s).map_err(|e| D::Error::custom(e.to_string()))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use lazy_static::lazy_static;
+
+    struct ExpectedUrl {
+        scheme: Scheme,
+        host: String,
+        port: u16,
+        path: String,
+        username: String,
+        password: Option<String>,
+    }
+
+    lazy_static! {
+        static ref SUPPORTED_URLS: Vec<(String, ExpectedUrl)> = vec![
+            (
+                "tcp://127.0.0.1:26657".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::Http,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "".to_string(),
+                    username: "".to_string(),
+                    password: None,
+                }
+            ),
+            (
+                "http://127.0.0.1:26657".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::Http,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "/".to_string(),
+                    username: "".to_string(),
+                    password: None,
+                }
+            ),
+            (
+                "https://127.0.0.1:26657".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::Https,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "/".to_string(),
+                    username: "".to_string(),
+                    password: None,
+                }
+            ),
+            (
+                "ws://127.0.0.1:26657/websocket".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::WebSocket,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "/websocket".to_string(),
+                    username: "".to_string(),
+                    password: None,
+                }
+            ),
+            (
+                "wss://127.0.0.1:26657/websocket".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::SecureWebSocket,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "/websocket".to_string(),
+                    username: "".to_string(),
+                    password: None,
+                }
+            )
+        ];
+    }
+
+    #[test]
+    fn parsing() {
+        for (url_str, expected) in SUPPORTED_URLS.iter() {
+            let u = Url::from_str(url_str).unwrap();
+            assert_eq!(expected.scheme, u.scheme(), "{}", url_str);
+            assert_eq!(expected.host, u.host(), "{}", url_str);
+            assert_eq!(expected.port, u.port(), "{}", url_str);
+            assert_eq!(expected.path, u.path(), "{}", url_str);
+            assert_eq!(expected.username, u.username());
+            if let Some(pw) = u.password() {
+                assert_eq!(expected.password.as_ref().unwrap(), pw, "{}", url_str);
+            } else {
+                assert!(expected.password.is_none(), "{}", url_str);
+            }
+        }
     }
 }
