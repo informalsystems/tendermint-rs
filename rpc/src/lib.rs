@@ -50,6 +50,7 @@ pub mod event;
 mod id;
 mod method;
 mod order;
+mod paging;
 pub mod query;
 pub mod request;
 pub mod response;
@@ -58,6 +59,7 @@ mod utils;
 mod version;
 
 pub use self::{
-    error::Error, id::Id, method::Method, order::Order, request::Request, request::SimpleRequest,
-    response::Response, result::Result, version::Version,
+    error::Error, id::Id, method::Method, order::Order, paging::PageNumber, paging::Paging,
+    paging::PerPage, request::Request, request::SimpleRequest, response::Response, result::Result,
+    version::Version,
 };
