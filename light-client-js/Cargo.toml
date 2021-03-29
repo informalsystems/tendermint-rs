@@ -39,6 +39,10 @@ console_error_panic_hook = { version = "0.1.6", optional = true }
 # Unfortunately, `wee_alloc` requires nightly Rust when targeting wasm for now.
 wee_alloc = { version = "0.4.5", optional = true }
 
+# TODO(thane): Remove once https://github.com/rustwasm/wasm-bindgen/issues/2508 is resolved
+[patch.crates-io]
+syn = "=1.0.65"
+
 [dev-dependencies]
 wasm-bindgen-test = "0.3.13"
 
