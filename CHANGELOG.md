@@ -48,16 +48,16 @@
 * `[tendermint-rpc]` A `tendermint-rpc` CLI has been added to simplify
   interaction with RPC endpoints from the command line ([#820])
 
+### IMPROVEMENTS
+
+* `[tendermint]` IPv6 support has been added for `net::Address` ([#5])
+
 ### BUG FIXES
 
 * `[tendermint-light-client]` Due to the RPC client's `validators` method
   sometimes only returning a subset of validators (for networks larger than 30
   validators), validator set hash calculations were failing. Now we are at
   least obtaining a full validator set ([#831])
-
-### IMPROVEMENTS
-
-* `[tendermint]` IPv6 support has been added for `net::Address` ([#5])
 
 [#5]: https://github.com/informalsystems/tendermint-rs/issues/5
 [#794]: https://github.com/informalsystems/tendermint-rs/pull/794
