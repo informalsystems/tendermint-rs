@@ -120,7 +120,7 @@ impl FromStr for Id {
             .or_else(|_| hex::decode(s))
             .map_err(|_| Kind::Parse.context("account id decode"))?;
 
-        Ok(bytes.try_into()?)
+        bytes.try_into()
     }
 }
 

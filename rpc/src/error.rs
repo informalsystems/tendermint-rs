@@ -7,6 +7,8 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{self, Display};
 use thiserror::Error;
 
+// TODO(thane): Differentiate between RPC response errors and internal crate
+//              errors (e.g. domain type-related errors).
 /// Tendermint RPC errors
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Error {
@@ -109,6 +111,18 @@ impl Display for Error {
     }
 }
 
+impl From<std::io::Error> for Error {
+    fn from(e: std::io::Error) -> Self {
+        Error::client_internal_error(e.to_string())
+    }
+}
+
+impl From<url::ParseError> for Error {
+    fn from(e: url::ParseError) -> Self {
+        Error::invalid_params(&e.to_string())
+    }
+}
+
 #[cfg(feature = "http-client")]
 impl From<http::Error> for Error {
     fn from(http_error: http::Error) -> Error {
@@ -123,10 +137,31 @@ impl From<hyper::Error> for Error {
     }
 }
 
+#[cfg(feature = "http-client")]
+impl From<http::uri::InvalidUri> for Error {
+    fn from(e: http::uri::InvalidUri) -> Self {
+        Error::http_error(e.to_string())
+    }
+}
+
 #[cfg(feature = "websocket-client")]
 impl From<WSError> for Error {
     fn from(websocket_error: WSError) -> Error {
         Error::websocket_error(websocket_error.to_string())
+    }
+}
+
+#[cfg(feature = "cli")]
+impl From<serde_json::Error> for Error {
+    fn from(e: serde_json::Error) -> Self {
+        Error::client_internal_error(e.to_string())
+    }
+}
+
+#[cfg(feature = "cli")]
+impl From<tendermint::Error> for Error {
+    fn from(e: tendermint::Error) -> Self {
+        Error::client_internal_error(e.to_string())
     }
 }
 

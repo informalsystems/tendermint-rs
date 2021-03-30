@@ -8,11 +8,13 @@ mod transport;
 pub use transport::mock::{MockClient, MockRequestMatcher, MockRequestMethodMatcher};
 
 #[cfg(feature = "http-client")]
-pub use transport::http::HttpClient;
+pub use transport::http::{HttpClient, HttpClientUrl};
 #[cfg(feature = "websocket-client")]
-pub use transport::websocket::{WebSocketClient, WebSocketClientDriver};
+pub use transport::websocket::{WebSocketClient, WebSocketClientDriver, WebSocketClientUrl};
 
+use crate::endpoint::validators::DEFAULT_VALIDATORS_PER_PAGE;
 use crate::endpoint::*;
+use crate::paging::Paging;
 use crate::query::Query;
 use crate::{Order, Result, SimpleRequest};
 use async_trait::async_trait;
@@ -104,8 +106,8 @@ pub trait Client {
         self.perform(broadcast::tx_sync::Request::new(tx)).await
     }
 
-    /// `/broadcast_tx_sync`: broadcast a transaction, returning the response
-    /// from `CheckTx`.
+    /// `/broadcast_tx_commit`: broadcast a transaction, returning the response
+    /// from `DeliverTx`.
     async fn broadcast_tx_commit(&self, tx: Transaction) -> Result<broadcast::tx_commit::Response> {
         self.perform(broadcast::tx_commit::Request::new(tx)).await
     }
@@ -123,12 +125,53 @@ pub trait Client {
         self.perform(consensus_state::Request::new()).await
     }
 
+    // TODO(thane): Simplify once validators endpoint removes pagination.
     /// `/validators`: get validators a given height.
-    async fn validators<H>(&self, height: H) -> Result<validators::Response>
+    async fn validators<H>(&self, height: H, paging: Paging) -> Result<validators::Response>
     where
         H: Into<Height> + Send,
     {
-        self.perform(validators::Request::new(height.into())).await
+        let height = height.into();
+        match paging {
+            Paging::Default => {
+                self.perform(validators::Request::new(Some(height), None, None))
+                    .await
+            }
+            Paging::Specific {
+                page_number,
+                per_page,
+            } => {
+                self.perform(validators::Request::new(
+                    Some(height),
+                    Some(page_number),
+                    Some(per_page),
+                ))
+                .await
+            }
+            Paging::All => {
+                let mut page_num = 1_usize;
+                let mut validators = Vec::new();
+                let per_page = DEFAULT_VALIDATORS_PER_PAGE.into();
+                loop {
+                    let response = self
+                        .perform(validators::Request::new(
+                            Some(height),
+                            Some(page_num.into()),
+                            Some(per_page),
+                        ))
+                        .await?;
+                    validators.extend(response.validators);
+                    if validators.len() as i32 == response.total {
+                        return Ok(validators::Response::new(
+                            response.block_height,
+                            validators,
+                            response.total,
+                        ));
+                    }
+                    page_num += 1;
+                }
+            }
+        }
     }
 
     /// `/commit`: get the latest block commit
