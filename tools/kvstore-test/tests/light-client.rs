@@ -25,7 +25,6 @@ use tendermint_light_client::{
 };
 
 use tendermint::abci::transaction::Hash as TxHash;
-use tendermint::net;
 use tendermint_rpc as rpc;
 
 use std::convert::TryFrom;
@@ -43,11 +42,7 @@ impl EvidenceReporter for TestEvidenceReporter {
     }
 }
 
-fn make_instance(
-    peer_id: PeerId,
-    options: light_client::Options,
-    address: net::Address,
-) -> Instance {
+fn make_instance(peer_id: PeerId, options: light_client::Options, address: rpc::Url) -> Instance {
     let rpc_client = rpc::HttpClient::new(address).unwrap();
     let io = ProdIo::new(peer_id, rpc_client.clone(), Some(Duration::from_secs(2)));
     let latest_block = io.fetch_light_block(AtHeight::Highest).unwrap();
@@ -76,7 +71,7 @@ fn make_supervisor() -> Supervisor {
     // In a production environment, one should make sure that the primary and witness are
     // different nodes, and check that the configured peer IDs match the ones returned
     // by the nodes.
-    let node_address: tendermint::net::Address = "tcp://127.0.0.1:26657".parse().unwrap();
+    let node_address: rpc::Url = "http://127.0.0.1:26657".parse().unwrap();
 
     let options = light_client::Options {
         trust_threshold: TrustThreshold {
