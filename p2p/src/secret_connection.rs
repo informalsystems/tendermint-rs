@@ -515,7 +515,7 @@ mod test {
 
     #[test]
     fn test_handshake() {
-        let (pipe1, pipe2) = pipe::bipipe_buffered();
+        let (pipe1, pipe2) = pipe::async_bipipe_buffered();
 
         let peer1 = thread::spawn(|| {
             let mut csprng = OsRng {};
@@ -537,7 +537,7 @@ mod test {
 
     #[test]
     fn test_read_write_single_message() {
-        let (pipe1, pipe2) = pipe::bipipe_buffered();
+        let (pipe1, pipe2) = pipe::async_bipipe_buffered();
 
         const MESSAGE: &str = "The Queen's Gambit";
 
