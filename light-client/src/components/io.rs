@@ -91,6 +91,7 @@ mod prod {
     use tendermint::account::Id as TMAccountId;
     use tendermint::block::signed_header::SignedHeader as TMSignedHeader;
     use tendermint::validator::Set as TMValidatorSet;
+    use tendermint_rpc::Paging;
 
     /// Production implementation of the Io component, which fetches
     /// light blocks from full nodes via RPC.
@@ -166,8 +167,10 @@ mod prod {
             };
 
             let client = self.rpc_client.clone();
-            let response = block_on(self.timeout, async move { client.validators(height).await })?
-                .map_err(IoError::RpcError)?;
+            let response = block_on(self.timeout, async move {
+                client.validators(height, Paging::All).await
+            })?
+            .map_err(IoError::RpcError)?;
 
             let validator_set = match proposer_address {
                 Some(proposer_address) => {

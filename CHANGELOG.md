@@ -5,6 +5,17 @@
 * `[tendermint]` The `tendermint::block::CommitSig` enum's members have been
   renamed to be consistent with Rust's naming conventions. For example,
   `BlockIDFlagAbsent` is now renamed to `BlockIdFlagAbsent` ([#839])
+* `[tendermint-light-client]` The Light Client no longer uses
+  `tendermint::net::Address` to refer to peers, and instead uses the
+  `tendermint_rpc::Url` type ([#835])
+* `[tendermint-rpc]` The `Client::validators` method now requires a `Paging`
+  parameter. Previously, this wasn't possible and, if the network had more than
+  30 validators (the default for the RPC endpoint), it only returned a subset
+  of the validators ([#831])
+* `[tendermint-rpc]` The `Client::validators` method now requires a `Paging`
+  parameter. Previously, this wasn't possible and, if the network had more than
+  30 validators (the default for the RPC endpoint), it only returned a subset
+  of the validators ([#831])
 * `[tendermint-rpc]` The `SubscriptionClient` trait now requires a `close`
   method, since it assumes that subscription clients will, in general, use
   long-running connections. This should not, however, break any downstream
@@ -23,6 +34,8 @@
 
 * `[tendermint-abci]` Release minimal framework for building ABCI applications
   in Rust ([#794])
+* `[tendermint-light-client]` The Light Client now provides support for secure
+  (HTTPS) connections to nodes ([#835])
 * `[tendermint-light-client-js]` First release of the
   `tendermint-light-client-js` crate to provide access to Tendermint Light
   Client functionality from WASM. This only provides access to the `verify`
@@ -35,9 +48,18 @@
 * `[tendermint-rpc]` A `tendermint-rpc` CLI has been added to simplify
   interaction with RPC endpoints from the command line ([#820])
 
+### BUG FIXES
+
+* `[tendermint-light-client]` Due to the RPC client's `validators` method
+  sometimes only returning a subset of validators (for networks larger than 30
+  validators), validator set hash calculations were failing. Now we are at
+  least obtaining a full validator set ([#831])
+
 [#794]: https://github.com/informalsystems/tendermint-rs/pull/794
 [#812]: https://github.com/informalsystems/tendermint-rs/pull/812
 [#820]: https://github.com/informalsystems/tendermint-rs/pull/820
+[#831]: https://github.com/informalsystems/tendermint-rs/issues/831
+[#835]: https://github.com/informalsystems/tendermint-rs/issues/835
 [#839]: https://github.com/informalsystems/tendermint-rs/pull/839
 
 ## v0.18.1

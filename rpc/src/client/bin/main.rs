@@ -7,8 +7,8 @@ use structopt::StructOpt;
 use tendermint::abci::{Path, Transaction};
 use tendermint_rpc::query::Query;
 use tendermint_rpc::{
-    Client, Error, HttpClient, Order, Result, Scheme, Subscription, SubscriptionClient, Url,
-    WebSocketClient,
+    Client, Error, HttpClient, Order, Paging, Result, Scheme, Subscription, SubscriptionClient,
+    Url, WebSocketClient,
 };
 use tracing::level_filters::LevelFilter;
 use tracing::{error, info, warn};
@@ -141,7 +141,19 @@ enum ClientRequest {
         prove: bool,
     },
     /// Get the validators at the given height.
-    Validators { height: u32 },
+    Validators {
+        /// The height at which to query the validators.
+        height: u32,
+        /// Fetch all validators.
+        #[structopt(long)]
+        all: bool,
+        /// The page of validators to retrieve.
+        #[structopt(long)]
+        page: Option<usize>,
+        /// The number of validators to retrieve per page.
+        #[structopt(long)]
+        per_page: Option<u8>,
+    },
 }
 
 #[tokio::main]
@@ -321,8 +333,24 @@ where
                 .tx_search(query, prove, page, per_page, order)
                 .await?,
         )?,
-        ClientRequest::Validators { height } => {
-            serde_json::to_string_pretty(&client.validators(height).await?)?
+        ClientRequest::Validators {
+            height,
+            all,
+            page,
+            per_page,
+        } => {
+            let paging = if all {
+                Paging::All
+            } else {
+                match page.zip(per_page) {
+                    Some((page, per_page)) => Paging::Specific {
+                        page_number: page.into(),
+                        per_page: per_page.into(),
+                    },
+                    None => Paging::Default,
+                }
+            };
+            serde_json::to_string_pretty(&client.validators(height, paging).await?)?
         }
     };
     println!("{}", result);
@@ -338,7 +366,7 @@ async fn subscription_client_request<C>(
 where
     C: SubscriptionClient,
 {
-    info!("Creating subcription for query: {}", query);
+    info!("Creating subscription for query: {}", query);
     let subs = client.subscribe(query).await?;
     match max_time {
         Some(secs) => recv_events_with_timeout(subs, max_events, secs).await,
