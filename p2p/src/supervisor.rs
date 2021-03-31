@@ -1,12 +1,12 @@
 //! Supervision of the p2p machinery managing peers and the flow of data from and to them.
 
-use std::collections::{hash_map::Entry, HashMap, HashSet};
+use std::collections::{hash_map::Entry, HashMap};
 use std::convert::TryFrom as _;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread;
 
-use eyre::{eyre, Context, Report, Result};
+use eyre::{Context, Report, Result};
 use flume::{unbounded, Receiver, Sender};
 
 use tendermint::node;
@@ -52,6 +52,7 @@ pub enum Event {
     Disconnected(node::Id, Report),
     /// A new [`message::Receive`] from the [`peer::Peer`] has arrived.
     Message(node::Id, message::Receive),
+    Terminated(Option<Report>),
     /// A connection upgraded successfully to a [`peer::Peer`].
     Upgraded(node::Id),
     /// An upgrade from failed.
@@ -98,6 +99,8 @@ enum Input {
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error("subroutine execution")]
+    Join(String, Report),
     #[error("state lock poisoned")]
     StateLockPoisoned,
 }
@@ -134,7 +137,27 @@ impl Supervisor {
         let (command_tx, command_rx) = unbounded();
         let (event_tx, event_rx) = unbounded();
 
-        thread::spawn(move || Self::main::<T>(command_rx, event_tx, endpoint, incoming));
+        thread::spawn(move || {
+            match Self::main::<T>(command_rx, event_tx.clone(), endpoint, incoming) {
+                Ok(handles) => {
+                    for (_name, handle) in handles {
+                        if let Err(_err) = handle.join() {
+                            // TODO(xla): Log error of subroutine.
+                        }
+                    }
+
+                    // If the receiver is gone, there is nothing to be done about the failed send.
+                    event_tx.send(Event::Terminated(None)).ok();
+                    // TODO(xla): Log completion.
+                }
+                Err(err) => {
+                    // If the receiver is gone, there is nothing to be done about the failed send.
+                    event_tx.send(Event::Terminated(Some(err))).ok();
+
+                    // TODO(xla): Log error.
+                }
+            }
+        });
 
         Ok(Self {
             command_tx,
@@ -160,19 +183,21 @@ impl Supervisor {
     }
 }
 
-type Connected<T: transport::Transport + Send + 'static> =
+type Connected<T> =
     Arc<Mutex<HashMap<node::Id, transport::Direction<<T as transport::Transport>::Connection>>>>;
-type Peers<T: transport::Transport + Send + 'static> = Arc<
+type Peers<T> = Arc<
     Mutex<HashMap<node::Id, peer::Peer<peer::Running<<T as transport::Transport>::Connection>>>>,
 >;
 
 impl Supervisor {
+    #[allow(clippy::too_many_lines)]
     fn main<T>(
         command_rx: Receiver<Command>,
         event_tx: Sender<Event>,
         endpoint: <T as transport::Transport>::Endpoint,
         incoming: <T as transport::Transport>::Incoming,
-    ) where
+    ) -> Result<Vec<(String, thread::JoinHandle<Result<()>>)>>
+    where
         T: transport::Transport + Send + 'static,
     {
         let connected: Connected<T> = Arc::new(Mutex::new(HashMap::new()));
@@ -188,8 +213,7 @@ impl Supervisor {
             let name = "supervisor-accept".to_string();
             let handle = thread::Builder::new()
                 .name(name.clone())
-                .spawn(|| Self::accept::<T>(accept_rx, connected, incoming, input_tx))
-                .unwrap();
+                .spawn(|| Self::accept::<T>(accept_rx, connected, incoming, input_tx))?;
 
             handles.push((name, handle));
         }
@@ -201,8 +225,7 @@ impl Supervisor {
             let name = "supervisor-connect".to_string();
             let handle = thread::Builder::new()
                 .name(name.clone())
-                .spawn(|| Self::connect::<T>(connected, connect_rx, endpoint, input_tx))
-                .unwrap();
+                .spawn(|| Self::connect::<T>(connected, connect_rx, endpoint, input_tx))?;
 
             handles.push((name, handle));
         }
@@ -214,8 +237,7 @@ impl Supervisor {
             let name = "supervisor-message".to_string();
             let handle = thread::Builder::new()
                 .name(name.clone())
-                .spawn(move || Self::message::<T>(input_tx, msg_rx, peers))
-                .unwrap();
+                .spawn(move || Self::message::<T>(input_tx, msg_rx, peers))?;
 
             handles.push((name, handle));
         };
@@ -227,21 +249,18 @@ impl Supervisor {
             let name = "supervisor-stop".to_string();
             let handle = thread::Builder::new()
                 .name(name.clone())
-                .spawn(move || Self::stop::<T>(input_tx, peers, stop_rx))
-                .unwrap();
+                .spawn(move || Self::stop::<T>(input_tx, peers, stop_rx))?;
 
             handles.push((name, handle));
         }
 
         let (upgrade_tx, upgrade_rx) = unbounded();
         {
-            let connected = connected.clone();
             let peers = peers.clone();
             let name = "supervisor-upgrade".to_string();
             let handle = thread::Builder::new()
                 .name(name.clone())
-                .spawn(move || Self::upgrade::<T>(connected, input_tx, peers, upgrade_rx))
-                .unwrap();
+                .spawn(move || Self::upgrade::<T>(connected, input_tx, peers, upgrade_rx))?;
 
             handles.push((name, handle));
         }
@@ -274,30 +293,66 @@ impl Supervisor {
             };
 
             for output in protocol.transition(input) {
-                match output {
-                    Output::Event(event) => event_tx.send(event).unwrap(),
+                let res = match output {
+                    Output::Event(event) => event_tx.try_send(event).map_err(|err| match err {
+                        flume::TrySendError::Disconnected(_) => {
+                            flume::TrySendError::Disconnected(())
+                        }
+                        flume::TrySendError::Full(_) => flume::TrySendError::Full(()),
+                    }),
                     Output::Internal(internal) => match internal {
-                        Internal::Accept => accept_tx.send(()).unwrap(),
-                        Internal::Connect(info) => connect_tx.send(info).unwrap(),
-                        Internal::SendMessage(peer_id, msg) => msg_tx.send((peer_id, msg)).unwrap(),
-                        Internal::Stop(peer_id) => stop_tx.send(peer_id).unwrap(),
-                        Internal::Upgrade(peer_id) => upgrade_tx.send(peer_id).unwrap(),
+                        Internal::Accept => accept_tx.try_send(()).map_err(|err| match err {
+                            flume::TrySendError::Disconnected(_) => {
+                                flume::TrySendError::Disconnected(())
+                            }
+                            flume::TrySendError::Full(_) => flume::TrySendError::Full(()),
+                        }),
+                        Internal::Connect(info) => {
+                            connect_tx.try_send(info).map_err(|err| match err {
+                                flume::TrySendError::Disconnected(_) => {
+                                    flume::TrySendError::Disconnected(())
+                                }
+                                flume::TrySendError::Full(_) => flume::TrySendError::Full(()),
+                            })
+                        }
+                        Internal::SendMessage(peer_id, msg) => {
+                            msg_tx.try_send((peer_id, msg)).map_err(|err| match err {
+                                flume::TrySendError::Disconnected(_) => {
+                                    flume::TrySendError::Disconnected(())
+                                }
+                                flume::TrySendError::Full(_) => flume::TrySendError::Full(()),
+                            })
+                        }
+                        Internal::Stop(peer_id) => {
+                            stop_tx.try_send(peer_id).map_err(|err| match err {
+                                flume::TrySendError::Disconnected(_) => {
+                                    flume::TrySendError::Disconnected(())
+                                }
+                                flume::TrySendError::Full(_) => flume::TrySendError::Full(()),
+                            })
+                        }
+                        Internal::Upgrade(peer_id) => {
+                            upgrade_tx.try_send(peer_id).map_err(|err| match err {
+                                flume::TrySendError::Disconnected(_) => {
+                                    flume::TrySendError::Disconnected(())
+                                }
+                                flume::TrySendError::Full(_) => flume::TrySendError::Full(()),
+                            })
+                        }
                     },
+                };
+
+                match res {
+                    Ok(()) => {}
+                    // TODO(xla): Communication with one of the subroutines has failed, we need to
+                    // bail here, tear down the machinery and communicate that we are done.
+                    Err(flume::TrySendError::Disconnected(_))
+                    | Err(flume::TrySendError::Full(_)) => todo!(),
                 }
             }
         }
 
-        for (_name, handle) in handles {
-            match handle.join() {
-                Ok(res) => match res {
-                    Ok(_) => todo!(),
-                    Err(err) => todo!(),
-                },
-                Err(err) => todo!(),
-            }
-        }
-
-        // TODO(xla): Log the termination of main subroutine. Signal termination to the caller.
+        Ok(handles)
     }
 
     fn accept<T>(
