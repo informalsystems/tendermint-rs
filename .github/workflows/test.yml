@@ -131,22 +131,22 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          profile: minimal
+          toolchain: nightly-2021-03-25
           override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: clean
       - uses: actions-rs/cargo@v1
         with:
           command: test-all-features
         env:
-          CARGO_INCREMENTAL: "0"
-          RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=unwind -Zpanic_abort_tests"
-      - uses: actions-rs/grcov@v0.1
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: ${{ steps.coverage.outputs.report }}
-          yml: ./codecov.yml
-          fail_ci_if_error: true
+          RUSTFLAGS: '-Zinstrument-coverage'
+          LLVM_PROFILE_FILE: '%m.profraw'
+      - name: Install grcov
+        run: |
+          rustup component add llvm-tools-preview
+          curl -L https://github.com/mozilla/grcov/releases/download/v0.6.1/grcov-linux-x86_64.tar.bz2 | tar jxf -
+      - name: Run grcov
+        run: |
+          ./grcov . --source-dir . --binary-path ./target/debug/ --output-type lcov --output-path ./lcov.info --branch --ignore-not-existing
+      - name: Upload to Codecov
+        run: |
+          bash <(curl -s https://codecov.io/bash) -f ./lcov.info
