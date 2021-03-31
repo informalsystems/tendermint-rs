@@ -141,7 +141,7 @@ jobs:
         with:
           version: '0.18.0-alpha1'
           # TODO(thane): Remove package-specific parameter once https://github.com/informalsystems/tendermint-rs/issues/841 is resolved
-          args: '--all-features --no-fail-fast --timeout 600 -p tendermint-abci,tendermint-light-client,tendermint-light-node,tendermint-proto,tendermint-rpc,tendermint -- --test-threads 1'
+          args: '--all-features --no-fail-fast --timeout 600 -p tendermint-abci,tendermint-light-client,tendermint-light-node,tendermint-proto,tendermint-rpc,tendermint,tendermint-testgen -- --test-threads 1'
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
