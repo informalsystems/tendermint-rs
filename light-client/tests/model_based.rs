@@ -5,35 +5,23 @@ use serde_json::Error;
 use std::convert::TryFrom;
 use std::str::FromStr;
 use std::time::Duration;
-use tendermint::{
-    signature::{Ed25519Signature, ED25519_SIGNATURE_SIZE},
-    validator::Set,
-    Signature,
-};
 use tendermint_light_client::components::verifier::Verdict;
 use tendermint_light_client::types::ValidatorSet;
 use tendermint_light_client::{
     tests::*,
-    types::{Height, LightBlock, Time, TrustThreshold},
+    types::{LightBlock, Time, TrustThreshold},
 };
 use tendermint_testgen::light_block::default_peer_id;
 use tendermint_testgen::{
     apalache::*, jsonatr::*, light_block::TMLightBlock, validator::generate_validators, Command,
-    Commit as TestgenCommit, Generator, LightBlock as TestgenLightBlock, TestEnv, Tester,
-    Validator, ValidatorSet as TestgenValset, Vote,
+    Generator, LightBlock as TestgenLightBlock, TestEnv, Tester, Validator, Vote,
 };
 
-use chrono::{DateTime, TimeZone, Timelike, Utc};
 use proptest::prelude::*;
 use std::fs;
 use std::path::{Path, PathBuf};
-use tendermint::account::Id;
-use tendermint::block::CommitSig;
-use tendermint_pbt_gen::{
-    height::arb_height,
-    time::arb_datetime,
-    validator::{arb_validator, fuzz_set},
-};
+use tendermint::validator::Set;
+use tendermint_pbt_gen::{header::fuzz_header, validator::fuzz_set};
 
 fn testgen_to_lb(tm_lb: TMLightBlock) -> LightBlock {
     LightBlock {
@@ -776,15 +764,12 @@ prop_compose! {
     fn fuzz_case(cases: Vec<SingleStepTestCase>)
     ((arb_lb, initial) in arb_light_block(cases))
     (
-        datetime in arb_datetime(),
-        height in arb_height(),
+        header in fuzz_header(arb_lb.clone().block.signed_header.header),
         set in fuzz_set(arb_lb.clone().block.validators),
         (mut arb_lb, initial) in Just((arb_lb, initial)),
     )
     -> (BlockVerdict, Initial) {
-        let time: Time = datetime.into();
-        arb_lb.block.signed_header.header.time = time;
-        arb_lb.block.signed_header.header.height = height;
+        arb_lb.block.signed_header.header = header;
         arb_lb.block.validators = set;
         arb_lb.verdict = LiteVerdict::Invalid;
         (arb_lb, initial)
