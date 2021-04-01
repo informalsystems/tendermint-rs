@@ -14,6 +14,7 @@
 //!
 //! - "time"
 
+pub mod commit;
 pub mod header;
 pub mod height;
 /// Enabled with the "time" feature:

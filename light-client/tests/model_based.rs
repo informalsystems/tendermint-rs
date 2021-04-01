@@ -21,7 +21,7 @@ use proptest::prelude::*;
 use std::fs;
 use std::path::{Path, PathBuf};
 use tendermint::validator::Set;
-use tendermint_pbt_gen::{header::fuzz_header, validator::fuzz_set};
+use tendermint_pbt_gen::{commit::fuzz_commit, header::fuzz_header, validator::fuzz_set};
 
 fn testgen_to_lb(tm_lb: TMLightBlock) -> LightBlock {
     LightBlock {
@@ -765,11 +765,13 @@ prop_compose! {
     ((arb_lb, initial) in arb_light_block(cases))
     (
         header in fuzz_header(arb_lb.clone().block.signed_header.header),
+        commit in fuzz_commit(arb_lb.clone().block.signed_header.commit),
         set in fuzz_set(arb_lb.clone().block.validators),
         (mut arb_lb, initial) in Just((arb_lb, initial)),
     )
     -> (BlockVerdict, Initial) {
         arb_lb.block.signed_header.header = header;
+        arb_lb.block.signed_header.commit = commit;
         arb_lb.block.validators = set;
         arb_lb.verdict = LiteVerdict::Invalid;
         (arb_lb, initial)
