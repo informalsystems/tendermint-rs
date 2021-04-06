@@ -1,4 +1,25 @@
-## Unreleased
+## v0.19.0
+
+This release primarily aims to enhance RPC and Light Client functionality,
+thereby improving [`ibc-rs`] and fixing an important bug affecting the Light
+Client ([#831]).
+
+The RPC now supports TLS 1.2+ connections (through the use of [`rustls`]),
+allowing for secure HTTP and WebSocket connections, as well as HTTP/HTTPS
+proxies. This implies that the Light Client now also supports these types of
+connections.
+
+We additionally introduce two new crates:
+
+* `tendermint-abci` - A lightweight, minimal framework for building Tendermint
+  [ABCI] applications in Rust.
+* `tendermint-light-client-js` - Exposes the Light Client's `verify` method to
+  JavaScript/WASM. This implies that, for now, you need to bring your own
+  networking functionality to practically make use of the Light Client's
+  verification mechanisms.
+
+Various relatively minor breaking API changes were introduced, and are listed
+below.
 
 ### BREAKING CHANGES
 
@@ -69,6 +90,9 @@
 [#835]: https://github.com/informalsystems/tendermint-rs/issues/835
 [#836]: https://github.com/informalsystems/tendermint-rs/issues/836
 [#839]: https://github.com/informalsystems/tendermint-rs/pull/839
+[ABCI]: https://docs.tendermint.com/master/spec/abci/
+[`ibc-rs`]: https://github.com/informalsystems/ibc-rs
+[`rustls`]: https://github.com/ctz/rustls
 
 ## v0.18.1
 
