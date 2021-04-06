@@ -1,6 +1,6 @@
 [package]
 name = "tendermint-proto"
-version = "0.18.1"
+version = "0.19.0"
 authors = ["Greg Szabo <greg@informal.systems>"]
 edition = "2018"
 license = "Apache-2.0"
