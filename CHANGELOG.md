@@ -48,6 +48,10 @@
 * `[tendermint-rpc]` A `tendermint-rpc` CLI has been added to simplify
   interaction with RPC endpoints from the command line ([#820])
 
+### IMPROVEMENTS
+
+* `[tendermint]` IPv6 support has been added for `net::Address` ([#5])
+
 ### BUG FIXES
 
 * `[tendermint-light-client]` Due to the RPC client's `validators` method
@@ -57,6 +61,7 @@
 * `[tendermint-rpc]` Fix intermittent deserialization failures of the consensus
   state response ([#836])
 
+[#5]: https://github.com/informalsystems/tendermint-rs/issues/5
 [#794]: https://github.com/informalsystems/tendermint-rs/pull/794
 [#812]: https://github.com/informalsystems/tendermint-rs/pull/812
 [#820]: https://github.com/informalsystems/tendermint-rs/pull/820
