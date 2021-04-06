@@ -54,12 +54,15 @@
   sometimes only returning a subset of validators (for networks larger than 30
   validators), validator set hash calculations were failing. Now we are at
   least obtaining a full validator set ([#831])
+* `[tendermint-rpc]` Fix intermittent deserialization failures of the consensus
+  state response ([#836])
 
 [#794]: https://github.com/informalsystems/tendermint-rs/pull/794
 [#812]: https://github.com/informalsystems/tendermint-rs/pull/812
 [#820]: https://github.com/informalsystems/tendermint-rs/pull/820
 [#831]: https://github.com/informalsystems/tendermint-rs/issues/831
 [#835]: https://github.com/informalsystems/tendermint-rs/issues/835
+[#836]: https://github.com/informalsystems/tendermint-rs/issues/836
 [#839]: https://github.com/informalsystems/tendermint-rs/pull/839
 
 ## v0.18.1

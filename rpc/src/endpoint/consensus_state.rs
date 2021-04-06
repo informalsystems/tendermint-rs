@@ -2,7 +2,6 @@
 
 use crate::{Error, Method};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::convert::TryFrom;
 use std::fmt;
 use std::str::FromStr;
 use subtle_encoding::hex;
@@ -240,17 +239,18 @@ impl FromStr for VoteSummary {
                 e
             ))
         })?;
-        let vote_type_num: Vec<&str> = height_round_type[2].split('(').collect();
-        let vote_type_id = i32::from_str(vote_type_num[0]).map_err(|e| {
+        let vote_type_parts: Vec<&str> = height_round_type[2].split('(').collect();
+        if vote_type_parts.len() != 2 {
+            return Err(Self::Err::client_internal_error(format!(
+                "invalid structure for vote type in consensus state vote summary: {}",
+                height_round_type[2]
+            )));
+        }
+        let vote_type_str = vote_type_parts[1].trim_end_matches(')');
+        let vote_type = vote::Type::from_str(vote_type_str).map_err(|e| {
             Self::Err::client_internal_error(format!(
                 "failed to parse vote type from consensus state vote summary: {} ({})",
-                e, vote_type_num[0],
-            ))
-        })?;
-        let vote_type = vote::Type::try_from(vote_type_id).map_err(|e| {
-            Self::Err::client_internal_error(format!(
-                "failed to parse vote type from consensus state vote summary: {} ({})",
-                e, vote_type_id,
+                e, vote_type_str
             ))
         })?;
         let block_id_hash_fingerprint = Fingerprint::from_str(parts[2]).map_err(|e| {
@@ -342,45 +342,58 @@ pub struct ValidatorInfo {
 #[cfg(test)]
 mod test {
     use super::*;
+    use lazy_static::lazy_static;
+
+    lazy_static! {
+        // An array of (received, deserialized, serialized) vote summaries
+        static ref TEST_VOTE_SUMMARIES: Vec<(String, VoteSummary, String)> = vec![
+            (
+                "Vote{0:000001E443FD 1262197/00/1(Prevote) 634ADAF1F402 7BB974E1BA40 @ 2019-08-01T11:52:35.513572509Z}".to_owned(),
+                VoteSummary {
+                    validator_index: 0,
+                    validator_address_fingerprint: Fingerprint(vec![0, 0, 1, 228, 67, 253]),
+                    height: Height::from(1262197_u32),
+                    round: Round::from(0_u8),
+                    vote_type: vote::Type::Prevote,
+                    block_id_hash_fingerprint: Fingerprint(vec![99, 74, 218, 241, 244, 2]),
+                    signature_fingerprint: Fingerprint(vec![123, 185, 116, 225, 186, 64]),
+                    timestamp: "2019-08-01T11:52:35.513572509Z".parse().unwrap(),
+                },
+                "Vote{0:000001E443FD 1262197/00/1(Prevote) 634ADAF1F402 7BB974E1BA40 @ 2019-08-01T11:52:35.513572509Z}".to_owned(),
+            ),
+            (
+                // See https://github.com/informalsystems/tendermint-rs/issues/836
+                "Vote{0:2DA21E474F57 384/00/SIGNED_MSG_TYPE_PREVOTE(Prevote) 8FA9FD23F590 2987C33E8F87 @ 2021-03-25T12:12:03.693870115Z}".to_owned(),
+                VoteSummary {
+                    validator_index: 0,
+                    validator_address_fingerprint: Fingerprint(vec![45, 162, 30, 71, 79, 87]),
+                    height: Height::from(384_u32),
+                    round: Round::from(0_u8),
+                    vote_type: vote::Type::Prevote,
+                    block_id_hash_fingerprint: Fingerprint(vec![143, 169, 253, 35, 245, 144]),
+                    signature_fingerprint: Fingerprint(vec![41, 135, 195, 62, 143, 135]),
+                    timestamp: "2021-03-25T12:12:03.693870115Z".parse().unwrap(),
+                },
+                "Vote{0:2DA21E474F57 384/00/1(Prevote) 8FA9FD23F590 2987C33E8F87 @ 2021-03-25T12:12:03.693870115Z}".to_owned(),
+            )
+        ];
+    }
 
     #[test]
     fn deserialize_vote_summary() {
-        let src = "Vote{0:000001E443FD 1262197/00/1(Prevote) 634ADAF1F402 7BB974E1BA40 @ 2019-08-01T11:52:35.513572509Z}";
-        let summary = VoteSummary::from_str(src).unwrap();
-        assert_eq!(summary.validator_index, 0);
-        assert_eq!(
-            summary.validator_address_fingerprint.0,
-            vec![0, 0, 1, 228, 67, 253]
-        );
-        assert_eq!(summary.height.value(), 1262197);
-        assert_eq!(summary.round.value(), 0);
-        assert_eq!(summary.vote_type, vote::Type::Prevote);
-        assert_eq!(
-            summary.block_id_hash_fingerprint.0,
-            vec![99, 74, 218, 241, 244, 2]
-        );
-        assert_eq!(
-            summary.signature_fingerprint.0,
-            vec![123, 185, 116, 225, 186, 64]
-        );
-        assert_eq!(
-            summary.timestamp.to_rfc3339(),
-            "2019-08-01T11:52:35.513572509Z"
-        );
+        for (vote_summary_str, expected, _) in TEST_VOTE_SUMMARIES.iter() {
+            let actual = VoteSummary::from_str(vote_summary_str);
+            assert!(actual.is_ok(), "{}", vote_summary_str);
+            let actual = actual.unwrap();
+            assert_eq!(expected.clone(), actual);
+        }
     }
 
     #[test]
     fn serialize_vote_summary() {
-        let summary = VoteSummary {
-            validator_index: 0,
-            validator_address_fingerprint: Fingerprint(vec![0, 0, 1, 228, 67, 253]),
-            height: Height::from(1262197_u32),
-            round: Round::from(0_u8),
-            vote_type: vote::Type::Prevote,
-            block_id_hash_fingerprint: Fingerprint(vec![99, 74, 218, 241, 244, 2]),
-            signature_fingerprint: Fingerprint(vec![123, 185, 116, 225, 186, 64]),
-            timestamp: Time::parse_from_rfc3339("2019-08-01T11:52:35.513572509Z").unwrap(),
-        };
-        assert_eq!(summary.to_string(), "Vote{0:000001E443FD 1262197/00/1(Prevote) 634ADAF1F402 7BB974E1BA40 @ 2019-08-01T11:52:35.513572509Z}");
+        for (_, vote_summary, expected) in TEST_VOTE_SUMMARIES.iter() {
+            let actual = vote_summary.to_string();
+            assert_eq!(expected.clone(), actual);
+        }
     }
 }
