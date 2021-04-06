@@ -64,9 +64,6 @@ websocket-client = [
 bytes = "1.0"
 chrono = "0.4"
 getrandom = "0.1"
-# TODO(thane): Use a released version once support for inverted patterns is released.
-#              See https://github.com/kevinmehall/rust-peg/pull/245
-peg = { git = "https://github.com/kevinmehall/rust-peg.git", rev = "ba6019539b2cf80289190cbb9537c94113b6b7d1" }
 pin-project = "1.0.1"
 serde = { version = "1", features = [ "derive" ] }
 serde_bytes = "0.11"
