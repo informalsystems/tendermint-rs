@@ -8,7 +8,7 @@ authors     = [
 edition     = "2018"
 license     = "Apache-2.0"
 readme      = "README.md"
-keywords    = ["abci", "blockchain", "bft", "consensus", "cosmos", "tendermint"]
+keywords    = ["blockchain", "bft", "consensus", "light-client", "tendermint"]
 repository  = "https://github.com/informalsystems/tendermint-rs"
 description = """
     tendermint-light-client-js provides a lightweight, WASM-based interface to

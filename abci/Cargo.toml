@@ -5,7 +5,7 @@ authors     = ["Thane Thomson <thane@informal.systems>"]
 edition     = "2018"
 license     = "Apache-2.0"
 readme      = "README.md"
-keywords    = ["abci", "blockchain", "bft", "consensus", "cosmos", "tendermint"]
+keywords    = ["abci", "blockchain", "bft", "consensus", "tendermint"]
 repository  = "https://github.com/informalsystems/tendermint-rs"
 description = """
     tendermint-abci provides a simple framework with which to build low-level
