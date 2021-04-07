@@ -146,13 +146,16 @@ impl MConnection {
                 let mut buf = Vec::new();
                 msg.encode_length_delimited(&mut buf)
                     .expect("encode to always succeed");
+                // TODO: log error and exit the loop
                 let _res = secret_connection.write_all(&buf);
             }
 
             // If there's a new incoming message, send it to all streams.
+            // TODO: log error and exit the loop
             let _ = secret_connection.read(&mut read_buf);
             if let Ok(msg) = PacketMsg::decode_length_delimited(&*read_buf) {
                 read_buf.clear();
+                // TODO: log error
                 let _res = tx.send(msg);
             }
         }
