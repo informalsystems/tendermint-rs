@@ -1,17 +1,19 @@
 [package]
-name = "tendermint-light-client-js"
-version = "0.18.1"
-authors = [
+name        = "tendermint-light-client-js"
+version     = "0.19.0"
+authors     = [
     "Romain Ruetschi <romain@informal.systems>",
     "Thane Thomson <thane@informal.systems>"
 ]
-edition = "2018"
-license = "Apache-2.0"
+edition     = "2018"
+license     = "Apache-2.0"
+readme      = "README.md"
+keywords    = ["blockchain", "bft", "consensus", "light-client", "tendermint"]
+repository  = "https://github.com/informalsystems/tendermint-rs"
 description = """
     tendermint-light-client-js provides a lightweight, WASM-based interface to
     the Tendermint Light Client's verification functionality.
     """
-repository = "https://github.com/informalsystems/tendermint-rs"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -24,8 +26,8 @@ serde = { version = "1.0", features = [ "derive" ] }
 serde_json = "1.0"
 # TODO(thane): Remove once https://github.com/rustwasm/wasm-bindgen/issues/2508 is resolved
 syn = "=1.0.65"
-tendermint = { version = "0.18.1", path = "../tendermint" }
-tendermint-light-client = { version = "0.18.1", path = "../light-client", default-features = false }
+tendermint = { version = "0.19.0", path = "../tendermint" }
+tendermint-light-client = { version = "0.19.0", path = "../light-client", default-features = false }
 wasm-bindgen = { version = "0.2.63", features = [ "serde-serialize" ] }
 
 # The `console_error_panic_hook` crate provides better debugging of panics by

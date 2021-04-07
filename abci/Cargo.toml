@@ -1,8 +1,12 @@
 [package]
-name = "tendermint-abci"
-version = "0.18.1"
-authors = ["Thane Thomson <thane@informal.systems>"]
-edition = "2018"
+name        = "tendermint-abci"
+version     = "0.19.0"
+authors     = ["Thane Thomson <thane@informal.systems>"]
+edition     = "2018"
+license     = "Apache-2.0"
+readme      = "README.md"
+keywords    = ["abci", "blockchain", "bft", "consensus", "tendermint"]
+repository  = "https://github.com/informalsystems/tendermint-rs"
 description = """
     tendermint-abci provides a simple framework with which to build low-level
     applications on top of Tendermint.
@@ -25,7 +29,7 @@ binary = [ "structopt", "tracing-subscriber" ]
 bytes = "1.0"
 eyre = "0.6"
 prost = "0.7"
-tendermint-proto = { version = "0.18.1", path = "../proto" }
+tendermint-proto = { version = "0.19.0", path = "../proto" }
 thiserror = "1.0"
 tracing = "0.1"
 
