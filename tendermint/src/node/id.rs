@@ -104,7 +104,7 @@ impl TryFrom<PublicKey> for Id {
     fn try_from(pk: PublicKey) -> Result<Self, Self::Error> {
         match pk {
             PublicKey::Ed25519(ed25519) => Ok(Id::from(ed25519)),
-            // _ => Err(Kind::UnsupportedKeyType.into()),
+            _ => Err(Kind::UnsupportedKeyType.into()),
         }
     }
 }
