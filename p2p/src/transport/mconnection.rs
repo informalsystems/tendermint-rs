@@ -118,6 +118,8 @@ impl MConnection {
         let secret_connection = SecretConnection::new(stream, private_key, protocol_version)?;
 
         let (sender, loop_receiver) = flume::bounded(0);
+        // flume does not support broadcast channels
+        // see https://github.com/zesterer/flume/issues/68#issuecomment-761032975
         let (loop_sender, receiver) = crossbeam_channel::bounded(0);
         std::thread::spawn(move || {
             MConnection::rw_loop(secret_connection, loop_receiver, loop_sender)
@@ -138,7 +140,7 @@ impl MConnection {
         rx: flume::Receiver<PacketMsg>,
         tx: crossbeam_channel::Sender<PacketMsg>,
     ) {
-        let mut read_buf = Vec::new();
+        let mut read_buf = Vec::with_capacity(8096);
 
         loop {
             // If any stream is trying to send a message, go for it.
@@ -146,17 +148,26 @@ impl MConnection {
                 let mut buf = Vec::new();
                 msg.encode_length_delimited(&mut buf)
                     .expect("encode to always succeed");
-                // TODO: log error and exit the loop
-                let _res = secret_connection.write_all(&buf);
+                if let Err(e) = secret_connection.write_all(&buf) {
+                    println!("can't write to connection: {}. exiting...", e);
+                    return;
+                }
             }
 
             // If there's a new incoming message, send it to all streams.
-            // TODO: log error and exit the loop
-            let _ = secret_connection.read(&mut read_buf);
-            if let Ok(msg) = PacketMsg::decode_length_delimited(&*read_buf) {
-                read_buf.clear();
-                // TODO: log error
-                let _res = tx.send(msg);
+            match secret_connection.read(&mut read_buf) {
+                Ok(_) => {
+                    if let Ok(msg) = PacketMsg::decode_length_delimited(&*read_buf) {
+                        read_buf.clear();
+                        if let Err(e) = tx.send(msg) {
+                            println!("can't relay msg: {}", e)
+                        }
+                    }
+                }
+                Err(e) => {
+                    println!("can't read from connection: {}. exiting...", e);
+                    return;
+                }
             }
         }
     }
@@ -247,6 +258,8 @@ impl Iterator for MIncoming {
                 let peer_addr = stream.peer_addr().wrap_err("failed to get peer addr");
 
                 let (sender, loop_receiver) = flume::bounded(0);
+                // flume does not support broadcast channels
+                // see https://github.com/zesterer/flume/issues/68#issuecomment-761032975
                 let (loop_sender, receiver) = crossbeam_channel::bounded(0);
 
                 match (
@@ -351,7 +364,7 @@ impl Read for ReadVirtualStream {
             let msg = self
                 .receiver
                 .recv()
-                .map_err(|_| std::io::Error::new(std::io::ErrorKind::Other, "rw_loop exited"))?;
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
             if msg.channel_id == self.stream_id as i32 {
                 buf.copy_from_slice(&msg.data);
                 return Ok(msg.data.len());
