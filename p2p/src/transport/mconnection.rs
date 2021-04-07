@@ -31,9 +31,9 @@ pub struct MConnection {
     local_addr: SocketAddr,
     peer_addr: SocketAddr,
     // clonable sender to write data to secret_connection
-    sender: Sender<Vec<u8>>,
+    sender: Sender<PacketMsg>,
     // clonable receiver to read data from secret_connection
-    receiver: Receiver<Vec<u8>>,
+    receiver: Receiver<PacketMsg>,
 }
 
 /// An `Endpoint` for connecting to other peers.
@@ -56,13 +56,13 @@ pub struct MIncoming {
 /// Write part of the virtual stream.
 pub struct WriteVirtualStream {
     stream_id: StreamId,
-    sender: Sender<Vec<u8>>,
+    sender: Sender<PacketMsg>,
 }
 
 /// Read part of the virtual stream.
 pub struct ReadVirtualStream {
     stream_id: StreamId,
-    receiver: Receiver<Vec<u8>>,
+    receiver: Receiver<PacketMsg>,
 }
 
 impl MConnection {
@@ -135,22 +135,25 @@ impl MConnection {
 
     fn rw_loop(
         mut secret_connection: SecretConnection<TcpStream>,
-        rx: flume::Receiver<Vec<u8>>,
-        tx: crossbeam_channel::Sender<Vec<u8>>,
+        rx: flume::Receiver<PacketMsg>,
+        tx: crossbeam_channel::Sender<PacketMsg>,
     ) {
         let mut read_buf = Vec::new();
 
         loop {
             // If any stream is trying to send a message, go for it.
             if let Ok(msg) = rx.try_recv() {
-                let _res = secret_connection.write_all(&msg);
+                let mut buf = Vec::new();
+                msg.encode_length_delimited(&mut buf)
+                    .expect("encode to always succeed");
+                let _res = secret_connection.write_all(&buf);
             }
 
             // If there's a new incoming message, send it to all streams.
             let _ = secret_connection.read(&mut read_buf);
             if let Ok(msg) = PacketMsg::decode_length_delimited(&*read_buf) {
                 read_buf.clear();
-                let _res = tx.send(msg.data);
+                let _res = tx.send(msg);
             }
         }
     }
@@ -342,11 +345,10 @@ impl Read for ReadVirtualStream {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         // loop until we get a message for this channel
         loop {
-            let msg_data = self
+            let msg = self
                 .receiver
                 .recv()
                 .map_err(|_| std::io::Error::new(std::io::ErrorKind::Other, "rw_loop exited"))?;
-            let msg = PacketMsg::decode_length_delimited(&*msg_data)?;
             if msg.channel_id == self.stream_id as i32 {
                 buf.copy_from_slice(&msg.data);
                 return Ok(msg.data.len());
@@ -363,11 +365,9 @@ impl Write for WriteVirtualStream {
             data: buf.to_vec(),
         };
 
-        let mut buf = Vec::new();
-        msg.encode_length_delimited(&mut buf)?;
         let n = buf.len();
         self.sender
-            .send(buf)
+            .send(msg)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
         Ok(n)
     }
