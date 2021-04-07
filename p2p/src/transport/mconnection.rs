@@ -14,7 +14,7 @@ use prost::Message as _;
 
 use tendermint_proto::p2p::PacketMsg;
 
-use crate::secret_connection::{SecretConnection, TryClone, Version};
+use crate::secret_connection::{SecretConnection, Version};
 use crate::transport::{
     BindInfo, ConnectInfo, Connection, Endpoint, PublicKey, Read, StreamId, Transport, Write,
 };
@@ -63,12 +63,6 @@ pub struct WriteVirtualStream {
 pub struct ReadVirtualStream {
     stream_id: StreamId,
     receiver: Receiver<Vec<u8>>,
-}
-
-impl TryClone for TcpStream {
-    fn try_clone(&self) -> std::io::Result<Self> {
-        self.try_clone()
-    }
 }
 
 impl MConnection {
@@ -314,7 +308,7 @@ impl Transport for MConnectionTransport {
     ///
     /// }).expect("bind to succeed");
     /// ```
-    fn bind(&self, bind_info: BindInfo) -> Result<(MEndpoint, MIncoming)> {
+    fn bind(self, bind_info: BindInfo) -> Result<(MEndpoint, MIncoming)> {
         let listener = TcpListener::bind(bind_info.addr)?;
         let pk = Arc::new(bind_info.private_key);
         Ok((

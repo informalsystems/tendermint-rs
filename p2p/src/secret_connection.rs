@@ -42,24 +42,6 @@ pub const DATA_MAX_SIZE: usize = 1024;
 const DATA_LEN_SIZE: usize = 4;
 const TOTAL_FRAME_SIZE: usize = DATA_MAX_SIZE + DATA_LEN_SIZE;
 
-/// The `TryClone` trait indicates that the stream of this type can be cloned and reused between
-/// multiple threads.
-pub trait TryClone {
-    /// Creates a new independently owned handle to the underlying stream.
-    ///
-    /// The returned value is a reference to the same stream that this object references. Both
-    /// handles will read and write the same stream of data, and options set on one stream will be
-    /// propagated to the other stream.
-    ///
-    /// see `TcpStream.try_clone`
-    /// # Errors
-    ///
-    /// Will return `Err` if the operation fails.
-    fn try_clone(&self) -> io::Result<Self>
-    where
-        Self: Sized;
-}
-
 /// Handshake is a process of establishing the SecretConnection between two peers.
 /// Specification: https://github.com/tendermint/spec/blob/master/spec/p2p/peer.md#authenticated-encryption-handshake
 struct Handshake<S> {
@@ -70,8 +52,8 @@ struct Handshake<S> {
 /// Handshake states
 
 /// AwaitingEphKey means we're waiting for the remote ephemeral pubkey.
-struct AwaitingEphKey {
-    local_privkey: ed25519::Keypair,
+struct AwaitingEphKey<'a> {
+    local_privkey: &'a ed25519::Keypair,
     local_eph_privkey: Option<EphemeralSecret>,
 }
 
@@ -84,10 +66,10 @@ struct AwaitingAuthSig {
     local_signature: ed25519::Signature,
 }
 
-impl Handshake<AwaitingEphKey> {
+impl<'a> Handshake<AwaitingEphKey<'a>> {
     /// Initiate a handshake.
     pub fn new(
-        local_privkey: ed25519::Keypair,
+        local_privkey: &'a ed25519::Keypair,
         protocol_version: Version,
     ) -> (Self, EphemeralPublic) {
         // Generate an ephemeral key for perfect forward secrecy.
@@ -155,9 +137,9 @@ impl Handshake<AwaitingEphKey> {
 
         // Sign the challenge bytes for authentication.
         let local_signature = if self.protocol_version.has_transcript() {
-            sign_challenge(&sc_mac, &self.state.local_privkey)?
+            sign_challenge(&sc_mac, self.state.local_privkey)?
         } else {
-            sign_challenge(&kdf.challenge, &self.state.local_privkey)?
+            sign_challenge(&kdf.challenge, self.state.local_privkey)?
         };
 
         Ok(Handshake {
@@ -175,10 +157,7 @@ impl Handshake<AwaitingEphKey> {
 
 impl Handshake<AwaitingAuthSig> {
     /// Returns a verified pubkey of the remote peer.
-    pub fn got_signature(
-        &mut self,
-        auth_sig_msg: proto::p2p::AuthSigMessage,
-    ) -> Result<PublicKey> {
+    pub fn got_signature(&mut self, auth_sig_msg: proto::p2p::AuthSigMessage) -> Result<PublicKey> {
         let remote_pubkey = auth_sig_msg
             .pub_key
             .and_then(|pk| match pk.sum? {
@@ -220,32 +199,6 @@ pub struct SecretConnection<IoHandler: Read + Write + Send + Sync> {
 }
 
 impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
-    /// Creates a copy of this `SecretConnection` referencing the same `TcpStream`.
-    /// # Errors
-    ///
-    /// Will return `Err` if the connection is uninitialized or cloning `IoHandler` fails.
-    pub fn try_clone(&self) -> io::Result<Self> {
-        if self.remote_pubkey.is_none() {
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                "tried to clone uninitialized connection",
-            ));
-        }
-
-        let c = self.io_handler.try_clone()?;
-
-        Ok(Self {
-            io_handler: c,
-            protocol_version: self.protocol_version,
-            recv_nonce: self.recv_nonce.clone(),
-            send_nonce: self.send_nonce.clone(),
-            recv_cipher: self.recv_cipher.clone(),
-            send_cipher: self.send_cipher.clone(),
-            remote_pubkey: self.remote_pubkey,
-            recv_buffer: self.recv_buffer.clone(),
-        })
-    }
-
     /// Returns the remote pubkey. Panics if there's no key.
     pub fn remote_pubkey(&self) -> PublicKey {
         self.remote_pubkey.expect("remote_pubkey uninitialized")
@@ -254,11 +207,11 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
     /// Performs a handshake and returns a new SecretConnection.
     pub fn new(
         mut io_handler: IoHandler,
-        local_privkey: ed25519::Keypair,
+        local_privkey: &ed25519::Keypair,
         protocol_version: Version,
     ) -> Result<SecretConnection<IoHandler>> {
         // Start a handshake process.
-        let local_pubkey = PublicKey::from(&local_privkey);
+        let local_pubkey = PublicKey::from(local_privkey);
         let (mut h, local_eph_pubkey) = Handshake::new(local_privkey, protocol_version);
 
         // Write local ephemeral pubkey and receive one too.
@@ -361,7 +314,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
 
 impl<IoHandler> Read for SecretConnection<IoHandler>
 where
-    IoHandler: Read + Write + Send + Sync + TryClone,
+    IoHandler: Read + Write + Send + Sync,
 {
     // CONTRACT: data smaller than DATA_MAX_SIZE is read atomically.
     fn read(&mut self, data: &mut [u8]) -> io::Result<usize> {
@@ -424,7 +377,7 @@ where
 
 impl<IoHandler> Write for SecretConnection<IoHandler>
 where
-    IoHandler: Read + Write + Send + Sync + TryClone,
+    IoHandler: Read + Write + Send + Sync,
 {
     // Writes encrypted frames of `TAG_SIZE` + `TOTAL_FRAME_SIZE`
     // CONTRACT: data smaller than DATA_MAX_SIZE is read atomically.
@@ -501,7 +454,7 @@ fn sign_challenge(
 }
 
 /// Sends our authenticated signature and receives theirs in tandem.
-fn share_auth_signature<IoHandler: Read + Write + Send + Sync + TryClone>(
+fn share_auth_signature<IoHandler: Read + Write + Send + Sync>(
     sc: &mut SecretConnection<IoHandler>,
     pubkey: &ed25519::PublicKey,
     local_signature: &ed25519::Signature,
@@ -574,14 +527,14 @@ mod test {
         let peer1 = thread::spawn(|| {
             let mut csprng = OsRng {};
             let privkey1: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-            let conn1 = SecretConnection::new(pipe2, privkey1, Version::V0_34);
+            let conn1 = SecretConnection::new(pipe2, &privkey1, Version::V0_34);
             assert_eq!(conn1.is_ok(), true);
         });
 
         let peer2 = thread::spawn(|| {
             let mut csprng = OsRng {};
             let privkey2: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-            let conn2 = SecretConnection::new(pipe1, privkey2, Version::V0_34);
+            let conn2 = SecretConnection::new(pipe1, &privkey2, Version::V0_34);
             assert_eq!(conn2.is_ok(), true);
         });
 
@@ -598,7 +551,7 @@ mod test {
         let sender = thread::spawn(move || {
             let mut csprng = OsRng {};
             let privkey1: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-            let mut conn1 = SecretConnection::new(pipe2, privkey1, Version::V0_34)
+            let mut conn1 = SecretConnection::new(pipe2, &privkey1, Version::V0_34)
                 .expect("handshake to succeed");
 
             conn1
@@ -609,7 +562,7 @@ mod test {
         let receiver = thread::spawn(move || {
             let mut csprng = OsRng {};
             let privkey2: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-            let mut conn2 = SecretConnection::new(pipe1, privkey2, Version::V0_34)
+            let mut conn2 = SecretConnection::new(pipe1, &privkey2, Version::V0_34)
                 .expect("handshake to succeed");
 
             let mut buf = [0; MESSAGE.len()];
@@ -627,7 +580,7 @@ mod test {
     fn test_evil_peer_shares_invalid_eph_key() {
         let mut csprng = OsRng {};
         let local_privkey: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-        let (mut h, _) = Handshake::new(local_privkey, Version::V0_34);
+        let (mut h, _) = Handshake::new(&local_privkey, Version::V0_34);
         let bytes: [u8; 32] = [0; 32];
         let res = h.got_key(EphemeralPublic::from(bytes));
         assert_eq!(res.is_err(), true);
@@ -637,7 +590,7 @@ mod test {
     fn test_evil_peer_shares_invalid_auth_sig() {
         let mut csprng = OsRng {};
         let local_privkey: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-        let (mut h, _) = Handshake::new(local_privkey, Version::V0_34);
+        let (mut h, _) = Handshake::new(&local_privkey, Version::V0_34);
         let res = h.got_key(EphemeralPublic::from(x25519_dalek::X25519_BASEPOINT_BYTES));
         assert_eq!(res.is_err(), false);
 

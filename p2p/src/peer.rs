@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::thread;
 
-use eyre::{eyre, Report, Result, WrapErr};
+use eyre::{eyre, Report, Result};
 use flume::{self, Receiver, Sender};
 
 use tendermint::node;

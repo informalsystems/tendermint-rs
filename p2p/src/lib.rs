@@ -30,4 +30,4 @@ pub mod secret_connection;
 mod message;
 mod peer;
 mod supervisor;
-mod transport;
+pub mod transport;
