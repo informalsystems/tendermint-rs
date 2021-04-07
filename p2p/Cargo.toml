@@ -39,7 +39,8 @@ prost-amino = { version = "0.6", optional = true }
 prost-amino-derive = { version = "0.6", optional = true }
 
 [dev-dependencies]
-pipe = { version = "0", features = ["bidirectional"], git = "https://github.com/melekes/pipe-rs" }
+crossbeam-channel = "^0.5.0"
+readwrite = "^0.1.1"
 
 [features]
 amino = ["prost-amino", "prost-amino-derive"]

@@ -32,6 +32,9 @@ mod nonce;
 mod protocol;
 mod public_key;
 
+#[cfg(test)]
+mod pipe;
+
 /// Size of the MAC tag
 pub const TAG_SIZE: usize = 16;
 
