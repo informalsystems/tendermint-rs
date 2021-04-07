@@ -104,20 +104,6 @@ pub fn pipe_buffered() -> (PipeReader, PipeBufWriter) {
     )
 }
 
-/// Creates an asynchronous memory pipe
-pub fn async_pipe() -> (PipeReader, PipeWriter) {
-    let (sender, receiver) = crossbeam_channel::unbounded();
-
-    (
-        PipeReader {
-            receiver,
-            buffer: Vec::new(),
-            position: 0,
-        },
-        PipeWriter { sender },
-    )
-}
-
 /// Creates an asynchronous memory pipe with buffered writer
 pub fn async_pipe_buffered() -> (PipeReader, PipeBufWriter) {
     let (tx, rx) = crossbeam_channel::unbounded();
@@ -134,36 +120,6 @@ pub fn async_pipe_buffered() -> (PipeReader, PipeBufWriter) {
             size: DEFAULT_BUF_SIZE,
         },
     )
-}
-
-/// Creates a pair of pipes for bidirectional communication, a bit like UNIX's `socketpair(2)`.
-pub fn bipipe() -> (
-    readwrite::ReadWrite<PipeReader, PipeWriter>,
-    readwrite::ReadWrite<PipeReader, PipeWriter>,
-) {
-    let (r1, w1) = pipe();
-    let (r2, w2) = pipe();
-    ((r1, w2).into(), (r2, w1).into())
-}
-
-/// Creates a pair of pipes for bidirectional communication, a bit like UNIX's `socketpair(2)`.
-pub fn async_bipipe() -> (
-    readwrite::ReadWrite<PipeReader, PipeWriter>,
-    readwrite::ReadWrite<PipeReader, PipeWriter>,
-) {
-    let (r1, w1) = async_pipe();
-    let (r2, w2) = async_pipe();
-    ((r1, w2).into(), (r2, w1).into())
-}
-
-/// Creates a pair of pipes for bidirectional communication using buffered writer, a bit like UNIX's `socketpair(2)`.
-pub fn bipipe_buffered() -> (
-    readwrite::ReadWrite<PipeReader, PipeBufWriter>,
-    readwrite::ReadWrite<PipeReader, PipeBufWriter>,
-) {
-    let (r1, w1) = pipe_buffered();
-    let (r2, w2) = pipe_buffered();
-    ((r1, w2).into(), (r2, w1).into())
 }
 
 /// Creates a pair of pipes for bidirectional communication using buffered writer, a bit like UNIX's `socketpair(2)`.
@@ -201,19 +157,6 @@ impl PipeWriter {
 }
 
 impl PipeBufWriter {
-    /// Extracts the inner `Sender` from the writer, and any pending buffered data
-    pub fn into_inner(mut self) -> (Sender<Vec<u8>>, Vec<u8>) {
-        let sender = match replace(&mut self.sender, None) {
-            Some(sender) => sender,
-            None => unsafe {
-                // SAFETY: this is safe as long as `into_inner()` is the only method
-                // that clears the sender
-                unreachable_unchecked()
-            },
-        };
-        (sender, replace(&mut self.buffer, Vec::new()))
-    }
-
     #[inline]
     /// Gets a reference to the underlying `Sender`
     pub fn sender(&self) -> &Sender<Vec<u8>> {
@@ -226,16 +169,6 @@ impl PipeBufWriter {
             },
         }
     }
-
-    /// Returns a reference to the internally buffered data.
-    pub fn buffer(&self) -> &[u8] {
-        &self.buffer
-    }
-
-    /// Returns the number of bytes the internal buffer can hold without flushing.
-    pub fn capacity(&self) -> usize {
-        self.size
-    }
 }
 
 /// Creates a new handle to the `PipeBufWriter` with a fresh new buffer. Any pending data is still
@@ -247,19 +180,6 @@ impl Clone for PipeBufWriter {
             buffer: Vec::with_capacity(self.size),
             size: self.size,
         }
-    }
-}
-
-impl PipeReader {
-    /// Extracts the inner `Receiver` from the writer, and any pending buffered data
-    pub fn into_inner(mut self) -> (Receiver<Vec<u8>>, Vec<u8>) {
-        self.buffer.drain(..self.position);
-        (self.receiver, self.buffer)
-    }
-
-    /// Returns a reference to the internally buffered data.
-    pub fn buffer(&self) -> &[u8] {
-        &self.buffer[self.position..]
     }
 }
 
