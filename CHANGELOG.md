@@ -72,6 +72,9 @@ below.
 ### IMPROVEMENTS
 
 * `[tendermint]` IPv6 support has been added for `net::Address` ([#5])
+* `[tendermint-rpc]` Add `wait_until_healthy` utility method for RPC clients
+  to poll the `/health` endpoint of a node until it either returns successfully
+  or times out ([#855])
 
 ### BUG FIXES
 
@@ -90,6 +93,7 @@ below.
 [#835]: https://github.com/informalsystems/tendermint-rs/issues/835
 [#836]: https://github.com/informalsystems/tendermint-rs/issues/836
 [#839]: https://github.com/informalsystems/tendermint-rs/pull/839
+[#855]: https://github.com/informalsystems/tendermint-rs/pull/855
 [ABCI]: https://docs.tendermint.com/master/spec/abci/
 [`ibc-rs`]: https://github.com/informalsystems/ibc-rs
 [`rustls`]: https://github.com/ctz/rustls
