@@ -57,9 +57,12 @@
             ]
           }
         },
-        "result_begin_block": {},
-        "result_end_block": {
-          "validator_updates": null
+        "result_finalize_block": {
+          "updates":
+            {
+              "validator_updates": null
+            },
+          "tx_results": []
         }
       }
     },

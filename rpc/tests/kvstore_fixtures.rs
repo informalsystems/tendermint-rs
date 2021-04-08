@@ -406,9 +406,8 @@ fn incoming_fixtures() {
             }
             "block_results_at_height_10" => {
                 let result = endpoint::block_results::Response::from_string(content).unwrap();
-                assert!(result.begin_block_events.is_none());
+                assert!(result.finalize_block_events.is_none());
                 assert!(result.consensus_param_updates.is_none());
-                assert!(result.end_block_events.is_none());
                 assert_eq!(result.height.value(), 10);
                 assert!(result.txs_results.is_none());
                 assert!(result.validator_updates.is_empty());
@@ -742,8 +741,7 @@ fn incoming_fixtures() {
                 let result = tendermint_rpc::event::Event::from_string(content).unwrap();
                 if let tendermint_rpc::event::EventData::NewBlock {
                     block,
-                    result_begin_block,
-                    result_end_block,
+                    result_finalize_block,
                 } = result.data
                 {
                     let b = block.unwrap();
@@ -783,8 +781,7 @@ fn incoming_fixtures() {
                     assert_eq!(last_commit.signatures.len(), 1);
                     assert!(last_commit.signatures[0].is_commit());
                     assert!(last_commit.signatures[0].validator_address().is_some());
-                    assert!(result_begin_block.unwrap().tags.is_empty());
-                    let reb = result_end_block.unwrap();
+                    let reb = result_finalize_block.unwrap().updates;
                     assert!(reb.validator_updates.is_empty());
                     assert!(reb.consensus_param_updates.is_none());
                     assert!(reb.tags.is_empty());
@@ -797,8 +794,7 @@ fn incoming_fixtures() {
                 let result = tendermint_rpc::event::Event::from_string(content).unwrap();
                 if let tendermint_rpc::event::EventData::NewBlock {
                     block,
-                    result_begin_block,
-                    result_end_block,
+                    result_finalize_block,
                 } = result.data
                 {
                     let b = block.unwrap();
@@ -838,8 +834,7 @@ fn incoming_fixtures() {
                     assert_eq!(last_commit.signatures.len(), 1);
                     assert!(last_commit.signatures[0].is_commit());
                     assert!(last_commit.signatures[0].validator_address().is_some());
-                    assert!(result_begin_block.unwrap().tags.is_empty());
-                    let reb = result_end_block.unwrap();
+                    let reb = result_finalize_block.unwrap().updates;
                     assert!(reb.validator_updates.is_empty());
                     assert!(reb.consensus_param_updates.is_none());
                     assert!(reb.tags.is_empty());
@@ -852,8 +847,7 @@ fn incoming_fixtures() {
                 let result = tendermint_rpc::event::Event::from_string(content).unwrap();
                 if let tendermint_rpc::event::EventData::NewBlock {
                     block,
-                    result_begin_block,
-                    result_end_block,
+                    result_finalize_block,
                 } = result.data
                 {
                     let b = block.unwrap();
@@ -893,8 +887,7 @@ fn incoming_fixtures() {
                     assert_eq!(last_commit.signatures.len(), 1);
                     assert!(last_commit.signatures[0].is_commit());
                     assert!(last_commit.signatures[0].validator_address().is_some());
-                    assert!(result_begin_block.unwrap().tags.is_empty());
-                    let reb = result_end_block.unwrap();
+                    let reb = result_finalize_block.unwrap().updates;
                     assert!(reb.validator_updates.is_empty());
                     assert!(reb.consensus_param_updates.is_none());
                     assert!(reb.tags.is_empty());
@@ -907,8 +900,7 @@ fn incoming_fixtures() {
                 let result = tendermint_rpc::event::Event::from_string(content).unwrap();
                 if let tendermint_rpc::event::EventData::NewBlock {
                     block,
-                    result_begin_block,
-                    result_end_block,
+                    result_finalize_block,
                 } = result.data
                 {
                     let b = block.unwrap();
@@ -948,8 +940,7 @@ fn incoming_fixtures() {
                     assert_eq!(last_commit.signatures.len(), 1);
                     assert!(last_commit.signatures[0].is_commit());
                     assert!(last_commit.signatures[0].validator_address().is_some());
-                    assert!(result_begin_block.unwrap().tags.is_empty());
-                    let reb = result_end_block.unwrap();
+                    let reb = result_finalize_block.unwrap().updates;
                     assert!(reb.validator_updates.is_empty());
                     assert!(reb.consensus_param_updates.is_none());
                     assert!(reb.tags.is_empty());
@@ -962,8 +953,7 @@ fn incoming_fixtures() {
                 let result = tendermint_rpc::event::Event::from_string(content).unwrap();
                 if let tendermint_rpc::event::EventData::NewBlock {
                     block,
-                    result_begin_block,
-                    result_end_block,
+                    result_finalize_block,
                 } = result.data
                 {
                     let b = block.unwrap();
@@ -1003,8 +993,7 @@ fn incoming_fixtures() {
                     assert_eq!(last_commit.signatures.len(), 1);
                     assert!(last_commit.signatures[0].is_commit());
                     assert!(last_commit.signatures[0].validator_address().is_some());
-                    assert!(result_begin_block.unwrap().tags.is_empty());
-                    let reb = result_end_block.unwrap();
+                    let reb = result_finalize_block.unwrap().updates;
                     assert!(reb.validator_updates.is_empty());
                     assert!(reb.consensus_param_updates.is_none());
                     assert!(reb.tags.is_empty());
