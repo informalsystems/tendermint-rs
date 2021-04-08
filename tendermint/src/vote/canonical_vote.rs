@@ -124,6 +124,7 @@ mod tests {
                 nanos: 0,
             }),
             chain_id: "testchain".to_string(),
+            unsigned_app_vote_data: "".to_string(),
         };
         let cp = CanonicalVote::try_from(proto_cp).unwrap();
         assert_eq!(cp.vote_type, Type::Prevote);
