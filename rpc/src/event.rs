@@ -10,7 +10,7 @@ use crate::{response::Wrapper, Response};
 /// An incoming event produced by a [`Subscription`].
 ///
 /// [`Subscription`]: ../struct.Subscription.html
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Event {
     /// The query that produced the event.
     pub query: String,
@@ -37,7 +37,7 @@ impl Event {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", content = "value")]
 pub enum EventData {
     #[serde(alias = "tendermint/event/NewBlock")]

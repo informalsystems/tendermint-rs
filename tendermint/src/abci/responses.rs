@@ -25,7 +25,7 @@ pub struct Responses {
 ///
 /// <https://github.com/tendermint/tendermint/blob/master/abci/types/types.proto>
 // TODO(tarcieri): generate this automatically from the proto
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct DeliverTx {
     /// ABCI application response code
     pub code: Code,
@@ -56,7 +56,7 @@ pub struct DeliverTx {
 }
 
 /// Event
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Event {
     /// Event type
     #[serde(rename = "type")]
@@ -115,7 +115,7 @@ pub struct EndBlock {
 }
 
 /// Finalize block response.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct FinalizeBlock {
     /// updates resulting from block finalization
     pub updates: EndBlock,
