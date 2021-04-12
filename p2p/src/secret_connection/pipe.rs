@@ -37,12 +37,6 @@ pub struct PipeReader {
     position: usize,
 }
 
-/// The `Write` end of a pipe (see `pipe()`)
-#[derive(Clone)]
-pub struct PipeWriter {
-    sender: Sender<Vec<u8>>,
-}
-
 /// The `Write` end of a pipe (see `pipe()`) that will buffer small writes before sending
 /// to the reader end.
 pub struct PipeBufWriter {
@@ -83,55 +77,11 @@ fn epipe() -> io::Error {
     io::Error::new(io::ErrorKind::BrokenPipe, "pipe reader has been dropped")
 }
 
-impl PipeWriter {
-    /// Extracts the inner `Sender` from the writer
-    pub fn into_inner(self) -> Sender<Vec<u8>> {
-        self.sender
-    }
-
-    /// Gets a reference to the underlying `Sender`
-    pub fn sender(&self) -> &Sender<Vec<u8>> {
-        &self.sender
-    }
-
-    /// Write data to the associated `PipeReader`
-    pub fn send<B: Into<Vec<u8>>>(&self, bytes: B) -> io::Result<()> {
-        self.sender
-            .send(bytes.into())
-            .map_err(|_| epipe())
-            .map(drop)
-    }
-}
-
 impl PipeBufWriter {
     #[inline]
     /// Gets a reference to the underlying `Sender`
     pub fn sender(&self) -> &Sender<Vec<u8>> {
         self.sender.as_ref().unwrap()
-    }
-}
-
-/// Creates a new handle to the `PipeBufWriter` with a fresh new buffer. Any pending data is still
-/// owned by the existing writer and should be flushed if necessary.
-impl Clone for PipeBufWriter {
-    fn clone(&self) -> Self {
-        Self {
-            sender: self.sender.clone(),
-            buffer: Vec::with_capacity(self.size),
-            size: self.size,
-        }
-    }
-}
-
-/// Creates a new handle to the `PipeReader` with a fresh new buffer. Any pending data is still
-/// owned by the existing reader and will not be accessible from the new handle.
-impl Clone for PipeReader {
-    fn clone(&self) -> Self {
-        Self {
-            receiver: self.receiver.clone(),
-            buffer: Vec::new(),
-            position: 0,
-        }
     }
 }
 
@@ -171,30 +121,6 @@ impl Read for PipeReader {
             self.consume(len);
         }
         Ok(len)
-    }
-}
-
-impl Write for &'_ PipeWriter {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        let data = buf.to_vec();
-
-        self.send(data).map(|_| buf.len())
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
-    }
-}
-
-impl Write for PipeWriter {
-    #[inline]
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        Write::write(&mut &*self, buf)
-    }
-
-    #[inline]
-    fn flush(&mut self) -> io::Result<()> {
-        Write::flush(&mut &*self)
     }
 }
 
