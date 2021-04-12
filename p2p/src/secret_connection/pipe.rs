@@ -20,8 +20,6 @@
 
 //! Asynchronous in-memory pipe
 
-use readwrite;
-
 use flume::{self, Receiver, SendError, Sender, TrySendError};
 use std::cmp::min;
 use std::io::{self, BufRead, Read, Write};
