@@ -18,24 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-//! Synchronous in-memory pipe
-//!
-//! ## Example
-//!
-//! ```
-//! use std::thread::spawn;
-//! use std::io::{Read, Write};
-//!
-//! let (mut read, mut write) = pipe::pipe();
-//!
-//! let message = "Hello, world!";
-//! spawn(move || write.write_all(message.as_bytes()).unwrap());
-//!
-//! let mut s = String::new();
-//! read.read_to_string(&mut s).unwrap();
-//!
-//! assert_eq!(&s, message);
-//! ```
+//! Asynchronous in-memory pipe
 
 use readwrite;
 
@@ -66,38 +49,6 @@ pub struct PipeBufWriter {
     sender: Option<Sender<Vec<u8>>>,
     buffer: Vec<u8>,
     size: usize,
-}
-
-/// Creates a synchronous memory pipe
-pub fn pipe() -> (PipeReader, PipeWriter) {
-    let (sender, receiver) = flume::bounded(0);
-
-    (
-        PipeReader {
-            receiver,
-            buffer: Vec::new(),
-            position: 0,
-        },
-        PipeWriter { sender },
-    )
-}
-
-/// Creates a synchronous memory pipe with buffered writer
-pub fn pipe_buffered() -> (PipeReader, PipeBufWriter) {
-    let (tx, rx) = flume::bounded(0);
-
-    (
-        PipeReader {
-            receiver: rx,
-            buffer: Vec::new(),
-            position: 0,
-        },
-        PipeBufWriter {
-            sender: Some(tx),
-            buffer: Vec::with_capacity(DEFAULT_BUF_SIZE),
-            size: DEFAULT_BUF_SIZE,
-        },
-    )
 }
 
 /// Creates an asynchronous memory pipe with buffered writer
@@ -309,126 +260,5 @@ impl Drop for PipeBufWriter {
             let data = replace(&mut self.buffer, Vec::new());
             let _ = self.sender().send(data);
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::io::{Read, Write};
-    use std::thread::spawn;
-
-    #[test]
-    fn pipe_reader() {
-        let i = b"hello there";
-        let mut o = Vec::with_capacity(i.len());
-        let (mut r, mut w) = pipe();
-        let guard = spawn(move || {
-            w.write_all(&i[..5]).unwrap();
-            w.write_all(&i[5..]).unwrap();
-            drop(w);
-        });
-
-        r.read_to_end(&mut o).unwrap();
-        assert_eq!(i, &o[..]);
-
-        guard.join().unwrap();
-    }
-
-    #[test]
-    fn pipe_writer_fail() {
-        let i = b"hi";
-        let (r, mut w) = pipe();
-        let guard = spawn(move || {
-            drop(r);
-        });
-
-        assert!(w.write_all(i).is_err());
-
-        guard.join().unwrap();
-    }
-
-    #[test]
-    fn small_reads() {
-        let block_cnt = 20;
-        const BLOCK: usize = 20;
-        let (mut r, mut w) = pipe();
-        let guard = spawn(move || {
-            for _ in 0..block_cnt {
-                let data = &[0; BLOCK];
-                w.write_all(data).unwrap();
-            }
-        });
-
-        let mut buff = [0; BLOCK / 2];
-        let mut read = 0;
-        while let Ok(size) = r.read(&mut buff) {
-            // 0 means EOF
-            if size == 0 {
-                break;
-            }
-            read += size;
-        }
-        assert_eq!(block_cnt * BLOCK, read);
-
-        guard.join().unwrap();
-    }
-
-    #[test]
-    fn pipe_reader_buffered() {
-        let i = b"hello there";
-        let mut o = Vec::with_capacity(i.len());
-        let (mut r, mut w) = pipe_buffered();
-        let guard = spawn(move || {
-            w.write_all(&i[..5]).unwrap();
-            w.write_all(&i[5..]).unwrap();
-            w.flush().unwrap();
-            drop(w);
-        });
-
-        r.read_to_end(&mut o).unwrap();
-        assert_eq!(i, &o[..]);
-
-        guard.join().unwrap();
-    }
-
-    #[test]
-    fn pipe_writer_fail_buffered() {
-        let i = &[0; DEFAULT_BUF_SIZE * 2];
-        let (r, mut w) = pipe_buffered();
-        let guard = spawn(move || {
-            drop(r);
-        });
-
-        assert!(w.write_all(i).is_err());
-
-        guard.join().unwrap();
-    }
-
-    #[test]
-    fn small_reads_buffered() {
-        let block_cnt = 20;
-        const BLOCK: usize = 20;
-        let (mut r, mut w) = pipe_buffered();
-        let guard = spawn(move || {
-            for _ in 0..block_cnt {
-                let data = &[0; BLOCK];
-                w.write_all(data).unwrap();
-            }
-            w.flush().unwrap();
-        });
-
-        let mut buff = [0; BLOCK / 2];
-        let mut read = 0;
-        while let Ok(size) = r.read(&mut buff) {
-            // 0 means EOF
-            if size == 0 {
-                break;
-            }
-            read += size;
-        }
-        assert_eq!(block_cnt * BLOCK, read);
-
-        guard.join().unwrap();
     }
 }
