@@ -1,6 +1,6 @@
 //! The Tendermint P2P stack.
 
-#![deny(unsafe_code)]
+#![forbid(unsafe_code)]
 #![deny(
     trivial_casts,
     trivial_numeric_casts,

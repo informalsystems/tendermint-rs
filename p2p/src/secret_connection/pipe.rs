@@ -18,8 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#![allow(unsafe_code)]
-
 //! Synchronous in-memory pipe
 //!
 //! ## Example
@@ -39,12 +37,10 @@
 //! assert_eq!(&s, message);
 //! ```
 
-use crossbeam_channel;
 use readwrite;
 
-use crossbeam_channel::{Receiver, SendError, Sender, TrySendError};
+use flume::{self, Receiver, SendError, Sender, TrySendError};
 use std::cmp::min;
-use std::hint::unreachable_unchecked;
 use std::io::{self, BufRead, Read, Write};
 use std::mem::replace;
 
@@ -74,7 +70,7 @@ pub struct PipeBufWriter {
 
 /// Creates a synchronous memory pipe
 pub fn pipe() -> (PipeReader, PipeWriter) {
-    let (sender, receiver) = crossbeam_channel::bounded(0);
+    let (sender, receiver) = flume::bounded(0);
 
     (
         PipeReader {
@@ -88,7 +84,7 @@ pub fn pipe() -> (PipeReader, PipeWriter) {
 
 /// Creates a synchronous memory pipe with buffered writer
 pub fn pipe_buffered() -> (PipeReader, PipeBufWriter) {
-    let (tx, rx) = crossbeam_channel::bounded(0);
+    let (tx, rx) = flume::bounded(0);
 
     (
         PipeReader {
@@ -106,7 +102,7 @@ pub fn pipe_buffered() -> (PipeReader, PipeBufWriter) {
 
 /// Creates an asynchronous memory pipe with buffered writer
 pub fn async_pipe_buffered() -> (PipeReader, PipeBufWriter) {
-    let (tx, rx) = crossbeam_channel::unbounded();
+    let (tx, rx) = flume::unbounded();
 
     (
         PipeReader {
@@ -160,14 +156,7 @@ impl PipeBufWriter {
     #[inline]
     /// Gets a reference to the underlying `Sender`
     pub fn sender(&self) -> &Sender<Vec<u8>> {
-        match &self.sender {
-            Some(sender) => sender,
-            None => unsafe {
-                // SAFETY: this is safe as long as `into_inner()` is the only method
-                // that clears the sender, and this fn is never called afterward
-                unreachable_unchecked()
-            },
-        }
+        self.sender.as_ref().unwrap()
     }
 }
 
