@@ -369,6 +369,7 @@ where
 
         let n = cmp::min(data.len(), chunk.len());
         data[..n].copy_from_slice(&chunk[..n]);
+        self.recv_buffer = vec![0; chunk[n..].len()];
         self.recv_buffer.copy_from_slice(&chunk[n..]);
 
         Ok(n)

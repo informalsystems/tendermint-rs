@@ -14,7 +14,7 @@ use prost::Message as _;
 
 use tendermint_proto::p2p::PacketMsg;
 
-use crate::secret_connection::{self, SecretConnection, Version};
+use crate::secret_connection::{SecretConnection, Version};
 use crate::transport::{
     BindInfo, ConnectInfo, Connection, Endpoint, PublicKey, Read, StreamId, Transport, Write,
 };
@@ -141,8 +141,6 @@ impl MConnection {
         rx: Receiver<PacketMsg>,
         streams: Arc<RwLock<HashMap<StreamId, Sender<PacketMsg>>>>,
     ) {
-        let mut read_buf = Vec::with_capacity(8096);
-
         loop {
             // If any stream is trying to send a message, go for it.
             if let Ok(msg) = rx.try_recv() {
@@ -156,12 +154,10 @@ impl MConnection {
             }
 
             // If there's a new incoming message, send it to all streams.
-            let mut buf = Vec::with_capacity(secret_connection::DATA_MAX_SIZE);
+            let mut buf = vec![0; 8096];
             match secret_connection.read(&mut buf) {
-                Ok(_) => {
-                    read_buf.append(&mut buf);
-                    if let Ok(msg) = PacketMsg::decode_length_delimited(&*read_buf) {
-                        read_buf.clear();
+                Ok(n) => {
+                    if let Ok(msg) = PacketMsg::decode_length_delimited(&buf[..n]) {
                         if let Ok(streams) = streams.read() {
                             let stream_id = match msg.channel_id {
                                 0 => StreamId::Pex,
@@ -384,8 +380,9 @@ impl Read for ReadVirtualStream {
             .receiver
             .recv()
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
-        buf.copy_from_slice(&msg.data);
-        return Ok(msg.data.len());
+        let n = msg.data.len();
+        buf[..n].copy_from_slice(&msg.data);
+        return Ok(n);
     }
 }
 
@@ -445,10 +442,12 @@ mod tests {
             if let Some(Ok(c)) = c {
                 let (mut r, _w) = c.open_bidirectional(StreamId::Pex).unwrap();
 
-                let mut buf = Vec::new();
+                // TODO: set_read_timeout for this stream, so the test does not block indefinitely
+                let mut buf = vec![0x0; 10];
                 let n = r.read(&mut buf);
                 assert!(n.is_ok());
-                assert_eq!(5, n.unwrap());
+                assert_eq!(1, n.unwrap());
+                assert_eq!([0], buf[..1]);
             }
         });
 
@@ -472,9 +471,9 @@ mod tests {
                 .expect("bind to succeed");
 
             let (_r, mut w) = conn.open_bidirectional(StreamId::Pex).unwrap();
-            let n = w.write(&[0, 0, 0, 0, 0]);
+            let n = w.write(&[0]);
             assert!(n.is_ok());
-            assert_eq!(5, n.unwrap());
+            assert_eq!(1, n.unwrap());
         });
 
         peer1.join().expect("peer1 thread has panicked");
