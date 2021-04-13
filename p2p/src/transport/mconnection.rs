@@ -26,16 +26,18 @@ pub struct MConnectionTransport {}
 /// A `TcpStream` wrapped in `SecretConnection`.
 pub struct MConnection {
     public_key: ed25519::PublicKey,
+
     // stream clone for shutting down connection
     stream: TcpStream,
     local_addr: SocketAddr,
     peer_addr: SocketAddr,
+
+    // stream ID mapped to a sender
+    // each `ReadVirtualStream` has a matching receiver
+    virtual_streams: Arc<RwLock<HashMap<StreamId, Sender<PacketMsg>>>>,
     // clonable sender to write data to secret connection
     // see rw_loop where writing happens
     sender: Sender<PacketMsg>,
-    // stream ID mapped to a sender
-    // each `ReadVirtualStream` has a matching receiver
-    streams: Arc<RwLock<HashMap<StreamId, Sender<PacketMsg>>>>,
 }
 
 /// An `Endpoint` for connecting to other peers.
@@ -84,11 +86,11 @@ impl MConnection {
         let secret_connection = SecretConnection::new(stream, private_key, protocol_version)?;
 
         let (sender, loop_receiver) = flume::bounded(0);
-        let streams = Arc::new(RwLock::new(HashMap::new()));
+        let virtual_streams = Arc::new(RwLock::new(HashMap::new()));
 
-        let streams_clone = streams.clone();
+        let virtual_streams_clone = virtual_streams.clone();
         std::thread::spawn(move || {
-            MConnection::rw_loop(secret_connection, loop_receiver, streams_clone)
+            MConnection::rw_loop(secret_connection, loop_receiver, virtual_streams_clone)
         });
 
         Ok(Self {
@@ -97,7 +99,7 @@ impl MConnection {
             local_addr,
             peer_addr,
             sender,
-            streams,
+            virtual_streams,
         })
     }
 
@@ -119,11 +121,11 @@ impl MConnection {
         let secret_connection = SecretConnection::new(stream, private_key, protocol_version)?;
 
         let (sender, loop_receiver) = flume::bounded(0);
-        let streams = Arc::new(RwLock::new(HashMap::new()));
+        let virtual_streams = Arc::new(RwLock::new(HashMap::new()));
 
-        let streams_clone = streams.clone();
+        let virtual_streams_clone = virtual_streams.clone();
         std::thread::spawn(move || {
-            MConnection::rw_loop(secret_connection, loop_receiver, streams_clone)
+            MConnection::rw_loop(secret_connection, loop_receiver, virtual_streams_clone)
         });
 
         Ok(Self {
@@ -132,14 +134,14 @@ impl MConnection {
             local_addr,
             peer_addr,
             sender,
-            streams,
+            virtual_streams,
         })
     }
 
     fn rw_loop(
         mut secret_connection: SecretConnection<TcpStream>,
         rx: Receiver<PacketMsg>,
-        streams: Arc<RwLock<HashMap<StreamId, Sender<PacketMsg>>>>,
+        virtual_streams: Arc<RwLock<HashMap<StreamId, Sender<PacketMsg>>>>,
     ) {
         loop {
             // If any stream is trying to send a message, go for it.
@@ -153,12 +155,12 @@ impl MConnection {
                 }
             }
 
-            // If there's a new incoming message, send it to all streams.
+            // If there's a new incoming message, send it to an appropriate streams.
             let mut buf = vec![0; 8096];
             match secret_connection.read(&mut buf) {
                 Ok(n) => {
                     if let Ok(msg) = PacketMsg::decode_length_delimited(&buf[..n]) {
-                        if let Ok(streams) = streams.read() {
+                        if let Ok(virtual_streams) = virtual_streams.read() {
                             let stream_id = match msg.channel_id {
                                 0 => StreamId::Pex,
                                 _ => {
@@ -166,7 +168,7 @@ impl MConnection {
                                     continue;
                                 }
                             };
-                            if let Some(s) = streams.get(&stream_id) {
+                            if let Some(s) = virtual_streams.get(&stream_id) {
                                 if let Err(e) = s.send(msg) {
                                     println!("can't relay msg: {}", e)
                                 }
@@ -207,17 +209,17 @@ impl Connection for MConnection {
         stream_id: StreamId,
     ) -> Result<(Self::Read, Self::Write), Self::Error> {
         let (sender, receiver) = flume::bounded(0);
-        let mut streams = self
-            .streams
+        let mut virtual_streams = self
+            .virtual_streams
             .write()
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
-        if streams.contains_key(&stream_id) {
+        if virtual_streams.contains_key(&stream_id) {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::Other,
                 "stream already exists",
             ));
         }
-        streams.insert(stream_id, sender);
+        virtual_streams.insert(stream_id, sender);
 
         Ok((
             ReadVirtualStream { receiver },
@@ -276,8 +278,8 @@ impl Iterator for MIncoming {
                 let peer_addr = stream.peer_addr().wrap_err("failed to get peer addr");
 
                 let (sender, loop_receiver) = flume::bounded(0);
-                let streams = Arc::new(RwLock::new(HashMap::new()));
-                let streams_clone = streams.clone();
+                let virtual_streams = Arc::new(RwLock::new(HashMap::new()));
+                let virtual_streams_clone = virtual_streams.clone();
 
                 match (
                     SecretConnection::new(stream, &self.private_key, self.protocol_version),
@@ -292,11 +294,15 @@ impl Iterator for MIncoming {
                             local_addr,
                             peer_addr,
                             sender,
-                            streams,
+                            virtual_streams,
                         };
 
                         std::thread::spawn(move || {
-                            MConnection::rw_loop(secret_connection, loop_receiver, streams_clone)
+                            MConnection::rw_loop(
+                                secret_connection,
+                                loop_receiver,
+                                virtual_streams_clone,
+                            )
                         });
 
                         Some(Ok(conn))
