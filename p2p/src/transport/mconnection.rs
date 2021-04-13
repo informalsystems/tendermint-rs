@@ -2,19 +2,19 @@
 //! stream.
 //! Spec: https://github.com/tendermint/spec/blob/master/spec/p2p/connection.md#p2p-multiplex-connection
 
+use std::collections::HashMap;
 use std::net::{Shutdown, SocketAddr, TcpListener, TcpStream};
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
-use crossbeam_channel::Receiver;
 use ed25519_dalek as ed25519;
 use eyre::{Result, WrapErr};
-use flume::{self, Sender};
+use flume::{self, Receiver, Sender};
 use prost::Message as _;
 
 use tendermint_proto::p2p::PacketMsg;
 
-use crate::secret_connection::{SecretConnection, Version};
+use crate::secret_connection::{self, SecretConnection, Version};
 use crate::transport::{
     BindInfo, ConnectInfo, Connection, Endpoint, PublicKey, Read, StreamId, Transport, Write,
 };
@@ -30,10 +30,12 @@ pub struct MConnection {
     stream: TcpStream,
     local_addr: SocketAddr,
     peer_addr: SocketAddr,
-    // clonable sender to write data to secret_connection
+    // clonable sender to write data to secret connection
+    // see rw_loop where writing happens
     sender: Sender<PacketMsg>,
-    // clonable receiver to read data from secret_connection
-    receiver: Receiver<PacketMsg>,
+    // stream ID mapped to a sender
+    // each `ReadVirtualStream` has a matching receiver
+    streams: Arc<RwLock<HashMap<StreamId, Sender<PacketMsg>>>>,
 }
 
 /// An `Endpoint` for connecting to other peers.
@@ -61,7 +63,6 @@ pub struct WriteVirtualStream {
 
 /// Read part of the virtual stream.
 pub struct ReadVirtualStream {
-    stream_id: StreamId,
     receiver: Receiver<PacketMsg>,
 }
 
@@ -83,11 +84,11 @@ impl MConnection {
         let secret_connection = SecretConnection::new(stream, private_key, protocol_version)?;
 
         let (sender, loop_receiver) = flume::bounded(0);
-        // flume does not support broadcast channels
-        // see https://github.com/zesterer/flume/issues/68#issuecomment-761032975
-        let (loop_sender, receiver) = crossbeam_channel::bounded(0);
+        let streams = Arc::new(RwLock::new(HashMap::new()));
+
+        let streams_clone = streams.clone();
         std::thread::spawn(move || {
-            MConnection::rw_loop(secret_connection, loop_receiver, loop_sender)
+            MConnection::rw_loop(secret_connection, loop_receiver, streams_clone)
         });
 
         Ok(Self {
@@ -96,7 +97,7 @@ impl MConnection {
             local_addr,
             peer_addr,
             sender,
-            receiver,
+            streams,
         })
     }
 
@@ -118,11 +119,11 @@ impl MConnection {
         let secret_connection = SecretConnection::new(stream, private_key, protocol_version)?;
 
         let (sender, loop_receiver) = flume::bounded(0);
-        // flume does not support broadcast channels
-        // see https://github.com/zesterer/flume/issues/68#issuecomment-761032975
-        let (loop_sender, receiver) = crossbeam_channel::bounded(0);
+        let streams = Arc::new(RwLock::new(HashMap::new()));
+
+        let streams_clone = streams.clone();
         std::thread::spawn(move || {
-            MConnection::rw_loop(secret_connection, loop_receiver, loop_sender)
+            MConnection::rw_loop(secret_connection, loop_receiver, streams_clone)
         });
 
         Ok(Self {
@@ -131,14 +132,14 @@ impl MConnection {
             local_addr,
             peer_addr,
             sender,
-            receiver,
+            streams,
         })
     }
 
     fn rw_loop(
         mut secret_connection: SecretConnection<TcpStream>,
-        rx: flume::Receiver<PacketMsg>,
-        tx: crossbeam_channel::Sender<PacketMsg>,
+        rx: Receiver<PacketMsg>,
+        streams: Arc<RwLock<HashMap<StreamId, Sender<PacketMsg>>>>,
     ) {
         let mut read_buf = Vec::with_capacity(8096);
 
@@ -155,12 +156,25 @@ impl MConnection {
             }
 
             // If there's a new incoming message, send it to all streams.
-            match secret_connection.read(&mut read_buf) {
+            let mut buf = Vec::with_capacity(secret_connection::DATA_MAX_SIZE);
+            match secret_connection.read(&mut buf) {
                 Ok(_) => {
+                    read_buf.append(&mut buf);
                     if let Ok(msg) = PacketMsg::decode_length_delimited(&*read_buf) {
                         read_buf.clear();
-                        if let Err(e) = tx.send(msg) {
-                            println!("can't relay msg: {}", e)
+                        if let Ok(streams) = streams.read() {
+                            let stream_id = match msg.channel_id {
+                                0 => StreamId::Pex,
+                                _ => {
+                                    println!("unknown channel_id: {}", msg.channel_id);
+                                    continue;
+                                }
+                            };
+                            if let Some(s) = streams.get(&stream_id) {
+                                if let Err(e) = s.send(msg) {
+                                    println!("can't relay msg: {}", e)
+                                }
+                            }
                         }
                     }
                 }
@@ -196,13 +210,21 @@ impl Connection for MConnection {
         &self,
         stream_id: StreamId,
     ) -> Result<(Self::Read, Self::Write), Self::Error> {
+        let (sender, receiver) = flume::bounded(0);
+        let mut streams = self
+            .streams
+            .write()
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        if streams.contains_key(&stream_id) {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "stream already exists",
+            ));
+        }
+        streams.insert(stream_id, sender);
+
         Ok((
-            ReadVirtualStream {
-                stream_id,
-                // Note that cloning only creates a new handle. It does not create a separate
-                // stream of messages in any way.
-                receiver: self.receiver.clone(),
-            },
+            ReadVirtualStream { receiver },
             WriteVirtualStream {
                 stream_id,
                 sender: self.sender.clone(),
@@ -258,9 +280,8 @@ impl Iterator for MIncoming {
                 let peer_addr = stream.peer_addr().wrap_err("failed to get peer addr");
 
                 let (sender, loop_receiver) = flume::bounded(0);
-                // flume does not support broadcast channels
-                // see https://github.com/zesterer/flume/issues/68#issuecomment-761032975
-                let (loop_sender, receiver) = crossbeam_channel::bounded(0);
+                let streams = Arc::new(RwLock::new(HashMap::new()));
+                let streams_clone = streams.clone();
 
                 match (
                     SecretConnection::new(stream, &self.private_key, self.protocol_version),
@@ -275,11 +296,11 @@ impl Iterator for MIncoming {
                             local_addr,
                             peer_addr,
                             sender,
-                            receiver,
+                            streams,
                         };
 
                         std::thread::spawn(move || {
-                            MConnection::rw_loop(secret_connection, loop_receiver, loop_sender)
+                            MConnection::rw_loop(secret_connection, loop_receiver, streams_clone)
                         });
 
                         Some(Ok(conn))
@@ -359,17 +380,12 @@ impl Transport for MConnectionTransport {
 
 impl Read for ReadVirtualStream {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-        // loop until we get a message for this channel
-        loop {
-            let msg = self
-                .receiver
-                .recv()
-                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
-            if msg.channel_id == self.stream_id as i32 {
-                buf.copy_from_slice(&msg.data);
-                return Ok(msg.data.len());
-            }
-        }
+        let msg = self
+            .receiver
+            .recv()
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        buf.copy_from_slice(&msg.data);
+        return Ok(msg.data.len());
     }
 }
 
@@ -425,6 +441,15 @@ mod tests {
 
             let c = incoming1.next();
             assert!(c.is_some());
+
+            if let Some(Ok(c)) = c {
+                let (mut r, _w) = c.open_bidirectional(StreamId::Pex).unwrap();
+
+                let mut buf = Vec::new();
+                let n = r.read(&mut buf);
+                assert!(n.is_ok());
+                assert_eq!(5, n.unwrap());
+            }
         });
 
         let peer2 = thread::spawn(move || {
@@ -446,7 +471,10 @@ mod tests {
                 })
                 .expect("bind to succeed");
 
-            let (_r, _w) = conn.open_bidirectional(StreamId::Pex).unwrap();
+            let (_r, mut w) = conn.open_bidirectional(StreamId::Pex).unwrap();
+            let n = w.write(&[0, 0, 0, 0, 0]);
+            assert!(n.is_ok());
+            assert_eq!(5, n.unwrap());
         });
 
         peer1.join().expect("peer1 thread has panicked");
