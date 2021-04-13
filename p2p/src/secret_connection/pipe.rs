@@ -79,7 +79,9 @@ impl PipeBufWriter {
     #[inline]
     /// Gets a reference to the underlying `Sender`
     pub fn sender(&self) -> &Sender<Vec<u8>> {
-        self.sender.as_ref().unwrap()
+        // SAFETY: this is safe as long as `into_inner()` is the only method
+        // that clears the sender, and this fn is never called afterward
+        self.sender.as_ref().expect("sender to be present")
     }
 }
 
