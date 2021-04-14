@@ -24,19 +24,19 @@ mod kvstore_app_integration {
 
         client
             .deliver_tx(RequestDeliverTx {
-                tx: "test-key=test-value".as_bytes().to_owned(),
+                tx: "test-key=test-value".as_bytes().into(),
             })
             .unwrap();
         client.commit().unwrap();
 
         let res = client
             .query(RequestQuery {
-                data: "test-key".as_bytes().to_owned(),
+                data: "test-key".as_bytes().into(),
                 path: "".to_string(),
                 height: 0,
                 prove: false,
             })
             .unwrap();
-        assert_eq!(res.value, "test-value".as_bytes().to_owned());
+        assert_eq!(res.value, "test-value".as_bytes());
     }
 }

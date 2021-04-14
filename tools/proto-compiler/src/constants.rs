@@ -20,8 +20,7 @@ const HEXSTRING: &str = r#"#[serde(with = "crate::serializers::bytes::hexstring"
 const BASE64STRING: &str = r#"#[serde(with = "crate::serializers::bytes::base64string")]"#;
 const VEC_BASE64STRING: &str = r#"#[serde(with = "crate::serializers::bytes::vec_base64string")]"#;
 const OPTIONAL: &str = r#"#[serde(with = "crate::serializers::optional")]"#;
-const VEC_SKIP_IF_EMPTY: &str =
-    r#"#[serde(skip_serializing_if = "::prost::alloc::vec::Vec::is_empty", with = "serde_bytes")]"#;
+const BYTES_SKIP_IF_EMPTY: &str = r#"#[serde(skip_serializing_if = "bytes::Bytes::is_empty")]"#;
 const NULLABLEVECARRAY: &str = r#"#[serde(with = "crate::serializers::txs")]"#;
 const NULLABLE: &str = r#"#[serde(with = "crate::serializers::nullable")]"#;
 const ALIAS_POWER_QUOTED: &str =
@@ -90,7 +89,7 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.version.Consensus.app", QUOTED_WITH_DEFAULT),
     (
         ".tendermint.abci.ResponseInfo.last_block_app_hash",
-        VEC_SKIP_IF_EMPTY,
+        BYTES_SKIP_IF_EMPTY,
     ),
     (".tendermint.abci.ResponseInfo.app_version", QUOTED),
     (".tendermint.types.BlockID.hash", HEXSTRING),

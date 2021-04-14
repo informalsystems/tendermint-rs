@@ -34,7 +34,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 async-trait = { version = "0.1", default-features = false }
-bytes = { version = "1.0", default-features = false }
+bytes = { version = "1.0", default-features = false, features = ["serde"] }
 chrono = { version = "0.4.19", default-features = false, features = ["serde"] }
 ed25519 = { version = "1", default-features = false }
 ed25519-dalek = { version = "1", default-features = false, features = ["u64_backend"] }

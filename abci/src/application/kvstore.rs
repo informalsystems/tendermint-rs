@@ -123,17 +123,17 @@ impl Application for KeyValueStoreApp {
             version: "0.1.0".to_string(),
             app_version: 1,
             last_block_height,
-            last_block_app_hash,
+            last_block_app_hash: last_block_app_hash.into(),
         }
     }
 
     fn query(&self, request: RequestQuery) -> ResponseQuery {
-        let key = match String::from_utf8(request.data.clone()) {
+        let key = match std::str::from_utf8(&request.data) {
             Ok(s) => s,
             Err(e) => panic!("Failed to intepret key as UTF-8: {}", e),
         };
         debug!("Attempting to get key: {}", key);
-        match self.get(key.clone()) {
+        match self.get(key) {
             Ok((height, value_opt)) => match value_opt {
                 Some(value) => ResponseQuery {
                     code: 0,
@@ -141,7 +141,7 @@ impl Application for KeyValueStoreApp {
                     info: "".to_string(),
                     index: 0,
                     key: request.data,
-                    value: value.into_bytes(),
+                    value: value.into_bytes().into(),
                     proof_ops: None,
                     height,
                     codespace: "".to_string(),
@@ -152,7 +152,7 @@ impl Application for KeyValueStoreApp {
                     info: "".to_string(),
                     index: 0,
                     key: request.data,
-                    value: vec![],
+                    value: Default::default(),
                     proof_ops: None,
                     height,
                     codespace: "".to_string(),
@@ -165,7 +165,7 @@ impl Application for KeyValueStoreApp {
     fn check_tx(&self, _request: RequestCheckTx) -> ResponseCheckTx {
         ResponseCheckTx {
             code: 0,
-            data: vec![],
+            data: Default::default(),
             log: "".to_string(),
             info: "".to_string(),
             gas_wanted: 1,
@@ -179,7 +179,7 @@ impl Application for KeyValueStoreApp {
     }
 
     fn deliver_tx(&self, request: RequestDeliverTx) -> ResponseDeliverTx {
-        let tx = String::from_utf8(request.tx).unwrap();
+        let tx = std::str::from_utf8(&request.tx).unwrap();
         let tx_parts = tx.split('=').collect::<Vec<&str>>();
         let (key, value) = if tx_parts.len() == 2 {
             (tx_parts[0], tx_parts[1])
@@ -189,7 +189,7 @@ impl Application for KeyValueStoreApp {
         let _ = self.set(key, value).unwrap();
         ResponseDeliverTx {
             code: 0,
-            data: vec![],
+            data: Default::default(),
             log: "".to_string(),
             info: "".to_string(),
             gas_wanted: 0,
@@ -224,7 +224,7 @@ impl Application for KeyValueStoreApp {
         let (height, app_hash) = channel_recv(&result_rx).unwrap();
         info!("Committed height {}", height);
         ResponseCommit {
-            data: app_hash,
+            data: app_hash.into(),
             retain_height: height - 1,
         }
     }

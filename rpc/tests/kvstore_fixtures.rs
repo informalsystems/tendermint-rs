@@ -318,7 +318,7 @@ fn incoming_fixtures() {
                 let result = endpoint::abci_info::Response::from_string(content).unwrap();
                 assert_eq!(result.response.app_version, 1);
                 assert_eq!(result.response.data, "{\"size\":0}");
-                assert_eq!(result.response.last_block_app_hash, b"AAAAAAAAAAA=");
+                assert_eq!(result.response.last_block_app_hash, b"AAAAAAAAAAA="[..]);
                 assert_eq!(result.response.version, "0.17.0");
             }
             "abci_query_with_existing_key" => {
