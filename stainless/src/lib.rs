@@ -1,9 +1,29 @@
 //! Provides a peer list for use within the `Supervisor`
 
 extern crate stainless;
-
 use stainless::*;
-use std::collections::{BTreeSet, HashMap};
+
+use std::hash::Hash;
+
+trait SetMethods<T> {
+    fn is_equal(&self, other: &Set<T>) -> bool;
+    fn is_disjoint(&self, other: &Set<T>) -> bool;
+    fn remove(self, t: &T) -> Self;
+}
+
+impl<T: Eq + Hash + Clone> SetMethods<T> for Set<T> {
+    fn is_equal(&self, other: &Set<T>) -> bool {
+        self.is_subset_of(other) && other.is_subset_of(self)
+    }
+
+    fn is_disjoint(&self, other: &Set<T>) -> bool {
+        self.intersection(other.clone()).is_equal(&Set::empty())
+    }
+
+    fn remove(self, t: &T) -> Self {
+        self.difference(Set::singleton(t.clone()))
+    }
+}
 
 // Copied imports from the `light-client` crate:
 macro_rules! bail {
@@ -32,14 +52,14 @@ pub enum ErrorKind {
 /// correctness.
 #[derive(Clone)]
 pub struct PeerList<T> {
-    values: HashMap<PeerId, T>,
+    values: Map<PeerId, T>,
     primary: PeerId,
-    witnesses: BTreeSet<PeerId>,
-    full_nodes: BTreeSet<PeerId>,
-    faulty_nodes: BTreeSet<PeerId>,
+    witnesses: Set<PeerId>,
+    full_nodes: Set<PeerId>,
+    faulty_nodes: Set<PeerId>,
 }
 
-impl<T> PeerList<T> {
+impl<T: Clone> PeerList<T> {
     /// Invariant maintained by a `PeerList`
     ///
     /// ## Implements
@@ -51,19 +71,19 @@ impl<T> PeerList<T> {
             && !peer_list.witnesses.contains(&peer_list.primary)
             && !peer_list.full_nodes.contains(&peer_list.primary)
             && !peer_list.faulty_nodes.contains(&peer_list.primary)
-            && peer_list.values.contains_key(&peer_list.primary)
+            && peer_list.values.contains(&peer_list.primary)
             && peer_list
                 .witnesses
                 .iter()
-                .all(|id| peer_list.values.contains_key(id))
+                .all(|id| peer_list.values.contains(id))
             && peer_list
                 .full_nodes
                 .iter()
-                .all(|id| peer_list.values.contains_key(id))
+                .all(|id| peer_list.values.contains(id))
             && peer_list
                 .faulty_nodes
                 .iter()
-                .all(|id| peer_list.values.contains_key(id))
+                .all(|id| peer_list.values.contains(id))
     }
 
     /// Transition invariant maintained by a `PeerList`
@@ -103,17 +123,17 @@ impl<T> PeerList<T> {
     // }
 
     /// Get all the witnesses peer ids
-    pub fn witnesses_ids(&self) -> &BTreeSet<PeerId> {
+    pub fn witnesses_ids(&self) -> &Set<PeerId> {
         &self.witnesses
     }
 
     /// Get all the full nodes peer ids
-    pub fn full_nodes_ids(&self) -> &BTreeSet<PeerId> {
+    pub fn full_nodes_ids(&self) -> &Set<PeerId> {
         &self.full_nodes
     }
 
     /// Get all the faulty nodes peer ids
-    pub fn faulty_nodes_ids(&self) -> &BTreeSet<PeerId> {
+    pub fn faulty_nodes_ids(&self) -> &Set<PeerId> {
         &self.faulty_nodes
     }
 
@@ -133,12 +153,12 @@ impl<T> PeerList<T> {
         self.witnesses.remove(&faulty_witness);
 
         if let Some(new_witness) = self.full_nodes.iter().next().copied() {
-            self.witnesses.insert(new_witness);
+            self.witnesses.add(new_witness);
             self.full_nodes.remove(&new_witness);
             result = Some(new_witness);
         }
 
-        self.faulty_nodes.insert(faulty_witness);
+        self.faulty_nodes.add(faulty_witness);
 
         result
     }
@@ -153,7 +173,7 @@ impl<T> PeerList<T> {
         &mut self,
         primary_error: Option<Error>,
     ) -> Result<PeerId, Error> {
-        self.faulty_nodes.insert(self.primary);
+        self.faulty_nodes.add(self.primary);
 
         if let Some(new_primary) = self.witnesses.iter().next().copied() {
             self.primary = new_primary;
@@ -167,11 +187,11 @@ impl<T> PeerList<T> {
     }
 
     /// Get a reference to the underlying `HashMap`
-    pub fn values(&self) -> &HashMap<PeerId, T> {
+    pub fn values(&self) -> &Map<PeerId, T> {
         &self.values
     }
     /// Consume into the underlying `HashMap`
-    pub fn into_values(self) -> HashMap<PeerId, T> {
+    pub fn into_values(self) -> Map<PeerId, T> {
         self.values
     }
 }
