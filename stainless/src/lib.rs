@@ -47,9 +47,9 @@ impl<T: Eq + std::hash::Hash + Clone> ListSet<T> {
         }
     }
 
-    pub fn first(&self) -> Option<&T> {
+    pub fn first(&self) -> Option<T> {
         match &self.list {
-            List::Cons(t, _) => Some(t),
+            List::Cons(t, _) => Some(t.clone()),
             _ => None,
         }
     }
@@ -232,7 +232,7 @@ impl<T: Clone> PeerList<T> {
 
         self.witnesses = self.witnesses.remove(&faulty_witness);
 
-        if let Some(new_witness) = self.full_nodes.first().copied() {
+        if let Some(new_witness) = self.full_nodes.first() {
             self.witnesses = self.witnesses.add(new_witness);
             self.full_nodes = self.full_nodes.remove(&new_witness);
             result = Some(new_witness);
@@ -255,7 +255,7 @@ impl<T: Clone> PeerList<T> {
     ) -> Result<(Self, u128), Box<ErrorKind>> {
         self.faulty_nodes = self.faulty_nodes.add(self.primary);
 
-        if let Some(new_primary) = self.witnesses.first().copied() {
+        if let Some(new_primary) = self.witnesses.first() {
             self.primary = new_primary;
             self.witnesses = self.witnesses.remove(&new_primary);
             Ok((self, new_primary))
