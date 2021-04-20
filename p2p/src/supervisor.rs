@@ -90,7 +90,7 @@ enum Input {
     Accepted(node::Id),
     Command(Command),
     Connected(node::Id),
-    DuplicateConnRejected(node::Id, Option<Report>),
+    DuplicateConnRejected(node::Id, Direction, Option<Report>),
     Receive(node::Id, message::Receive),
     Stopped(node::Id, Option<Report>),
     Upgraded(node::Id),
@@ -329,8 +329,10 @@ impl Supervisor {
                     Ok(()) => {}
                     // TODO(xla): Communication with one of the subroutines has failed, we need to
                     // bail here, tear down the machinery and communicate that we are done.
-                    Err(flume::TrySendError::Disconnected(_))
-                    | Err(flume::TrySendError::Full(_)) => todo!(),
+                    Err(flume::TrySendError::Disconnected(_)) => todo!(),
+                    // FIXME(xla): The case becomes relevant as soon as the transition from
+                    // unbounded to bounded channels is done.
+                    Err(flume::TrySendError::Full(_)) => todo!(),
                 }
             }
         }
@@ -354,8 +356,13 @@ impl Supervisor {
                 // Incoming stream is finished, there is nothing left to do for this
                 // subroutine.
                 None => return Ok(()),
+                // TODO(xla): Needs clarification if this error indicates the transport is fallen
+                // sideways and should be dropped and therefore the supervisor wrapping it.
                 Some(Err(_err)) => todo!(),
                 Some(Ok(conn)) => match node::Id::try_from(conn.public_key()) {
+                    // TODO(xla): Miigt be a non-issue as the only error variant is an
+                    // unsupported key scheme, needs clarification if that path should be
+                    // reworked out of the system to avoid creeping in contexts like this one.
                     Err(_err) => todo!(),
                     Ok(id) => {
                         let mut connected =
@@ -368,9 +375,11 @@ impl Supervisor {
                             }
                             // If the id in question is already connected we terminate
                             // the duplicate one and inform the protocol of it.
-                            Entry::Occupied(_entry) => {
-                                Input::DuplicateConnRejected(id, conn.close().err())
-                            }
+                            Entry::Occupied(_entry) => Input::DuplicateConnRejected(
+                                id,
+                                Direction::Incoming,
+                                conn.close().err(),
+                            ),
                         };
 
                         input_tx.try_send(msg)?;
@@ -396,6 +405,9 @@ impl Supervisor {
                 Err(_err) => todo!(),
                 Ok(conn) => {
                     match node::Id::try_from(conn.public_key()) {
+                        // TODO(xla): Miigt be a non-issue as the only error variant is an
+                        // unsupported key scheme, needs clarification if that path should be
+                        // reworked out of the system to avoid creeping in contexts like this one.
                         Err(_err) => todo!(),
                         Ok(id) => {
                             let mut connected =
@@ -406,11 +418,13 @@ impl Supervisor {
                                     entry.insert(transport::Direction::Outgoing(conn));
                                     Input::Connected(id)
                                 }
-                                Entry::Occupied(_entry) => {
-                                    // TODO(xla): Define and account for the case where a connection is present for
-                                    // the id.
-                                    todo!()
-                                }
+                                // If the id in question is already connected we terminate
+                                // the duplicate one and inform the protocol of it.
+                                Entry::Occupied(_entry) => Input::DuplicateConnRejected(
+                                    id,
+                                    Direction::Outgoing,
+                                    conn.close().err(),
+                                ),
                             };
 
                             input_tx.try_send(msg)?;
@@ -441,6 +455,9 @@ impl Supervisor {
                 // implementation details of send.
                 Some(peer) => match peer.send(msg) {
                     Ok(()) => {}
+                    // TODO(xla): Unclear at this point when a send to a peer can fail. Likely
+                    // cause here is that the peer is stopped, it should result in a peer stopped
+                    // event.
                     Err(_err) => todo!(),
                 },
                 // TODO(xla): A missing peer needs to be bubbled up as that indicates there is
@@ -467,7 +484,7 @@ impl Supervisor {
             let msg = match peer {
                 Some(peer) => Input::Stopped(id, peer.stop().err()),
                 None => {
-                    // TOOD(xla): A missing peer needs to be bubbled up as that indicates there is
+                    // TODO(xla): A missing peer needs to be bubbled up as that indicates there is
                     // a mismatch between the protocol tracked peers and the ones the supervisor holds
                     // onto. Something is afoot and it needs to be reconciled asap.
                     todo!()
@@ -497,6 +514,9 @@ impl Supervisor {
                     match peer::Peer::try_from(conn) {
                         Err(_err) => todo!(),
                         // TODO(xla): Provide actual (possibly configured) list of streams.
+                        // FIXME(xla): With the connected lock being held up top, this is sensitive
+                        // to the run implementation, it shall not block. Better to not depend on
+                        // these details.
                         Ok(peer) => match peer.run(vec![]) {
                             Ok(peer) => {
                                 let mut peers =
@@ -506,6 +526,9 @@ impl Supervisor {
                                         entry.insert(peer);
                                         Input::Upgraded(peer_id)
                                     }
+                                    // TODO(xla): If there is a peer already present in the slot it
+                                    // should likely be discarded, alternatively this check should
+                                    // happen before the upgrade is executed.
                                     Entry::Occupied(_entry) => todo!(),
                                 }
                             }

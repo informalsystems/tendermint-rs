@@ -21,7 +21,7 @@ impl Protocol {
             Input::Accepted(id) => self.handle_accepted(id),
             Input::Command(command) => self.handle_command(command),
             Input::Connected(id) => self.handle_connected(id),
-            Input::DuplicateConnRejected(_id, _report) => todo!(),
+            Input::DuplicateConnRejected(_id, _direction, _report) => todo!(),
             Input::Receive(id, msg) => self.handle_receive(id, msg),
             Input::Stopped(id, report) => self.handle_stopped(id, report),
             Input::Upgraded(id) => self.handle_upgraded(id),
