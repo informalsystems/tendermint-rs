@@ -65,6 +65,8 @@ ripemd160 = { version = "0.9", optional = true }
 
 [features]
 secp256k1 = ["k256", "ripemd160"]
+default = ["std"]
+std = []
 
 [dev-dependencies]
 proptest = "0.10.1"

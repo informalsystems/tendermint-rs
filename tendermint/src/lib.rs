@@ -18,6 +18,7 @@
     html_root_url = "https://docs.rs/tendermint/0.19.0",
     html_logo_url = "https://raw.githubusercontent.com/informalsystems/tendermint-rs/master/img/logo-tendermint-rs_3961x4001.png"
 )]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 #[macro_use]
 pub mod error;
