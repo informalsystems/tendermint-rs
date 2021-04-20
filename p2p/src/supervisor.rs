@@ -279,8 +279,14 @@ impl Supervisor {
                 };
 
                 let mut selector = flume::Selector::new()
-                    .recv(&command_rx, |res| Input::Command(res.unwrap()))
-                    .recv(&input_rx, |input| input.unwrap());
+                    .recv(&command_rx, |res| match res {
+                        Ok(cmd) => Input::Command(cmd),
+                        Err(_err) => todo!(),
+                    })
+                    .recv(&input_rx, |res| match res {
+                        Ok(input) => input,
+                        Err(_err) => todo!(),
+                    });
 
                 for (id, peer) in &*peers {
                     selector = selector.recv(&peer.state.receiver, move |res| match res {
@@ -456,7 +462,10 @@ impl Supervisor {
                 // FIXME(xla): As the state lock is held up top, it's dangerous if send is
                 // ever blocking for any amount of time, which makes this call sensitive to the
                 // implementation details of send.
-                Some(peer) => peer.send(msg).unwrap(),
+                Some(peer) => match peer.send(msg) {
+                    Ok(()) => {}
+                    Err(_err) => todo!(),
+                },
                 // TODO(xla): A missing peer needs to be bubbled up as that indicates there is
                 // a mismatch between the tracked peers in the protocol and the ones the supervisor holds
                 // onto. Something is afoot and it needs to be reconciled asap.

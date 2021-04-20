@@ -75,7 +75,7 @@ impl Protocol {
 
         vec![Output::from(Event::Disconnected(
             id,
-            report.unwrap_or(Report::msg("successfully disconected")),
+            report.unwrap_or_else(|| Report::msg("successfully disconected")),
         ))]
     }
 
