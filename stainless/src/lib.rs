@@ -83,9 +83,9 @@ impl<T> PeerList<T> {
     }
 
     /// Get a mutable reference to the light client instance for the given peer id.
-    pub fn get_mut(&mut self, peer_id: &PeerId) -> Option<&mut T> {
-        self.values.get_mut(peer_id)
-    }
+    // pub fn get_mut(&mut self, peer_id: &PeerId) -> Option<&mut T> {
+    //     self.values.get_mut(peer_id)
+    // }
 
     /// Get current primary peer id.
     pub fn primary_id(&self) -> PeerId {
@@ -98,9 +98,9 @@ impl<T> PeerList<T> {
     }
 
     /// Get a mutable reference to the current primary instance.
-    pub fn primary_mut(&mut self) -> &mut T {
-        self.values.get_mut(&self.primary).unwrap() // SAFETY: Enforced by invariant
-    }
+    // pub fn primary_mut(&mut self) -> &mut T {
+    //     self.values.get_mut(&self.primary).unwrap() // SAFETY: Enforced by invariant
+    // }
 
     /// Get all the witnesses peer ids
     pub fn witnesses_ids(&self) -> &BTreeSet<PeerId> {
