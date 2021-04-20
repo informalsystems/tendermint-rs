@@ -1,20 +1,36 @@
 //! Provides a peer list for use within the `Supervisor`
 
-use crate::{
-    bail,
-    errors::{Error, ErrorKind},
-    types::PeerId,
-};
+extern crate stainless;
 
-use contracts::{post, pre};
+use stainless::*;
 use std::collections::{BTreeSet, HashMap};
+
+// Copied imports from the `light-client` crate:
+macro_rules! bail {
+    ($kind:expr) => {
+        return Err(Box::new($kind));
+    };
+}
+
+pub const LENGTH: usize = 20;
+
+/// Node IDs
+#[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct PeerId([u8; LENGTH]);
+
+type Error = Box<ErrorKind>;
+pub enum ErrorKind {
+    NoWitnessLeft { context: Option<Error> },
+}
+
+// Copied imports end.
 
 /// A generic container mapping `PeerId`s to some type `T`,
 /// which keeps track of the primary peer, witnesses, full nodes,
 /// and faulty nodes. Provides lifecycle methods to swap the primary,
 /// mark witnesses as faulty, and maintains an `invariant` for
 /// correctness.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct PeerList<T> {
     values: HashMap<PeerId, T>,
     primary: PeerId,
@@ -137,7 +153,7 @@ impl<T> PeerList<T> {
     ///
     /// ## Errors
     /// - If there are no witness left, returns `ErrorKind::NoWitnessLeft`.
-    #[post(ret.is_ok() ==> Self::invariant(&self))]
+    #[post(ret.is_ok().implies(Self::invariant(&self)))]
     pub fn replace_faulty_primary(
         &mut self,
         primary_error: Option<Error>,
@@ -149,9 +165,9 @@ impl<T> PeerList<T> {
             self.witnesses.remove(&new_primary);
             Ok(new_primary)
         } else if let Some(err) = primary_error {
-            bail!(ErrorKind::NoWitnessLeft.context(err))
+            bail!(ErrorKind::NoWitnessLeft { context: Some(err) })
         } else {
-            bail!(ErrorKind::NoWitnessLeft)
+            bail!(ErrorKind::NoWitnessLeft { context: None })
         }
     }
 
