@@ -3,10 +3,120 @@
 extern crate stainless;
 use stainless::*;
 
-use std::hash::Hash;
+#[derive(Clone)]
+pub struct ListSet<T> {
+    list: List<T>,
+}
 
-mod list;
-use list::*;
+#[derive(Clone)]
+pub struct ListMap<K, V> {
+    list: List<(K, V)>,
+}
+
+#[derive(Clone)]
+enum List<T> {
+    Nil,
+    Cons(T, Box<List<T>>),
+}
+
+impl<T: Eq + std::hash::Hash + Clone> ListSet<T> {
+    pub fn empty() -> Self {
+        ListSet { list: List::Nil }
+    }
+
+    pub fn is_disjoint(&self, other: &ListSet<T>) -> bool {
+        is_equal(
+            &self.list.contents().intersection(other.list.contents()),
+            &Set::empty(),
+        )
+    }
+
+    pub fn contains(&self, t: &T) -> bool {
+        self.list.contents().contains(&t)
+    }
+
+    pub fn remove(self, t: &T) -> Self {
+        Self {
+            list: self.list.remove(t),
+        }
+    }
+
+    pub fn add(self, t: T) -> Self {
+        Self {
+            list: self.list.add(t),
+        }
+    }
+
+    pub fn first(&self) -> Option<&T> {
+        match &self.list {
+            List::Cons(t, _) => Some(t),
+            _ => None,
+        }
+    }
+}
+
+impl<K: Eq + std::hash::Hash + Clone, V> ListMap<K, V> {
+    pub fn get(&self, key: &K) -> Option<&V> {
+        self.list.get(key)
+    }
+
+    pub fn contains(&self, key: &K) -> bool {
+        self.list.key_set().contains(&key)
+    }
+
+    pub fn contains_all(&self, keys: &ListSet<K>) -> bool {
+        is_equal(
+            &self.list.key_set().intersection(keys.list.contents()),
+            &keys.list.contents(),
+        )
+    }
+}
+
+fn is_equal<T: Eq + std::hash::Hash + Clone>(s1: &Set<T>, s2: &Set<T>) -> bool {
+    s1.is_subset_of(s2) && s2.is_subset_of(s1)
+}
+
+impl<T: Eq + std::hash::Hash + Clone> List<T> {
+    #[measure(self)]
+    pub fn contents(&self) -> Set<&T> {
+        match self {
+            List::Nil => Set::empty(),
+            List::Cons(head, tail) => tail.contents().add(head),
+        }
+    }
+
+    pub fn remove(self, t: &T) -> Self {
+        match self {
+            List::Nil => self,
+            List::Cons(head, tail) if head == *t => *tail,
+            List::Cons(head, tail) => List::Cons(head, Box::new(tail.remove(t))),
+        }
+    }
+
+    pub fn add(self, t: T) -> Self {
+        match self {
+            List::Nil => List::Cons(t, Box::new(List::Nil)),
+            _ => List::Cons(t, Box::new(self)),
+        }
+    }
+}
+
+impl<K: Eq + std::hash::Hash + Clone, V> List<(K, V)> {
+    pub fn key_set(&self) -> Set<&K> {
+        match self {
+            List::Nil => Set::empty(),
+            List::Cons(head, tail) => tail.key_set().add(&head.0),
+        }
+    }
+
+    pub fn get(&self, key: &K) -> Option<&V> {
+        match &self {
+            List::Nil => None,
+            List::Cons(head, _) if head.0 == *key => Some(&head.1),
+            List::Cons(_, tail) => tail.get(key),
+        }
+    }
+}
 
 // Copied imports from the `light-client` crate:
 macro_rules! bail {
@@ -15,31 +125,27 @@ macro_rules! bail {
     };
 }
 
-pub const LENGTH: usize = 20;
-
 /// Node IDs
-#[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct PeerId([u8; LENGTH]);
+// u128 was replaced by a simple u128 to make hashing easier.
 
-type Error = Box<ErrorKind>;
 pub enum ErrorKind {
-    NoWitnessLeft { context: Option<Error> },
+    NoWitnessLeft { context: Option<Box<ErrorKind>> },
 }
 
 // Copied imports end.
 
-/// A generic container mapping `PeerId`s to some type `T`,
+/// A generic container mapping `u128`s to some type `T`,
 /// which keeps track of the primary peer, witnesses, full nodes,
 /// and faulty nodes. Provides lifecycle methods to swap the primary,
 /// mark witnesses as faulty, and maintains an `invariant` for
 /// correctness.
 #[derive(Clone)]
 pub struct PeerList<T> {
-    values: ListMap<PeerId, T>,
-    primary: PeerId,
-    witnesses: ListSet<PeerId>,
-    full_nodes: ListSet<PeerId>,
-    faulty_nodes: ListSet<PeerId>,
+    values: ListMap<u128, T>,
+    primary: u128,
+    witnesses: ListSet<u128>,
+    full_nodes: ListSet<u128>,
+    faulty_nodes: ListSet<u128>,
 }
 
 impl<T: Clone> PeerList<T> {
@@ -72,17 +178,17 @@ impl<T: Clone> PeerList<T> {
     }
 
     /// Get a reference to the light client instance for the given peer id.
-    pub fn get(&self, peer_id: &PeerId) -> Option<&T> {
+    pub fn get(&self, peer_id: &u128) -> Option<&T> {
         self.values.get(peer_id)
     }
 
     /// Get a mutable reference to the light client instance for the given peer id.
-    // pub fn get_mut(&mut self, peer_id: &PeerId) -> Option<&mut T> {
+    // pub fn get_mut(&mut self, peer_id: &u128) -> Option<&mut T> {
     //     self.values.get_mut(peer_id)
     // }
 
     /// Get current primary peer id.
-    pub fn primary_id(&self) -> PeerId {
+    pub fn primary_id(&self) -> u128 {
         self.primary
     }
 
@@ -97,17 +203,17 @@ impl<T: Clone> PeerList<T> {
     // }
 
     /// Get all the witnesses peer ids
-    pub fn witnesses_ids(&self) -> &ListSet<PeerId> {
+    pub fn witnesses_ids(&self) -> &ListSet<u128> {
         &self.witnesses
     }
 
     /// Get all the full nodes peer ids
-    pub fn full_nodes_ids(&self) -> &ListSet<PeerId> {
+    pub fn full_nodes_ids(&self) -> &ListSet<u128> {
         &self.full_nodes
     }
 
     /// Get all the faulty nodes peer ids
-    pub fn faulty_nodes_ids(&self) -> &ListSet<PeerId> {
+    pub fn faulty_nodes_ids(&self) -> &ListSet<u128> {
         &self.faulty_nodes
     }
 
@@ -121,7 +227,7 @@ impl<T: Clone> PeerList<T> {
     /// - The given peer must be in the witness list
     #[pre(&faulty_witness != &self.primary && self.witnesses.contains(&faulty_witness))]
     #[post(Self::invariant(&ret.0))]
-    pub fn replace_faulty_witness(mut self, faulty_witness: PeerId) -> (Self, Option<PeerId>) {
+    pub fn replace_faulty_witness(mut self, faulty_witness: u128) -> (Self, Option<u128>) {
         let mut result = None;
 
         self.witnesses = self.witnesses.remove(&faulty_witness);
@@ -142,11 +248,11 @@ impl<T: Clone> PeerList<T> {
     ///
     /// ## Errors
     /// - If there are no witness left, returns `ErrorKind::NoWitnessLeft`.
-    #[post(ret.is_ok().implies(Self::invariant(&self)))]
+    #[post((matches!(ret, Ok(_))).implies(Self::invariant(&self)))]
     pub fn replace_faulty_primary(
         mut self,
-        primary_error: Option<Error>,
-    ) -> Result<(Self, PeerId), Error> {
+        primary_error: Option<Box<ErrorKind>>,
+    ) -> Result<(Self, u128), Box<ErrorKind>> {
         self.faulty_nodes = self.faulty_nodes.add(self.primary);
 
         if let Some(new_primary) = self.witnesses.first().copied() {
@@ -161,11 +267,11 @@ impl<T: Clone> PeerList<T> {
     }
 
     /// Get a reference to the underlying `HashMap`
-    pub fn values(&self) -> &ListMap<PeerId, T> {
+    pub fn values(&self) -> &ListMap<u128, T> {
         &self.values
     }
     /// Consume into the underlying `HashMap`
-    pub fn into_values(self) -> ListMap<PeerId, T> {
+    pub fn into_values(self) -> ListMap<u128, T> {
         self.values
     }
 }
