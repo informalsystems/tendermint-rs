@@ -77,11 +77,6 @@ impl<T> PeerList<T> {
         //     == &prev.full_nodes | &prev.witnesses | &prev.faulty_nodes
     }
 
-    /// Returns a builder of `PeerList`
-    pub fn builder() -> PeerListBuilder<T> {
-        PeerListBuilder::default()
-    }
-
     /// Get a reference to the light client instance for the given peer id.
     pub fn get(&self, peer_id: &PeerId) -> Option<&T> {
         self.values.get(peer_id)
@@ -178,76 +173,5 @@ impl<T> PeerList<T> {
     /// Consume into the underlying `HashMap`
     pub fn into_values(self) -> HashMap<PeerId, T> {
         self.values
-    }
-}
-
-/// A builder of `PeerList` with a fluent API.
-#[must_use]
-pub struct PeerListBuilder<T> {
-    values: HashMap<PeerId, T>,
-    primary: Option<PeerId>,
-    witnesses: BTreeSet<PeerId>,
-    full_nodes: BTreeSet<PeerId>,
-    faulty_nodes: BTreeSet<PeerId>,
-}
-
-// This instance must be derived manually because the automatically
-// derived instance constrains T to be Default.
-// See https://github.com/rust-lang/rust/issues/26925
-impl<T> Default for PeerListBuilder<T> {
-    fn default() -> Self {
-        Self {
-            values: Default::default(),
-            primary: Default::default(),
-            witnesses: Default::default(),
-            full_nodes: Default::default(),
-            faulty_nodes: Default::default(),
-        }
-    }
-}
-
-impl<T> PeerListBuilder<T> {
-    /// Register the given peer id and instance as the primary.
-    /// Overrides the previous primary if it was already set.
-    pub fn primary(&mut self, peer_id: PeerId, value: T) {
-        self.primary = Some(peer_id);
-        self.values.insert(peer_id, value);
-    }
-
-    /// Register the given peer id and value as a witness.
-    #[pre(self.primary != Some(peer_id))]
-    pub fn witness(&mut self, peer_id: PeerId, value: T) {
-        self.values.insert(peer_id, value);
-        self.witnesses.insert(peer_id);
-    }
-
-    /// Register the given peer id and value as a full node.
-    #[pre(self.primary != Some(peer_id))]
-    pub fn full_node(&mut self, peer_id: PeerId, value: T) {
-        self.values.insert(peer_id, value);
-        self.full_nodes.insert(peer_id);
-    }
-
-    /// Register the given peer id and value as a faulty node.
-    #[pre(self.primary != Some(peer_id))]
-    pub fn faulty_node(&mut self, peer_id: PeerId, value: T) {
-        self.values.insert(peer_id, value);
-        self.faulty_nodes.insert(peer_id);
-    }
-
-    /// Builds the `PeerList`.
-    ///
-    /// ## Precondition
-    /// - A primary has been set with a call to `PeerListBuilder::primary`.
-    #[pre(self.primary.is_some())]
-    #[post(PeerList::invariant(&ret))]
-    pub fn build(self) -> PeerList<T> {
-        PeerList {
-            values: self.values,
-            primary: self.primary.unwrap(),
-            witnesses: self.witnesses,
-            full_nodes: self.full_nodes,
-            faulty_nodes: self.faulty_nodes,
-        }
     }
 }
