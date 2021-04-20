@@ -52,13 +52,13 @@ pub enum Event {
     Disconnected(node::Id, Report),
     /// A new [`message::Receive`] from the [`peer::Peer`] has arrived.
     Message(node::Id, message::Receive),
+    /// The [`Supervisor`] has terminated and should be dropped immediatelly. Optionally carrying
+    /// an error which caused the termination.
     Terminated(Option<Report>),
     /// A connection upgraded successfully to a [`peer::Peer`].
     Upgraded(node::Id),
     /// An upgrade from failed.
     UpgradeFailed(node::Id, Report),
-    // TODO(xla): Add variant which expresses terminaation of the supervisor, so the caller can
-    // drop it and possibly reconstruct it.
 }
 
 enum Internal {
@@ -145,16 +145,14 @@ impl Supervisor {
                             // TODO(xla): Log error of subroutine.
                         }
                     }
-
+                    // TODO(xla): Log completion.
                     // If the receiver is gone, there is nothing to be done about the failed send.
                     event_tx.send(Event::Terminated(None)).ok();
-                    // TODO(xla): Log completion.
                 }
                 Err(err) => {
+                    // TODO(xla): Log error.
                     // If the receiver is gone, there is nothing to be done about the failed send.
                     event_tx.send(Event::Terminated(Some(err))).ok();
-
-                    // TODO(xla): Log error.
                 }
             }
         });
@@ -204,8 +202,12 @@ impl Supervisor {
         let peers: Peers<T> = Arc::new(Mutex::new(HashMap::new()));
         let mut handles: Vec<(String, thread::JoinHandle<Result<()>>)> = Vec::new();
 
+        // FIXME(xla): No pipe should be of infinite length. Here the appropriate cap could be the
+        // maximal amount of inputs produced without another loop draining partially or fully.
         let (input_tx, input_rx) = unbounded();
 
+        // FIXME(xla): The cap for this channel likely coincides with the maximum of connected
+        // peers.
         let (accept_tx, accept_rx) = unbounded::<()>();
         {
             let input_tx = input_tx.clone();
@@ -218,6 +220,8 @@ impl Supervisor {
             handles.push((name, handle));
         }
 
+        // FIXME(xla): The cap for this channel likely coincides with the maximum of connected
+        // peers.
         let (connect_tx, connect_rx) = unbounded::<transport::ConnectInfo>();
         {
             let input_tx = input_tx.clone();
@@ -230,6 +234,7 @@ impl Supervisor {
             handles.push((name, handle));
         }
 
+        // FIXME(xla): Cap here amount of maximum peers by some arbitrary multiplier.
         let (msg_tx, msg_rx) = unbounded::<(node::Id, message::Send)>();
         {
             let input_tx = input_tx.clone();
@@ -242,6 +247,7 @@ impl Supervisor {
             handles.push((name, handle));
         };
 
+        // FIXME(xla): Should be capped by maximum of connected peers.
         let (stop_tx, stop_rx) = unbounded::<node::Id>();
         {
             let input_tx = input_tx.clone();
@@ -254,6 +260,7 @@ impl Supervisor {
             handles.push((name, handle));
         }
 
+        // FIXME(xla): Should be capped by maximum of connected peers.
         let (upgrade_tx, upgrade_rx) = unbounded();
         {
             let peers = peers.clone();
@@ -272,7 +279,7 @@ impl Supervisor {
                 let peers = match peers.lock() {
                     Ok(peers) => peers,
                     Err(_err) => {
-                        // TODO(xla): The lock got poisoned and will stay in that state, we
+                        // FIXME(xla): The lock got poisoned and will stay in that state, we
                         // need to terminate, but should log an error here.
                         break;
                     }
@@ -281,16 +288,20 @@ impl Supervisor {
                 let mut selector = flume::Selector::new()
                     .recv(&command_rx, |res| match res {
                         Ok(cmd) => Input::Command(cmd),
-                        Err(_err) => todo!(),
+                        // TODO(xla): The comamnd stream is gone, warrants a bail.
+                        Err(flume::RecvError::Disconnected) => todo!(),
                     })
                     .recv(&input_rx, |res| match res {
                         Ok(input) => input,
-                        Err(_err) => todo!(),
+                        // TODO(xla): The input stream is gone, warrants a bail.
+                        Err(flume::RecvError::Disconnected) => todo!(),
                     });
 
                 for (id, peer) in &*peers {
                     selector = selector.recv(&peer.state.receiver, move |res| match res {
                         Ok(msg) => Input::Receive(*id, msg),
+                        // TODO(xla): The other end was held by a peer and is gone, it's only safe
+                        // to assume that the peer has vanished and needs to be cleaned up.
                         Err(flume::RecvError::Disconnected) => todo!(),
                     });
                 }
@@ -300,50 +311,16 @@ impl Supervisor {
 
             for output in protocol.transition(input) {
                 let res = match output {
-                    Output::Event(event) => event_tx.try_send(event).map_err(|err| match err {
-                        flume::TrySendError::Disconnected(_) => {
-                            flume::TrySendError::Disconnected(())
-                        }
-                        flume::TrySendError::Full(_) => flume::TrySendError::Full(()),
-                    }),
+                    Output::Event(event) => event_tx.try_send(event).map_err(map_try_err),
                     Output::Internal(internal) => match internal {
-                        Internal::Accept => accept_tx.try_send(()).map_err(|err| match err {
-                            flume::TrySendError::Disconnected(_) => {
-                                flume::TrySendError::Disconnected(())
-                            }
-                            flume::TrySendError::Full(_) => flume::TrySendError::Full(()),
-                        }),
-                        Internal::Connect(info) => {
-                            connect_tx.try_send(info).map_err(|err| match err {
-                                flume::TrySendError::Disconnected(_) => {
-                                    flume::TrySendError::Disconnected(())
-                                }
-                                flume::TrySendError::Full(_) => flume::TrySendError::Full(()),
-                            })
-                        }
+                        Internal::Accept => accept_tx.try_send(()).map_err(map_try_err),
+                        Internal::Connect(info) => connect_tx.try_send(info).map_err(map_try_err),
                         Internal::SendMessage(peer_id, msg) => {
-                            msg_tx.try_send((peer_id, msg)).map_err(|err| match err {
-                                flume::TrySendError::Disconnected(_) => {
-                                    flume::TrySendError::Disconnected(())
-                                }
-                                flume::TrySendError::Full(_) => flume::TrySendError::Full(()),
-                            })
+                            msg_tx.try_send((peer_id, msg)).map_err(map_try_err)
                         }
-                        Internal::Stop(peer_id) => {
-                            stop_tx.try_send(peer_id).map_err(|err| match err {
-                                flume::TrySendError::Disconnected(_) => {
-                                    flume::TrySendError::Disconnected(())
-                                }
-                                flume::TrySendError::Full(_) => flume::TrySendError::Full(()),
-                            })
-                        }
+                        Internal::Stop(peer_id) => stop_tx.try_send(peer_id).map_err(map_try_err),
                         Internal::Upgrade(peer_id) => {
-                            upgrade_tx.try_send(peer_id).map_err(|err| match err {
-                                flume::TrySendError::Disconnected(_) => {
-                                    flume::TrySendError::Disconnected(())
-                                }
-                                flume::TrySendError::Full(_) => flume::TrySendError::Full(()),
-                            })
+                            upgrade_tx.try_send(peer_id).map_err(map_try_err)
                         }
                     },
                 };
@@ -540,5 +517,12 @@ impl Supervisor {
 
             input_tx.try_send(msg)?;
         }
+    }
+}
+
+fn map_try_err<T>(err: flume::TrySendError<T>) -> flume::TrySendError<()> {
+    match err {
+        flume::TrySendError::Disconnected(_) => flume::TrySendError::Disconnected(()),
+        flume::TrySendError::Full(_) => flume::TrySendError::Full(()),
     }
 }
