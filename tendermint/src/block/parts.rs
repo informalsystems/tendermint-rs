@@ -5,11 +5,12 @@ use crate::hash::SHA256_HASH_SIZE;
 use crate::Hash;
 use crate::{Error, Kind};
 use serde::{Deserialize, Serialize};
-use std::convert::TryFrom;
+use sp_std::convert::TryFrom;
 use tendermint_proto::types::{
     CanonicalPartSetHeader as RawCanonicalPartSetHeader, PartSetHeader as RawPartSetHeader,
 };
 use tendermint_proto::Protobuf;
+use anyhow::anyhow;
 
 /// Block parts header
 #[derive(
@@ -32,7 +33,7 @@ impl TryFrom<RawPartSetHeader> for Header {
 
     fn try_from(value: RawPartSetHeader) -> Result<Self, Self::Error> {
         if !value.hash.is_empty() && value.hash.len() != SHA256_HASH_SIZE {
-            return Err(Kind::InvalidHashSize.into());
+            return Err(anyhow::anyhow!(Kind::InvalidHashSize).into());
         }
         Ok(Self {
             total: value.total,
@@ -55,7 +56,7 @@ impl TryFrom<RawCanonicalPartSetHeader> for Header {
 
     fn try_from(value: RawCanonicalPartSetHeader) -> Result<Self, Self::Error> {
         if !value.hash.is_empty() && value.hash.len() != SHA256_HASH_SIZE {
-            return Err(Kind::InvalidHashSize.into());
+            return Err(anyhow::anyhow!(Kind::InvalidHashSize).into());
         }
         Ok(Self {
             total: value.total,
@@ -77,12 +78,12 @@ impl Header {
     /// constructor
     pub fn new(total: u32, hash: Hash) -> Result<Self, Error> {
         if total == 0 && hash != Hash::None {
-            return Err(Kind::InvalidPartSetHeader
+            return Err(anyhow!(Kind::InvalidPartSetHeader)
                 .context("zero total with existing hash")
                 .into());
         }
         if total != 0 && hash == Hash::None {
-            return Err(Kind::InvalidPartSetHeader
+            return Err(anyhow!(Kind::InvalidPartSetHeader)
                 .context("non-zero total with empty hash")
                 .into());
         }

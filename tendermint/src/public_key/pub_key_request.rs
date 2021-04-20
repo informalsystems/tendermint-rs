@@ -1,8 +1,9 @@
 use crate::chain::Id as ChainId;
 use crate::Error;
-use std::convert::TryFrom;
+use sp_std::convert::TryFrom;
 use tendermint_proto::privval::PubKeyRequest as RawPubKeyRequest;
 use tendermint_proto::Protobuf;
+use crate::primitives::ToString;
 
 /// PubKeyRequest requests the consensus public key from the remote signer.
 #[derive(Clone, PartialEq, Debug)]

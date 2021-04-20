@@ -18,13 +18,17 @@ use bytes::BufMut;
 use ed25519::Signature as ed25519Signature;
 use ed25519::SIGNATURE_LENGTH as ed25519SignatureLength;
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
-use std::fmt;
+use sp_std::{
+    convert::{TryFrom, TryInto},
+    vec::Vec,
+};
+use sp_std::fmt;
 use tendermint_proto::types::Vote as RawVote;
 use tendermint_proto::{Error as ProtobufError, Protobuf};
 
 use crate::signature::Signature::Ed25519;
-use std::str::FromStr;
+use sp_std::str::FromStr;
+
 
 /// Votes are signed messages from validators for a particular block which
 /// include information about the validator signing it.
@@ -65,7 +69,7 @@ impl TryFrom<RawVote> for Vote {
 
     fn try_from(value: RawVote) -> Result<Self, Self::Error> {
         if value.timestamp.is_none() {
-            return Err(NoTimestamp.into());
+            return Err(anyhow::anyhow!(NoTimestamp).into());
         }
         Ok(Vote {
             vote_type: value.r#type.try_into()?,
@@ -231,7 +235,7 @@ impl TryFrom<i32> for Type {
         match value {
             1 => Ok(Type::Prevote),
             2 => Ok(Type::Precommit),
-            _ => Err(InvalidMessageType.into()),
+            _ => Err(anyhow::anyhow!(InvalidMessageType).into()),
         }
     }
 }
@@ -259,7 +263,7 @@ impl FromStr for Type {
         match s {
             "Prevote" => Ok(Self::Prevote),
             "Precommit" => Ok(Self::Precommit),
-            _ => Err(InvalidMessageType.into()),
+            _ => Err(anyhow::anyhow!(InvalidMessageType).into()),
         }
     }
 }

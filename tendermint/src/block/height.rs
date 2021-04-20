@@ -1,12 +1,16 @@
 use crate::error::{Error, Kind};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use std::convert::TryInto;
-use std::{
+use sp_std::convert::TryInto;
+use sp_std::{
     convert::TryFrom,
     fmt::{self, Debug, Display},
     str::FromStr,
 };
+use anyhow::anyhow;
 use tendermint_proto::Protobuf;
+use crate::primitives::String;
+use crate::primitives::format;
+use crate::primitives::ToString;
 
 /// Block height for a particular chain (i.e. number of blocks created since
 /// the chain began)
@@ -21,7 +25,7 @@ impl TryFrom<i64> for Height {
     type Error = Error;
 
     fn try_from(value: i64) -> Result<Self, Self::Error> {
-        Ok(Height(value.try_into().map_err(|_| Kind::NegativeHeight)?))
+        Ok(Height(value.try_into().map_err(|_| anyhow::anyhow!(Kind::NegativeHeight))?))
     }
 }
 
@@ -36,7 +40,7 @@ impl TryFrom<u64> for Height {
 
     fn try_from(value: u64) -> Result<Self, Self::Error> {
         if value > i64::MAX as u64 {
-            return Err(Kind::IntegerOverflow.into());
+            return Err(anyhow::anyhow!(Kind::IntegerOverflow).into());
         }
         Ok(Height(value))
     }
@@ -102,7 +106,7 @@ impl FromStr for Height {
     fn from_str(s: &str) -> Result<Self, Error> {
         Height::try_from(
             s.parse::<u64>()
-                .map_err(|_| Kind::Parse.context("height decode"))?,
+                .map_err(|_| anyhow!(Kind::Parse).context("height decode"))?,
         )
     }
 }

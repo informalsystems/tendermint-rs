@@ -2,14 +2,18 @@
 
 use crate::error::{Error, Kind};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use std::convert::TryFrom;
-use std::{
+use sp_std::convert::TryFrom;
+use sp_std::{
     cmp::Ordering,
     fmt::{self, Debug, Display},
     hash::{Hash, Hasher},
     str::{self, FromStr},
 };
 use tendermint_proto::Protobuf;
+use crate::primitives::String;
+use crate::primitives::ToString;
+use crate::primitives::format;
+use anyhow::anyhow;
 
 /// Maximum length of a `chain::Id` name. Matches `MaxChainIDLen` from:
 /// <https://github.com/tendermint/tendermint/blob/develop/types/genesis.go>
@@ -27,13 +31,13 @@ impl TryFrom<String> for Id {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         if value.is_empty() || value.len() > MAX_LENGTH {
-            return Err(Kind::Length.into());
+            return Err(anyhow::anyhow!(Kind::Length).into());
         }
 
         for byte in value.as_bytes() {
             match byte {
                 b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_' | b'.' => (),
-                _ => return Err(Kind::Parse.context("chain id charset").into()),
+                _ => return Err(anyhow!(Kind::Parse).context("chain id charset").into()),
             }
         }
 

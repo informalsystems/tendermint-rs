@@ -7,10 +7,12 @@
 
 use crate::{Error, Kind};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use std::{
+use sp_std::{
     fmt::{self, Display},
     str::FromStr,
 };
+use crate::primitives::String;
+use crate::primitives::ToString;
 
 /// Gas: representation of transaction processing resource costs
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
@@ -45,14 +47,15 @@ impl FromStr for Gas {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        Ok(Self::from(s.parse::<u64>().map_err(|_| Kind::Parse)?))
+        Ok(Self::from(s.parse::<u64>().map_err(|_| anyhow::anyhow!(Kind::Parse))?))
     }
 }
 
 impl<'de> Deserialize<'de> for Gas {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         Self::from_str(&String::deserialize(deserializer)?)
-            .map_err(|e| D::Error::custom(format!("{}", e)))
+            // .map_err(|e| D::Error::custom(format!("{}", e)))
+            .map_err(|e| D::Error::custom(alloc::fmt::format(core::format_args!("{}", e))))
     }
 }
 

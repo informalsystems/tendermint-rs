@@ -4,16 +4,17 @@ use crate::error::{Error, Kind};
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-
-use std::convert::{Infallible, TryFrom};
-use std::fmt;
-use std::ops::{Add, Sub};
-use std::str::FromStr;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use sp_std::{
+    convert::{Infallible, TryFrom},
+    fmt,
+    ops::{Add, Sub},
+    str::FromStr,
+};
+use crate::primitives::String;
+use crate::primitives::{SystemTime, UNIX_EPOCH, Duration};
 use tendermint_proto::google::protobuf::Timestamp;
 use tendermint_proto::serializers::timestamp;
 use tendermint_proto::Protobuf;
-
 /// Tendermint timestamps
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#time>
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -66,7 +67,7 @@ impl Time {
         self.0
             .signed_duration_since(other.0)
             .to_std()
-            .map_err(|_| Kind::OutOfRange.into())
+            .map_err(|_| anyhow::anyhow!(Kind::OutOfRange).into())
     }
 
     /// Parse [`Time`] from an RFC 3339 date

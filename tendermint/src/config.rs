@@ -6,7 +6,10 @@
 //! - `node_key.rs`: `config::node_key::NodeKey`
 //! - `priv_validator_key.rs`: `config::priv_validator_key::PrivValidatorKey`
 
+#[cfg(feature = "std")]
 mod node_key;
+
+#[cfg(feature = "std")]
 mod priv_validator_key;
 
 pub use self::{node_key::NodeKey, priv_validator_key::PrivValidatorKey};
@@ -17,14 +20,18 @@ use crate::{
     genesis::Genesis,
     net, node, Moniker, Timeout,
 };
-use anomaly::{fail, format_err};
+use anyhow::{bail, Result};
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
 use std::{
-    collections::BTreeMap,
-    fmt, fs,
-    path::{Path, PathBuf},
+    collections::btree_map::BTreeMap,
+    fmt, path::{Path,PathBuf},
+    fs,
     str::FromStr,
+    vec::Vec,
 };
+
+use crate::primitives::{String, ToString};
+use crate::primitives::format;
 
 /// Tendermint `config.toml` file
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -114,12 +121,8 @@ impl TendermintConfig {
         P: AsRef<Path>,
     {
         let toml_string = fs::read_to_string(path).map_err(|e| {
-            format_err!(
-                Kind::Parse,
-                "couldn't open {}: {}",
-                path.as_ref().display(),
-                e
-            )
+            let context = format!("couldn't open {}:{}", path.as_ref().display(), e);
+            anyhow::Error::new(Kind::Parse).context(context)
         })?;
 
         Self::parse_toml(toml_string)
@@ -129,7 +132,10 @@ impl TendermintConfig {
     pub fn load_genesis_file(&self, home: impl AsRef<Path>) -> Result<Genesis, Error> {
         let path = home.as_ref().join(&self.genesis_file);
         let genesis_json = fs::read_to_string(&path)
-            .map_err(|e| format_err!(Kind::Parse, "couldn't open {}: {}", path.display(), e))?;
+            .map_err(|e| {
+                let  context = format!("couldn't open: {}: {}", path.display(), e);
+                anyhow::Error::new(Kind::Parse).context(context)
+            })?;
 
         Ok(serde_json::from_str(genesis_json.as_ref())?)
     }
@@ -177,7 +183,7 @@ impl LogLevel {
 }
 
 /// Iterator over log levels
-pub type LogLevelIter<'a> = std::collections::btree_map::Iter<'a, String, String>;
+pub type LogLevelIter<'a> = sp_std::collections::btree_map::Iter<'a, String, String>;
 
 impl FromStr for LogLevel {
     type Err = Error;
@@ -189,14 +195,16 @@ impl FromStr for LogLevel {
             let parts = level.split(':').collect::<Vec<_>>();
 
             if parts.len() != 2 {
-                fail!(Kind::Parse, "error parsing log level: {}", level);
+                let context = format!("error parsing log level: {}", level);
+                bail!(anyhow::Error::new(Kind::Parse).context(context));
             }
 
             let key = parts[0].to_owned();
             let value = parts[1].to_owned();
 
             if levels.insert(key, value).is_some() {
-                fail!(Kind::Parse, "duplicate log level setting for: {}", level);
+                let context = format!("error parsing log level: {}", level);
+                bail!(anyhow::Error::new(Kind::Parse).context(context));
             }
         }
 

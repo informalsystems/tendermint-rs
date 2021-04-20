@@ -3,9 +3,11 @@
 use crate::{account, Signature, Time};
 use crate::{Error, Kind};
 use num_traits::ToPrimitive;
-use std::convert::{TryFrom, TryInto};
+use sp_std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::BlockIdFlag;
 use tendermint_proto::types::CommitSig as RawCommitSig;
+use sp_std::vec::Vec;
+use anyhow::anyhow;
 
 /// CommitSig represents a signature of a validator.
 /// It's a part of the Commit and can be used to reconstruct the vote set given the validator set.
@@ -74,47 +76,47 @@ impl TryFrom<RawCommitSig> for CommitSig {
                 let timestamp = value.timestamp.unwrap();
                 // 0001-01-01T00:00:00.000Z translates to EPOCH-62135596800 seconds
                 if timestamp.nanos != 0 || timestamp.seconds != -62135596800 {
-                    return Err(Kind::InvalidTimestamp
+                    return Err(anyhow!(Kind::InvalidTimestamp)
                         .context("absent commitsig has non-zero timestamp")
                         .into());
                 }
             }
             if !value.signature.is_empty() {
-                return Err(Kind::InvalidSignature.into());
+                return Err(anyhow::anyhow!(Kind::InvalidSignature).into());
             }
             return Ok(CommitSig::BlockIdFlagAbsent);
         }
         if value.block_id_flag == BlockIdFlag::Commit.to_i32().unwrap() {
             if value.signature.is_empty() {
-                return Err(Kind::InvalidSignature
+                return Err(anyhow!(Kind::InvalidSignature)
                     .context("regular commitsig has no signature")
                     .into());
             }
             if value.validator_address.is_empty() {
-                return Err(Kind::InvalidValidatorAddress.into());
+                return Err(anyhow::anyhow!(Kind::InvalidValidatorAddress).into());
             }
             return Ok(CommitSig::BlockIdFlagCommit {
                 validator_address: value.validator_address.try_into()?,
-                timestamp: value.timestamp.ok_or(Kind::NoTimestamp)?.try_into()?,
+                timestamp: value.timestamp.ok_or(anyhow::anyhow!(Kind::NoTimestamp))?.try_into()?,
                 signature: value.signature.try_into()?,
             });
         }
         if value.block_id_flag == BlockIdFlag::Nil.to_i32().unwrap() {
             if value.signature.is_empty() {
-                return Err(Kind::InvalidSignature
+                return Err(anyhow!(Kind::InvalidSignature)
                     .context("nil commitsig has no signature")
                     .into());
             }
             if value.validator_address.is_empty() {
-                return Err(Kind::InvalidValidatorAddress.into());
+                return Err(anyhow::anyhow!(Kind::InvalidValidatorAddress).into());
             }
             return Ok(CommitSig::BlockIdFlagNil {
                 validator_address: value.validator_address.try_into()?,
-                timestamp: value.timestamp.ok_or(Kind::NoTimestamp)?.try_into()?,
+                timestamp: value.timestamp.ok_or(anyhow::anyhow!(Kind::NoTimestamp))?.try_into()?,
                 signature: value.signature.try_into()?,
             });
         }
-        Err(Kind::BlockIdFlag.into())
+        Err(anyhow::anyhow!(Kind::BlockIdFlag).into())
     }
 }
 

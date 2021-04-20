@@ -2,12 +2,14 @@ use super::Proposal;
 use crate::chain::Id as ChainId;
 use crate::{Error, Kind};
 use bytes::BufMut;
-use std::convert::{TryFrom, TryInto};
+use sp_std::convert::{TryFrom, TryInto};
 use tendermint_proto::privval::RemoteSignerError;
 use tendermint_proto::privval::SignProposalRequest as RawSignProposalRequest;
 use tendermint_proto::privval::SignedProposalResponse as RawSignedProposalResponse;
 use tendermint_proto::Error as ProtobufError;
 use tendermint_proto::Protobuf;
+use sp_std::vec::Vec;
+use crate::primitives::ToString;
 
 /// SignProposalRequest is a request to sign a proposal
 #[derive(Clone, PartialEq, Debug)]
@@ -26,7 +28,7 @@ impl TryFrom<RawSignProposalRequest> for SignProposalRequest {
 
     fn try_from(value: RawSignProposalRequest) -> Result<Self, Self::Error> {
         if value.proposal.is_none() {
-            return Err(Kind::NoProposalFound.into());
+            return Err(anyhow::anyhow!(Kind::NoProposalFound).into());
         }
         Ok(SignProposalRequest {
             proposal: Proposal::try_from(value.proposal.unwrap())?,

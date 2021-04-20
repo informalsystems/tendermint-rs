@@ -4,16 +4,20 @@ use crate::{
     hash::{Algorithm, Hash},
 };
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
-use std::{
+use sp_std::convert::{TryFrom, TryInto};
+use sp_std::{
     fmt::{self, Display},
     str::{self, FromStr},
+    vec::Vec,
 };
+use anyhow::anyhow;
 use tendermint_proto::types::{
     BlockId as RawBlockId, CanonicalBlockId as RawCanonicalBlockId,
     PartSetHeader as RawPartSetHeader,
 };
 use tendermint_proto::Protobuf;
+use crate::primitives::String;
+use crate::primitives::ToString;
 
 /// Length of a block ID prefix displayed for debugging purposes
 pub const PREFIX_LENGTH: usize = 10;
@@ -64,7 +68,7 @@ impl TryFrom<RawBlockId> for Id {
 
     fn try_from(value: RawBlockId) -> Result<Self, Self::Error> {
         if value.part_set_header.is_none() {
-            return Err(Kind::InvalidPartSetHeader
+            return Err(anyhow!(Kind::InvalidPartSetHeader)
                 .context("part_set_header is None")
                 .into());
         }
@@ -83,10 +87,10 @@ impl From<Id> for RawBlockId {
         // invalid.
         if value == Id::default() {
             RawBlockId {
-                hash: vec![],
+                hash: Vec::new(),
                 part_set_header: Some(RawPartSetHeader {
                     total: 0,
-                    hash: vec![],
+                    hash: Vec::new(),
                 }),
             }
         } else {
@@ -103,7 +107,7 @@ impl TryFrom<RawCanonicalBlockId> for Id {
 
     fn try_from(value: RawCanonicalBlockId) -> Result<Self, Self::Error> {
         if value.part_set_header.is_none() {
-            return Err(Kind::InvalidPartSetHeader
+            return Err(anyhow!(Kind::InvalidPartSetHeader)
                 .context("part_set_header is None")
                 .into());
         }

@@ -4,12 +4,17 @@ use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use subtle_encoding::base64;
 
 use crate::{account, hash::Hash, merkle, vote, Error, Kind, PublicKey, Signature};
-
-use std::convert::{TryFrom, TryInto};
+use sp_std::{
+    convert::{TryFrom, TryInto},
+    vec::Vec,
+    cmp::Reverse,
+};
 use tendermint_proto::types::SimpleValidator as RawSimpleValidator;
 use tendermint_proto::types::Validator as RawValidator;
 use tendermint_proto::types::ValidatorSet as RawValidatorSet;
 use tendermint_proto::Protobuf;
+use crate::primitives::String;
+use crate::primitives::format;
 
 /// Validator set contains a vector of validators
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -37,10 +42,10 @@ impl TryFrom<RawValidatorSet> for Set {
         // Ensure that the raw voting power matches the computed one
         let raw_voting_power = value.total_voting_power.try_into()?;
         if raw_voting_power != validator_set.total_voting_power() {
-            return Err(Kind::RawVotingPowerMismatch {
+            return Err(anyhow::anyhow!(Kind::RawVotingPowerMismatch {
                 raw: raw_voting_power,
                 computed: validator_set.total_voting_power(),
-            }
+            })
             .into());
         }
 
@@ -93,7 +98,7 @@ impl Set {
             .iter()
             .find(|v| v.address == proposer_address)
             .cloned()
-            .ok_or(Kind::ProposerNotFound(proposer_address))?;
+            .ok_or(anyhow::anyhow!(Kind::ProposerNotFound(proposer_address)))?;
 
         // Create the validator set with the given proposer.
         // This is required by IBC on-chain validation.
@@ -118,7 +123,7 @@ impl Set {
     /// Sort the validators according to the current Tendermint requirements
     /// (v. 0.34 -> first by validator power, descending, then by address, ascending)
     fn sort_validators(vals: &mut Vec<Info>) {
-        vals.sort_by_key(|v| (std::cmp::Reverse(v.voting_power), v.address));
+        vals.sort_by_key(|v| (Reverse(v.voting_power), v.address));
     }
 
     /// Returns the validator with the given Id if its in the Set.
@@ -167,7 +172,7 @@ impl TryFrom<RawValidator> for Info {
     fn try_from(value: RawValidator) -> Result<Self, Self::Error> {
         Ok(Info {
             address: value.address.try_into()?,
-            pub_key: value.pub_key.ok_or(Kind::MissingPublicKey)?.try_into()?,
+            pub_key: value.pub_key.ok_or(anyhow::anyhow!(Kind::MissingPublicKey))?.try_into()?,
             voting_power: value.voting_power.try_into()?,
             proposer_priority: value.proposer_priority.try_into()?,
         })

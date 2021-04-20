@@ -4,8 +4,12 @@ use crate::{
     block::signed_header::SignedHeader, serializers, vote::Power, Error, Kind, Time, Vote,
 };
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
-use std::slice;
+use sp_std::{
+    convert::{TryFrom, TryInto},
+    vec::Vec,
+    boxed::Box,
+    slice,
+};
 use tendermint_proto::google::protobuf::Duration as RawDuration;
 use tendermint_proto::types::evidence::Sum as RawSum;
 use tendermint_proto::types::evidence::Sum;
@@ -14,6 +18,15 @@ use tendermint_proto::types::Evidence as RawEvidence;
 use tendermint_proto::types::EvidenceList as RawEvidenceList;
 use tendermint_proto::types::EvidenceParams as RawEvidenceParams;
 use tendermint_proto::Protobuf;
+
+mod time {
+    #[cfg(not(feature = "std"))]
+    pub use core::time::Duration;
+
+    #[cfg(feature = "std")]
+    pub use std::time::Duration;
+}
+
 
 /// Evidence of malfeasance by validators (i.e. signing conflicting votes).
 /// encoded using an Amino prefix. There is currently only a single type of
@@ -40,7 +53,7 @@ impl TryFrom<RawEvidence> for Evidence {
     type Error = Error;
 
     fn try_from(value: RawEvidence) -> Result<Self, Self::Error> {
-        match value.sum.ok_or(Kind::InvalidEvidence)? {
+        match value.sum.ok_or(anyhow::anyhow!(Kind::InvalidEvidence))? {
             Sum::DuplicateVoteEvidence(ev) => Ok(Evidence::DuplicateVote(ev.try_into()?)),
             Sum::LightClientAttackEvidence(_ev) => Ok(Evidence::LightClientAttackEvidence),
         }
@@ -74,11 +87,11 @@ impl TryFrom<RawDuplicateVoteEvidence> for DuplicateVoteEvidence {
 
     fn try_from(value: RawDuplicateVoteEvidence) -> Result<Self, Self::Error> {
         Ok(Self {
-            vote_a: value.vote_a.ok_or(Kind::MissingEvidence)?.try_into()?,
-            vote_b: value.vote_b.ok_or(Kind::MissingEvidence)?.try_into()?,
+            vote_a: value.vote_a.ok_or(anyhow::anyhow!(Kind::MissingEvidence))?.try_into()?,
+            vote_b: value.vote_b.ok_or(anyhow::anyhow!(Kind::MissingEvidence))?.try_into()?,
             total_voting_power: value.total_voting_power.try_into()?,
             validator_power: value.validator_power.try_into()?,
-            timestamp: value.timestamp.ok_or(Kind::MissingTimestamp)?.try_into()?,
+            timestamp: value.timestamp.ok_or(anyhow::anyhow!(Kind::MissingTimestamp))?.try_into()?,
         })
     }
 }
@@ -99,7 +112,7 @@ impl DuplicateVoteEvidence {
     /// constructor
     pub fn new(vote_a: Vote, vote_b: Vote) -> Result<Self, Error> {
         if vote_a.height != vote_b.height {
-            return Err(Kind::InvalidEvidence.into());
+            return Err(anyhow::anyhow!(Kind::InvalidEvidence).into());
         }
         // Todo: make more assumptions about what is considered a valid evidence for duplicate vote
         Ok(Self {
@@ -224,10 +237,10 @@ impl TryFrom<RawEvidenceParams> for Params {
             max_age_num_blocks: value
                 .max_age_num_blocks
                 .try_into()
-                .map_err(|_| Self::Error::from(Kind::NegativeMaxAgeNum))?,
+                .map_err(|_| Self::Error::from(anyhow::anyhow!(Kind::NegativeMaxAgeNum)))?,
             max_age_duration: value
                 .max_age_duration
-                .ok_or(Kind::MissingMaxAgeDuration)?
+                .ok_or(anyhow::anyhow!(Kind::MissingMaxAgeDuration))?
                 .try_into()?,
             max_bytes: value.max_bytes,
         })
@@ -245,16 +258,22 @@ impl From<Params> for RawEvidenceParams {
     }
 }
 
+#[cfg(feature = "std")]
+use std::time::Duration as NativeDuration;
+
+#[cfg(not(feature = "std"))]
+use core::time::Duration as NativeDuration;
+
 /// Duration is a wrapper around std::time::Duration
 /// essentially, to keep the usages look cleaner
 /// i.e. you can avoid using serde annotations everywhere
 /// Todo: harmonize google::protobuf::Duration, std::time::Duration and this. Too many structs.
 /// <https://github.com/informalsystems/tendermint-rs/issues/741>
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
-pub struct Duration(#[serde(with = "serializers::time_duration")] pub std::time::Duration);
+pub struct Duration(#[serde(with = "serializers::time_duration")] pub crate::primitives::Duration);
 
-impl From<Duration> for std::time::Duration {
-    fn from(d: Duration) -> std::time::Duration {
+impl From<Duration> for NativeDuration {
+    fn from(d: Duration) -> NativeDuration {
         d.0
     }
 }
@@ -265,15 +284,15 @@ impl TryFrom<RawDuration> for Duration {
     type Error = Error;
 
     fn try_from(value: RawDuration) -> Result<Self, Self::Error> {
-        Ok(Self(std::time::Duration::new(
+        Ok(Self(NativeDuration::new(
             value
                 .seconds
                 .try_into()
-                .map_err(|_| Self::Error::from(Kind::IntegerOverflow))?,
+                .map_err(|_| Self::Error::from(anyhow::anyhow!(Kind::IntegerOverflow)))?,
             value
                 .nanos
                 .try_into()
-                .map_err(|_| Self::Error::from(Kind::IntegerOverflow))?,
+                .map_err(|_| Self::Error::from(anyhow::anyhow!(Kind::IntegerOverflow)))?,
         )))
     }
 }

@@ -15,7 +15,10 @@ use crate::Signature;
 use crate::Time;
 use crate::{Error, Kind};
 use bytes::BufMut;
-use std::convert::{TryFrom, TryInto};
+use sp_std::{
+    convert::{TryFrom, TryInto},
+    vec::Vec,
+};
 use tendermint_proto::types::Proposal as RawProposal;
 use tendermint_proto::{Error as ProtobufError, Protobuf};
 
@@ -45,7 +48,7 @@ impl TryFrom<RawProposal> for Proposal {
 
     fn try_from(value: RawProposal) -> Result<Self, Self::Error> {
         if value.pol_round < -1 {
-            return Err(Kind::NegativePolRound.into());
+            return Err(anyhow::anyhow!(Kind::NegativePolRound).into());
         }
         let pol_round = match value.pol_round {
             -1 => None,

@@ -13,15 +13,23 @@ use crate::{
     error::{self, Error},
     signature::Signature,
 };
-use anomaly::{fail, format_err};
+use anyhow::{bail, anyhow, format_err};
 use serde::{de, ser, Deserialize, Serialize};
 use signature::Verifier as _;
-use std::convert::TryFrom;
-use std::{cmp::Ordering, fmt, ops::Deref, str::FromStr};
+use sp_std::{
+    convert::TryFrom,
+    cmp::Ordering,
+    fmt,
+    ops::Deref,
+    str::FromStr,
+    vec::Vec,
+    prelude::*,
+};
 use subtle_encoding::{base64, bech32, hex};
 use tendermint_proto::crypto::public_key::Sum;
 use tendermint_proto::crypto::PublicKey as RawPublicKey;
 use tendermint_proto::Protobuf;
+use crate::primitives::String;
 
 // Note:On the golang side this is generic in the sense that it could everything that implements
 // github.com/tendermint/tendermint/crypto.PubKey
@@ -65,18 +73,18 @@ impl TryFrom<RawPublicKey> for PublicKey {
     fn try_from(value: RawPublicKey) -> Result<Self, Self::Error> {
         let sum = &value
             .sum
-            .ok_or_else(|| format_err!(error::Kind::InvalidKey, "empty sum"))?;
+            .ok_or_else(|| format_err!(error::Kind::InvalidKey).context("empty sum"))?;
         if let Sum::Ed25519(b) = sum {
             return Self::from_raw_ed25519(b).ok_or_else(|| {
-                format_err!(error::Kind::InvalidKey, "malformed ed25519 key").into()
+                format_err!(error::Kind::InvalidKey).context("malformed ed25519 key").into()
             });
         }
         #[cfg(feature = "secp256k1")]
         if let Sum::Secp256k1(b) = sum {
             return Self::from_raw_secp256k1(b)
-                .ok_or_else(|| format_err!(error::Kind::InvalidKey, "malformed key").into());
+                .ok_or_else(|| format_err!(error::Kind::InvalidKey).context("malformed key").into());
         }
-        Err(format_err!(error::Kind::InvalidKey, "not an ed25519 key").into())
+        Err(format_err!(error::Kind::InvalidKey).context("not an ed25519 key").into())
     }
 }
 
@@ -136,13 +144,12 @@ impl PublicKey {
             PublicKey::Ed25519(pk) => match signature {
                 Signature::Ed25519(sig) => pk.verify(msg, sig).map_err(|_| {
                     format_err!(
-                        error::Kind::SignatureInvalid,
-                        "Ed25519 signature verification failed"
-                    )
+                        error::Kind::SignatureInvalid).context(
+                        "Ed25519 signature verification failed")
                     .into()
                 }),
                 Signature::None => {
-                    Err(format_err!(error::Kind::SignatureInvalid, "missing signature").into())
+                    Err(format_err!(error::Kind::SignatureInvalid).context("missing signature").into())
                 }
             },
             #[cfg(feature = "secp256k1")]
@@ -253,9 +260,9 @@ impl TendermintKey {
         #[allow(unreachable_patterns)]
         match public_key {
             PublicKey::Ed25519(_) => Ok(TendermintKey::AccountKey(public_key)),
-            _ => fail!(
-                error::Kind::InvalidKey,
-                "only ed25519 consensus keys are supported"
+            _ => bail!( anyhow!(
+                error::Kind::InvalidKey).context(
+                "only ed25519 consensus keys are supported")
             ),
         }
     }
@@ -311,7 +318,7 @@ impl FromStr for Algorithm {
         match s {
             "ed25519" => Ok(Algorithm::Ed25519),
             "secp256k1" => Ok(Algorithm::Secp256k1),
-            _ => Err(error::Kind::Parse.into()),
+            _ => Err(anyhow::anyhow!(error::Kind::Parse).into()),
         }
     }
 }

@@ -23,9 +23,10 @@ pub use self::{
 };
 use crate::{abci::transaction, evidence, Error, Kind};
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
+use sp_std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Block as RawBlock;
 use tendermint_proto::Protobuf;
+use anyhow::anyhow;
 
 /// Blocks consist of a header, transactions, votes (the commit), and a list of
 /// evidence of malfeasance (i.e. signing conflicting votes).
@@ -55,7 +56,7 @@ impl TryFrom<RawBlock> for Block {
     type Error = Error;
 
     fn try_from(value: RawBlock) -> Result<Self, Self::Error> {
-        let header: Header = value.header.ok_or(Kind::MissingHeader)?.try_into()?;
+        let header: Header = value.header.ok_or(anyhow::anyhow!(Kind::MissingHeader))?.try_into()?;
         // if last_commit is Commit::Default, it is considered nil by Go.
         let last_commit = value
             .last_commit
@@ -63,7 +64,7 @@ impl TryFrom<RawBlock> for Block {
             .transpose()?
             .filter(|c| c != &Commit::default());
         if last_commit.is_none() && header.height.value() != 1 {
-            return Err(Kind::InvalidBlock
+            return Err(anyhow!(Kind::InvalidBlock)
                 .context("last_commit is empty on non-first block")
                 .into());
         }
@@ -74,8 +75,8 @@ impl TryFrom<RawBlock> for Block {
         //}
         Ok(Block {
             header,
-            data: value.data.ok_or(Kind::MissingData)?.try_into()?,
-            evidence: value.evidence.ok_or(Kind::MissingEvidence)?.try_into()?,
+            data: value.data.ok_or(anyhow::anyhow!(Kind::MissingData))?.try_into()?,
+            evidence: value.evidence.ok_or(anyhow::anyhow!(Kind::MissingEvidence))?.try_into()?,
             last_commit,
         })
     }
@@ -101,12 +102,12 @@ impl Block {
         last_commit: Option<Commit>,
     ) -> Result<Self, Error> {
         if last_commit.is_none() && header.height.value() != 1 {
-            return Err(Kind::InvalidBlock
+            return Err(anyhow!(Kind::InvalidBlock)
                 .context("last_commit is empty on non-first block")
                 .into());
         }
         if last_commit.is_some() && header.height.value() == 1 {
-            return Err(Kind::InvalidBlock
+            return Err(anyhow!(Kind::InvalidBlock)
                 .context("last_commit is filled on first block")
                 .into());
         }

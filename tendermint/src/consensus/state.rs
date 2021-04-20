@@ -2,7 +2,9 @@
 
 pub use crate::block;
 use serde::{Deserialize, Serialize};
-pub use std::{cmp::Ordering, fmt};
+pub use sp_std::{cmp::Ordering, fmt};
+use crate::primitives::String;
+use sp_std::borrow::ToOwned;
 
 /// Placeholder string to show when block ID is absent. Syntax from:
 /// <https://tendermint.com/docs/spec/consensus/consensus.html>

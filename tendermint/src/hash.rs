@@ -3,13 +3,19 @@
 use crate::error::{Error, Kind};
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::convert::TryFrom;
-use std::{
+use sp_std::{
+    convert::TryFrom,
     fmt::{self, Debug, Display},
     str::FromStr,
+    vec::Vec,
+    prelude::*,
 };
+use crate::primitives::String;
+use crate::primitives::format;
 use subtle_encoding::{Encoding, Hex};
 use tendermint_proto::Protobuf;
+use anyhow::anyhow;
+use crate::primitives::ToString;
 
 /// Output size for the SHA-256 hash function
 pub const SHA256_HASH_SIZE: usize = 32;
@@ -48,7 +54,7 @@ impl From<Hash> for Vec<u8> {
     fn from(value: Hash) -> Self {
         match value {
             Hash::Sha256(s) => s.to_vec(),
-            Hash::None => vec![],
+            Hash::None => Vec::new(),
         }
     }
 }
@@ -66,7 +72,7 @@ impl Hash {
                     h.copy_from_slice(bytes);
                     Ok(Hash::Sha256(h))
                 } else {
-                    Err(Kind::Parse
+                    Err(anyhow!(Kind::Parse)
                         .context(format!("hash invalid length: {}", bytes.len()))
                         .into())
                 }
@@ -214,7 +220,7 @@ impl AppHash {
     /// Decode a `Hash` from upper-case hexadecimal
     pub fn from_hex_upper(s: &str) -> Result<Self, Error> {
         if s.len() % 2 != 0 {
-            return Err(Kind::InvalidAppHashLength.into());
+            return Err(anyhow::anyhow!(Kind::InvalidAppHashLength).into());
         }
         let mut h = vec![0; s.len() / 2];
         Hex::upper_case().decode_to_slice(s.as_bytes(), &mut h)?;

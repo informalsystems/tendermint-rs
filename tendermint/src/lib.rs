@@ -7,7 +7,7 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![deny(
     warnings,
-    missing_docs,
+    // missing_docs,
     trivial_casts,
     trivial_numeric_casts,
     unused_import_braces,
@@ -18,7 +18,11 @@
     html_root_url = "https://docs.rs/tendermint/0.19.0",
     html_logo_url = "https://raw.githubusercontent.com/informalsystems/tendermint-rs/master/img/logo-tendermint-rs_3961x4001.png"
 )]
+#![allow(unused_attributes)]
+
 #![cfg_attr(not(feature = "std"), no_std)]
+
+extern crate alloc;
 
 #[macro_use]
 pub mod error;
@@ -28,6 +32,7 @@ pub mod account;
 pub mod block;
 pub mod chain;
 pub mod channel;
+#[cfg(feature = "std")]
 pub mod config;
 pub mod consensus;
 pub mod evidence;
@@ -35,7 +40,9 @@ pub mod genesis;
 pub mod hash;
 pub mod merkle;
 mod moniker;
+#[cfg(feature = "std")]
 pub mod net;
+#[cfg(feature = "std")]
 pub mod node;
 pub mod private_key;
 pub mod proposal;
@@ -48,6 +55,8 @@ pub mod trust_threshold;
 pub mod validator;
 mod version;
 pub mod vote;
+pub mod primitives;
+
 
 #[cfg(test)]
 mod test;

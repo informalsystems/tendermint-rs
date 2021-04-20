@@ -4,6 +4,7 @@
 
 use crate::Time;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use crate::primitives::String;
 
 /// Serialize from `Time` into `String`
 pub fn serialize<S>(value: &Time, serializer: S) -> Result<S::Ok, S::Error>

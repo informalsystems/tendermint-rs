@@ -3,10 +3,12 @@
 use crate::merkle::simple_hash_from_byte_vectors;
 use crate::{account, block, chain, AppHash, Error, Hash, Kind, Time};
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
+use sp_std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Header as RawHeader;
 use tendermint_proto::version::Consensus as RawConsensusVersion;
 use tendermint_proto::Protobuf;
+use sp_std::prelude::*;
+use anyhow::anyhow;
 
 /// Block `Header` values contain metadata about the block and about the
 /// consensus, as well as commitments to the data in the current block, the
@@ -89,7 +91,7 @@ impl TryFrom<RawHeader> for Header {
         // height").into());
         //}
         if last_block_id.is_some() && height.value() == 1 {
-            return Err(Kind::InvalidFirstHeader
+            return Err(anyhow!(Kind::InvalidFirstHeader)
                 .context("last_block_id is not null on first height")
                 .into());
         }
@@ -111,10 +113,10 @@ impl TryFrom<RawHeader> for Header {
         // height").into());
         //}
         Ok(Header {
-            version: value.version.ok_or(Kind::MissingVersion)?.try_into()?,
+            version: value.version.ok_or(anyhow::anyhow!(Kind::MissingVersion))?.try_into()?,
             chain_id: value.chain_id.try_into()?,
             height,
-            time: value.time.ok_or(Kind::NoTimestamp)?.try_into()?,
+            time: value.time.ok_or(anyhow::anyhow!(Kind::NoTimestamp))?.try_into()?,
             last_block_id,
             last_commit_hash,
             data_hash: if value.data_hash.is_empty() {
@@ -157,6 +159,7 @@ impl From<Header> for RawHeader {
         }
     }
 }
+
 
 impl Header {
     /// Hash this header
@@ -209,7 +212,7 @@ pub struct Version {
 impl Protobuf<RawConsensusVersion> for Version {}
 
 impl TryFrom<RawConsensusVersion> for Version {
-    type Error = anomaly::BoxError;
+    type Error = anyhow::Error;
 
     fn try_from(value: RawConsensusVersion) -> Result<Self, Self::Error> {
         Ok(Version {
