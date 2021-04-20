@@ -15,13 +15,13 @@ VARIABLE
 a <: b == a \* type annotation
 
 \* This predicate extends the LightClient Init predicate with history tracking
-InitTest ==
+LightTestsInit ==
   /\ Init
   /\ history = [ n \in {0} <: {Int} |->
      [ verified |-> prevVerified, current |-> prevCurrent, now |-> prevNow, verdict |-> prevVerdict ]]
 
 \* This predicate extends the LightClient Next predicate with history tracking
-NextTest ==
+LightTestsNext ==
   /\ Next
   /\ history' = [ n \in DOMAIN history \union {nprobes'} |->
        IF n = nprobes' THEN
@@ -51,13 +51,13 @@ TestFailedTrustingPeriod ==
    \E s \in DOMAIN history :
       history[s].verdict = "FAILED_TRUSTING_PERIOD"
 
-TwoNotEnoughTrust ==
+TestTwoNotEnoughTrust ==
    \E s1, s2 \in DOMAIN history :
        /\ s1 /= s2
        /\ history[s1].verdict = "NOT_ENOUGH_TRUST"
        /\ history[s2].verdict = "NOT_ENOUGH_TRUST"
 
-ThreeNotEnoughTrust ==
+TestThreeNotEnoughTrust ==
   \E s1, s2, s3 \in DOMAIN history :
        /\ s1 /= s2 /\ s2 /= s3 /\ s1 /= s3
        /\ history[s1].verdict = "NOT_ENOUGH_TRUST"
