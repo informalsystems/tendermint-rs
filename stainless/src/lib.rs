@@ -5,25 +5,8 @@ use stainless::*;
 
 use std::hash::Hash;
 
-trait SetMethods<T> {
-    fn is_equal(&self, other: &Set<T>) -> bool;
-    fn is_disjoint(&self, other: &Set<T>) -> bool;
-    fn remove(self, t: &T) -> Self;
-}
-
-impl<T: Eq + Hash + Clone> SetMethods<T> for Set<T> {
-    fn is_equal(&self, other: &Set<T>) -> bool {
-        self.is_subset_of(other) && other.is_subset_of(self)
-    }
-
-    fn is_disjoint(&self, other: &Set<T>) -> bool {
-        self.intersection(other.clone()).is_equal(&Set::empty())
-    }
-
-    fn remove(self, t: &T) -> Self {
-        self.difference(Set::singleton(t.clone()))
-    }
-}
+mod list;
+use list::*;
 
 // Copied imports from the `light-client` crate:
 macro_rules! bail {
@@ -52,11 +35,11 @@ pub enum ErrorKind {
 /// correctness.
 #[derive(Clone)]
 pub struct PeerList<T> {
-    values: Map<PeerId, T>,
+    values: ListMap<PeerId, T>,
     primary: PeerId,
-    witnesses: Set<PeerId>,
-    full_nodes: Set<PeerId>,
-    faulty_nodes: Set<PeerId>,
+    witnesses: ListSet<PeerId>,
+    full_nodes: ListSet<PeerId>,
+    faulty_nodes: ListSet<PeerId>,
 }
 
 impl<T: Clone> PeerList<T> {
@@ -72,18 +55,9 @@ impl<T: Clone> PeerList<T> {
             && !peer_list.full_nodes.contains(&peer_list.primary)
             && !peer_list.faulty_nodes.contains(&peer_list.primary)
             && peer_list.values.contains(&peer_list.primary)
-            && peer_list
-                .witnesses
-                .iter()
-                .all(|id| peer_list.values.contains(id))
-            && peer_list
-                .full_nodes
-                .iter()
-                .all(|id| peer_list.values.contains(id))
-            && peer_list
-                .faulty_nodes
-                .iter()
-                .all(|id| peer_list.values.contains(id))
+            && peer_list.values.contains_all(&peer_list.witnesses)
+            && peer_list.values.contains_all(&peer_list.full_nodes)
+            && peer_list.values.contains_all(&peer_list.faulty_nodes)
     }
 
     /// Transition invariant maintained by a `PeerList`
@@ -123,17 +97,17 @@ impl<T: Clone> PeerList<T> {
     // }
 
     /// Get all the witnesses peer ids
-    pub fn witnesses_ids(&self) -> &Set<PeerId> {
+    pub fn witnesses_ids(&self) -> &ListSet<PeerId> {
         &self.witnesses
     }
 
     /// Get all the full nodes peer ids
-    pub fn full_nodes_ids(&self) -> &Set<PeerId> {
+    pub fn full_nodes_ids(&self) -> &ListSet<PeerId> {
         &self.full_nodes
     }
 
     /// Get all the faulty nodes peer ids
-    pub fn faulty_nodes_ids(&self) -> &Set<PeerId> {
+    pub fn faulty_nodes_ids(&self) -> &ListSet<PeerId> {
         &self.faulty_nodes
     }
 
@@ -152,7 +126,7 @@ impl<T: Clone> PeerList<T> {
 
         self.witnesses = self.witnesses.remove(&faulty_witness);
 
-        if let Some(new_witness) = self.full_nodes.iter().next().copied() {
+        if let Some(new_witness) = self.full_nodes.first().copied() {
             self.witnesses = self.witnesses.add(new_witness);
             self.full_nodes = self.full_nodes.remove(&new_witness);
             result = Some(new_witness);
@@ -175,7 +149,7 @@ impl<T: Clone> PeerList<T> {
     ) -> Result<(Self, PeerId), Error> {
         self.faulty_nodes = self.faulty_nodes.add(self.primary);
 
-        if let Some(new_primary) = self.witnesses.iter().next().copied() {
+        if let Some(new_primary) = self.witnesses.first().copied() {
             self.primary = new_primary;
             self.witnesses = self.witnesses.remove(&new_primary);
             Ok((self, new_primary))
@@ -187,11 +161,11 @@ impl<T: Clone> PeerList<T> {
     }
 
     /// Get a reference to the underlying `HashMap`
-    pub fn values(&self) -> &Map<PeerId, T> {
+    pub fn values(&self) -> &ListMap<PeerId, T> {
         &self.values
     }
     /// Consume into the underlying `HashMap`
-    pub fn into_values(self) -> Map<PeerId, T> {
+    pub fn into_values(self) -> ListMap<PeerId, T> {
         self.values
     }
 }
