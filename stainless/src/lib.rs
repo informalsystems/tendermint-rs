@@ -19,35 +19,35 @@ enum List<T> {
     Cons(T, Box<List<T>>),
 }
 
-impl<T: Eq + std::hash::Hash + Clone> ListSet<T> {
+impl ListSet<u128> {
     pub fn empty() -> Self {
         ListSet { list: List::Nil }
     }
 
-    pub fn is_disjoint(&self, other: &ListSet<T>) -> bool {
+    pub fn is_disjoint(&self, other: &ListSet<u128>) -> bool {
         is_equal(
             &self.list.contents().intersection(other.list.contents()),
             &Set::empty(),
         )
     }
 
-    pub fn contains(&self, t: &T) -> bool {
+    pub fn contains(&self, t: &u128) -> bool {
         self.list.contents().contains(&t)
     }
 
-    pub fn remove(self, t: &T) -> Self {
+    pub fn remove(self, t: &u128) -> Self {
         Self {
             list: self.list.remove(t),
         }
     }
 
-    pub fn add(self, t: T) -> Self {
+    pub fn add(self, t: u128) -> Self {
         Self {
             list: self.list.add(t),
         }
     }
 
-    pub fn first(&self) -> Option<T> {
+    pub fn first(&self) -> Option<u128> {
         match &self.list {
             List::Cons(t, _) => Some(t.clone()),
             _ => None,
@@ -55,16 +55,16 @@ impl<T: Eq + std::hash::Hash + Clone> ListSet<T> {
     }
 }
 
-impl<K: Eq + std::hash::Hash + Clone, V> ListMap<K, V> {
-    pub fn get(&self, key: &K) -> Option<&V> {
+impl<V> ListMap<u128, V> {
+    pub fn get(&self, key: &u128) -> Option<&V> {
         self.list.get(key)
     }
 
-    pub fn contains(&self, key: &K) -> bool {
+    pub fn contains(&self, key: &u128) -> bool {
         self.list.key_set().contains(&key)
     }
 
-    pub fn contains_all(&self, keys: &ListSet<K>) -> bool {
+    pub fn contains_all(&self, keys: &ListSet<u128>) -> bool {
         is_equal(
             &self.list.key_set().intersection(keys.list.contents()),
             &keys.list.contents(),
@@ -72,20 +72,20 @@ impl<K: Eq + std::hash::Hash + Clone, V> ListMap<K, V> {
     }
 }
 
-fn is_equal<T: Eq + std::hash::Hash + Clone>(s1: &Set<T>, s2: &Set<T>) -> bool {
+fn is_equal<'a>(s1: &Set<&'a u128>, s2: &Set<&'a u128>) -> bool {
     s1.is_subset_of(s2) && s2.is_subset_of(s1)
 }
 
-impl<T: Eq + std::hash::Hash + Clone> List<T> {
+impl List<u128> {
     #[measure(self)]
-    pub fn contents(&self) -> Set<&T> {
+    pub fn contents(&self) -> Set<&u128> {
         match self {
             List::Nil => Set::empty(),
             List::Cons(head, tail) => tail.contents().add(head),
         }
     }
 
-    pub fn remove(self, t: &T) -> Self {
+    pub fn remove(self, t: &u128) -> Self {
         match self {
             List::Nil => self,
             List::Cons(head, tail) if head == *t => *tail,
@@ -93,7 +93,7 @@ impl<T: Eq + std::hash::Hash + Clone> List<T> {
         }
     }
 
-    pub fn add(self, t: T) -> Self {
+    pub fn add(self, t: u128) -> Self {
         match self {
             List::Nil => List::Cons(t, Box::new(List::Nil)),
             _ => List::Cons(t, Box::new(self)),
@@ -101,15 +101,15 @@ impl<T: Eq + std::hash::Hash + Clone> List<T> {
     }
 }
 
-impl<K: Eq + std::hash::Hash + Clone, V> List<(K, V)> {
-    pub fn key_set(&self) -> Set<&K> {
+impl<V> List<(u128, V)> {
+    pub fn key_set(&self) -> Set<&u128> {
         match self {
             List::Nil => Set::empty(),
             List::Cons(head, tail) => tail.key_set().add(&head.0),
         }
     }
 
-    pub fn get(&self, key: &K) -> Option<&V> {
+    pub fn get(&self, key: &u128) -> Option<&V> {
         match &self {
             List::Nil => None,
             List::Cons(head, _) if head.0 == *key => Some(&head.1),
@@ -148,7 +148,7 @@ pub struct PeerList<T> {
     faulty_nodes: ListSet<u128>,
 }
 
-impl<T: Clone> PeerList<T> {
+impl<T> PeerList<T> {
     /// Invariant maintained by a `PeerList`
     ///
     /// ## Implements
