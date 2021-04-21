@@ -225,7 +225,7 @@ impl<T> PeerList<T> {
     /// ## Precondition
     /// - The given peer id must not be the primary peer id.
     /// - The given peer must be in the witness list
-    #[pre(&faulty_witness != &self.primary && self.witnesses.contains(&faulty_witness))]
+    #[pre(Self::invariant(&self) && &faulty_witness != &self.primary && self.witnesses.contains(&faulty_witness))]
     #[post(Self::invariant(&ret.0))]
     pub fn replace_faulty_witness(mut self, faulty_witness: u128) -> (Self, Option<u128>) {
         let mut result = None;
@@ -248,7 +248,13 @@ impl<T> PeerList<T> {
     ///
     /// ## Errors
     /// - If there are no witness left, returns `ErrorKind::NoWitnessLeft`.
-    #[post((matches!(ret, Ok(_))).implies(Self::invariant(&self)))]
+    #[pre(Self::invariant(&self))]
+    #[post((matches!(ret, Ok(_))).implies(
+        match ret {
+            Ok((new_list, _)) => Self::invariant(&new_list),
+            _ => false,
+        }
+    ))]
     pub fn replace_faulty_primary(
         mut self,
         primary_error: Option<Box<ErrorKind>>,
