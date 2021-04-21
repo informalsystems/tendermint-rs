@@ -14,14 +14,17 @@ pub use transport::websocket::{WebSocketClient, WebSocketClientDriver, WebSocket
 
 use crate::endpoint::validators::DEFAULT_VALIDATORS_PER_PAGE;
 use crate::endpoint::*;
+use crate::error::Error;
 use crate::paging::Paging;
 use crate::query::Query;
 use crate::{Order, Result, SimpleRequest};
 use async_trait::async_trait;
+use std::time::Duration;
 use tendermint::abci::{self, Transaction};
 use tendermint::block::Height;
 use tendermint::evidence::Evidence;
 use tendermint::Genesis;
+use tokio::time;
 
 /// Provides lightweight access to the Tendermint RPC. It gives access to all
 /// endpoints with the exception of the event subscription-related ones.
@@ -219,6 +222,31 @@ pub trait Client {
     ) -> Result<tx_search::Response> {
         self.perform(tx_search::Request::new(query, prove, page, per_page, order))
             .await
+    }
+
+    /// Poll the `/health` endpoint until it returns a successful result or
+    /// the given `timeout` has elapsed.
+    async fn wait_until_healthy<T>(&self, timeout: T) -> Result<()>
+    where
+        T: Into<Duration> + Send,
+    {
+        let timeout = timeout.into();
+        let poll_interval = Duration::from_millis(200);
+        let mut attempts_remaining = timeout.as_millis() / poll_interval.as_millis();
+
+        while self.health().await.is_err() {
+            if attempts_remaining == 0 {
+                return Err(Error::client_internal_error(format!(
+                    "timed out waiting for healthy response after {}ms",
+                    timeout.as_millis()
+                )));
+            }
+
+            attempts_remaining -= 1;
+            time::sleep(poll_interval).await;
+        }
+
+        Ok(())
     }
 
     /// Perform a request against the RPC endpoint

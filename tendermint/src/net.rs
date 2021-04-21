@@ -4,7 +4,6 @@ use crate::{
     error::{Error, Kind},
     node,
 };
-use anomaly::{fail, format_err};
 
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
@@ -12,6 +11,7 @@ use std::{
     path::PathBuf,
     str::{self, FromStr},
 };
+use url::Url;
 
 /// URI prefix for TCP connections
 pub const TCP_PREFIX: &str = "tcp://";
@@ -20,6 +20,12 @@ pub const TCP_PREFIX: &str = "tcp://";
 pub const UNIX_PREFIX: &str = "unix://";
 
 /// Remote address (TCP or UNIX socket)
+///
+/// For TCP-based addresses, this supports both IPv4 and IPv6 addresses and
+/// hostnames.
+///
+/// If the scheme is not supplied (i.e. `tcp://` or `unix://`) when parsing
+/// from a string, it is assumed to be a TCP address.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum Address {
     /// TCP connections
@@ -61,69 +67,37 @@ impl FromStr for Address {
     type Err = Error;
 
     fn from_str(addr: &str) -> Result<Self, Error> {
-        if addr.starts_with(TCP_PREFIX) {
-            Self::parse_tcp_addr(&addr.strip_prefix(TCP_PREFIX).unwrap())
-        } else if addr.starts_with(UNIX_PREFIX) {
-            Ok(Address::Unix {
-                path: PathBuf::from(&addr.strip_prefix(UNIX_PREFIX).unwrap()),
-            })
-        } else if addr.contains("://") {
-            // The only supported URI prefixes are `tcp://` and `unix://`
-            fail!(Kind::Parse, "invalid address prefix: {:?}", addr)
+        let prefixed_addr = if addr.contains("://") {
+            addr.to_owned()
         } else {
-            // If the address has no URI prefix, assume TCP
-            Self::parse_tcp_addr(addr)
-        }
-    }
-}
-
-impl Address {
-    /// Parse a TCP address (without a `tcp://` prefix).
-    ///
-    /// This is used internally by `Address::from_str`.
-    fn parse_tcp_addr(addr: &str) -> Result<Self, Error> {
-        // TODO(tarcieri): use the `uri` (or other) crate for this
-        let authority_parts = addr.split('@').collect::<Vec<_>>();
-
-        let (peer_id, authority) = match authority_parts.len() {
-            1 => (None, authority_parts[0]),
-            2 => (Some(authority_parts[0].parse()?), authority_parts[1]),
-            _ => fail!(
-                Kind::Parse,
-                "invalid {} address (bad authority): {}",
-                TCP_PREFIX,
-                addr
-            ),
+            // If the address has no scheme, assume it's TCP
+            format!("{}{}", TCP_PREFIX, addr)
         };
-
-        let host_and_port: Vec<&str> = authority.split(':').collect();
-
-        if host_and_port.len() != 2 {
-            fail!(
-                Kind::Parse,
-                "invalid {} address (missing port): {}",
-                TCP_PREFIX,
-                addr
-            );
+        let url = Url::parse(&prefixed_addr).map_err(|e| Kind::Parse.context(e))?;
+        match url.scheme() {
+            "tcp" => Ok(Self::Tcp {
+                peer_id: if !url.username().is_empty() {
+                    Some(url.username().parse()?)
+                } else {
+                    None
+                },
+                host: url
+                    .host_str()
+                    .ok_or_else(|| {
+                        Kind::Parse.context(format!("invalid TCP address (missing host): {}", addr))
+                    })?
+                    .to_owned(),
+                port: url.port().ok_or_else(|| {
+                    Kind::Parse.context(format!("invalid TCP address (missing port): {}", addr))
+                })?,
+            }),
+            "unix" => Ok(Self::Unix {
+                path: PathBuf::from(url.path()),
+            }),
+            _ => Err(Kind::Parse
+                .context(format!("invalid address scheme: {:?}", addr))
+                .into()),
         }
-
-        // TODO(tarcieri): default for missing hostname?
-        let host = host_and_port[0].to_owned();
-
-        let port = host_and_port[1].parse::<u16>().map_err(|_| {
-            format_err!(
-                Kind::Parse,
-                "invalid {} address (bad port): {}",
-                TCP_PREFIX,
-                addr
-            )
-        })?;
-
-        Ok(Address::Tcp {
-            peer_id,
-            host,
-            port,
-        })
     }
 }
 
@@ -138,9 +112,12 @@ mod tests {
     use super::*;
     use crate::node;
 
-    /// Example TCP node address
     const EXAMPLE_TCP_ADDR: &str =
         "tcp://abd636b766dcefb5322d8ca40011ec2cb35efbc2@35.192.61.41:26656";
+    const EXAMPLE_TCP_ADDR_WITHOUT_ID: &str = "tcp://35.192.61.41:26656";
+    const EXAMPLE_UNIX_ADDR: &str = "unix:///tmp/node.sock";
+    const EXAMPLE_TCP_IPV6_ADDR: &str =
+        "tcp://abd636b766dcefb5322d8ca40011ec2cb35efbc2@[2001:0000:3238:DFE1:0063:0000:0000:FEFB]:26656";
 
     #[test]
     fn parse_tcp_addr() {
@@ -161,6 +138,67 @@ mod tests {
                     );
                     assert_eq!(host, "35.192.61.41");
                     assert_eq!(port, 26656);
+                }
+                other => panic!("unexpected address type: {:?}", other),
+            }
+        }
+    }
+
+    #[test]
+    fn parse_tcp_addr_without_id() {
+        let addr = EXAMPLE_TCP_ADDR_WITHOUT_ID.parse::<Address>().unwrap();
+        let addr_without_prefix = EXAMPLE_TCP_ADDR_WITHOUT_ID[TCP_PREFIX.len()..]
+            .parse::<Address>()
+            .unwrap();
+        for addr in &[addr, addr_without_prefix] {
+            match addr {
+                Address::Tcp {
+                    peer_id,
+                    host,
+                    port,
+                } => {
+                    assert!(peer_id.is_none());
+                    assert_eq!(host, "35.192.61.41");
+                    assert_eq!(*port, 26656);
+                }
+                other => panic!("unexpected address type: {:?}", other),
+            }
+        }
+    }
+
+    #[test]
+    fn parse_unix_addr() {
+        let addr = EXAMPLE_UNIX_ADDR.parse::<Address>().unwrap();
+        match addr {
+            Address::Unix { path } => {
+                assert_eq!(path.to_str().unwrap(), "/tmp/node.sock");
+            }
+            other => panic!("unexpected address type: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn parse_tcp_ipv6_addr() {
+        let addr = EXAMPLE_TCP_IPV6_ADDR.parse::<Address>().unwrap();
+        let addr_without_prefix = EXAMPLE_TCP_IPV6_ADDR[TCP_PREFIX.len()..]
+            .parse::<Address>()
+            .unwrap();
+        for addr in &[addr, addr_without_prefix] {
+            match addr {
+                Address::Tcp {
+                    peer_id,
+                    host,
+                    port,
+                } => {
+                    assert_eq!(
+                        peer_id.unwrap(),
+                        "abd636b766dcefb5322d8ca40011ec2cb35efbc2"
+                            .parse::<node::Id>()
+                            .unwrap()
+                    );
+                    // The parser URL strips the leading zeroes and converts to lowercase hex
+                    assert_eq!(host, "[2001:0:3238:dfe1:63::fefb]");
+                    assert_eq!(*port, 26656);
                 }
                 other => panic!("unexpected address type: {:?}", other),
             }
