@@ -10,7 +10,7 @@ pub enum PexReceive {
     Noop,
 }
 
-pub trait Outgoing: std::marker::Send {}
+pub trait Outgoing: std::marker::Send + Sync {}
 
 pub enum PexSend {}
 impl Outgoing for PexSend {}

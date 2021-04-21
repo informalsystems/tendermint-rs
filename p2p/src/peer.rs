@@ -10,9 +10,6 @@ use tendermint::node;
 use crate::message;
 use crate::transport::{Connection, Direction, StreamId};
 
-#[derive(Debug, thiserror::Error)]
-pub enum Error {}
-
 pub trait State: private::Sealed {}
 
 pub struct Connected<Conn> {
@@ -28,7 +25,7 @@ pub struct Running<Conn> {
 impl<Conn> State for Running<Conn> {}
 
 pub struct Stopped {
-    error: Option<Error>,
+    pub error: Option<Report>,
 }
 impl State for Stopped {}
 
@@ -86,33 +83,36 @@ where
                         // Deserialize into typed message
                         // send on receiver_send
 
-                        // End the read loop when all receivers are gone.
-                        if tx
-                            .send(message::Receive::Pex(message::PexReceive::Noop))
-                            .is_err()
-                        {
-                            break;
+                        match tx.try_send(message::Receive::Pex(message::PexReceive::Noop)) {
+                            Ok(_) => continue,
+                            // The receiver is gone, this subroutine needs to be terminated.
+                            Err(flume::TrySendError::Disconnected(_)) => break,
+                            // TODO(xla): Graceful handling here needs to be figured out.
+                            Err(flume::TrySendError::Full(_)) => todo!(),
                         }
                     }
+
+                    // TODO(xla): Log subroutine termination.
                 });
             }
 
+            // FIXME(xla): No queue should be unbounded, backpressure should be finley tuned and/or
+            // tunable.
             let (write_tx, write_rx) = flume::unbounded();
 
             thread::spawn(move || {
                 loop {
-                    let res = write_rx.recv();
-
-                    // The only error possible is a disconnection.
-                    if res.is_err() {
-                        break;
+                    match write_rx.recv() {
+                        // If the sender is gone this subroutine needs to vanish with it.
+                        Err(flume::RecvError::Disconnected) => break,
+                        Ok(msg) => {
+                            // Serialise message
+                            // write bytes
+                        }
                     }
-
-                    let msg = res.unwrap();
-
-                    // Serialise message
-                    // write bytes
                 }
+
+                // TODO(xla): Log subroutine termination.
             });
 
             senders.insert(*stream_id, write_tx);
@@ -129,15 +129,15 @@ where
         })
     }
 
-    fn stop(self) -> Result<Peer<Stopped>> {
-        match self.state.connection {
-            Direction::Incoming(conn) | Direction::Outgoing(conn) => conn.close()?,
-        }
+    fn stop(self) -> Peer<Stopped> {
+        let error = match self.state.connection {
+            Direction::Incoming(conn) | Direction::Outgoing(conn) => conn.close().err(),
+        };
 
-        Ok(Peer {
+        Peer {
             id: self.id,
-            state: Stopped { error: None },
-        })
+            state: Stopped { error },
+        }
     }
 }
 
@@ -145,20 +145,26 @@ impl<Conn> Peer<Running<Conn>>
 where
     Conn: Connection,
 {
-    pub fn send(&self, message: message::Send) -> Result<()> {
-        // TODO(xla): Map message to stream id.
-        todo!()
+    pub fn send(&self, send: message::Send) -> Result<()> {
+        let (id, msg) = match send {
+            message::Send::Pex(msg) => (StreamId::Pex, msg),
+        };
+
+        match self.state.senders.get(&id) {
+            Some(sender) => sender.send(Box::new(msg)).map_err(Report::from),
+            None => Err(Report::msg("no open stream to send on")),
+        }
     }
 
-    pub fn stop(self) -> Result<Peer<Stopped>> {
-        match self.state.connection {
-            Direction::Incoming(conn) | Direction::Outgoing(conn) => conn.close()?,
-        }
+    pub fn stop(self) -> Peer<Stopped> {
+        let error = match self.state.connection {
+            Direction::Incoming(conn) | Direction::Outgoing(conn) => conn.close().err(),
+        };
 
-        Ok(Peer {
+        Peer {
             id: self.id,
-            state: Stopped { error: None },
-        })
+            state: Stopped { error },
+        }
     }
 }
 

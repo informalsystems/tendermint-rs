@@ -275,6 +275,7 @@ impl Supervisor {
         let mut protocol = Protocol::default();
 
         loop {
+            // FIXME(xla): This should yield a Result where in case of error we bail.
             let input = {
                 let peers = match peers.lock() {
                     Ok(peers) => peers,
@@ -309,8 +310,10 @@ impl Supervisor {
                 selector.wait()
             };
 
-            for output in protocol.transition(input) {
-                let res = match output {
+            let res: Result<Vec<()>, flume::TrySendError<()>> = protocol
+                .transition(input)
+                .into_iter()
+                .map(|output| match output {
                     Output::Event(event) => event_tx.try_send(event).map_err(map_try_err),
                     Output::Internal(internal) => match internal {
                         Internal::Accept => accept_tx.try_send(()).map_err(map_try_err),
@@ -323,17 +326,15 @@ impl Supervisor {
                             upgrade_tx.try_send(peer_id).map_err(map_try_err)
                         }
                     },
-                };
+                })
+                .collect();
 
-                match res {
-                    Ok(()) => {}
-                    // TODO(xla): Communication with one of the subroutines has failed, we need to
-                    // bail here, tear down the machinery and communicate that we are done.
-                    Err(flume::TrySendError::Disconnected(_)) => todo!(),
-                    // FIXME(xla): The case becomes relevant as soon as the transition from
-                    // unbounded to bounded channels is done.
-                    Err(flume::TrySendError::Full(_)) => todo!(),
-                }
+            match res {
+                Ok(_) => {}
+                // FIXME(xla): The case becomes relevant as soon as the transition from
+                // unbounded to bounded channels is done.
+                Err(flume::TrySendError::Full(_)) => todo!(),
+                Err(err) => return Err(Report::from(err)),
             }
         }
 
@@ -482,7 +483,7 @@ impl Supervisor {
             };
 
             let msg = match peer {
-                Some(peer) => Input::Stopped(id, peer.stop().err()),
+                Some(peer) => Input::Stopped(id, peer.stop().state.error),
                 None => {
                     // TODO(xla): A missing peer needs to be bubbled up as that indicates there is
                     // a mismatch between the protocol tracked peers and the ones the supervisor holds
