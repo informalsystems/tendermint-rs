@@ -29,6 +29,7 @@ pub mod account;
 pub mod block;
 pub mod chain;
 pub mod channel;
+#[cfg(feature = "std")]
 pub mod config;
 pub mod consensus;
 pub mod evidence;
@@ -36,7 +37,9 @@ pub mod genesis;
 pub mod hash;
 pub mod merkle;
 mod moniker;
+#[cfg(feature = "std")]
 pub mod net;
+#[cfg(feature = "std")]
 pub mod node;
 pub mod private_key;
 pub mod proposal;

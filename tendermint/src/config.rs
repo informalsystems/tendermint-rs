@@ -6,7 +6,10 @@
 //! - `node_key.rs`: `config::node_key::NodeKey`
 //! - `priv_validator_key.rs`: `config::priv_validator_key::PrivValidatorKey`
 
+#[cfg(feature = "std")]
 mod node_key;
+
+#[cfg(feature = "std")]
 mod priv_validator_key;
 
 pub use self::{node_key::NodeKey, priv_validator_key::PrivValidatorKey};
@@ -19,14 +22,14 @@ use crate::{
 };
 use anomaly::{fail, format_err};
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
-use sp_std::{
+use std::{
     collections::btree_map::BTreeMap,
-    fmt, fs,
-    path::{Path, PathBuf},
+    fmt,
     str::FromStr,
     vec::Vec,
     prelude::*,
 };
+
 use crate::primitives::{String, ToString};
 use crate::primitives::format;
 
