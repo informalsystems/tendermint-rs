@@ -30,7 +30,8 @@ jobs:
           command: fmt
           args: --all -- --check
 
-  clippy_check:
+  # This job creates the "clippy-results" GitHub Action that lists the clippy results in a nice format.
+  clippy-json-output:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
