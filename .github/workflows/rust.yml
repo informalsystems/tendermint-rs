@@ -41,8 +41,9 @@ jobs:
           override: true
       - uses: actions-rs/clippy-check@v1
         with:
+          name: clippy-results
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features --all-targets
+          args: --all-features --all-targets -- -Dwarnings -Drust-2018-idioms
 
   docs:
     runs-on: ubuntu-latest
