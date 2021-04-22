@@ -1,4 +1,4 @@
-name: Rust
+name: Internal
 on:
   pull_request:
     paths-ignore:
@@ -17,30 +17,18 @@ jobs:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
     if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master'"
 
-  fmt:
+  # This job creates the "clippy-results" GitHub Action that lists the clippy results in a nice format.
+  clippy-json-output:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+          components: clippy
           override: true
-      - uses: actions-rs/cargo@v1
+      - uses: actions-rs/clippy-check@v1
         with:
-          command: fmt
-          args: --all -- --check
-
-  docs:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
-      - uses: actions-rs/cargo@v1
-        env:
-          RUSTFLAGS: "--cfg docsrs"
-        with:
-          command: doc
-          args: --all-features
+          name: clippy-results
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-features --all-targets -- -Dwarnings -Drust-2018-idioms
