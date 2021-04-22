@@ -5,7 +5,8 @@ use crate::block::{Height, Id as BlockId, Round};
 use crate::chain::Id as ChainId;
 use crate::Time;
 use crate::{Error, Kind};
-use std::convert::{TryFrom, TryInto};
+use sp_std::convert::{TryFrom, TryInto};
+
 use tendermint_proto::types::CanonicalProposal as RawCanonicalProposal;
 use tendermint_proto::Protobuf;
 

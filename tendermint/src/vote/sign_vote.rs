@@ -2,11 +2,12 @@ use crate::chain;
 use crate::Vote;
 use crate::{Error, Kind};
 use bytes::BufMut;
-use std::convert::TryFrom;
+use sp_std::convert::TryFrom;
 use tendermint_proto::privval::SignedVoteResponse as RawSignedVoteResponse;
 use tendermint_proto::privval::{RemoteSignerError, SignVoteRequest as RawSignVoteRequest};
 use tendermint_proto::Error as ProtobufError;
 use tendermint_proto::Protobuf;
+use sp_std::vec::Vec;
 
 /// SignVoteRequest is a request to sign a vote
 #[derive(Clone, PartialEq, Debug)]

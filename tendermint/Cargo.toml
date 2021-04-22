@@ -33,7 +33,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-anomaly = "0.2"
+anomaly = {version = "0.2", default-features = false, path = "./anomaly"}
 async-trait = "0.1"
 bytes = { version = "1.0", default-features = false }
 chrono = { version = "0.4", default-features = false, features = ["serde"] }
@@ -65,10 +65,32 @@ zeroize = { version = "1.1", default-features = false, features = ["zeroize_deri
 k256 = { version = "0.7", default-features = false, optional = true, features = ["ecdsa"] }
 ripemd160 = { version = "0.9", default-features = false, optional = true }
 
+sp-std = {version = "3.0.0", default-features = false }
+
 [features]
 secp256k1 = ["k256", "ripemd160"]
 default = ["std"]
-std = []
+std = [
+    'bytes/std',
+    'chrono/std',
+    'ed25519-dalek/std',
+    'funty/std',
+    'futures/std',
+    'num-traits/std',
+    'once_cell/std',
+    'prost/std',
+    'serde/std',
+    'serde_json/std',
+    'serde_bytes/std',
+    'sha2/std',
+    'signature/std',
+    'subtle/std',
+    'subtle-encoding/std',
+    'k256/std',
+    'ripemd160/std',
+    'sp-std/std',
+    'anomaly/std',
+]
 
 [dev-dependencies]
 proptest = "0.10.1"

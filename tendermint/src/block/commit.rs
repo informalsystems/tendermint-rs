@@ -4,7 +4,12 @@ use crate::block::commit_sig::CommitSig;
 use crate::block::{Height, Id, Round};
 use crate::{Error, Kind};
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
+use sp_std::{
+    convert::{TryFrom, TryInto},
+    vec::Vec,
+    prelude::*,
+};
+
 use tendermint_proto::types::Commit as RawCommit;
 
 /// Commit contains the justification (ie. a set of signatures) that a block was committed by a set

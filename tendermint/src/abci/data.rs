@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use sp_std::vec::Vec;
 
 /// ABCI transaction data.
 ///

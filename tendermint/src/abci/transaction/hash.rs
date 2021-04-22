@@ -2,10 +2,15 @@
 
 use crate::error::{Error, Kind};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-use std::{
+
+use sp_std::{
     fmt::{self, Debug, Display},
     str::FromStr,
 };
+
+use crate::primitives::String;
+use crate::primitives::format;
+
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
 

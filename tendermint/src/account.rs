@@ -7,7 +7,7 @@ use crate::{
 
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
-use std::{
+use sp_std::{
     convert::TryInto,
     fmt::{self, Debug, Display},
     str::FromStr,
@@ -19,8 +19,10 @@ use subtle_encoding::hex;
 use crate::public_key::Secp256k1;
 #[cfg(feature = "secp256k1")]
 use ripemd160::Ripemd160;
-use std::convert::TryFrom;
+use sp_std::convert::TryFrom;
 use tendermint_proto::Protobuf;
+use sp_std::vec::Vec;
+use crate::primitives::String;
 
 /// Size of an  account ID in bytes
 pub const LENGTH: usize = 20;
@@ -132,7 +134,7 @@ impl<'de> Deserialize<'de> for Id {
     {
         let s = String::deserialize(deserializer)?;
         Self::from_str(&s).map_err(|_| {
-            de::Error::custom(format!(
+            de::Error::custom(alloc::format!(
                 "expected {}-character hex string, got {:?}",
                 LENGTH * 2,
                 s

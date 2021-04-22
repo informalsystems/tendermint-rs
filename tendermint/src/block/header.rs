@@ -3,10 +3,12 @@
 use crate::merkle::simple_hash_from_byte_vectors;
 use crate::{account, block, chain, AppHash, Error, Hash, Kind, Time};
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
+use sp_std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Header as RawHeader;
 use tendermint_proto::version::Consensus as RawConsensusVersion;
 use tendermint_proto::Protobuf;
+use sp_std::prelude::*;
+
 
 /// Block `Header` values contain metadata about the block and about the
 /// consensus, as well as commitments to the data in the current block, the
@@ -157,6 +159,7 @@ impl From<Header> for RawHeader {
         }
     }
 }
+
 
 impl Header {
     /// Hash this header

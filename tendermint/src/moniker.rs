@@ -2,10 +2,11 @@
 
 use crate::error::Error;
 use serde::{Deserialize, Serialize};
-use std::{
+use sp_std::{
     fmt::{self, Display},
     str::FromStr,
 };
+use crate::primitives::String;
 
 /// Validator display names
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]

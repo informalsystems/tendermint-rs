@@ -4,7 +4,13 @@ use crate::{chain, consensus, validator, Time};
 use chrono::DateTime;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize};
-use std::convert::TryFrom;
+use sp_std::{
+    convert::TryFrom,
+    vec::Vec,
+};
+use crate::primitives::String;
+use crate::primitives::format;
+
 use tendermint_proto::google::protobuf::Timestamp;
 
 /// Genesis data

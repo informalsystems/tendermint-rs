@@ -1,11 +1,10 @@
 //! Voting power
-
-use std::convert::{TryFrom, TryInto};
-use std::fmt;
-
+use sp_std::convert::{TryFrom, TryInto};
+use sp_std::fmt;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-
 use crate::{Error, Kind};
+use crate::primitives::String;
+use crate::primitives::format;
 
 /// Voting power
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Default)]

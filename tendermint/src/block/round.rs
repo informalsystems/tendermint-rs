@@ -1,11 +1,13 @@
 use crate::error::{Error, Kind};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use std::convert::TryInto;
-use std::{
+use sp_std::convert::TryInto;
+use sp_std::{
     convert::TryFrom,
     fmt::{self, Debug, Display},
     str::FromStr,
 };
+use crate::primitives::String;
+use crate::primitives::format;
 
 /// Block round for a particular chain
 #[derive(Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]

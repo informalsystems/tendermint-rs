@@ -1,6 +1,7 @@
 //! Error types
 
 use anomaly::{BoxError, Context};
+// TODO! this error
 use thiserror::Error;
 
 use crate::account;
@@ -10,7 +11,7 @@ use crate::vote;
 pub type Error = BoxError;
 
 /// Kinds of errors
-#[derive(Clone, Eq, PartialEq, Debug, Error)]
+#[derive(Clone, Eq, PartialEq, Debug, Error)] // TODO thiserror::Error
 pub enum Kind {
     /// Cryptographic operation failed
     #[error("cryptographic error")]

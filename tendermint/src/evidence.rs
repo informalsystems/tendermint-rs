@@ -4,8 +4,12 @@ use crate::{
     block::signed_header::SignedHeader, serializers, vote::Power, Error, Kind, Time, Vote,
 };
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
-use std::slice;
+use sp_std::{
+    convert::{TryFrom, TryInto},
+    vec::Vec,
+    boxed::Box,
+    slice,
+};
 use tendermint_proto::google::protobuf::Duration as RawDuration;
 use tendermint_proto::types::evidence::Sum as RawSum;
 use tendermint_proto::types::evidence::Sum;
@@ -245,16 +249,22 @@ impl From<Params> for RawEvidenceParams {
     }
 }
 
+#[cfg(feature = "std")]
+use std::time::Duration as NativeDuration;
+
+#[cfg(not(feature = "std"))]
+use core::time::Duration as NativeDuration;
+
 /// Duration is a wrapper around std::time::Duration
 /// essentially, to keep the usages look cleaner
 /// i.e. you can avoid using serde annotations everywhere
 /// Todo: harmonize google::protobuf::Duration, std::time::Duration and this. Too many structs.
 /// <https://github.com/informalsystems/tendermint-rs/issues/741>
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
-pub struct Duration(#[serde(with = "serializers::time_duration")] pub std::time::Duration);
+pub struct Duration(#[serde(with = "serializers::time_duration")] pub crate::primitives::Duration);
 
-impl From<Duration> for std::time::Duration {
-    fn from(d: Duration) -> std::time::Duration {
+impl From<Duration> for NativeDuration {
+    fn from(d: Duration) -> NativeDuration {
         d.0
     }
 }
@@ -265,7 +275,7 @@ impl TryFrom<RawDuration> for Duration {
     type Error = Error;
 
     fn try_from(value: RawDuration) -> Result<Self, Self::Error> {
-        Ok(Self(std::time::Duration::new(
+        Ok(Self(NativeDuration::new(
             value
                 .seconds
                 .try_into()

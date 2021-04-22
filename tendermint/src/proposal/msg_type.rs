@@ -1,8 +1,9 @@
 use crate::{Error, Kind};
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::convert::TryFrom;
+use sp_std::convert::TryFrom;
 use tendermint_proto::Protobuf;
+use crate::primitives::format;
 
 /// Types of proposals
 #[repr(u8)]

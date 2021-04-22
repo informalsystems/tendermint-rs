@@ -2,7 +2,7 @@ use crate::chain::Id as ChainId;
 use crate::{block, Time};
 use crate::{Error, Kind::*};
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
+use sp_std::convert::{TryFrom,TryInto};
 use tendermint_proto::types::CanonicalVote as RawCanonicalVote;
 use tendermint_proto::Protobuf;
 

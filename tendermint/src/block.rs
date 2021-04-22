@@ -23,7 +23,7 @@ pub use self::{
 };
 use crate::{abci::transaction, evidence, Error, Kind};
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
+use sp_std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Block as RawBlock;
 use tendermint_proto::Protobuf;
 

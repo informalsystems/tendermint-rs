@@ -1,13 +1,15 @@
 //! Merkle proofs
 use serde::{Deserialize, Serialize};
-use std::convert::TryFrom;
 
+use sp_std::convert::TryFrom;
 use tendermint_proto::crypto::ProofOp as RawProofOp;
 use tendermint_proto::crypto::ProofOps as RawProofOps;
 use tendermint_proto::Protobuf;
 
 use crate::serializers;
 use crate::Error;
+use sp_std::vec::Vec;
+use crate::primitives::String;
 
 /// Proof is Merkle proof defined by the list of ProofOps
 /// <https://github.com/tendermint/tendermint/blob/c8483531d8e756f7fbb812db1dd16d841cdf298a/crypto/merkle/merkle.proto#L26>

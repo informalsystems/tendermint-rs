@@ -15,7 +15,10 @@ use crate::Signature;
 use crate::Time;
 use crate::{Error, Kind};
 use bytes::BufMut;
-use std::convert::{TryFrom, TryInto};
+use sp_std::{
+    convert::{TryFrom, TryInto},
+    vec::Vec,
+};
 use tendermint_proto::types::Proposal as RawProposal;
 use tendermint_proto::{Error as ProtobufError, Protobuf};
 

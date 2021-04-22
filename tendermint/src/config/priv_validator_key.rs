@@ -9,7 +9,7 @@ use crate::{
 };
 use anomaly::format_err;
 use serde::{Deserialize, Serialize};
-use std::{fs, path::Path};
+use sp_std::{fs, path::Path};
 
 /// Validator private key
 #[derive(Serialize, Deserialize)] // JSON custom serialization for priv_validator_key.json

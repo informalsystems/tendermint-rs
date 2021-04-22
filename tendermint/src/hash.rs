@@ -3,11 +3,15 @@
 use crate::error::{Error, Kind};
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::convert::TryFrom;
-use std::{
+use sp_std::{
+    convert::TryFrom,
     fmt::{self, Debug, Display},
     str::FromStr,
+    vec::Vec,
+    prelude::*,
 };
+use crate::primitives::String;
+use crate::primitives::format;
 use subtle_encoding::{Encoding, Hex};
 use tendermint_proto::Protobuf;
 
@@ -48,7 +52,7 @@ impl From<Hash> for Vec<u8> {
     fn from(value: Hash) -> Self {
         match value {
             Hash::Sha256(s) => s.to_vec(),
-            Hash::None => vec![],
+            Hash::None => Vec::new(),
         }
     }
 }

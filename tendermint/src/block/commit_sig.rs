@@ -3,9 +3,10 @@
 use crate::{account, Signature, Time};
 use crate::{Error, Kind};
 use num_traits::ToPrimitive;
-use std::convert::{TryFrom, TryInto};
+use sp_std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::BlockIdFlag;
 use tendermint_proto::types::CommitSig as RawCommitSig;
+use sp_std::vec::Vec;
 
 /// CommitSig represents a signature of a validator.
 /// It's a part of the Commit and can be used to reconstruct the vote set given the validator set.

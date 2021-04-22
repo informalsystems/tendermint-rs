@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
-use std::fmt::{self, Display};
+use sp_std::fmt::{self, Display};
+use crate::primitives::String;
 
 /// ABCI info
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

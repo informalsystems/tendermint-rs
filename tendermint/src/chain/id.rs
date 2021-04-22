@@ -2,14 +2,16 @@
 
 use crate::error::{Error, Kind};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use std::convert::TryFrom;
-use std::{
+use sp_std::convert::TryFrom;
+use sp_std::{
     cmp::Ordering,
     fmt::{self, Debug, Display},
     hash::{Hash, Hasher},
     str::{self, FromStr},
 };
 use tendermint_proto::Protobuf;
+use crate::primitives::String;
+use crate::primitives::format;
 
 /// Maximum length of a `chain::Id` name. Matches `MaxChainIDLen` from:
 /// <https://github.com/tendermint/tendermint/blob/develop/types/genesis.go>

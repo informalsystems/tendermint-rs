@@ -2,7 +2,8 @@
 
 use crate::error::Error;
 use serde::{Deserialize, Serialize};
-use std::{
+use crate::primitives::String;
+use sp_std::{
     fmt::{self, Display},
     str::FromStr,
 };

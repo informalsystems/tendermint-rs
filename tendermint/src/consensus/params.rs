@@ -3,11 +3,12 @@
 use crate::{block, evidence, public_key};
 use crate::{Error, Kind};
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
+use sp_std::convert::{TryFrom, TryInto};
 use tendermint_proto::abci::ConsensusParams as RawParams;
 use tendermint_proto::types::ValidatorParams as RawValidatorParams;
 use tendermint_proto::types::VersionParams as RawVersionParams;
 use tendermint_proto::Protobuf;
+use sp_std::vec::Vec;
 
 /// Tendermint consensus parameters
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]

@@ -6,6 +6,7 @@ use crate::public_key::PublicKey;
 use serde::{de, ser, Deserialize, Serialize};
 use subtle_encoding::{Base64, Encoding};
 use zeroize::Zeroizing;
+use crate::primitives::String;
 
 /// Private keys as parsed from configuration files
 #[derive(Serialize, Deserialize)]

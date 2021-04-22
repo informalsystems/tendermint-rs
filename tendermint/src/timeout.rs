@@ -2,7 +2,9 @@ use crate::{Error, Kind};
 use anomaly::{fail, format_err};
 
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
-use std::{fmt, ops::Deref, str::FromStr, time::Duration};
+use sp_std::{fmt, ops::Deref, str::FromStr};
+use crate::primitives::{String, Duration};
+use crate::primitives::format;
 
 /// Timeout durations
 #[derive(Copy, Clone, Debug)]
