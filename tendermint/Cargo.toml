@@ -33,7 +33,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-anomaly = {version = "0.2", default-features = false, path = "./anomaly"}
+anomaly = {version = "0.2", default-features = false, path = "../anomaly"}
 async-trait = "0.1"
 bytes = { version = "1.0", default-features = false }
 chrono = { version = "0.4", default-features = false, features = ["serde"] }
