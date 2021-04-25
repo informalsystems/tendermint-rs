@@ -34,9 +34,11 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 anomaly = {version = "0.2", default-features = false, path = "../anomaly"}
+#eyre = "0.6"
 async-trait = "0.1"
 bytes = { version = "1.0", default-features = false }
-chrono = { version = "0.4", default-features = false, features = ["serde"] }
+chrono = { version = "0.4", default-features = false, features = ["serde", "wasmbind"] }
+js-sys = { version = "0.3", optional = true }
 ed25519 = { version = "1", default-features = false }
 # use features (u64 backend)
 ed25519-dalek = { version = "1", default-features = false, features = ["serde", "u64_backend"] }

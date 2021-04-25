@@ -1,3 +1,4 @@
+//! primitive
 /// define String type in std and no_std
 #[cfg(feature = "std")]
 pub use std::string::{String, ToString};
@@ -89,7 +90,7 @@ mod no_std_time {
 
         fn add(self, other: Duration) -> SystemTime {
             let new_val = self.inner + other.as_millis() as f64;
-            SystemTime { inner: new_val as f64 }
+            SystemTime { inner: new_val }
         }
     }
 
@@ -98,7 +99,7 @@ mod no_std_time {
 
         fn sub(self, other: Duration) -> SystemTime {
             let new_val = self.inner - other.as_millis() as f64;
-            SystemTime { inner: new_val as f64 }
+            SystemTime { inner: new_val }
         }
     }
 

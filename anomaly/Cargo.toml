@@ -1,0 +1,28 @@
+[package]
+name        = "anomaly"
+description = "Error context library with support for type-erased sources and backtraces"
+version     = "0.2.0" # Also update html_root_url in lib.rs when bumping this
+authors     = ["Tony Arcieri <tony@iqlusion.io>"]
+license     = "Apache-2.0 OR MIT"
+edition     = "2018"
+homepage    = "https://github.com/iqlusioninc/crates/"
+repository  = "https://github.com/iqlusioninc/crates/tree/main/anomaly"
+readme      = "README.md"
+categories  = ["no-std", "rust-patterns"]
+keywords    = ["backtrace", "error-handling", "exception-reporting", "serde"]
+
+[dependencies]
+backtrace = { version = "0.3", optional = true }
+serde = { version = "1", optional = true, features = ["serde_derive"] }
+
+[dev-dependencies]
+thiserror = "1"
+
+[features]
+default = ["backtrace", "std"]
+gimli-symbolize = ["backtrace/gimli-symbolize"]
+serializer = ["backtrace/serde", "serde"]
+std = []
+
+[package.metadata.docs.rs]
+all-features = true
