@@ -35,12 +35,17 @@ impl ListSet<u128> {
         self.list.contents().contains(&t)
     }
 
+    #[post(
+        !ret.contains(&t)
+        && ret.list.contents().is_subset_of(&self.list.contents())
+    )]
     pub fn remove(self, t: &u128) -> Self {
         Self {
             list: self.list.remove(t),
         }
     }
 
+    #[post(ret.contains(&t))]
     pub fn add(self, t: u128) -> Self {
         Self {
             list: self.list.add(t),
@@ -85,9 +90,13 @@ impl List<u128> {
         }
     }
 
+    #[post(
+        !ret.contents().contains(&t)
+        && ret.contents().is_subset_of(&self.contents())
+    )]
     pub fn remove(self, t: &u128) -> Self {
         match self {
-            List::Nil => self,
+            List::Nil => List::Nil,
             List::Cons(head, tail) if head == *t => tail.remove(t),
             List::Cons(head, tail) => List::Cons(head, Box::new(tail.remove(t))),
         }
@@ -225,24 +234,39 @@ impl<T> PeerList<T> {
     /// ## Precondition
     /// - The given peer id must not be the primary peer id.
     /// - The given peer must be in the witness list
-    #[post(Self::invariant(&ret.0))]
     #[pre(
         Self::invariant(&self)
         && !(faulty_witness == self.primary)
         && self.witnesses.contains(&faulty_witness)
     )]
-    pub fn replace_faulty_witness(mut self, faulty_witness: u128) -> (Self, Option<u128>) {
+    #[post(
+        Self::invariant(&ret.0)
+        && !ret.0.witnesses.contains(&faulty_witness)
+        && ret.0.faulty_nodes.contains(&faulty_witness)
+    )]
+    pub fn replace_faulty_witness(self, faulty_witness: u128) -> (Self, Option<u128>) {
         let mut result = None;
-        self.witnesses = self.witnesses.remove(&faulty_witness);
 
-        if let Some(new_witness) = self.full_nodes.first() {
-            self.witnesses = self.witnesses.add(new_witness);
-            self.full_nodes = self.full_nodes.remove(&new_witness);
+        let mut new_full = self.full_nodes;
+        let mut new_witnesses = self.witnesses.remove(&faulty_witness);
+
+        if let Some(new_witness) = new_full.first() {
+            new_witnesses = new_witnesses.add(new_witness);
+            new_full = new_full.remove(&new_witness);
             result = Some(new_witness);
         }
 
-        self.faulty_nodes = self.faulty_nodes.add(faulty_witness);
-        (self, result)
+        let new_faulty = self.faulty_nodes.add(faulty_witness);
+        (
+            Self {
+                values: self.values,
+                primary: self.primary,
+                full_nodes: new_full,
+                witnesses: new_witnesses,
+                faulty_nodes: new_faulty,
+            },
+            result,
+        )
     }
 
     /// Mark the primary as faulty and swap it for the next available witness, if any.
@@ -253,20 +277,29 @@ impl<T> PeerList<T> {
     #[pre(Self::invariant(&self))]
     #[post((matches!(ret, Ok(_))).implies(
         match ret {
-            Ok((new_list, _)) => Self::invariant(&new_list),
+            Ok((new_list, _)) => Self::invariant(&new_list)
+                && self.primary != new_list.primary
+                && new_list.faulty_nodes.contains(&self.primary)
+                && self.witnesses.contains(&new_list.primary),
             _ => false,
         }
     ))]
     pub fn replace_faulty_primary(
-        mut self,
+        self,
         primary_error: Option<Box<ErrorKind>>,
     ) -> Result<(Self, u128), Box<ErrorKind>> {
-        self.faulty_nodes = self.faulty_nodes.add(self.primary);
+        let new_faulty = self.faulty_nodes.add(self.primary);
 
         if let Some(new_primary) = self.witnesses.first() {
-            self.primary = new_primary;
-            self.witnesses = self.witnesses.remove(&new_primary);
-            Ok((self, new_primary))
+            let new_witnesses = self.witnesses.remove(&new_primary);
+
+            let ret = Self {
+                primary: new_primary,
+                faulty_nodes: new_faulty,
+                witnesses: new_witnesses,
+                ..self
+            };
+            Ok((ret, new_primary))
         } else if let Some(err) = primary_error {
             bail!(ErrorKind::NoWitnessLeft { context: Some(err) })
         } else {
