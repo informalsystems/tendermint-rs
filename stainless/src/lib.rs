@@ -49,7 +49,7 @@ impl ListSet<u128> {
 
     pub fn first(&self) -> Option<u128> {
         match &self.list {
-            List::Cons(t, _) => Some(t.clone()),
+            List::Cons(t, _) => Some(*t),
             _ => None,
         }
     }
@@ -88,7 +88,7 @@ impl List<u128> {
     pub fn remove(self, t: &u128) -> Self {
         match self {
             List::Nil => self,
-            List::Cons(head, tail) if head == *t => *tail,
+            List::Cons(head, tail) if head == *t => tail.remove(t),
             List::Cons(head, tail) => List::Cons(head, Box::new(tail.remove(t))),
         }
     }
@@ -126,7 +126,7 @@ macro_rules! bail {
 }
 
 /// Node IDs
-// u128 was replaced by a simple u128 to make hashing easier.
+// PeerId was replaced by a simple u128 to make hashing easier.
 
 pub enum ErrorKind {
     NoWitnessLeft { context: Option<Box<ErrorKind>> },
@@ -225,11 +225,14 @@ impl<T> PeerList<T> {
     /// ## Precondition
     /// - The given peer id must not be the primary peer id.
     /// - The given peer must be in the witness list
-    #[pre(Self::invariant(&self) && &faulty_witness != &self.primary && self.witnesses.contains(&faulty_witness))]
     #[post(Self::invariant(&ret.0))]
+    #[pre(
+        Self::invariant(&self)
+        && !(faulty_witness == self.primary)
+        && self.witnesses.contains(&faulty_witness)
+    )]
     pub fn replace_faulty_witness(mut self, faulty_witness: u128) -> (Self, Option<u128>) {
         let mut result = None;
-
         self.witnesses = self.witnesses.remove(&faulty_witness);
 
         if let Some(new_witness) = self.full_nodes.first() {
@@ -239,7 +242,6 @@ impl<T> PeerList<T> {
         }
 
         self.faulty_nodes = self.faulty_nodes.add(faulty_witness);
-
         (self, result)
     }
 
