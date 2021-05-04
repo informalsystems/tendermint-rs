@@ -11,47 +11,58 @@ EXTENDS Integers, FiniteSets
 Min(a, b) == IF a < b THEN a ELSE b
 
 CONSTANT
+  (* @type: Set(Str);
+     A set of all nodes that can act as validators (correct and faulty). *)
   AllNodes,
-    (* a set of all nodes that can act as validators (correct and faulty) *)
+  (* @type: Int;
+     A maximal height that can be ever reached (modelling artifact). *)
   ULTIMATE_HEIGHT,
-    (* a maximal height that can be ever reached (modelling artifact) *)
+  (* @type: Int;
+     The period within which the validators are trusted *)
   TRUSTING_PERIOD
-    (* the period within which the validators are trusted *)
 
 Heights == 1..ULTIMATE_HEIGHT   (* possible heights *)
 
 (* A commit is just a set of nodes who have committed the block *)
 Commits == SUBSET AllNodes
 
-(* The set of all block headers that can be on the blockchain.
+(* @typeAlias: BLOCKHEADER = [hight: Int, time: Int, lastCommit: Set(Str), VS: Set(Str), NextVS: Set(Str)];
+   The set of all block headers that can be on the blockchain.
    This is a simplified version of the Block data structure in the actual implementation. *)
-BlockHeaders == [
-  height: Heights,
-    \* the block height
-  time: Int,
-    \* the block timestamp in some integer units
-  lastCommit: Commits,
-    \* the nodes who have voted on the previous block, the set itself instead of a hash
-  (* in the implementation, only the hashes of V and NextV are stored in a block,
-     as V and NextV are stored in the application state *) 
-  VS: SUBSET AllNodes,
-    \* the validators of this bloc. We store the validators instead of the hash.
-  NextVS: SUBSET AllNodes
-    \* the validators of the next block. We store the next validators instead of the hash.
-]
+BlockHeaders ==
+  [
+    height: Heights,
+      \* the block height
+    time: Int,
+      \* the block timestamp in some integer units
+    lastCommit: Commits,
+      \* the nodes who have voted on the previous block, the set itself instead of a hash
+    (* in the implementation, only the hashes of V and NextV are stored in a block,
+       as V and NextV are stored in the application state *) 
+    VS: SUBSET AllNodes,
+      \* the validators of this bloc. We store the validators instead of the hash.
+    NextVS: SUBSET AllNodes
+      \* the validators of the next block. We store the next validators instead of the hash.
+  ]
 
-(* A signed header is just a header together with a set of commits *)
+(* @typeAlias: BLOCK = [header: BLOCKHEADER, Commits: Set(Str)];
+   A signed header is just a header together with a set of commits *)
 LightBlocks == [header: BlockHeaders, Commits: Commits]
 
 VARIABLES
+    (* @type: Int;
+       the current global time in integer units *)
     now,
-        (* the current global time in integer units *)
+    (* @typeAlias: BLOCKCHAIN = Int -> BLOCKHEADER;
+       @type: BLOCKCHAIN;
+       A sequence of BlockHeaders, which gives us a bird view of the blockchain.
+       The Int is the headers position in the sequence. *)
     blockchain,
-    (* A sequence of BlockHeaders, which gives us a bird view of the blockchain. *)
-    Faulty
-    (* A set of faulty nodes, which can act as validators. We assume that the set
+    (* @type: Set(Str);
+       A set of faulty nodes, which can act as validators. We assume that the set
        of faulty processes is non-decreasing. If a process has recovered, it should
        connect using a different id. *)
+    Faulty
        
 (* all variables, to be used with UNCHANGED *)       
 vars == <<now, blockchain, Faulty>>         
@@ -59,11 +70,8 @@ vars == <<now, blockchain, Faulty>>
 (* The set of all correct nodes in a state *)
 Corr == AllNodes \ Faulty
 
-(* APALACHE annotations *)
-a <: b == a \* type annotation
-
 NT == STRING
-NodeSet(S) == S <: {NT}
+NodeSet(S) == S
 EmptyNodeSet == NodeSet({})
 
 BT == [height |-> Int, time |-> Int, lastCommit |-> {NT}, VS |-> {NT}, NextVS |-> {NT}]
@@ -73,7 +81,8 @@ LBT == [header |-> BT, Commits |-> {NT}]
 
 (****************************** BLOCKCHAIN ************************************)
 
-(* the header is still within the trusting period *)
+(* @type: (BLOCKHEADER) => Bool;
+   the header is still within the trusting period *)
 InTrustingPeriod(header) ==
     now < header.time + TRUSTING_PERIOD
 
@@ -88,7 +97,7 @@ TwoThirds(pVS, pNodes) ==
     IN
     3 * SP > 2 * TP \* when thinking in real numbers, not integers: SP > 2.0 / 3.0 * TP 
 
-(*
+(* @type: (Set(Str), Set(Str)) => Bool;
  Given a set of FaultyNodes, test whether the voting power of the correct nodes in D
  is more than 2/3 of the voting power of the faulty nodes in D.
  *)
@@ -101,16 +110,19 @@ IsCorrectPower(pFaultyNodes, pVS) ==
     \* CP + FP = TP is the total voting power, so we write CP > 2.0 / 3 * TP as follows:
     CP > 2 * FP \* Note: when FP = 0, this implies CP > 0.
     
-(* This is what we believe is the assumption about failures in Tendermint *)     
+(* @type: (Set(Str), Int, BLOCKCHAIN) => Bool;
+   This is what we believe is the assumption about failures in Tendermint *)     
 FaultAssumption(pFaultyNodes, pNow, pBlockchain) ==
     \A h \in Heights:
       pBlockchain[h].time + TRUSTING_PERIOD > pNow =>
         IsCorrectPower(pFaultyNodes, pBlockchain[h].NextVS)
 
-(* Can a block be produced by a correct peer, or an authenticated Byzantine peer *)
+(* @type: (Int, BLOCK) => Bool;
+   Can a block be produced by a correct peer, or an authenticated Byzantine peer *)
 IsLightBlockAllowedByDigitalSignatures(ht, block) == 
     \/ block.header = blockchain[ht] \* signed by correct and faulty (maybe)
-    \/ block.Commits \subseteq Faulty /\ block.header.time >= 0 \* signed only by faulty
+    \/ /\ block.Commits \subseteq Faulty
+       /\ block.header.time >= 0 \* signed only by faulty
 
 (*
  Initialize the blockchain to the ultimate height right in the initial states.
