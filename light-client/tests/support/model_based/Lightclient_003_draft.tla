@@ -7,36 +7,61 @@
 
 EXTENDS Integers, FiniteSets
 
+\* @typeAlias: BLOCKHEADER = [height: Int, time: Int, lastCommit: Set(Str), VS: Set(Str), NextVS: Set(Str)];
+\* @typeAlias: BLOCK = [header: BLOCKHEADER, Commits: Set(Str)];
+\* @typeAlias: BLOCKSTATUS = Int -> Str;
+\* @typeAlias: BLOCKS = Int -> BLOCK;
+LCTypeAliases == TRUE
+
 \* the parameters of Light Client
 CONSTANTS
+  (* @type: Int;
+     an index of the block header that the light client trusts by social consensus *)
   TRUSTED_HEIGHT,
-    (* an index of the block header that the light client trusts by social consensus *)
+  (* @type: Int;
+     an index of the block header that the light client tries to verify *)
   TARGET_HEIGHT,
-    (* an index of the block header that the light client tries to verify *)
+  (* @type: Int;
+    the period within which the validators are trusted *)
   TRUSTING_PERIOD,
-    (* the period within which the validators are trusted *)
+  (* @type: Bool; *)  
   IS_PRIMARY_CORRECT
-    (* is primary correct? *)  
 
 VARIABLES       (* see TypeOK below for the variable types *)
-  state,        (* the current state of the light client *)
-  nextHeight,   (* the next height to explore by the light client *)
-  nprobes       (* the lite client iteration, or the number of block tests *)
+  (* @type: Str;
+     the current state of the light client *)
+  state,        
+ (* @type: Int;
+    the next height to explore by the light client *)
+  nextHeight,
+ (* @type: Int;
+    the lite client iteration, or the number of block tests *)
+  nprobes      
   
 (* the light store *)
 VARIABLES  
-  fetchedLightBlocks, (* a function from heights to LightBlocks *)
-  lightBlockStatus,   (* a function from heights to block statuses *)
-  latestVerified      (* the latest verified block *)
+  (* @type: Int -> BLOCK; *)
+  fetchedLightBlocks,
+  (* 
+     @type: BLOCKSTATUS;
+     a function from heights to block statuses *)
+  lightBlockStatus,   
+  (* @type: BLOCK;
+     the latest verified block *)
+  latestVerified      
 
 (* the variables of the lite client *)
 lcvars == <<state, nextHeight, fetchedLightBlocks, lightBlockStatus, latestVerified>>
 
 (* the light client previous state components, used for monitoring *)
 VARIABLES
+  \* @type: BLOCKHEADER;
   prevVerified,
+  \* @type: BLOCK;
   prevCurrent,
+  \* @type: Int;
   prevNow,
+  \* @type: Str;
   prevVerdict
 
 InitMonitor(verified, current, now, verdict) ==
@@ -56,11 +81,18 @@ NextMonitor(verified, current, now, verdict) ==
 
 \* the parameters that are propagated into Blockchain
 CONSTANTS
+  (* @type: Set(Str);
+     a set of all nodes that can act as validators (correct and faulty) *)
   AllNodes
-    (* a set of all nodes that can act as validators (correct and faulty) *)
 
 \* the state variables of Blockchain, see Blockchain.tla for the details
-VARIABLES now, blockchain, Faulty
+VARIABLES
+    \* @type: Int;
+    now,
+    \* @type: Int -> BLOCKHEADER;
+    blockchain,
+    \* @type: Set(Str);
+    Faulty
 
 \* All the variables of Blockchain. For some reason, BC!vars does not work
 bcvars == <<now, blockchain, Faulty>>
@@ -83,6 +115,7 @@ HEIGHTS == TRUSTED_HEIGHT..TARGET_HEIGHT
 States == { "working", "finishedSuccess", "finishedFailure" }
 
 (**
+ @type: (BLOCK, BLOCK) => Bool;
  Check the precondition of ValidAndVerified.
  
  [LCV-FUNC-VALID.1::TLA-PRE.1]
@@ -111,7 +144,7 @@ ValidAndVerifiedPre(trusted, untrusted) ==
      3. untrusted.NextValidators = hash(untrusted.Header.NextValidators)
    *)
 
-(**
+(** @type: (BLOCK, BLOCK) => Bool;
   * Check that the commits in an untrusted block form 1/3 of the next validators
   * in a trusted header.
  *)
@@ -179,6 +212,7 @@ FetchLightBlockInto(block, height) ==
     THEN CopyLightBlockFromChain(block, height)
     ELSE BC!IsLightBlockAllowedByDigitalSignatures(height, block)
 
+\* @type: (BLOCKS, BLOCK) => BLOCKS;
 \* add a block into the light store    
 \*
 \* [LCV-FUNC-UPDATE.1::TLA.1]
@@ -187,6 +221,7 @@ LightStoreUpdateBlocks(lightBlocks, block) ==
     [h \in DOMAIN lightBlocks \union {ht} |->
         IF h = ht THEN block ELSE lightBlocks[h]]
 
+\* @type: (BLOCKSTATUS, Int, Str) => BLOCKSTATUS;
 \* update the state of a light block      
 \*
 \* [LCV-FUNC-UPDATE.1::TLA.1]
@@ -194,6 +229,7 @@ LightStoreUpdateStates(statuses, ht, blockState) ==
     [h \in DOMAIN statuses \union {ht} |->
         IF h = ht THEN blockState ELSE statuses[h]]      
 
+\* @type: (Int, BLOCK, Int, Int) => Bool;
 \* Check, whether newHeight is a possible next height for the light client.
 \*
 \* [LCV-FUNC-SCHEDULE.1::TLA.1]
