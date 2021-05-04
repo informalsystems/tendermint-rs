@@ -10,6 +10,11 @@ EXTENDS Integers, FiniteSets
 
 Min(a, b) == IF a < b THEN a ELSE b
 
+\* @typeAlias: BLOCKHEADER = [hight: Int, time: Int, lastCommit: Set(Str), VS: Set(Str), NextVS: Set(Str)];
+\* @typeAlias: BLOCKCHAIN = Int -> BLOCKHEADER;
+\* @typeAlias: BLOCK = [header: BLOCKHEADER, Commits: Set(Str)];
+BCTypeAliases == TRUE
+
 CONSTANT
   (* @type: Set(Str);
      A set of all nodes that can act as validators (correct and faulty). *)
@@ -26,7 +31,7 @@ Heights == 1..ULTIMATE_HEIGHT   (* possible heights *)
 (* A commit is just a set of nodes who have committed the block *)
 Commits == SUBSET AllNodes
 
-(* @typeAlias: BLOCKHEADER = [hight: Int, time: Int, lastCommit: Set(Str), VS: Set(Str), NextVS: Set(Str)];
+(* 
    The set of all block headers that can be on the blockchain.
    This is a simplified version of the Block data structure in the actual implementation. *)
 BlockHeaders ==
@@ -45,16 +50,14 @@ BlockHeaders ==
       \* the validators of the next block. We store the next validators instead of the hash.
   ]
 
-(* @typeAlias: BLOCK = [header: BLOCKHEADER, Commits: Set(Str)];
-   A signed header is just a header together with a set of commits *)
+(* A signed header is just a header together with a set of commits *)
 LightBlocks == [header: BlockHeaders, Commits: Commits]
 
 VARIABLES
     (* @type: Int;
        the current global time in integer units *)
     now,
-    (* @typeAlias: BLOCKCHAIN = Int -> BLOCKHEADER;
-       @type: BLOCKCHAIN;
+    (* @type: BLOCKCHAIN;
        A sequence of BlockHeaders, which gives us a bird view of the blockchain.
        The Int is the headers position in the sequence. *)
     blockchain,
