@@ -1,3 +1,10 @@
+## Unreleased
+
+### BUG FIXES:
+
+- [tendermint/abci,rpc] Fix DeliverTx response deserialization issues with
+  gas_wanted and gas_used fields ([#876])
+
 ## v0.19.0
 
 This release primarily aims to enhance RPC and Light Client functionality,
