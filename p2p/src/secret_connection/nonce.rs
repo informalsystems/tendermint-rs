@@ -9,8 +9,8 @@ pub const SIZE: usize = 12;
 pub struct Nonce(pub [u8; SIZE]);
 
 impl Default for Nonce {
-    fn default() -> Nonce {
-        Nonce([0_u8; SIZE])
+    fn default() -> Self {
+        Self([0_u8; SIZE])
     }
 }
 

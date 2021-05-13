@@ -43,7 +43,7 @@ where
 {
     type Error = Report;
 
-    fn try_from(connection: Direction<Conn>) -> Result<Peer<Connected<Conn>>, Self::Error> {
+    fn try_from(connection: Direction<Conn>) -> Result<Self, Self::Error> {
         let pk = match &connection {
             Direction::Incoming(conn) | Direction::Outgoing(conn) => conn.public_key(),
         };
@@ -51,7 +51,7 @@ where
         let id =
             node::Id::try_from(pk).map_err(|err| eyre!("unabel to obtain id, got {:?}", err))?;
 
-        Ok(Peer {
+        Ok(Self {
             id,
             state: Connected { connection },
         })

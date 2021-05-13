@@ -17,7 +17,7 @@ pub enum PublicKey {
 
 impl PublicKey {
     /// From raw Ed25519 public key bytes
-    pub fn from_raw_ed25519(bytes: &[u8]) -> Result<PublicKey, Error> {
+    pub fn from_raw_ed25519(bytes: &[u8]) -> Result<Self, Error> {
         ed25519::PublicKey::from_bytes(bytes)
             .map(PublicKey::Ed25519)
             .map_err(|_| error::Kind::Crypto.into())
@@ -51,14 +51,14 @@ impl Display for PublicKey {
 }
 
 impl From<&ed25519::Keypair> for PublicKey {
-    fn from(sk: &ed25519::Keypair) -> PublicKey {
-        PublicKey::Ed25519(sk.public)
+    fn from(sk: &ed25519::Keypair) -> Self {
+        Self::Ed25519(sk.public)
     }
 }
 
 impl From<ed25519::PublicKey> for PublicKey {
-    fn from(pk: ed25519::PublicKey) -> PublicKey {
-        PublicKey::Ed25519(pk)
+    fn from(pk: ed25519::PublicKey) -> Self {
+        Self::Ed25519(pk)
     }
 }
 

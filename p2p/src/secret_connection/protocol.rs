@@ -38,14 +38,14 @@ pub enum Version {
 impl Version {
     /// Does this version of Secret Connection use a transcript hash
     pub fn has_transcript(self) -> bool {
-        self != Version::Legacy
+        self != Self::Legacy
     }
 
     /// Are messages encoded using Protocol Buffers?
     pub fn is_protobuf(self) -> bool {
         match self {
-            Version::V0_34 => true,
-            Version::V0_33 | Version::Legacy => false,
+            Self::V0_34 => true,
+            Self::V0_33 | Version::Legacy => false,
         }
     }
 

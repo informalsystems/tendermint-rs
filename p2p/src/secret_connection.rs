@@ -80,7 +80,7 @@ impl Handshake<AwaitingEphKey> {
         let local_eph_pubkey = EphemeralPublic::from(&local_eph_privkey);
 
         (
-            Handshake {
+            Self {
                 protocol_version,
                 state: AwaitingEphKey {
                     local_privkey,
@@ -212,7 +212,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         mut io_handler: IoHandler,
         local_privkey: ed25519::Keypair,
         protocol_version: Version,
-    ) -> Result<SecretConnection<IoHandler>> {
+    ) -> Result<Self> {
         // Start a handshake process.
         let local_pubkey = PublicKey::from(&local_privkey);
         let (mut h, local_eph_pubkey) = Handshake::new(local_privkey, protocol_version);
@@ -224,7 +224,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         // Compute a local signature (also recv_cipher & send_cipher)
         let mut h = h.got_key(remote_eph_pubkey)?;
 
-        let mut sc = SecretConnection {
+        let mut sc = Self {
             io_handler,
             protocol_version,
             recv_buffer: vec![],

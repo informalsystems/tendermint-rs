@@ -39,7 +39,7 @@ impl Kdf {
         challenge.copy_from_slice(&key_material[64..96]);
         key_material.as_mut().zeroize();
 
-        Kdf {
+        Self {
             recv_secret,
             send_secret,
             challenge,
