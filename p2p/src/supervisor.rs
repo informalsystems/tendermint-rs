@@ -86,7 +86,7 @@ impl From<Internal> for Output {
     }
 }
 
-enum Input {
+pub enum Input {
     Accepted(node::Id),
     Command(Command),
     Connected(node::Id),
