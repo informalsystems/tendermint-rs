@@ -111,8 +111,8 @@ impl LightClient {
             clock,
             scheduler,
             verifier,
-            hasher,
             io,
+            hasher,
         }
     }
 
