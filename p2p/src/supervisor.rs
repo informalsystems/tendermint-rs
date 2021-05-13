@@ -437,7 +437,7 @@ impl Supervisor {
     }
 
     fn message<T>(
-        input_tx: Sender<Input>,
+        _input_tx: Sender<Input>,
         msg_rx: Receiver<(node::Id, message::Send)>,
         peers: Peers<T>,
     ) -> Result<()>

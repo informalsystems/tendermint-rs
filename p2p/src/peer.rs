@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::thread;
 
-use eyre::{eyre, Report, Result, WrapErr};
+use eyre::{eyre, Report, Result};
 use flume::{self, Receiver, Sender};
 
 use tendermint::node;
@@ -69,7 +69,7 @@ where
         let mut senders = HashMap::new();
 
         for stream_id in &stream_ids {
-            let (read, write) = match &self.state.connection {
+            let (_read, _write) = match &self.state.connection {
                 Direction::Incoming(conn) | Direction::Outgoing(conn) => {
                     conn.open_bidirectional(stream_id)?
                 }
@@ -105,7 +105,7 @@ where
                     match write_rx.recv() {
                         // If the sender is gone this subroutine needs to vanish with it.
                         Err(flume::RecvError::Disconnected) => break,
-                        Ok(msg) => {
+                        Ok(_msg) => {
                             // Serialise message
                             // write bytes
                         }

@@ -79,7 +79,7 @@ impl Version {
             // https://github.com/tendermint/tendermint/blob/9e98c74/p2p/conn/secret_connection.go#L315-L323
             // TODO(tarcieri): proper protobuf framing
             if bytes.len() != 34 || bytes[..2] != [0x0a, 0x20] {
-                return Err(Error::ProtocolError)
+                return Err(Error::Protocol)
                     .wrap_err("malformed handshake message (protocol version mismatch?)");
             }
 
@@ -91,7 +91,7 @@ impl Version {
             //
             // Check that the length matches what we expect and the length prefix is correct
             if bytes.len() != 33 || bytes[0] != 32 {
-                return Err(Error::ProtocolError)
+                return Err(Error::Protocol)
                     .wrap_err("malformed handshake message (protocol version mismatch?)");
             }
 
@@ -155,7 +155,7 @@ impl Version {
                     "malformed handshake message (protocol version mismatch?): {}",
                     e
                 );
-                Report::new(Error::ProtocolError).wrap_err(message)
+                Report::new(Error::Protocol).wrap_err(message)
             })
         } else {
             self.decode_auth_signature_amino(bytes)

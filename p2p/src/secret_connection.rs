@@ -169,19 +169,19 @@ impl Handshake<AwaitingAuthSig> {
                 }
                 proto::crypto::public_key::Sum::Secp256k1(_) => None,
             })
-            .ok_or(Error::CryptoError)?;
+            .ok_or(Error::Crypto)?;
 
-        let remote_sig = ed25519::Signature::try_from(auth_sig_msg.sig.as_slice())
-            .map_err(|_| Error::CryptoError)?;
+        let remote_sig =
+            ed25519::Signature::try_from(auth_sig_msg.sig.as_slice()).map_err(|_| Error::Crypto)?;
 
         if self.protocol_version.has_transcript() {
             remote_pubkey
                 .verify(&self.state.sc_mac, &remote_sig)
-                .map_err(|_| Error::CryptoError)?;
+                .map_err(|_| Error::Crypto)?;
         } else {
             remote_pubkey
                 .verify(&self.state.kdf.challenge, &remote_sig)
-                .map_err(|_| Error::CryptoError)?;
+                .map_err(|_| Error::Crypto)?;
         }
 
         // We've authorized.
@@ -274,7 +274,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
                 b"",
                 &mut sealed_frame[..TOTAL_FRAME_SIZE],
             )
-            .map_err(|_| Error::CryptoError)?;
+            .map_err(|_| Error::Crypto)?;
 
         sealed_frame[TOTAL_FRAME_SIZE..].copy_from_slice(tag.as_slice());
 
@@ -284,7 +284,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
     /// Decrypt AEAD authenticated data
     fn decrypt(&self, ciphertext: &[u8], out: &mut [u8]) -> Result<usize> {
         if ciphertext.len() < TAG_SIZE {
-            return Err(Error::CryptoError).wrap_err_with(|| {
+            return Err(Error::Crypto).wrap_err_with(|| {
                 format!(
                     "ciphertext must be at least as long as a MAC tag {}",
                     TAG_SIZE
@@ -296,7 +296,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         let (ct, tag) = ciphertext.split_at(ciphertext.len() - TAG_SIZE);
 
         if out.len() < ct.len() {
-            return Err(Error::CryptoError).wrap_err("output buffer is too small");
+            return Err(Error::Crypto).wrap_err("output buffer is too small");
         }
 
         let in_out = &mut out[..ct.len()];
@@ -309,7 +309,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
                 in_out,
                 tag.into(),
             )
-            .map_err(|_| Error::CryptoError)?;
+            .map_err(|_| Error::Crypto)?;
 
         Ok(in_out.len())
     }
@@ -331,11 +331,11 @@ where
             return Ok(n);
         }
 
-        let mut sealed_frame = [0u8; TAG_SIZE + TOTAL_FRAME_SIZE];
+        let mut sealed_frame = [0_u8; TAG_SIZE + TOTAL_FRAME_SIZE];
         self.io_handler.read_exact(&mut sealed_frame)?;
 
         // decrypt the frame
-        let mut frame = [0u8; TOTAL_FRAME_SIZE];
+        let mut frame = [0_u8; TOTAL_FRAME_SIZE];
         let res = self.decrypt(&sealed_frame, &mut frame);
 
         if res.is_err() {
@@ -377,7 +377,7 @@ where
     // Writes encrypted frames of `TAG_SIZE` + `TOTAL_FRAME_SIZE`
     // CONTRACT: data smaller than DATA_MAX_SIZE is read atomically.
     fn write(&mut self, data: &[u8]) -> io::Result<usize> {
-        let mut n = 0usize;
+        let mut n = 0_usize;
         let mut data_copy = data;
         while !data_copy.is_empty() {
             let chunk: &[u8];
@@ -386,9 +386,9 @@ where
                 data_copy = &data_copy[DATA_MAX_SIZE..];
             } else {
                 chunk = data_copy;
-                data_copy = &[0u8; 0];
+                data_copy = &[0_u8; 0];
             }
-            let sealed_frame = &mut [0u8; TAG_SIZE + TOTAL_FRAME_SIZE];
+            let sealed_frame = &mut [0_u8; TAG_SIZE + TOTAL_FRAME_SIZE];
             let res = self.encrypt(chunk, sealed_frame);
             if res.is_err() {
                 return Err(io::Error::new(
@@ -423,7 +423,7 @@ fn share_eph_pubkey<IoHandler: Read + Write + Send + Sync>(
     // Should still work though.
     handler.write_all(&protocol_version.encode_initial_handshake(&local_eph_pubkey))?;
 
-    let mut response_len = 0u8;
+    let mut response_len = 0_u8;
     handler.read_exact(slice::from_mut(&mut response_len))?;
 
     let mut buf = vec![0; response_len as usize];
@@ -447,7 +447,7 @@ fn sign_challenge(
 ) -> Result<ed25519::Signature> {
     local_privkey
         .try_sign(challenge)
-        .map_err(|_| Error::CryptoError.into())
+        .map_err(|_| Error::Crypto.into())
 }
 
 // TODO(ismail): change from DecodeError to something more generic
@@ -540,9 +540,9 @@ mod test {
 
     #[test]
     fn test_read_write_single_message() {
-        let (pipe1, pipe2) = pipe::async_bipipe_buffered();
-
         const MESSAGE: &str = "The Queen's Gambit";
+
+        let (pipe1, pipe2) = pipe::async_bipipe_buffered();
 
         let sender = thread::spawn(move || {
             let mut csprng = OsRng {};

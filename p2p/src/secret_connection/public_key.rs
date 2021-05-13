@@ -36,7 +36,7 @@ impl PublicKey {
             PublicKey::Ed25519(pk) => {
                 // TODO(tarcieri): use `tendermint::node::Id::from`
                 let digest = Sha256::digest(pk.as_bytes());
-                let mut bytes = [0u8; 20];
+                let mut bytes = [0_u8; 20];
                 bytes.copy_from_slice(&digest[..20]);
                 node::Id::new(bytes)
             }
