@@ -265,37 +265,43 @@ impl Iterator for MIncoming {
     fn next(&mut self) -> Option<Result<MConnection>> {
         let public_key = self.private_key.public;
 
+        let build_mconnection = |stream: &TcpStream| -> Result<(MConnection, Receiver<PacketMsg>)> {
+            let stream_clone = stream.try_clone().wrap_err("failed to clone stream")?;
+            let local_addr = stream.local_addr().wrap_err("failed to get local addr")?;
+            let peer_addr = stream.peer_addr().wrap_err("failed to get peer addr")?;
+
+            let (sender, loop_receiver) = flume::bounded(0);
+            let virtual_streams = Arc::new(RwLock::new(HashMap::new()));
+
+            Ok((
+                MConnection {
+                    public_key,
+                    stream: stream_clone,
+                    local_addr,
+                    peer_addr,
+                    sender,
+                    virtual_streams,
+                },
+                loop_receiver,
+            ))
+        };
+
+        // it's safe to unwrap here because Incoming never returns None
+        // https://doc.rust-lang.org/std/net/struct.TcpListener.html#method.incoming
         match self
             .tcp_listener
             .incoming()
             .next()
-            .expect("Incoming to always return Some") // it's safe to unwrap here because Incoming never returns None
+            .expect("Incoming to always return Some")
             .wrap_err("failed to accept conn")
         {
             Ok(stream) => {
-                let stream_clone = stream.try_clone().wrap_err("failed to clone stream");
-                let local_addr = stream.local_addr().wrap_err("failed to get local addr");
-                let peer_addr = stream.peer_addr().wrap_err("failed to get peer addr");
-
-                let (sender, loop_receiver) = flume::bounded(0);
-                let virtual_streams = Arc::new(RwLock::new(HashMap::new()));
-                let virtual_streams_clone = virtual_streams.clone();
-
                 match (
+                    build_mconnection(&stream),
                     SecretConnection::new(stream, &self.private_key, self.protocol_version),
-                    stream_clone,
-                    local_addr,
-                    peer_addr,
                 ) {
-                    (Ok(secret_connection), Ok(stream_clone), Ok(local_addr), Ok(peer_addr)) => {
-                        let conn = MConnection {
-                            public_key,
-                            stream: stream_clone,
-                            local_addr,
-                            peer_addr,
-                            sender,
-                            virtual_streams,
-                        };
+                    (Ok((conn, loop_receiver)), Ok(secret_connection)) => {
+                        let virtual_streams_clone = conn.virtual_streams.clone();
 
                         std::thread::spawn(move || {
                             MConnection::rw_loop(
@@ -307,10 +313,7 @@ impl Iterator for MIncoming {
 
                         Some(Ok(conn))
                     }
-                    (Err(e), _, _, _)
-                    | (_, Err(e), _, _)
-                    | (_, _, Err(e), _)
-                    | (_, _, _, Err(e)) => Some(Err(e)),
+                    (Err(e), _) | (_, Err(e)) => Some(Err(e)),
                 }
             }
             Err(e) => Some(Err(e)),
