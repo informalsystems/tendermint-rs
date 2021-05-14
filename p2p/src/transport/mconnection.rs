@@ -155,7 +155,7 @@ impl MConnection {
                 }
             }
 
-            // If there's a new incoming message, send it to an appropriate streams.
+            // If there's a new incoming message, send it to the appropriate stream, if such exists.
             let mut buf = vec![0; 8096];
             match secret_connection.read(&mut buf) {
                 Ok(n) => {
@@ -396,7 +396,9 @@ impl Write for WriteVirtualStream {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         let msg = PacketMsg {
             channel_id: self.stream_id as i32,
-            eof: false,
+            // TODO: set a limit to how big data can be and split it into multiple PacketMsg (with
+            // eof=false in all interim packets and eof=true in the last packet) if necessary.
+            eof: true,
             data: buf.to_vec(),
         };
 
