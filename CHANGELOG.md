@@ -3,8 +3,9 @@
 ### REMOVED
 
 * `tendermint-light-node` We removed the `light-node` crate from the repo since
-  nobody's currently really using it. If anyone needs it we'll restore it.
-  It will remain accessible in the [repo history](last-light-node).
+  nobody's currently really using it. If anyone needs please log an issue and
+  we'll restore it. It will, of course, remain accessible in the
+  [repo history](last-light-node) for now.
   ([#879])
   
 [#879]: https://github.com/informalsystems/tendermint-rs/issues/879
