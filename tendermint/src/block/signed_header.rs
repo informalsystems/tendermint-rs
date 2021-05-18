@@ -21,8 +21,8 @@ impl TryFrom<RawSignedHeader> for SignedHeader {
     type Error = Error;
 
     fn try_from(value: RawSignedHeader) -> Result<Self, Self::Error> {
-        let header = value.header.ok_or(Kind::InvalidSignedHeader)?.try_into()?;
-        let commit = value.commit.ok_or(Kind::InvalidSignedHeader)?.try_into()?;
+        let header = value.header.ok_or(anyhow::anyhow!(Kind::InvalidSignedHeader))?.try_into()?;
+        let commit = value.commit.ok_or(anyhow::anyhow!(Kind::InvalidSignedHeader))?.try_into()?;
         Self::new(header, commit) // Additional checks
     }
 }
@@ -40,7 +40,7 @@ impl SignedHeader {
     /// Constructor.
     pub fn new(header: block::Header, commit: block::Commit) -> Result<Self, Error> {
         if header.height != commit.height {
-            return Err(Kind::InvalidSignedHeader.into());
+            return Err(anyhow::anyhow!(Kind::InvalidSignedHeader).into());
         }
         Ok(Self { header, commit })
     }

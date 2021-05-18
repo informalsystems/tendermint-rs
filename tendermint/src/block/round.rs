@@ -9,6 +9,7 @@ use sp_std::{
 use anyhow::anyhow;
 use crate::primitives::String;
 use crate::primitives::format;
+use crate::primitives::ToString;
 
 /// Block round for a particular chain
 #[derive(Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
@@ -18,7 +19,7 @@ impl TryFrom<i32> for Round {
     type Error = Error;
 
     fn try_from(value: i32) -> Result<Self, Self::Error> {
-        Ok(Round(value.try_into().map_err(|_| Kind::NegativeRound)?))
+        Ok(Round(value.try_into().map_err(|_| anyhow::anyhow!(Kind::NegativeRound))?))
     }
 }
 
@@ -33,7 +34,7 @@ impl TryFrom<u32> for Round {
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
         if value > i32::MAX as u32 {
-            return Err(Kind::IntegerOverflow.into());
+            return Err(anyhow::anyhow!(Kind::IntegerOverflow).into());
         }
         Ok(Round(value))
     }

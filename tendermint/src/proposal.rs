@@ -48,7 +48,7 @@ impl TryFrom<RawProposal> for Proposal {
 
     fn try_from(value: RawProposal) -> Result<Self, Self::Error> {
         if value.pol_round < -1 {
-            return Err(Kind::NegativePolRound.into());
+            return Err(anyhow::anyhow!(Kind::NegativePolRound).into());
         }
         let pol_round = match value.pol_round {
             -1 => None,

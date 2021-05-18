@@ -10,6 +10,7 @@ use sp_std::{
 
 use crate::primitives::String;
 use crate::primitives::format;
+use crate::primitives::ToString;
 use anyhow::anyhow;
 
 use subtle::{self, ConstantTimeEq};

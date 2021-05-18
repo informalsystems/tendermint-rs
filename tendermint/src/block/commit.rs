@@ -45,7 +45,7 @@ impl TryFrom<RawCommit> for Commit {
         Ok(Self {
             height: value.height.try_into()?,
             round: value.round.try_into()?,
-            block_id: value.block_id.ok_or(Kind::InvalidBlock)?.try_into()?, /* gogoproto.nullable = false */
+            block_id: value.block_id.ok_or(anyhow::anyhow!(Kind::InvalidBlock))?.try_into()?, /* gogoproto.nullable = false */
             signatures: signatures?,
         })
     }

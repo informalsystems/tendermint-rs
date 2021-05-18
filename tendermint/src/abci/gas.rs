@@ -12,6 +12,7 @@ use sp_std::{
     str::FromStr,
 };
 use crate::primitives::String;
+use crate::primitives::ToString;
 
 /// Gas: representation of transaction processing resource costs
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
@@ -46,7 +47,7 @@ impl FromStr for Gas {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        Ok(Self::from(s.parse::<u64>().map_err(|_| Kind::Parse)?))
+        Ok(Self::from(s.parse::<u64>().map_err(|_| anyhow::anyhow!(Kind::Parse))?))
     }
 }
 

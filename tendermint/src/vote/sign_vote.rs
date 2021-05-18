@@ -8,6 +8,8 @@ use tendermint_proto::privval::{RemoteSignerError, SignVoteRequest as RawSignVot
 use tendermint_proto::Error as ProtobufError;
 use tendermint_proto::Protobuf;
 use sp_std::vec::Vec;
+use crate::primitives::ToString;
+
 
 /// SignVoteRequest is a request to sign a vote
 #[derive(Clone, PartialEq, Debug)]
@@ -25,7 +27,7 @@ impl TryFrom<RawSignVoteRequest> for SignVoteRequest {
 
     fn try_from(value: RawSignVoteRequest) -> Result<Self, Self::Error> {
         if value.vote.is_none() {
-            return Err(Kind::NoVoteFound.into());
+            return Err(anyhow::anyhow!(Kind::NoVoteFound).into());
         }
         Ok(SignVoteRequest {
             vote: Vote::try_from(value.vote.unwrap())?,

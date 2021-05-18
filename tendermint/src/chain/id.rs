@@ -11,6 +11,7 @@ use sp_std::{
 };
 use tendermint_proto::Protobuf;
 use crate::primitives::String;
+use crate::primitives::ToString;
 use crate::primitives::format;
 use anyhow::anyhow;
 
@@ -30,7 +31,7 @@ impl TryFrom<String> for Id {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         if value.is_empty() || value.len() > MAX_LENGTH {
-            return Err(Kind::Length.into());
+            return Err(anyhow::anyhow!(Kind::Length).into());
         }
 
         for byte in value.as_bytes() {

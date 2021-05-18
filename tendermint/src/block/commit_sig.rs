@@ -82,7 +82,7 @@ impl TryFrom<RawCommitSig> for CommitSig {
                 }
             }
             if !value.signature.is_empty() {
-                return Err(Kind::InvalidSignature.into());
+                return Err(anyhow::anyhow!(Kind::InvalidSignature).into());
             }
             return Ok(CommitSig::BlockIdFlagAbsent);
         }
@@ -93,11 +93,11 @@ impl TryFrom<RawCommitSig> for CommitSig {
                     .into());
             }
             if value.validator_address.is_empty() {
-                return Err(Kind::InvalidValidatorAddress.into());
+                return Err(anyhow::anyhow!(Kind::InvalidValidatorAddress).into());
             }
             return Ok(CommitSig::BlockIdFlagCommit {
                 validator_address: value.validator_address.try_into()?,
-                timestamp: value.timestamp.ok_or(Kind::NoTimestamp)?.try_into()?,
+                timestamp: value.timestamp.ok_or(anyhow::anyhow!(Kind::NoTimestamp))?.try_into()?,
                 signature: value.signature.try_into()?,
             });
         }
@@ -108,15 +108,15 @@ impl TryFrom<RawCommitSig> for CommitSig {
                     .into());
             }
             if value.validator_address.is_empty() {
-                return Err(Kind::InvalidValidatorAddress.into());
+                return Err(anyhow::anyhow!(Kind::InvalidValidatorAddress).into());
             }
             return Ok(CommitSig::BlockIdFlagNil {
                 validator_address: value.validator_address.try_into()?,
-                timestamp: value.timestamp.ok_or(Kind::NoTimestamp)?.try_into()?,
+                timestamp: value.timestamp.ok_or(anyhow::anyhow!(Kind::NoTimestamp))?.try_into()?,
                 signature: value.signature.try_into()?,
             });
         }
-        Err(Kind::BlockIdFlag.into())
+        Err(anyhow::anyhow!(Kind::BlockIdFlag).into())
     }
 }
 

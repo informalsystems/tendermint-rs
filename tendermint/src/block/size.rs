@@ -31,7 +31,7 @@ impl TryFrom<RawSize> for Size {
             max_bytes: value
                 .max_bytes
                 .try_into()
-                .map_err(|_| Self::Error::from(Kind::IntegerOverflow))?,
+                .map_err(|_| Self::Error::from(anyhow::anyhow!(Kind::IntegerOverflow)))?,
             max_gas: value.max_gas,
         })
     }

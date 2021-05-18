@@ -113,10 +113,10 @@ impl TryFrom<RawHeader> for Header {
         // height").into());
         //}
         Ok(Header {
-            version: value.version.ok_or(Kind::MissingVersion)?.try_into()?,
+            version: value.version.ok_or(anyhow::anyhow!(Kind::MissingVersion))?.try_into()?,
             chain_id: value.chain_id.try_into()?,
             height,
-            time: value.time.ok_or(Kind::NoTimestamp)?.try_into()?,
+            time: value.time.ok_or(anyhow::anyhow!(Kind::NoTimestamp))?.try_into()?,
             last_block_id,
             last_commit_hash,
             data_hash: if value.data_hash.is_empty() {

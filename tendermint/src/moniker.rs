@@ -7,6 +7,8 @@ use sp_std::{
     str::FromStr,
 };
 use crate::primitives::String;
+use sp_std::borrow::ToOwned;
+
 
 /// Validator display names
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]

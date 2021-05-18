@@ -5,6 +5,7 @@ use serde::{de, de::Error as _, ser, Deserialize, Serialize};
 use sp_std::{fmt, ops::Deref, str::FromStr};
 use crate::primitives::{String, Duration};
 use crate::primitives::format;
+use crate::primitives::ToString;
 
 /// Timeout durations
 #[derive(Copy, Clone, Debug)]

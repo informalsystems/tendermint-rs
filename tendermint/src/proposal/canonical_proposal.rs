@@ -10,6 +10,7 @@ use anyhow::anyhow;
 
 use tendermint_proto::types::CanonicalProposal as RawCanonicalProposal;
 use tendermint_proto::Protobuf;
+use crate::primitives::ToString;
 
 /// CanonicalProposal for signing
 #[derive(Clone, PartialEq)]
@@ -37,7 +38,7 @@ impl TryFrom<RawCanonicalProposal> for CanonicalProposal {
 
     fn try_from(value: RawCanonicalProposal) -> Result<Self, Self::Error> {
         if value.pol_round < -1 {
-            return Err(Kind::NegativePolRound.into());
+            return Err(anyhow::anyhow!(Kind::NegativePolRound).into());
         }
         let round = Round::try_from(
             i32::try_from(value.round).map_err(|e| anyhow!(Kind::IntegerOverflow).context(e))?,

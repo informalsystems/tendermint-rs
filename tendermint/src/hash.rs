@@ -15,6 +15,7 @@ use crate::primitives::format;
 use subtle_encoding::{Encoding, Hex};
 use tendermint_proto::Protobuf;
 use anyhow::anyhow;
+use crate::primitives::ToString;
 
 /// Output size for the SHA-256 hash function
 pub const SHA256_HASH_SIZE: usize = 32;
@@ -219,7 +220,7 @@ impl AppHash {
     /// Decode a `Hash` from upper-case hexadecimal
     pub fn from_hex_upper(s: &str) -> Result<Self, Error> {
         if s.len() % 2 != 0 {
-            return Err(Kind::InvalidAppHashLength.into());
+            return Err(anyhow::anyhow!(Kind::InvalidAppHashLength).into());
         }
         let mut h = vec![0; s.len() / 2];
         Hex::upper_case().decode_to_slice(s.as_bytes(), &mut h)?;

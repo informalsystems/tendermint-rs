@@ -5,6 +5,7 @@ use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use crate::{Error, Kind};
 use crate::primitives::String;
 use crate::primitives::format;
+use crate::primitives::ToString;
 
 /// Voting power
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Default)]
@@ -20,7 +21,7 @@ impl TryFrom<i64> for Power {
     type Error = Error;
 
     fn try_from(value: i64) -> Result<Self, Self::Error> {
-        Ok(Power(value.try_into().map_err(|_| Kind::NegativePower)?))
+        Ok(Power(value.try_into().map_err(|_| anyhow::anyhow!(Kind::NegativePower))?))
     }
 }
 
@@ -35,7 +36,7 @@ impl TryFrom<u64> for Power {
 
     fn try_from(value: u64) -> Result<Self, Self::Error> {
         if value > i64::MAX as u64 {
-            return Err(Kind::IntegerOverflow.into());
+            return Err(anyhow::anyhow!(Kind::IntegerOverflow).into());
         }
         Ok(Power(value))
     }

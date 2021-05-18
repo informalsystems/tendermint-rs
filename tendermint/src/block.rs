@@ -56,7 +56,7 @@ impl TryFrom<RawBlock> for Block {
     type Error = Error;
 
     fn try_from(value: RawBlock) -> Result<Self, Self::Error> {
-        let header: Header = value.header.ok_or(Kind::MissingHeader)?.try_into()?;
+        let header: Header = value.header.ok_or(anyhow::anyhow!(Kind::MissingHeader))?.try_into()?;
         // if last_commit is Commit::Default, it is considered nil by Go.
         let last_commit = value
             .last_commit
@@ -75,8 +75,8 @@ impl TryFrom<RawBlock> for Block {
         //}
         Ok(Block {
             header,
-            data: value.data.ok_or(Kind::MissingData)?.try_into()?,
-            evidence: value.evidence.ok_or(Kind::MissingEvidence)?.try_into()?,
+            data: value.data.ok_or(anyhow::anyhow!(Kind::MissingData))?.try_into()?,
+            evidence: value.evidence.ok_or(anyhow::anyhow!(Kind::MissingEvidence))?.try_into()?,
             last_commit,
         })
     }

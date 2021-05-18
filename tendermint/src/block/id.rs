@@ -17,6 +17,7 @@ use tendermint_proto::types::{
 };
 use tendermint_proto::Protobuf;
 use crate::primitives::String;
+use crate::primitives::ToString;
 
 /// Length of a block ID prefix displayed for debugging purposes
 pub const PREFIX_LENGTH: usize = 10;

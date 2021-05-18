@@ -318,7 +318,7 @@ impl FromStr for Algorithm {
         match s {
             "ed25519" => Ok(Algorithm::Ed25519),
             "secp256k1" => Ok(Algorithm::Secp256k1),
-            _ => Err(error::Kind::Parse.into()),
+            _ => Err(anyhow::anyhow!(error::Kind::Parse).into()),
         }
     }
 }

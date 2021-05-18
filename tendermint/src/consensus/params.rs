@@ -9,6 +9,7 @@ use tendermint_proto::types::ValidatorParams as RawValidatorParams;
 use tendermint_proto::types::VersionParams as RawVersionParams;
 use tendermint_proto::Protobuf;
 use sp_std::vec::Vec;
+use crate::primitives::ToString;
 
 /// Tendermint consensus parameters
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
@@ -34,17 +35,17 @@ impl TryFrom<RawParams> for Params {
 
     fn try_from(value: RawParams) -> Result<Self, Self::Error> {
         Ok(Self {
-            block: value.block.ok_or(Kind::InvalidBlock)?.try_into()?,
-            evidence: value.evidence.ok_or(Kind::InvalidEvidence)?.try_into()?,
+            block: value.block.ok_or(anyhow::anyhow!(Kind::InvalidBlock))?.try_into()?,
+            evidence: value.evidence.ok_or(anyhow::anyhow!(Kind::InvalidEvidence))?.try_into()?,
             validator: value
                 .validator
-                .ok_or(Kind::InvalidValidatorParams)?
+                .ok_or(anyhow::anyhow!(Kind::InvalidValidatorParams))?
                 .try_into()?,
             version: value
                 .version
                 .map(TryFrom::try_from)
                 .transpose()
-                .map_err(|_| Kind::InvalidVersionParams)?,
+                .map_err(|_| anyhow::anyhow!(Kind::InvalidVersionParams))?,
         })
     }
 }
