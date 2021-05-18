@@ -96,7 +96,7 @@ impl LightStore for SledStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempdir::TempDir;
+    use tempfile::tempdir;
     use tendermint_testgen::{light_block::TmLightBlock as TGLightBlock, Generator, LightChain};
 
     #[test]
@@ -124,7 +124,7 @@ mod tests {
     }
 
     fn with_blocks(height: u64, f: impl FnOnce(SledStore, Vec<LightBlock>)) {
-        let tmp_dir = TempDir::new("tendermint_light_client_sled_test").unwrap();
+        let tmp_dir = tempdir().unwrap();
         let db = SledStore::open(tmp_dir).unwrap();
 
         let chain = LightChain::default_with_length(height);
