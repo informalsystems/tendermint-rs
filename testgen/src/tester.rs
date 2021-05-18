@@ -451,27 +451,25 @@ impl Tester {
             Some(full_dir) => match fs::read_dir(full_dir) {
                 Err(_) => self.read_error(full_dir),
                 Ok(paths) => {
-                    for path in paths {
-                        if let Ok(entry) = path {
-                            // ignore path components starting with '_'
-                            if starts_with_underscore(&entry) {
-                                continue;
-                            }
-                            if let Ok(kind) = entry.file_type() {
-                                let path = format!("{}", entry.path().display());
-                                let rel_path = self.env().unwrap().rel_path(&path).unwrap();
-                                if kind.is_file() || kind.is_symlink() {
-                                    if !rel_path.ends_with(".json") {
-                                        continue;
-                                    } else {
-                                        self.run_for_file(&rel_path);
-                                    }
-                                } else if kind.is_dir() {
-                                    self.run_foreach_in_dir(&rel_path);
+                    paths.flatten().for_each(|entry| {
+                        // ignore path components starting with '_'
+                        if starts_with_underscore(&entry) {
+                            return;
+                        }
+                        if let Ok(kind) = entry.file_type() {
+                            let path = format!("{}", entry.path().display());
+                            let rel_path = self.env().unwrap().rel_path(&path).unwrap();
+                            if kind.is_file() || kind.is_symlink() {
+                                if !rel_path.ends_with(".json") {
+                                    return;
+                                } else {
+                                    self.run_for_file(&rel_path);
                                 }
+                            } else if kind.is_dir() {
+                                self.run_foreach_in_dir(&rel_path);
                             }
                         }
-                    }
+                    });
                 }
             },
         }
