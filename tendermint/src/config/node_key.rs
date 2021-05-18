@@ -6,7 +6,8 @@ use crate::{
     private_key::PrivateKey,
     public_key::PublicKey,
 };
-use anomaly::format_err;
+
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 // TODO sp_std no fs path Path
 use std::{fs, path::Path};
@@ -30,12 +31,8 @@ impl NodeKey {
         P: AsRef<Path>,
     {
         let json_string = fs::read_to_string(path).map_err(|e| {
-            format_err!(
-                Kind::Parse,
-                "couldn't open {}: {}",
-                path.as_ref().display(),
-                e
-            )
+            let  context = format!("couldn't open {}: {}", path.as_ref().display(), e);
+            anyhow::Error::new(Kind::Parse).context(context)
         })?;
 
         Self::parse_json(json_string)

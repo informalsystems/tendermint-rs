@@ -10,6 +10,7 @@ use tendermint_proto::types::{
     CanonicalPartSetHeader as RawCanonicalPartSetHeader, PartSetHeader as RawPartSetHeader,
 };
 use tendermint_proto::Protobuf;
+use anyhow::anyhow;
 
 /// Block parts header
 #[derive(
@@ -77,12 +78,12 @@ impl Header {
     /// constructor
     pub fn new(total: u32, hash: Hash) -> Result<Self, Error> {
         if total == 0 && hash != Hash::None {
-            return Err(Kind::InvalidPartSetHeader
+            return Err(anyhow!(Kind::InvalidPartSetHeader)
                 .context("zero total with existing hash")
                 .into());
         }
         if total != 0 && hash == Hash::None {
-            return Err(Kind::InvalidPartSetHeader
+            return Err(anyhow!(Kind::InvalidPartSetHeader)
                 .context("non-zero total with empty hash")
                 .into());
         }

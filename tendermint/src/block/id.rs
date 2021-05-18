@@ -10,6 +10,7 @@ use sp_std::{
     str::{self, FromStr},
     vec::Vec,
 };
+use anyhow::anyhow;
 use tendermint_proto::types::{
     BlockId as RawBlockId, CanonicalBlockId as RawCanonicalBlockId,
     PartSetHeader as RawPartSetHeader,
@@ -66,7 +67,7 @@ impl TryFrom<RawBlockId> for Id {
 
     fn try_from(value: RawBlockId) -> Result<Self, Self::Error> {
         if value.part_set_header.is_none() {
-            return Err(Kind::InvalidPartSetHeader
+            return Err(anyhow!(Kind::InvalidPartSetHeader)
                 .context("part_set_header is None")
                 .into());
         }
@@ -105,7 +106,7 @@ impl TryFrom<RawCanonicalBlockId> for Id {
 
     fn try_from(value: RawCanonicalBlockId) -> Result<Self, Self::Error> {
         if value.part_set_header.is_none() {
-            return Err(Kind::InvalidPartSetHeader
+            return Err(anyhow!(Kind::InvalidPartSetHeader)
                 .context("part_set_header is None")
                 .into());
         }

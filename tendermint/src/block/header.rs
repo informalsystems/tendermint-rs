@@ -8,7 +8,7 @@ use tendermint_proto::types::Header as RawHeader;
 use tendermint_proto::version::Consensus as RawConsensusVersion;
 use tendermint_proto::Protobuf;
 use sp_std::prelude::*;
-
+use anyhow::anyhow;
 
 /// Block `Header` values contain metadata about the block and about the
 /// consensus, as well as commitments to the data in the current block, the
@@ -91,7 +91,7 @@ impl TryFrom<RawHeader> for Header {
         // height").into());
         //}
         if last_block_id.is_some() && height.value() == 1 {
-            return Err(Kind::InvalidFirstHeader
+            return Err(anyhow!(Kind::InvalidFirstHeader)
                 .context("last_block_id is not null on first height")
                 .into());
         }
@@ -212,7 +212,7 @@ pub struct Version {
 impl Protobuf<RawConsensusVersion> for Version {}
 
 impl TryFrom<RawConsensusVersion> for Version {
-    type Error = anomaly::BoxError;
+    type Error = anyhow::Error;
 
     fn try_from(value: RawConsensusVersion) -> Result<Self, Self::Error> {
         Ok(Version {

@@ -5,6 +5,7 @@ use crate::{Error, Kind};
 use serde::{Deserialize, Serialize};
 use sp_std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::BlockMeta as RawMeta;
+use anyhow::anyhow;
 
 /// Block metadata - Todo: implement constructor and getters
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -30,12 +31,12 @@ impl TryFrom<RawMeta> for Meta {
         Ok(Meta {
             block_id: value
                 .block_id
-                .ok_or_else(|| Error::from(Kind::InvalidBlock.context("no block_id")))?
+                .ok_or_else(|| Error::from(anyhow!(Kind::InvalidBlock).context("no block_id")))?
                 .try_into()?,
             block_size: value.block_size,
             header: value
                 .header
-                .ok_or_else(|| Error::from(Kind::InvalidBlock.context("no header")))?
+                .ok_or_else(|| Error::from(anyhow!(Kind::InvalidBlock).context("no header")))?
                 .try_into()?,
             num_txs: value.num_txs,
         })

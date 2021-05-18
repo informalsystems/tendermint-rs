@@ -1,9 +1,10 @@
 use crate::error::{Error, Kind};
 use sp_std::{
-  convert::{TryFrom, TryInto},
+    convert::{TryFrom, TryInto},
     fmt::{self, Debug,  Display},
     str::FromStr,
 };
+use anyhow::anyhow;
 
 /// ValidatorIndex for a particular Vote
 #[derive(Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
@@ -14,7 +15,7 @@ impl TryFrom<i32> for ValidatorIndex {
 
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         Ok(ValidatorIndex(
-            value.try_into().map_err(|_| Kind::NegativeValidatorIndex)?,
+            value.try_into().map_err(|_| anyhow!(Kind::NegativeValidatorIndex))?,
         ))
     }
 }
@@ -30,7 +31,7 @@ impl TryFrom<u32> for ValidatorIndex {
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
         if value > i32::MAX as u32 {
-            return Err(Kind::IntegerOverflow.into());
+            return Err(anyhow!(Kind::IntegerOverflow));
         }
         Ok(ValidatorIndex(value))
     }
@@ -47,7 +48,7 @@ impl TryFrom<usize> for ValidatorIndex {
 
     fn try_from(value: usize) -> Result<Self, Self::Error> {
         Ok(ValidatorIndex(
-            value.try_into().map_err(|_| Kind::IntegerOverflow)?,
+            value.try_into().map_err(|_| anyhow!(Kind::IntegerOverflow))?,
         ))
     }
 }
@@ -86,7 +87,7 @@ impl FromStr for ValidatorIndex {
     fn from_str(s: &str) -> Result<Self, Error> {
         ValidatorIndex::try_from(
             s.parse::<u32>()
-                .map_err(|_| Kind::Parse.context("validator index decode"))?,
+                .map_err(|_| anyhow!(Kind::Parse).context("validator index decode"))?,
         )
     }
 }

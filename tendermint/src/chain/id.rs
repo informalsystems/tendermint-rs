@@ -12,6 +12,7 @@ use sp_std::{
 use tendermint_proto::Protobuf;
 use crate::primitives::String;
 use crate::primitives::format;
+use anyhow::anyhow;
 
 /// Maximum length of a `chain::Id` name. Matches `MaxChainIDLen` from:
 /// <https://github.com/tendermint/tendermint/blob/develop/types/genesis.go>
@@ -35,7 +36,7 @@ impl TryFrom<String> for Id {
         for byte in value.as_bytes() {
             match byte {
                 b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_' | b'.' => (),
-                _ => return Err(Kind::Parse.context("chain id charset").into()),
+                _ => return Err(anyhow!(Kind::Parse).context("chain id charset").into()),
             }
         }
 

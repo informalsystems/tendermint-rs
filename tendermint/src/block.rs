@@ -26,6 +26,7 @@ use serde::{Deserialize, Serialize};
 use sp_std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Block as RawBlock;
 use tendermint_proto::Protobuf;
+use anyhow::anyhow;
 
 /// Blocks consist of a header, transactions, votes (the commit), and a list of
 /// evidence of malfeasance (i.e. signing conflicting votes).
@@ -63,7 +64,7 @@ impl TryFrom<RawBlock> for Block {
             .transpose()?
             .filter(|c| c != &Commit::default());
         if last_commit.is_none() && header.height.value() != 1 {
-            return Err(Kind::InvalidBlock
+            return Err(anyhow!(Kind::InvalidBlock)
                 .context("last_commit is empty on non-first block")
                 .into());
         }
@@ -101,12 +102,12 @@ impl Block {
         last_commit: Option<Commit>,
     ) -> Result<Self, Error> {
         if last_commit.is_none() && header.height.value() != 1 {
-            return Err(Kind::InvalidBlock
+            return Err(anyhow!(Kind::InvalidBlock)
                 .context("last_commit is empty on non-first block")
                 .into());
         }
         if last_commit.is_some() && header.height.value() == 1 {
-            return Err(Kind::InvalidBlock
+            return Err(anyhow!(Kind::InvalidBlock)
                 .context("last_commit is filled on first block")
                 .into());
         }

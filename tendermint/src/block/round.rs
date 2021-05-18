@@ -6,6 +6,7 @@ use sp_std::{
     fmt::{self, Debug, Display},
     str::FromStr,
 };
+use anyhow::anyhow;
 use crate::primitives::String;
 use crate::primitives::format;
 
@@ -92,7 +93,7 @@ impl FromStr for Round {
     fn from_str(s: &str) -> Result<Self, Error> {
         Round::try_from(
             s.parse::<u32>()
-                .map_err(|_| Kind::Parse.context("round decode"))?,
+                .map_err(|_| anyhow!(Kind::Parse).context("round decode"))?,
         )
     }
 }

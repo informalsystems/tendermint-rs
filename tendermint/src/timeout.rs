@@ -1,5 +1,5 @@
 use crate::{Error, Kind};
-use anomaly::{fail, format_err};
+use anyhow::{anyhow, bail, Result};
 
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
 use sp_std::{fmt, ops::Deref, str::FromStr};
@@ -36,20 +36,20 @@ impl FromStr for Timeout {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // Timeouts are either 'ms' or 's', and should always end with 's'
         if s.len() < 2 || !s.ends_with('s') {
-            fail!(Kind::Parse, "invalid units");
+            bail!(anyhow!(Kind::Parse).context("invalid units"));
         }
 
         let units = match s.chars().nth(s.len() - 2) {
             Some('m') => "ms",
             Some('0'..='9') => "s",
-            _ => fail!(Kind::Parse, "invalid units"),
+            _ => bail!(anyhow!(Kind::Parse).context("invalid units")),
         };
 
         let numeric_part = s.chars().take(s.len() - units.len()).collect::<String>();
 
         let numeric_value = numeric_part
             .parse::<u64>()
-            .map_err(|e| format_err!(Kind::Parse, e))?;
+            .map_err(|e| anyhow!(Kind::Parse).context(e))?;
 
         let duration = match units {
             "s" => Duration::from_secs(numeric_value),

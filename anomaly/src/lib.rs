@@ -102,4 +102,5 @@ pub use backtrace;
 
 /// Box containing a thread-safe + `'static` error suitable for use as a
 /// as an `std::error::Error::source`.
+// pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
 pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;

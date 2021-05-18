@@ -14,6 +14,7 @@ use crate::primitives::String;
 use crate::primitives::format;
 use subtle_encoding::{Encoding, Hex};
 use tendermint_proto::Protobuf;
+use anyhow::anyhow;
 
 /// Output size for the SHA-256 hash function
 pub const SHA256_HASH_SIZE: usize = 32;
@@ -70,7 +71,7 @@ impl Hash {
                     h.copy_from_slice(bytes);
                     Ok(Hash::Sha256(h))
                 } else {
-                    Err(Kind::Parse
+                    Err(anyhow!(Kind::Parse)
                         .context(format!("hash invalid length: {}", bytes.len()))
                         .into())
                 }

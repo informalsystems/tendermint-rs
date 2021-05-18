@@ -6,6 +6,7 @@ use sp_std::{
     fmt::{self, Debug, Display},
     str::FromStr,
 };
+use anyhow::anyhow;
 use tendermint_proto::Protobuf;
 use crate::primitives::String;
 use crate::primitives::format;
@@ -104,7 +105,7 @@ impl FromStr for Height {
     fn from_str(s: &str) -> Result<Self, Error> {
         Height::try_from(
             s.parse::<u64>()
-                .map_err(|_| Kind::Parse.context("height decode"))?,
+                .map_err(|_| anyhow!(Kind::Parse).context("height decode"))?,
         )
     }
 }

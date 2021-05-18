@@ -23,6 +23,7 @@ use sp_std::convert::TryFrom;
 use tendermint_proto::Protobuf;
 use sp_std::vec::Vec;
 use crate::primitives::String;
+use anyhow::{anyhow, Result};
 
 /// Size of an  account ID in bytes
 pub const LENGTH: usize = 20;
@@ -120,7 +121,7 @@ impl FromStr for Id {
         // Accept either upper or lower case hex
         let bytes = hex::decode_upper(s)
             .or_else(|_| hex::decode(s))
-            .map_err(|_| Kind::Parse.context("account id decode"))?;
+            .map_err(|_| anyhow!(Kind::Parse).context("account id decode"))?;
 
         bytes.try_into()
     }

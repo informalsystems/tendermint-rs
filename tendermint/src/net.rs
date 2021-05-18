@@ -15,6 +15,7 @@ use crate::primitives::String;
 use crate::primitives::format;
 
 use url::Url;
+use anyhow::anyhow;
 
 /// URI prefix for TCP connections
 pub const TCP_PREFIX: &str = "tcp://";
@@ -76,7 +77,7 @@ impl FromStr for Address {
             // If the address has no scheme, assume it's TCP
             format!("{}{}", TCP_PREFIX, addr)
         };
-        let url = Url::parse(&prefixed_addr).map_err(|e| Kind::Parse.context(e))?;
+        let url = Url::parse(&prefixed_addr).map_err(|e| anyhow!(Kind::Parse).context(e))?;
         match url.scheme() {
             "tcp" => Ok(Self::Tcp {
                 peer_id: if !url.username().is_empty() {
@@ -87,17 +88,17 @@ impl FromStr for Address {
                 host: url
                     .host_str()
                     .ok_or_else(|| {
-                        Kind::Parse.context(format!("invalid TCP address (missing host): {}", addr))
+                        anyhow!(Kind::Parse).context(format!("invalid TCP address (missing host): {}", addr))
                     })?
                     .to_owned(),
                 port: url.port().ok_or_else(|| {
-                    Kind::Parse.context(format!("invalid TCP address (missing port): {}", addr))
+                    anyhow!(Kind::Parse).context(format!("invalid TCP address (missing port): {}", addr))
                 })?,
             }),
             "unix" => Ok(Self::Unix {
                 path: PathBuf::from(url.path()),
             }),
-            _ => Err(Kind::Parse
+            _ => Err(anyhow!(Kind::Parse)
                 .context(format!("invalid address scheme: {:?}", addr))
                 .into()),
         }

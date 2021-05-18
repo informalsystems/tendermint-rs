@@ -21,6 +21,7 @@ pub use std::format;
 #[cfg(not(feature = "std"))]
 pub use alloc::format;
 
+#[cfg(not(feature = "std"))]
 mod no_std_time {
     use sp_std::cmp::{Eq, PartialEq, Ord, PartialOrd, Ordering};
     use sp_std::ops::{Add, Sub, AddAssign, SubAssign};
