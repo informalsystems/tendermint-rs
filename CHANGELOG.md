@@ -1,5 +1,10 @@
 ## Unreleased
 
+### IMPROVEMENTS
+
+* `[tendermint-light-client]` Replaced `tempdir` dev dependency (deprecated)
+  with `tempfile` ([#851])
+
 ### REMOVED
 
 * `tendermint-light-node` We removed the `light-node` crate from the repo since
@@ -7,7 +12,8 @@
   we'll restore it. It will, of course, remain accessible in the
   [repo history](last-light-node) for now.
   ([#879])
-  
+
+[#851]: https://github.com/informalsystems/tendermint-rs/issues/851
 [#879]: https://github.com/informalsystems/tendermint-rs/issues/879
 [last-light-node]: https://github.com/informalsystems/tendermint-rs/tree/f207ecc0a7c071a54d63f159794b16a216741b38
 
