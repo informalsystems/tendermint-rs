@@ -187,6 +187,7 @@ type Peers<T> = Arc<
     Mutex<HashMap<node::Id, peer::Peer<peer::Running<<T as transport::Transport>::Connection>>>>,
 >;
 
+#[allow(clippy::needless_pass_by_value)]
 impl Supervisor {
     #[allow(clippy::too_many_lines)]
     fn main<T>(
@@ -544,6 +545,7 @@ impl Supervisor {
     }
 }
 
+#[allow(clippy::missing_const_for_fn, clippy::needless_pass_by_value)]
 fn map_try_err<T>(err: flume::TrySendError<T>) -> flume::TrySendError<()> {
     match err {
         flume::TrySendError::Disconnected(_) => flume::TrySendError::Disconnected(()),

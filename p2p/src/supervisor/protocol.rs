@@ -22,7 +22,7 @@ impl Protocol {
             Input::Command(command) => self.handle_command(command),
             Input::Connected(id) => self.handle_connected(id),
             Input::DuplicateConnRejected(_id, _direction, _report) => todo!(),
-            Input::Receive(id, msg) => self.handle_receive(id, msg),
+            Input::Receive(id, msg) => Self::handle_receive(id, msg),
             Input::Stopped(id, report) => self.handle_stopped(id, report),
             Input::Upgraded(id) => self.handle_upgraded(id),
             Input::UpgradeFailed(id, err) => self.handle_upgrade_failed(id, err),
@@ -65,7 +65,7 @@ impl Protocol {
         ]
     }
 
-    fn handle_receive(&self, id: node::Id, msg: message::Receive) -> Vec<Output> {
+    fn handle_receive(id: node::Id, msg: message::Receive) -> Vec<Output> {
         vec![Output::from(Event::Message(id, msg))]
     }
 
