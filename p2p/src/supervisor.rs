@@ -61,7 +61,7 @@ pub enum Event {
     UpgradeFailed(node::Id, Report),
 }
 
-enum Internal {
+pub(crate) enum Internal {
     Accept,
     Connect(transport::ConnectInfo),
     SendMessage(node::Id, message::Send),
@@ -69,7 +69,7 @@ enum Internal {
     Upgrade(node::Id),
 }
 
-enum Output {
+pub(crate) enum Output {
     Event(Event),
     Internal(Internal),
 }
@@ -86,7 +86,7 @@ impl From<Internal> for Output {
     }
 }
 
-enum Input {
+pub(crate) enum Input {
     Accepted(node::Id),
     Command(Command),
     Connected(node::Id),
@@ -97,10 +97,13 @@ enum Input {
     UpgradeFailed(node::Id, Report),
 }
 
+/// Fatal errors from the supervisor machinery.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    /// Error during subroutine execution.
     #[error("subroutine execution")]
     Join(String, Report),
+    /// Internal state lock is poisoned and can't be recovered.
     #[error("state lock poisoned")]
     StateLockPoisoned,
 }
@@ -166,6 +169,7 @@ impl Supervisor {
     /// Returns the next available message from the underlying channel.
     ///
     /// A `None` signals that the supervisor is stopped and no further events will arrive.
+    #[must_use]
     pub fn recv(&self) -> Option<Event> {
         self.event_rx.recv().ok()
     }

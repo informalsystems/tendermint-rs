@@ -9,14 +9,14 @@ use crate::message;
 use super::{Command, Direction, Event, Input, Internal, Output};
 
 #[derive(Default)]
-pub struct Protocol {
+pub(crate) struct Protocol {
     connected: HashMap<node::Id, Direction>,
     stopped: HashSet<node::Id>,
     upgraded: HashSet<node::Id>,
 }
 
 impl Protocol {
-    pub fn transition(&mut self, input: Input) -> Vec<Output> {
+    pub(crate) fn transition(&mut self, input: Input) -> Vec<Output> {
         match input {
             Input::Accepted(id) => self.handle_accepted(id),
             Input::Command(command) => self.handle_command(command),

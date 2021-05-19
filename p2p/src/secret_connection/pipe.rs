@@ -184,7 +184,7 @@ impl Drop for BufWriter {
     fn drop(&mut self) {
         if !self.buffer.is_empty() {
             let data = replace(&mut self.buffer, Vec::new());
-            let _ = self.sender().send(data);
+            self.sender().send(data).ok();
         }
     }
 }

@@ -2,10 +2,10 @@
 
 use std::convert::TryInto;
 
-/// Size of a ChaCha20 (IETF) nonce
+/// Size of a `ChaCha20` (IETF) nonce
 pub const SIZE: usize = 12;
 
-/// SecretConnection nonces (i.e. ChaCha20 nonces)
+/// `SecretConnection` nonces (i.e. `ChaCha20` nonces)
 pub struct Nonce(pub [u8; SIZE]);
 
 impl Default for Nonce {
@@ -17,12 +17,18 @@ impl Default for Nonce {
 impl Nonce {
     /// Increment the nonce's counter by 1
     pub fn increment(&mut self) {
-        let counter: u64 = u64::from_le_bytes(self.0[4..].try_into().unwrap());
-        self.0[4..].copy_from_slice(&counter.checked_add(1).unwrap().to_le_bytes());
+        let counter: u64 = u64::from_le_bytes(self.0[4..].try_into().expect("framing failed"));
+        self.0[4..].copy_from_slice(
+            &counter
+                .checked_add(1)
+                .expect("overflow in counter addition")
+                .to_le_bytes(),
+        );
     }
 
     /// Serialize nonce as bytes (little endian)
     #[inline]
+    #[must_use]
     pub fn to_bytes(&self) -> &[u8] {
         &self.0[..]
     }

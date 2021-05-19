@@ -19,12 +19,13 @@ pub struct Kdf {
 
 impl Kdf {
     /// Returns recv secret, send secret, challenge as 32 byte arrays
+    #[must_use]
     pub fn derive_secrets_and_challenge(shared_secret: &[u8; 32], loc_is_lo: bool) -> Self {
         let mut key_material = [0_u8; 96];
 
         Hkdf::<Sha256>::new(None, shared_secret)
             .expand(HKDF_INFO, &mut key_material)
-            .unwrap();
+            .expect("secret expansion failed");
 
         let [mut recv_secret, mut send_secret, mut challenge] = [[0_u8; 32]; 3];
 
