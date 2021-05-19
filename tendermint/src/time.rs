@@ -11,7 +11,7 @@ use sp_std::{
     str::FromStr,
 };
 use crate::primitives::String;
-use crate::primitives::{SystemTime,UNIX_EPOCH, Duration};
+use crate::primitives::{SystemTime, UNIX_EPOCH, Duration};
 use tendermint_proto::google::protobuf::Timestamp;
 use tendermint_proto::serializers::timestamp;
 use tendermint_proto::Protobuf;
