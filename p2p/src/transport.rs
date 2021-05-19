@@ -33,7 +33,7 @@ pub trait Connection: Send {
     fn local_addr(&self) -> SocketAddr;
     fn open_bidirectional(
         &self,
-        stream_id: &StreamId,
+        stream_id: StreamId,
     ) -> Result<(Self::Read, Self::Write), Self::Error>;
     fn public_key(&self) -> PublicKey;
     fn remote_addr(&self) -> SocketAddr;
