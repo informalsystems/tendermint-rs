@@ -219,7 +219,7 @@ impl Version {
         })
     }
 
-    #[allow(clippy:unused_self)]
+    #[allow(clippy::unused_self)]
     #[cfg(not(feature = "amino"))]
     fn decode_auth_signature_amino(self, _: &[u8]) -> Result<proto::p2p::AuthSigMessage> {
         panic!("attempted to decode auth signature using amino, but 'amino' feature is not present")
