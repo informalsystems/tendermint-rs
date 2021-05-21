@@ -7,6 +7,7 @@ repository  = "https://github.com/informalsystems/tendermint-rs"
 homepage    = "https://tendermint.com"
 readme      = "README.md"
 keywords    = ["p2p", "tendermint", "cosmos"]
+categories  = ["cryptography::cryptocurrencies", "network-programming"]
 authors     = [
   "Tony Arcieri <tony@iqlusion.io>",
   "Ismail Khoffi <Ismail.Khoffi@gmail.com>"
