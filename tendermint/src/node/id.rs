@@ -104,6 +104,7 @@ impl TryFrom<PublicKey> for Id {
     fn try_from(pk: PublicKey) -> Result<Self, Self::Error> {
         match pk {
             PublicKey::Ed25519(ed25519) => Ok(Id::from(ed25519)),
+            #[cfg(feature = "secp256k1")]
             _ => Err(Kind::UnsupportedKeyType.into()),
         }
     }
