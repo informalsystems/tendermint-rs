@@ -72,11 +72,6 @@ pub enum Error {
     StateLockPoisoned,
 }
 
-struct State<Conn> {
-    connected: HashMap<node::Id, transport::Direction<Conn>>,
-    peers: HashMap<node::Id, peer::Peer<peer::Running<Conn>>>,
-}
-
 /// Wrapping a [`transport::Transport`] the `Supervisor` runs the p2p machinery to manage peers over
 /// physical connections. Offering multiplexing of ingress and egress messages and a surface to
 /// empower higher-level protocols to control the behaviour of the p2p substack.

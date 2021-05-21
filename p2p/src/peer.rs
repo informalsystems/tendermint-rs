@@ -130,17 +130,6 @@ where
             },
         })
     }
-
-    fn stop(self) -> Peer<Stopped> {
-        let error = match self.state.connection {
-            Direction::Incoming(conn) | Direction::Outgoing(conn) => conn.close().err(),
-        };
-
-        Peer {
-            id: self.id,
-            state: Stopped { error },
-        }
-    }
 }
 
 impl<Conn> Peer<Running<Conn>>
