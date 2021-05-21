@@ -5,18 +5,54 @@ use eyre::Report;
 use tendermint::node;
 
 use crate::message;
+use crate::supervisor::{Command, Direction, Event};
+use crate::transport;
 
-use super::{Command, Direction, Event, Input, Internal, Output};
+pub enum Internal {
+    Accept,
+    Connect(transport::ConnectInfo),
+    SendMessage(node::Id, message::Send),
+    Stop(node::Id),
+    Upgrade(node::Id),
+}
+
+pub enum Input {
+    Accepted(node::Id),
+    Command(Command),
+    Connected(node::Id),
+    DuplicateConnRejected(node::Id, Direction, Option<Report>),
+    Receive(node::Id, message::Receive),
+    Stopped(node::Id, Option<Report>),
+    Upgraded(node::Id),
+    UpgradeFailed(node::Id, Report),
+}
+
+pub enum Output {
+    Event(Event),
+    Internal(Internal),
+}
+
+impl From<Event> for Output {
+    fn from(event: Event) -> Self {
+        Self::Event(event)
+    }
+}
+
+impl From<Internal> for Output {
+    fn from(internal: Internal) -> Self {
+        Self::Internal(internal)
+    }
+}
 
 #[derive(Default)]
-pub(crate) struct Protocol {
+pub struct Protocol {
     connected: HashMap<node::Id, Direction>,
     stopped: HashSet<node::Id>,
     upgraded: HashSet<node::Id>,
 }
 
 impl Protocol {
-    pub(crate) fn transition(&mut self, input: Input) -> Vec<Output> {
+    pub fn transition(&mut self, input: Input) -> Vec<Output> {
         match input {
             Input::Accepted(id) => self.handle_accepted(id),
             Input::Command(command) => self.handle_command(command),

@@ -16,7 +16,7 @@ use crate::peer;
 use crate::transport::{self, Connection, Endpoint as _};
 
 mod protocol;
-use protocol::Protocol;
+use protocol::{Input, Internal, Output, Protocol};
 
 /// Indicates how a [`transport::Connection`] was established.
 pub enum Direction {
@@ -58,42 +58,6 @@ pub enum Event {
     /// A connection upgraded successfully to a [`peer::Peer`].
     Upgraded(node::Id),
     /// An upgrade from failed.
-    UpgradeFailed(node::Id, Report),
-}
-
-pub(crate) enum Internal {
-    Accept,
-    Connect(transport::ConnectInfo),
-    SendMessage(node::Id, message::Send),
-    Stop(node::Id),
-    Upgrade(node::Id),
-}
-
-pub(crate) enum Output {
-    Event(Event),
-    Internal(Internal),
-}
-
-impl From<Event> for Output {
-    fn from(event: Event) -> Self {
-        Self::Event(event)
-    }
-}
-
-impl From<Internal> for Output {
-    fn from(internal: Internal) -> Self {
-        Self::Internal(internal)
-    }
-}
-
-pub(crate) enum Input {
-    Accepted(node::Id),
-    Command(Command),
-    Connected(node::Id),
-    DuplicateConnRejected(node::Id, Direction, Option<Report>),
-    Receive(node::Id, message::Receive),
-    Stopped(node::Id, Option<Report>),
-    Upgraded(node::Id),
     UpgradeFailed(node::Id, Report),
 }
 
