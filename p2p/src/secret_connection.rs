@@ -17,12 +17,12 @@ use eyre::{eyre, Result, WrapErr};
 use merlin::Transcript;
 use rand_core::OsRng;
 use subtle::ConstantTimeEq;
+use thiserror::Error;
 use x25519_dalek::{EphemeralSecret, PublicKey as EphemeralPublic};
 
 use tendermint_proto as proto;
 
 pub use self::{kdf::Kdf, nonce::Nonce, protocol::Version, public_key::PublicKey};
-use crate::error::Error;
 
 #[cfg(feature = "amino")]
 mod amino_types;
@@ -31,9 +31,6 @@ mod kdf;
 mod nonce;
 mod protocol;
 mod public_key;
-
-#[cfg(test)]
-mod pipe;
 
 /// Size of the MAC tag
 pub const TAG_SIZE: usize = 16;
@@ -45,9 +42,25 @@ pub const DATA_MAX_SIZE: usize = 1024;
 const DATA_LEN_SIZE: usize = 4;
 const TOTAL_FRAME_SIZE: usize = DATA_MAX_SIZE + DATA_LEN_SIZE;
 
+/// Kinds of errors
+#[derive(Copy, Clone, Debug, Error, Eq, PartialEq)]
+pub enum Error {
+    /// Cryptographic operation failed
+    #[error("cryptographic error")]
+    Crypto,
+
+    /// Malformatted or otherwise invalid cryptographic key
+    #[error("invalid key")]
+    InvalidKey,
+
+    /// Network protocol-related errors
+    #[error("protocol error")]
+    Protocol,
+}
+
 /// Handshake is a process of establishing the `SecretConnection` between two peers.
 /// [Specification](https://github.com/tendermint/spec/blob/master/spec/p2p/peer.md#authenticated-encryption-handshake)
-struct Handshake<S> {
+pub struct Handshake<S> {
     protocol_version: Version,
     state: S,
 }
@@ -55,13 +68,13 @@ struct Handshake<S> {
 /// Handshake states
 
 /// `AwaitingEphKey` means we're waiting for the remote ephemeral pubkey.
-struct AwaitingEphKey {
+pub struct AwaitingEphKey {
     local_privkey: ed25519::Keypair,
     local_eph_privkey: Option<EphemeralSecret>,
 }
 
 /// `AwaitingAuthSig` means we're waiting for the remote authenticated signature.
-struct AwaitingAuthSig {
+pub struct AwaitingAuthSig {
     sc_mac: [u8; 32],
     kdf: Kdf,
     recv_cipher: ChaCha20Poly1305,
@@ -444,15 +457,6 @@ fn share_eph_pubkey<IoHandler: Read + Write + Send + Sync>(
     protocol_version.decode_initial_handshake(&buf)
 }
 
-/// Return is of the form lo, hi
-fn sort32(first: [u8; 32], second: [u8; 32]) -> ([u8; 32], [u8; 32]) {
-    if second > first {
-        (first, second)
-    } else {
-        (second, first)
-    }
-}
-
 /// Sign the challenge with the local private key
 fn sign_challenge(
     challenge: &[u8; 32],
@@ -481,134 +485,11 @@ fn share_auth_signature<IoHandler: Read + Write + Send + Sync>(
     sc.protocol_version.decode_auth_signature(&buf)
 }
 
-#[cfg(tests)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_sort() {
-        // sanity check
-        let t1 = [
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0,
-        ];
-        let t2 = [
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 1,
-        ];
-        let (ref t3, ref t4) = sort32(t1, t2);
-        assert_eq!(t1, *t3);
-        assert_eq!(t2, *t4);
-    }
-
-    #[test]
-    fn test_dh_compatibility() {
-        let local_priv = &[
-            15, 54, 189, 54, 63, 255, 158, 244, 56, 168, 155, 63, 246, 79, 208, 192, 35, 194, 39,
-            232, 170, 187, 179, 36, 65, 36, 237, 12, 225, 176, 201, 54,
-        ];
-        let remote_pub = &[
-            193, 34, 183, 46, 148, 99, 179, 185, 242, 148, 38, 40, 37, 150, 76, 251, 25, 51, 46,
-            143, 189, 201, 169, 218, 37, 136, 51, 144, 88, 196, 10, 20,
-        ];
-
-        // generated using computeDHSecret in go
-        let expected_dh = &[
-            92, 56, 205, 118, 191, 208, 49, 3, 226, 150, 30, 205, 230, 157, 163, 7, 36, 28, 223,
-            84, 165, 43, 78, 38, 126, 200, 40, 217, 29, 36, 43, 37,
-        ];
-        let got_dh = diffie_hellman(local_priv, remote_pub);
-
-        assert_eq!(expected_dh, &got_dh);
-    }
-}
-
-#[allow(clippy::unwrap_used)]
-#[cfg(test)]
-mod test {
-    use std::thread;
-
-    use super::*;
-
-    #[test]
-    fn test_handshake() {
-        let (pipe1, pipe2) = pipe::async_bipipe_buffered();
-
-        let peer1 = thread::spawn(|| {
-            let mut csprng = OsRng {};
-            let privkey1: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-            let conn1 = SecretConnection::new(pipe2, privkey1, Version::V0_34);
-            assert_eq!(conn1.is_ok(), true);
-        });
-
-        let peer2 = thread::spawn(|| {
-            let mut csprng = OsRng {};
-            let privkey2: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-            let conn2 = SecretConnection::new(pipe1, privkey2, Version::V0_34);
-            assert_eq!(conn2.is_ok(), true);
-        });
-
-        peer1.join().expect("peer1 thread has panicked");
-        peer2.join().expect("peer2 thread has panicked");
-    }
-
-    #[test]
-    fn test_read_write_single_message() {
-        const MESSAGE: &str = "The Queen's Gambit";
-
-        let (pipe1, pipe2) = pipe::async_bipipe_buffered();
-
-        let sender = thread::spawn(move || {
-            let mut csprng = OsRng {};
-            let privkey1: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-            let mut conn1 = SecretConnection::new(pipe2, privkey1, Version::V0_34)
-                .expect("handshake to succeed");
-
-            conn1
-                .write_all(MESSAGE.as_bytes())
-                .expect("expected to write message");
-        });
-
-        let receiver = thread::spawn(move || {
-            let mut csprng = OsRng {};
-            let privkey2: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-            let mut conn2 = SecretConnection::new(pipe1, privkey2, Version::V0_34)
-                .expect("handshake to succeed");
-
-            let mut buf = [0; MESSAGE.len()];
-            conn2
-                .read_exact(&mut buf)
-                .expect("expected to read message");
-            assert_eq!(MESSAGE.as_bytes(), &buf);
-        });
-
-        sender.join().expect("sender thread has panicked");
-        receiver.join().expect("receiver thread has panicked");
-    }
-
-    #[test]
-    fn test_evil_peer_shares_invalid_eph_key() {
-        let mut csprng = OsRng {};
-        let local_privkey: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-        let (mut h, _) = Handshake::new(local_privkey, Version::V0_34);
-        let bytes: [u8; 32] = [0; 32];
-        let res = h.got_key(EphemeralPublic::from(bytes));
-        assert_eq!(res.is_err(), true);
-    }
-
-    #[test]
-    fn test_evil_peer_shares_invalid_auth_sig() {
-        let mut csprng = OsRng {};
-        let local_privkey: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-        let (mut h, _) = Handshake::new(local_privkey, Version::V0_34);
-        let res = h.got_key(EphemeralPublic::from(x25519_dalek::X25519_BASEPOINT_BYTES));
-        assert_eq!(res.is_err(), false);
-
-        let mut h = res.unwrap();
-        let res = h.got_signature(proto::p2p::AuthSigMessage {
-            pub_key: None,
-            sig: vec![],
-        });
-        assert_eq!(res.is_err(), true);
+/// Return is of the form lo, hi
+pub fn sort32(first: [u8; 32], second: [u8; 32]) -> ([u8; 32], [u8; 32]) {
+    if second > first {
+        (first, second)
+    } else {
+        (second, first)
     }
 }

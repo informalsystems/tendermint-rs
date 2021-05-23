@@ -20,10 +20,11 @@
 
 //! Asynchronous in-memory pipe
 
-use flume::{self, Receiver, SendError, Sender, TrySendError};
 use std::cmp::min;
 use std::io::{self, BufRead, Read, Write};
 use std::mem::replace;
+
+use flume::{self, Receiver, SendError, Sender, TrySendError};
 
 // value for libstd
 const DEFAULT_BUF_SIZE: usize = 8 * 1024;
