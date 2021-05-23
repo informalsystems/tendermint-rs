@@ -19,6 +19,15 @@ use tendermint_proto::types::EvidenceList as RawEvidenceList;
 use tendermint_proto::types::EvidenceParams as RawEvidenceParams;
 use tendermint_proto::Protobuf;
 
+mod time {
+    #[cfg(not(feature = "std"))]
+    pub use core::time::Duration;
+
+    #[cfg(feature = "std")]
+    pub use std::time::Duration;
+}
+
+
 /// Evidence of malfeasance by validators (i.e. signing conflicting votes).
 /// encoded using an Amino prefix. There is currently only a single type of
 /// evidence: `DuplicateVoteEvidence`.

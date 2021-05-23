@@ -26,6 +26,10 @@ mod no_std_time {
     use sp_std::cmp::{Eq, PartialEq, Ord, PartialOrd, Ordering};
     use sp_std::ops::{Add, Sub, AddAssign, SubAssign};
     pub use core::time::Duration;
+    use chrono::{DateTime, Utc};
+    use sp_std::convert::TryFrom;
+    use chrono::TimeZone;
+
 
     pub const UNIX_EPOCH: SystemTime = SystemTime { inner: 0.0 };
 
@@ -61,7 +65,8 @@ mod no_std_time {
         pub const UNIX_EPOCH: SystemTime = SystemTime { inner: 0.0 };
 
         pub fn now() -> SystemTime {
-            let val = chrono::Date::now();
+            let val = chrono::Utc::now();
+            let val = val.timestamp() as f64;
             SystemTime { inner: val }
         }
 
@@ -115,4 +120,60 @@ mod no_std_time {
             *self = *self - rhs;
         }
     }
+
+    impl From<prost_types::Timestamp> for SystemTime {
+        fn from(mut timestamp: prost_types::Timestamp) -> Self {
+            timestamp.normalize();
+            let system_time = if timestamp.seconds >= 0 {
+                UNIX_EPOCH + Duration::from_secs(timestamp.seconds as u64)
+            } else {
+                UNIX_EPOCH - Duration::from_secs((-timestamp.seconds) as u64)
+            };
+            system_time + Duration::from_nanos(timestamp.nanos as u64)
+        }
+    }
+
+    impl  From<SystemTime> for prost_types::Timestamp {
+        fn from (system_time: SystemTime) -> prost_types::Timestamp {
+            let (seconds, nanos) = match system_time.duration_since(UNIX_EPOCH) {
+                Ok(duration) => {
+                    let seconds = i64::try_from(duration.as_secs()).unwrap();
+                    (seconds, duration.subsec_nanos() as i32)
+                }
+                Err(_) => {
+                    // Some maybe error
+                    (1, 1_000_000_000)
+                }
+            };
+            prost_types::Timestamp { seconds, nanos }
+        }
+    }
+
+    impl  From<DateTime<Utc>> for SystemTime {
+        fn from(dt: DateTime<Utc>) -> Self {
+
+            let sec = dt.timestamp();
+            let nsec = dt.timestamp_subsec_nanos();
+            if sec < 0 {
+                // unlikely but should be handled
+                UNIX_EPOCH - Duration::new(-sec as u64, 0) + Duration::new(0, nsec)
+            } else {
+                UNIX_EPOCH + Duration::new(sec as u64, nsec)
+            }
+        }
+    }
+
+    impl From<SystemTime> for DateTime<Utc> {
+        fn from(t: SystemTime) -> DateTime<Utc> {
+            let (sec, nsec) = match t.duration_since(UNIX_EPOCH) {
+                Ok(dur) => (dur.as_secs() as i64, dur.subsec_nanos()),
+                Err(_) => {
+                    // Some maybe error
+                    (1, 1_000_000_000)
+                }
+            };
+            Utc.timestamp(sec, nsec)
+        }
+    }
+
 }

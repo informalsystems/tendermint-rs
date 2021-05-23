@@ -36,7 +36,7 @@ crate-type = ["cdylib", "rlib"]
 anyhow = {version = "1.0", default-features = false}
 async-trait = "0.1"
 bytes = { version = "1.0", default-features = false }
-chrono = { version = "0.4", default-features = false, features = ["serde", "wasmbind"] }
+chrono = { version = "0.4", default-features = false, features = ["serde", "clock"] }
 js-sys = { version = "0.3", optional = true }
 ed25519 = { version = "1", default-features = false }
 # use features (u64 backend)
