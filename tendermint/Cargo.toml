@@ -61,10 +61,8 @@ tendermint-proto = { version = "0.19.0", path = "../proto" }
 toml = { version = "0.5" }
 url = { version = "2.2" }
 zeroize = { version = "1.1", default-features = false, features = ["zeroize_derive", "alloc"] }
-
 k256 = { version = "0.7", default-features = false, optional = true, features = ["ecdsa"] }
 ripemd160 = { version = "0.9", default-features = false, optional = true }
-
 sp-std = {version = "3.0.0", default-features = false }
 displaydoc = {version = "0.2", default-features = false }
 

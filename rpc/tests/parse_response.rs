@@ -307,6 +307,80 @@ fn jsonrpc_error() {
 }
 
 #[test]
+fn tx_no_prove() {
+    let tx = endpoint::tx::Response::from_string(&read_json_fixture("tx_no_prove")).unwrap();
+
+    assert_eq!(
+        "291B44C883803751917D547238EAC419E968C0171A3154D777B2EA8EA5039C57",
+        tx.hash.to_string()
+    );
+    assert_eq!(2, tx.height.value());
+
+    let events = &tx.tx_result.events;
+    assert_eq!(events.len(), 6);
+    assert_eq!(events[0].attributes.len(), 3);
+    assert_eq!(events[0].attributes[0].key.as_ref(), "recipient");
+    assert_eq!(
+        events[0].attributes[0].value.as_ref(),
+        "cosmos17xpfvakm2amg962yls6f84z3kell8c5lserqta"
+    );
+
+    assert!(tx.proof.is_none());
+}
+
+#[test]
+fn tx_with_prove() {
+    let tx = endpoint::tx::Response::from_string(&read_json_fixture("tx_with_prove")).unwrap();
+
+    assert_eq!(
+        "291B44C883803751917D547238EAC419E968C0171A3154D777B2EA8EA5039C57",
+        tx.hash.to_string()
+    );
+    assert_eq!(2, tx.height.value());
+
+    let events = &tx.tx_result.events;
+    assert_eq!(events.len(), 6);
+    assert_eq!(events[0].attributes.len(), 3);
+    assert_eq!(events[0].attributes[0].key.as_ref(), "recipient");
+    assert_eq!(
+        events[0].attributes[0].value.as_ref(),
+        "cosmos17xpfvakm2amg962yls6f84z3kell8c5lserqta"
+    );
+
+    let proof = tx.proof.as_ref().unwrap();
+    assert_eq!(
+        vec![
+            10, 159, 1, 10, 142, 1, 10, 28, 47, 99, 111, 115, 109, 111, 115, 46, 98, 97, 110, 107,
+            46, 118, 49, 98, 101, 116, 97, 49, 46, 77, 115, 103, 83, 101, 110, 100, 18, 110, 10,
+            45, 99, 111, 115, 109, 111, 115, 49, 115, 50, 116, 119, 52, 53, 99, 55, 115, 116, 115,
+            97, 102, 107, 52, 50, 118, 115, 122, 57, 115, 106, 48, 57, 106, 109, 48, 57, 121, 54,
+            116, 107, 52, 113, 101, 101, 114, 104, 18, 45, 99, 111, 115, 109, 111, 115, 49, 110,
+            118, 51, 117, 102, 55, 104, 112, 117, 118, 107, 52, 101, 109, 51, 57, 118, 120, 114,
+            57, 52, 52, 104, 112, 104, 117, 106, 116, 117, 113, 97, 50, 120, 108, 55, 54, 56, 56,
+            26, 14, 10, 9, 115, 97, 109, 111, 108, 101, 97, 110, 115, 18, 1, 49, 18, 9, 116, 101,
+            115, 116, 32, 109, 101, 109, 111, 24, 169, 70, 18, 102, 10, 78, 10, 70, 10, 31, 47, 99,
+            111, 115, 109, 111, 115, 46, 99, 114, 121, 112, 116, 111, 46, 115, 101, 99, 112, 50,
+            53, 54, 107, 49, 46, 80, 117, 98, 75, 101, 121, 18, 35, 10, 33, 3, 98, 211, 158, 175,
+            190, 7, 170, 66, 0, 20, 131, 204, 81, 56, 214, 191, 143, 101, 195, 149, 126, 234, 114,
+            55, 58, 237, 26, 39, 95, 114, 111, 164, 18, 4, 10, 2, 8, 1, 18, 20, 10, 14, 10, 9, 115,
+            97, 109, 111, 108, 101, 97, 110, 115, 18, 1, 49, 16, 160, 141, 6, 26, 64, 185, 213,
+            205, 42, 231, 20, 240, 14, 103, 188, 41, 94, 116, 55, 181, 30, 185, 212, 221, 131, 145,
+            132, 32, 83, 223, 255, 85, 10, 220, 211, 124, 172, 29, 152, 55, 91, 199, 85, 165, 186,
+            68, 87, 22, 14, 235, 208, 43, 62, 93, 129, 228, 237, 222, 77, 146, 245, 107, 123, 173,
+            19, 73, 154, 174, 249
+        ],
+        proof.data
+    );
+    assert_eq!(
+        vec![
+            105, 196, 2, 216, 75, 198, 114, 80, 111, 27, 54, 17, 4, 107, 139, 37, 40, 156, 38, 0,
+            253, 122, 0, 118, 137, 197, 148, 154, 51, 32, 101, 87
+        ],
+        proof.root_hash
+    );
+}
+
+#[test]
 fn tx_search_no_prove() {
     let response =
         endpoint::tx_search::Response::from_string(&read_json_fixture("tx_search_no_prove"))
@@ -320,6 +394,12 @@ fn tx_search_no_prove() {
     );
     assert_eq!(11, response.txs[0].height.value());
     assert!(response.txs[0].proof.is_none());
+
+    let events = &response.txs[0].tx_result.events;
+    assert_eq!(events.len(), 1);
+    assert_eq!(events[0].attributes.len(), 4);
+    assert_eq!(events[0].attributes[0].key.as_ref(), "creator");
+    assert_eq!(events[0].attributes[0].value.as_ref(), "Cosmoshi Netowoko");
 }
 
 #[test]

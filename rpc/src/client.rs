@@ -211,6 +211,11 @@ pub trait Client {
         self.perform(evidence::Request::new(e)).await
     }
 
+    /// `/tx`: find transaction by hash.
+    async fn tx(&self, hash: abci::transaction::Hash, prove: bool) -> Result<tx::Response> {
+        self.perform(tx::Request::new(hash, prove)).await
+    }
+
     /// `/tx_search`: search for transactions with their results.
     async fn tx_search(
         &self,

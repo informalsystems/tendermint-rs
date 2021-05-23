@@ -31,11 +31,6 @@ Libraries:
 - [light-client](./light-client) - Tendermint light client library for verifying
   signed headers, tracking validator set changes, and detecting forks
 
-Binaries:
-
-- [light-node](./light-node) - Tendermint light node to synchronize with a
-  blockchain using the light client 
-
 ## Releases
 
 Release tags can be found on [Github](https://github.com/informalsystems/tendermint-rs/releases).
@@ -116,5 +111,4 @@ limitations under the License.
 [tendermint-rpc-docs-link]: https://docs.rs/tendermint-rpc/
 [Tendermint]: https://github.com/tendermint/tendermint
 [tendermint-light-client-docs-link]: https://docs.rs/tendermint-light-client/
-[tendermint-light-node-docs-link]: https://docs.rs/tendermint-light-node/
 [contributing]: ./CONTRIBUTING.md

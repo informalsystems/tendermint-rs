@@ -30,7 +30,7 @@ where
 impl<'de> Visitor<'de> for PartSetHeaderTotalStringOrU32 {
     type Value = u32;
 
-    fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+    fn expecting(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
         formatter.write_str("an u32 integer or string between 0 and 2^32")
     }
 
