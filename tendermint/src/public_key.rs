@@ -153,7 +153,7 @@ impl PublicKey {
                 }
             },
             #[cfg(feature = "secp256k1")]
-            PublicKey::Secp256k1(_) => fail!(
+            PublicKey::Secp256k1(_) => bail!(
                 error::Kind::InvalidKey,
                 "unsupported signature algorithm (ECDSA/secp256k1)"
             ),
