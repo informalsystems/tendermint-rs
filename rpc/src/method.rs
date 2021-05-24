@@ -54,6 +54,9 @@ pub enum Method {
     /// Get node status
     Status,
 
+    /// Find transaction by hash
+    Tx,
+
     /// Search for transactions with their results
     TxSearch,
 
@@ -90,6 +93,7 @@ impl Method {
             Method::NetInfo => "net_info",
             Method::Status => "status",
             Method::Subscribe => "subscribe",
+            Method::Tx => "tx",
             Method::TxSearch => "tx_search",
             Method::Unsubscribe => "unsubscribe",
             Method::Validators => "validators",
@@ -118,6 +122,7 @@ impl FromStr for Method {
             "net_info" => Method::NetInfo,
             "status" => Method::Status,
             "subscribe" => Method::Subscribe,
+            "tx" => Method::Tx,
             "tx_search" => Method::TxSearch,
             "unsubscribe" => Method::Unsubscribe,
             "validators" => Method::Validators,

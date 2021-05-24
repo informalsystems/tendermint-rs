@@ -9,15 +9,13 @@ EXTENDS Lightclient_003_draft
    - verdict: the light client verdict in the previous state
 *)
 VARIABLE
+  \* @type: Int -> [verified: BLOCK, current: BLOCK, now: Int, verdict: Str];
   history
-
-(* APALACHE annotations *)
-a <: b == a \* type annotation
 
 \* This predicate extends the LightClient Init predicate with history tracking
 InitTest ==
   /\ Init
-  /\ history = [ n \in {0} <: {Int} |->
+  /\ history = [ n \in {0} |->
      [ verified |-> prevVerified, current |-> prevCurrent, now |-> prevNow, verdict |-> prevVerdict ]]
 
 \* This predicate extends the LightClient Next predicate with history tracking
@@ -94,7 +92,7 @@ TestNonMonotonicHeight ==
        /\ history[s].current.header.time > history[s].verified.header.time
        /\ history[s].current.header.time < history[s].now
        /\ history[s].verified.header.time + TRUSTING_PERIOD > history[s].now
-       /\ history[s].current.Commits /= ({} <: {STRING})
+       /\ history[s].current.Commits /= {}
        /\ history[s].current.Commits \subseteq  history[s].current.header.VS
 
 (*
@@ -103,8 +101,8 @@ please refer issue: https://github.com/informalsystems/tendermint-rs/issues/659
 TestEmptyCommitEmptyValset ==
     /\ \E s \in DOMAIN history :
        \* this is wrong
-       /\ history[s].current.Commits = ({} <: {STRING})
-       /\ ValSet(s) = ({} <: {STRING})
+       /\ history[s].current.Commits = {}
+       /\ ValSet(s) = {}
        \* everything else is correct
        /\ history[s].current.header /= history[s].verified.header
        /\ history[s].current.header.height > history[s].verified.header.height
@@ -115,8 +113,8 @@ TestEmptyCommitEmptyValset ==
 TestEmptyCommitNonEmptyValset ==
     /\ \E s \in DOMAIN history :
        \* this is wrong
-       /\ history[s].current.Commits = ({} <: {STRING})
-       /\ ValSet(s) /= ({} <: {STRING})
+       /\ history[s].current.Commits = {}
+       /\ ValSet(s) /= {}
        \* everything else is correct
        /\ history[s].current.header /= history[s].verified.header
        /\ history[s].current.header.height > history[s].verified.header.height
@@ -132,7 +130,7 @@ TestLessThanTwoThirdsCommit ==
            TVS == history[s].verified.header.VS
        IN
        /\ history[s].current.header.height > history[s].verified.header.height + 1
-       /\ CMS /= ({} <: {STRING})
+       /\ CMS /= {}
        /\ CMS \subseteq UVS
        /\ 3 * Cardinality(CMS) < 2 * Cardinality(UVS)
        /\ 3 * Cardinality(CMS \intersect TVS) < Cardinality(TVS)
@@ -159,8 +157,8 @@ TestUntrustedBeforeTrusted ==
         IN
         /\ history[s].current.header.time < history[s].verified.header.time
         /\ history[s].now < history[s].verified.header.time + TRUSTING_PERIOD
-        /\ CMS /= ({} <: {STRING})
-        /\ UVS /= ({} <: {STRING})
+        /\ CMS /= {}
+        /\ UVS /= {}
         /\ Cardinality(CMS) < Cardinality(UVS)
 
 \* Test an execution where a header is outside the trusting period
@@ -221,7 +219,7 @@ TestValsetChangesFully ==
     /\ \E s1, s2 \in DOMAIN history :
         /\ s2 = s1 + 1
         /\ Cardinality(ValSet(s1)) >= 2
-        /\ ValSet(s1) \intersect ValSet(s2) = ({} <: {STRING})
+        /\ ValSet(s1) \intersect ValSet(s2) = {}
 
 TestLessThanThirdValsetChanges ==
     /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT

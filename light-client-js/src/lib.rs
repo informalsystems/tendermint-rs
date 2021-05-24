@@ -24,7 +24,7 @@ use wasm_bindgen::JsValue;
 // allocator.
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+static ALLOC: wee_alloc::WeeAlloc<'_> = wee_alloc::WeeAlloc::INIT;
 
 /// Check whether a given untrusted block can be trusted.
 #[wasm_bindgen]

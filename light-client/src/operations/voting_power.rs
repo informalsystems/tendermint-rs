@@ -116,15 +116,12 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
 
         // Get non-absent votes from the signatures
         let non_absent_votes = signatures.iter().enumerate().flat_map(|(idx, signature)| {
-            if let Some(vote) = non_absent_vote(
+            non_absent_vote(
                 signature,
                 ValidatorIndex::try_from(idx).unwrap(),
                 &signed_header.commit,
-            ) {
-                Some((signature, vote))
-            } else {
-                None
-            }
+            )
+            .map(|vote| (signature, vote))
         });
 
         for (signature, vote) in non_absent_votes {
