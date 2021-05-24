@@ -5,14 +5,14 @@
 //!
 //! <https://tendermint.com/docs/spec/abci/apps.html#gas>
 
+use crate::primitives::String;
+use crate::primitives::ToString;
 use crate::{Error, Kind};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use sp_std::{
+use std::{
     fmt::{self, Display},
     str::FromStr,
 };
-use crate::primitives::String;
-use crate::primitives::ToString;
 
 /// Gas: representation of transaction processing resource costs
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
@@ -47,7 +47,9 @@ impl FromStr for Gas {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        Ok(Self::from(s.parse::<u64>().map_err(|_| anyhow::anyhow!(Kind::Parse))?))
+        Ok(Self::from(
+            s.parse::<u64>().map_err(|_| anyhow::anyhow!(Kind::Parse))?,
+        ))
     }
 }
 

@@ -1,15 +1,15 @@
 use super::Proposal;
 use crate::chain::Id as ChainId;
+use crate::primitives::ToString;
 use crate::{Error, Kind};
 use bytes::BufMut;
-use sp_std::convert::{TryFrom, TryInto};
+use std::convert::{TryFrom, TryInto};
+use std::vec::Vec;
 use tendermint_proto::privval::RemoteSignerError;
 use tendermint_proto::privval::SignProposalRequest as RawSignProposalRequest;
 use tendermint_proto::privval::SignedProposalResponse as RawSignedProposalResponse;
 use tendermint_proto::Error as ProtobufError;
 use tendermint_proto::Protobuf;
-use sp_std::vec::Vec;
-use crate::primitives::ToString;
 
 /// SignProposalRequest is a request to sign a proposal
 #[derive(Clone, PartialEq, Debug)]

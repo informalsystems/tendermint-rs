@@ -1,14 +1,13 @@
 //! Monikers: names associated with validators
 
 use crate::error::Error;
+use crate::primitives::String;
 use serde::{Deserialize, Serialize};
-use sp_std::{
+use std::borrow::ToOwned;
+use std::{
     fmt::{self, Display},
     str::FromStr,
 };
-use crate::primitives::String;
-use sp_std::borrow::ToOwned;
-
 
 /// Validator display names
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]

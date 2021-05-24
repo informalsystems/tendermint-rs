@@ -28,7 +28,7 @@ mod rpc {
     use tendermint::abci::{Code, Transaction};
     use tendermint::block::Height;
     use tendermint::merkle::simple_hash_from_byte_vectors;
-    use tendermint_rpc::endpoint::tx_search::ResultTx;
+    use tendermint_rpc::endpoint::tx::Response as ResultTx;
     use tendermint_rpc::event::{Event, EventData, TxInfo};
     use tendermint_rpc::query::{EventType, Query};
     use tokio::time::Duration;

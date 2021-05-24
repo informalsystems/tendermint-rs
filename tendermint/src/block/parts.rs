@@ -4,13 +4,13 @@ use crate::hash::Algorithm;
 use crate::hash::SHA256_HASH_SIZE;
 use crate::Hash;
 use crate::{Error, Kind};
+use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
-use sp_std::convert::TryFrom;
+use std::convert::TryFrom;
 use tendermint_proto::types::{
     CanonicalPartSetHeader as RawCanonicalPartSetHeader, PartSetHeader as RawPartSetHeader,
 };
 use tendermint_proto::Protobuf;
-use anyhow::anyhow;
 
 /// Block parts header
 #[derive(

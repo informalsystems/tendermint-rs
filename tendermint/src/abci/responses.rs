@@ -1,13 +1,13 @@
 //! ABCI response types used by the `/block_results` RPC endpoint.
 
 use super::{code::Code, data::Data, gas::Gas, info::Info, log::Log, tag::Tag};
+use crate::primitives::String;
 use crate::{consensus, serializers, validator};
 use serde::{Deserialize, Deserializer, Serialize};
-use sp_std::{
+use std::{
     fmt::{self, Display},
     vec::Vec,
 };
-use crate::primitives::String;
 
 /// Responses for ABCI calls which occur during block processing.
 ///
@@ -64,11 +64,11 @@ pub struct DeliverTx {
     pub info: Info,
 
     /// Amount of gas wanted
-    #[serde(default, rename = "gasWanted")]
+    #[serde(default)]
     pub gas_wanted: Gas,
 
     /// Amount of gas used
-    #[serde(default, rename = "gasUsed")]
+    #[serde(default)]
     pub gas_used: Gas,
 
     /// Events

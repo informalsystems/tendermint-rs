@@ -5,17 +5,17 @@ use crate::{
     node,
 };
 
+use crate::primitives::format;
+use crate::primitives::String;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use sp_std::{
+use std::path::PathBuf;
+use std::{
     fmt::{self, Display},
     str::{self, FromStr},
 };
-use std::path::PathBuf;
-use crate::primitives::String;
-use crate::primitives::format;
 
-use url::Url;
 use anyhow::anyhow;
+use url::Url;
 
 /// URI prefix for TCP connections
 pub const TCP_PREFIX: &str = "tcp://";
@@ -88,11 +88,13 @@ impl FromStr for Address {
                 host: url
                     .host_str()
                     .ok_or_else(|| {
-                        anyhow!(Kind::Parse).context(format!("invalid TCP address (missing host): {}", addr))
+                        anyhow!(Kind::Parse)
+                            .context(format!("invalid TCP address (missing host): {}", addr))
                     })?
                     .to_owned(),
                 port: url.port().ok_or_else(|| {
-                    anyhow!(Kind::Parse).context(format!("invalid TCP address (missing port): {}", addr))
+                    anyhow!(Kind::Parse)
+                        .context(format!("invalid TCP address (missing port): {}", addr))
                 })?,
             }),
             "unix" => Ok(Self::Unix {

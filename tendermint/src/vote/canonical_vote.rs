@@ -1,11 +1,11 @@
 use crate::chain::Id as ChainId;
+use crate::primitives::ToString;
 use crate::{block, Time};
 use crate::{Error, Kind::*};
 use serde::{Deserialize, Serialize};
-use sp_std::convert::{TryFrom,TryInto};
+use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::CanonicalVote as RawCanonicalVote;
 use tendermint_proto::Protobuf;
-use crate::primitives::ToString;
 
 /// CanonicalVote is used for protobuf encoding a Vote
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]

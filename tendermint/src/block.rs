@@ -22,11 +22,11 @@ pub use self::{
     size::Size,
 };
 use crate::{abci::transaction, evidence, Error, Kind};
+use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
-use sp_std::convert::{TryFrom, TryInto};
+use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Block as RawBlock;
 use tendermint_proto::Protobuf;
-use anyhow::anyhow;
 
 /// Blocks consist of a header, transactions, votes (the commit), and a list of
 /// evidence of malfeasance (i.e. signing conflicting votes).
@@ -56,7 +56,10 @@ impl TryFrom<RawBlock> for Block {
     type Error = Error;
 
     fn try_from(value: RawBlock) -> Result<Self, Self::Error> {
-        let header: Header = value.header.ok_or(anyhow::anyhow!(Kind::MissingHeader))?.try_into()?;
+        let header: Header = value
+            .header
+            .ok_or(anyhow::anyhow!(Kind::MissingHeader))?
+            .try_into()?;
         // if last_commit is Commit::Default, it is considered nil by Go.
         let last_commit = value
             .last_commit
@@ -75,8 +78,14 @@ impl TryFrom<RawBlock> for Block {
         //}
         Ok(Block {
             header,
-            data: value.data.ok_or(anyhow::anyhow!(Kind::MissingData))?.try_into()?,
-            evidence: value.evidence.ok_or(anyhow::anyhow!(Kind::MissingEvidence))?.try_into()?,
+            data: value
+                .data
+                .ok_or(anyhow::anyhow!(Kind::MissingData))?
+                .try_into()?,
+            evidence: value
+                .evidence
+                .ok_or(anyhow::anyhow!(Kind::MissingEvidence))?
+                .try_into()?,
             last_commit,
         })
     }

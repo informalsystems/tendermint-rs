@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use sp_std::fmt::{self, Debug, Display};
 use crate::primitives::String;
+use std::fmt::{self, Debug, Display};
 
 /// Tendermint version
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]

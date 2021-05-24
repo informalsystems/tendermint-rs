@@ -1,10 +1,10 @@
 //! Tendermint consensus state
 
 pub use crate::block;
-use serde::{Deserialize, Serialize};
-pub use sp_std::{cmp::Ordering, fmt};
 use crate::primitives::String;
-use sp_std::borrow::ToOwned;
+use serde::{Deserialize, Serialize};
+use std::borrow::ToOwned;
+use std::{cmp::Ordering, fmt};
 
 /// Placeholder string to show when block ID is absent. Syntax from:
 /// <https://tendermint.com/docs/spec/consensus/consensus.html>

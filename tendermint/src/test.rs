@@ -1,5 +1,5 @@
 use serde::{de::DeserializeOwned, Serialize};
-use sp_std::fmt::Debug;
+use std::fmt::Debug;
 
 /// Test that a struct `T` can be:
 ///

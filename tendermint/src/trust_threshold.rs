@@ -1,6 +1,5 @@
 //! Define traits and instances for dealing with trust thresholds.
 
-
 #[cfg(feature = "std")]
 use std::fmt::{self, Debug, Display};
 

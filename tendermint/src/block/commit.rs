@@ -4,10 +4,9 @@ use crate::block::commit_sig::CommitSig;
 use crate::block::{Height, Id, Round};
 use crate::{Error, Kind};
 use serde::{Deserialize, Serialize};
-use sp_std::{
+use std::{
     convert::{TryFrom, TryInto},
     vec::Vec,
-    prelude::*,
 };
 
 use tendermint_proto::types::Commit as RawCommit;
@@ -45,7 +44,10 @@ impl TryFrom<RawCommit> for Commit {
         Ok(Self {
             height: value.height.try_into()?,
             round: value.round.try_into()?,
-            block_id: value.block_id.ok_or(anyhow::anyhow!(Kind::InvalidBlock))?.try_into()?, /* gogoproto.nullable = false */
+            block_id: value
+                .block_id
+                .ok_or(anyhow::anyhow!(Kind::InvalidBlock))?
+                .try_into()?, /* gogoproto.nullable = false */
             signatures: signatures?,
         })
     }
@@ -69,7 +71,7 @@ impl Default for Commit {
             height: Height::from(0_u32),
             round: Default::default(),
             block_id: Default::default(),
-            signatures: vec![],
+            signatures: Vec::new(),
         }
     }
 }

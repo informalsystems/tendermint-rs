@@ -1,12 +1,12 @@
 //! Paths to ABCI data
 
 use crate::error::Error;
-use serde::{Deserialize, Serialize};
 use crate::primitives::String;
-use sp_std::{
+use serde::{Deserialize, Serialize};
+use std::{
+    borrow::ToOwned,
     fmt::{self, Display},
     str::FromStr,
-    borrow::ToOwned,
 };
 
 /// Path to ABCI data

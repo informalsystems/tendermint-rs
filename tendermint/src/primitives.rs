@@ -1,14 +1,15 @@
 //! primitive
 /// define String type in std and no_std
+extern crate std as _std;
 #[cfg(feature = "std")]
-pub use std::string::{String, ToString};
+pub use _std::string::{String, ToString};
 
 #[cfg(not(feature = "std"))]
 pub use alloc::string::{String, ToString};
 
 /// define time in std and no_std
 #[cfg(feature = "std")]
-pub use std::time::{Duration, SystemTime, UNIX_EPOCH};
+pub use _std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[cfg(not(feature = "std"))]
 pub use no_std_time::{Duration, SystemTime, UNIX_EPOCH};
@@ -16,20 +17,19 @@ pub use no_std_time::{Duration, SystemTime, UNIX_EPOCH};
 /// define format macro in std and no_std
 #[cfg(feature = "std")]
 #[macro_export]
-pub use std::format;
+pub use _std::format;
 
 #[cfg(not(feature = "std"))]
 pub use alloc::format;
 
 #[cfg(not(feature = "std"))]
 mod no_std_time {
-    use sp_std::cmp::{Eq, PartialEq, Ord, PartialOrd, Ordering};
-    use sp_std::ops::{Add, Sub, AddAssign, SubAssign};
-    pub use core::time::Duration;
-    use chrono::{DateTime, Utc};
-    use sp_std::convert::TryFrom;
     use chrono::TimeZone;
-
+    use chrono::{DateTime, Utc};
+    pub use core::time::Duration;
+    use no_std_compat::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
+    use no_std_compat::convert::TryFrom;
+    use no_std_compat::ops::{Add, AddAssign, Sub, SubAssign};
 
     pub const UNIX_EPOCH: SystemTime = SystemTime { inner: 0.0 };
 
@@ -73,7 +73,7 @@ mod no_std_time {
         pub fn duration_since(&self, earlier: SystemTime) -> Result<Duration, ()> {
             let dur_ms = self.inner - earlier.inner;
             if dur_ms < 0.0 {
-                return Err(())
+                return Err(());
             }
             Ok(Duration::from_millis(dur_ms as u64))
         }
@@ -133,8 +133,8 @@ mod no_std_time {
         }
     }
 
-    impl  From<SystemTime> for prost_types::Timestamp {
-        fn from (system_time: SystemTime) -> prost_types::Timestamp {
+    impl From<SystemTime> for prost_types::Timestamp {
+        fn from(system_time: SystemTime) -> prost_types::Timestamp {
             let (seconds, nanos) = match system_time.duration_since(UNIX_EPOCH) {
                 Ok(duration) => {
                     let seconds = i64::try_from(duration.as_secs()).unwrap();
@@ -149,9 +149,8 @@ mod no_std_time {
         }
     }
 
-    impl  From<DateTime<Utc>> for SystemTime {
+    impl From<DateTime<Utc>> for SystemTime {
         fn from(dt: DateTime<Utc>) -> Self {
-
             let sec = dt.timestamp();
             let nsec = dt.timestamp_subsec_nanos();
             if sec < 0 {
@@ -175,5 +174,4 @@ mod no_std_time {
             Utc.timestamp(sec, nsec)
         }
     }
-
 }

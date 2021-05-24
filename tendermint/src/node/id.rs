@@ -7,15 +7,15 @@ use crate::{
 
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
-use sp_std::{
+use std::{
     fmt::{self, Debug, Display},
     str::FromStr,
 };
 
+use crate::primitives::format;
+use crate::primitives::String;
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
-use crate::primitives::String;
-use crate::primitives::format;
 
 /// Length of a Node ID in bytes
 pub const LENGTH: usize = 20;

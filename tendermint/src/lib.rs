@@ -19,10 +19,10 @@
     html_logo_url = "https://raw.githubusercontent.com/informalsystems/tendermint-rs/master/img/logo-tendermint-rs_3961x4001.png"
 )]
 #![allow(unused_attributes)]
-
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
+extern crate no_std_compat as std;
 
 #[macro_use]
 pub mod error;
@@ -44,6 +44,7 @@ mod moniker;
 pub mod net;
 #[cfg(feature = "std")]
 pub mod node;
+pub mod primitives;
 pub mod private_key;
 pub mod proposal;
 pub mod public_key;
@@ -55,8 +56,6 @@ pub mod trust_threshold;
 pub mod validator;
 mod version;
 pub mod vote;
-pub mod primitives;
-
 
 #[cfg(test)]
 mod test;

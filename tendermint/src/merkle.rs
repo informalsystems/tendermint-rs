@@ -3,7 +3,7 @@
 pub mod proof;
 
 use sha2::{Digest, Sha256};
-use sp_std::vec::Vec;
+use std::vec::Vec;
 
 /// Size of Merkle root hash
 pub const HASH_SIZE: usize = 32;

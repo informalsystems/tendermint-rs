@@ -5,12 +5,12 @@ use crate::block::{Height, Id as BlockId, Round};
 use crate::chain::Id as ChainId;
 use crate::Time;
 use crate::{Error, Kind};
-use sp_std::convert::{TryFrom, TryInto};
 use anyhow::anyhow;
+use std::convert::{TryFrom, TryInto};
 
+use crate::primitives::ToString;
 use tendermint_proto::types::CanonicalProposal as RawCanonicalProposal;
 use tendermint_proto::Protobuf;
-use crate::primitives::ToString;
 
 /// CanonicalProposal for signing
 #[derive(Clone, PartialEq)]

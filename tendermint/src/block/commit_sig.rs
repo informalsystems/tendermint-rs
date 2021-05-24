@@ -2,12 +2,12 @@
 
 use crate::{account, Signature, Time};
 use crate::{Error, Kind};
+use anyhow::anyhow;
 use num_traits::ToPrimitive;
-use sp_std::convert::{TryFrom, TryInto};
+use std::convert::{TryFrom, TryInto};
+use std::vec::Vec;
 use tendermint_proto::types::BlockIdFlag;
 use tendermint_proto::types::CommitSig as RawCommitSig;
-use sp_std::vec::Vec;
-use anyhow::anyhow;
 
 /// CommitSig represents a signature of a validator.
 /// It's a part of the Commit and can be used to reconstruct the vote set given the validator set.
@@ -97,7 +97,10 @@ impl TryFrom<RawCommitSig> for CommitSig {
             }
             return Ok(CommitSig::BlockIdFlagCommit {
                 validator_address: value.validator_address.try_into()?,
-                timestamp: value.timestamp.ok_or(anyhow::anyhow!(Kind::NoTimestamp))?.try_into()?,
+                timestamp: value
+                    .timestamp
+                    .ok_or(anyhow::anyhow!(Kind::NoTimestamp))?
+                    .try_into()?,
                 signature: value.signature.try_into()?,
             });
         }
@@ -112,7 +115,10 @@ impl TryFrom<RawCommitSig> for CommitSig {
             }
             return Ok(CommitSig::BlockIdFlagNil {
                 validator_address: value.validator_address.try_into()?,
-                timestamp: value.timestamp.ok_or(anyhow::anyhow!(Kind::NoTimestamp))?.try_into()?,
+                timestamp: value
+                    .timestamp
+                    .ok_or(anyhow::anyhow!(Kind::NoTimestamp))?
+                    .try_into()?,
                 signature: value.signature.try_into()?,
             });
         }

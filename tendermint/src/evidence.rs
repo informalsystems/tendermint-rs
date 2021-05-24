@@ -4,11 +4,11 @@ use crate::{
     block::signed_header::SignedHeader, serializers, vote::Power, Error, Kind, Time, Vote,
 };
 use serde::{Deserialize, Serialize};
-use sp_std::{
-    convert::{TryFrom, TryInto},
-    vec::Vec,
+use std::{
     boxed::Box,
+    convert::{TryFrom, TryInto},
     slice,
+    vec::Vec,
 };
 use tendermint_proto::google::protobuf::Duration as RawDuration;
 use tendermint_proto::types::evidence::Sum as RawSum;
@@ -26,7 +26,6 @@ mod time {
     #[cfg(feature = "std")]
     pub use std::time::Duration;
 }
-
 
 /// Evidence of malfeasance by validators (i.e. signing conflicting votes).
 /// encoded using an Amino prefix. There is currently only a single type of
@@ -87,11 +86,20 @@ impl TryFrom<RawDuplicateVoteEvidence> for DuplicateVoteEvidence {
 
     fn try_from(value: RawDuplicateVoteEvidence) -> Result<Self, Self::Error> {
         Ok(Self {
-            vote_a: value.vote_a.ok_or(anyhow::anyhow!(Kind::MissingEvidence))?.try_into()?,
-            vote_b: value.vote_b.ok_or(anyhow::anyhow!(Kind::MissingEvidence))?.try_into()?,
+            vote_a: value
+                .vote_a
+                .ok_or(anyhow::anyhow!(Kind::MissingEvidence))?
+                .try_into()?,
+            vote_b: value
+                .vote_b
+                .ok_or(anyhow::anyhow!(Kind::MissingEvidence))?
+                .try_into()?,
             total_voting_power: value.total_voting_power.try_into()?,
             validator_power: value.validator_power.try_into()?,
-            timestamp: value.timestamp.ok_or(anyhow::anyhow!(Kind::MissingTimestamp))?.try_into()?,
+            timestamp: value
+                .timestamp
+                .ok_or(anyhow::anyhow!(Kind::MissingTimestamp))?
+                .try_into()?,
         })
     }
 }

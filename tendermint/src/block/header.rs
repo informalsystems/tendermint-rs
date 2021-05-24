@@ -2,13 +2,13 @@
 
 use crate::merkle::simple_hash_from_byte_vectors;
 use crate::{account, block, chain, AppHash, Error, Hash, Kind, Time};
+use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
-use sp_std::convert::{TryFrom, TryInto};
+use std::convert::{TryFrom, TryInto};
+use std::vec::Vec;
 use tendermint_proto::types::Header as RawHeader;
 use tendermint_proto::version::Consensus as RawConsensusVersion;
 use tendermint_proto::Protobuf;
-use sp_std::prelude::*;
-use anyhow::anyhow;
 
 /// Block `Header` values contain metadata about the block and about the
 /// consensus, as well as commitments to the data in the current block, the
@@ -113,10 +113,16 @@ impl TryFrom<RawHeader> for Header {
         // height").into());
         //}
         Ok(Header {
-            version: value.version.ok_or(anyhow::anyhow!(Kind::MissingVersion))?.try_into()?,
+            version: value
+                .version
+                .ok_or(anyhow::anyhow!(Kind::MissingVersion))?
+                .try_into()?,
             chain_id: value.chain_id.try_into()?,
             height,
-            time: value.time.ok_or(anyhow::anyhow!(Kind::NoTimestamp))?.try_into()?,
+            time: value
+                .time
+                .ok_or(anyhow::anyhow!(Kind::NoTimestamp))?
+                .try_into()?,
             last_block_id,
             last_commit_hash,
             data_hash: if value.data_hash.is_empty() {
@@ -160,7 +166,6 @@ impl From<Header> for RawHeader {
     }
 }
 
-
 impl Header {
     /// Hash this header
     pub fn hash(&self) -> Hash {
@@ -169,28 +174,31 @@ impl Header {
         // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/block.go#L393
         // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/encoding_helper.go#L9:6
 
-        let fields_bytes = vec![
-            self.version.encode_vec().unwrap(),
-            self.chain_id.encode_vec().unwrap(),
-            self.height.encode_vec().unwrap(),
-            self.time.encode_vec().unwrap(),
-            self.last_block_id.unwrap_or_default().encode_vec().unwrap(),
+        let mut fields_bytes = Vec::new();
+        fields_bytes.push(self.version.encode_vec().unwrap());
+        fields_bytes.push(self.chain_id.encode_vec().unwrap());
+        fields_bytes.push(self.height.encode_vec().unwrap());
+        fields_bytes.push(self.time.encode_vec().unwrap());
+        fields_bytes.push(self.last_block_id.unwrap_or_default().encode_vec().unwrap());
+        fields_bytes.push(
             self.last_commit_hash
                 .unwrap_or_default()
                 .encode_vec()
                 .unwrap(),
-            self.data_hash.unwrap_or_default().encode_vec().unwrap(),
-            self.validators_hash.encode_vec().unwrap(),
-            self.next_validators_hash.encode_vec().unwrap(),
-            self.consensus_hash.encode_vec().unwrap(),
-            self.app_hash.encode_vec().unwrap(),
+        );
+        fields_bytes.push(self.data_hash.unwrap_or_default().encode_vec().unwrap());
+        fields_bytes.push(self.validators_hash.encode_vec().unwrap());
+        fields_bytes.push(self.next_validators_hash.encode_vec().unwrap());
+        fields_bytes.push(self.consensus_hash.encode_vec().unwrap());
+        fields_bytes.push(self.app_hash.encode_vec().unwrap());
+        fields_bytes.push(
             self.last_results_hash
                 .unwrap_or_default()
                 .encode_vec()
                 .unwrap(),
-            self.evidence_hash.unwrap_or_default().encode_vec().unwrap(),
-            self.proposer_address.encode_vec().unwrap(),
-        ];
+        );
+        fields_bytes.push(self.evidence_hash.unwrap_or_default().encode_vec().unwrap());
+        fields_bytes.push(self.proposer_address.encode_vec().unwrap());
 
         Hash::Sha256(simple_hash_from_byte_vectors(fields_bytes))
     }

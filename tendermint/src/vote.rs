@@ -18,17 +18,16 @@ use bytes::BufMut;
 use ed25519::Signature as ed25519Signature;
 use ed25519::SIGNATURE_LENGTH as ed25519SignatureLength;
 use serde::{Deserialize, Serialize};
-use sp_std::{
+use std::fmt;
+use std::{
     convert::{TryFrom, TryInto},
     vec::Vec,
 };
-use sp_std::fmt;
 use tendermint_proto::types::Vote as RawVote;
 use tendermint_proto::{Error as ProtobufError, Protobuf};
 
 use crate::signature::Signature::Ed25519;
-use sp_std::str::FromStr;
-
+use std::str::FromStr;
 
 /// Votes are signed messages from validators for a particular block which
 /// include information about the validator signing it.

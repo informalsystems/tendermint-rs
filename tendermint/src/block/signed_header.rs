@@ -3,7 +3,7 @@
 //! light client.
 use crate::{block, Error, Kind};
 use serde::{Deserialize, Serialize};
-use sp_std::convert::{TryFrom, TryInto};
+use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::SignedHeader as RawSignedHeader;
 
 /// Signed block headers
@@ -21,8 +21,14 @@ impl TryFrom<RawSignedHeader> for SignedHeader {
     type Error = Error;
 
     fn try_from(value: RawSignedHeader) -> Result<Self, Self::Error> {
-        let header = value.header.ok_or(anyhow::anyhow!(Kind::InvalidSignedHeader))?.try_into()?;
-        let commit = value.commit.ok_or(anyhow::anyhow!(Kind::InvalidSignedHeader))?.try_into()?;
+        let header = value
+            .header
+            .ok_or(anyhow::anyhow!(Kind::InvalidSignedHeader))?
+            .try_into()?;
+        let commit = value
+            .commit
+            .ok_or(anyhow::anyhow!(Kind::InvalidSignedHeader))?
+            .try_into()?;
         Self::new(header, commit) // Additional checks
     }
 }

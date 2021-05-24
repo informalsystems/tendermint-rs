@@ -1,9 +1,9 @@
 //! AppHash serialization with validation
 
+use crate::primitives::String;
 use crate::AppHash;
 use serde::{Deserialize, Deserializer, Serializer};
 use subtle_encoding::hex;
-use crate::primitives::String;
 
 /// Deserialize hexstring into AppHash
 pub fn deserialize<'de, D>(deserializer: D) -> Result<AppHash, D::Error>

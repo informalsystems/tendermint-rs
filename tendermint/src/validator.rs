@@ -3,18 +3,18 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use subtle_encoding::base64;
 
+use crate::primitives::format;
+use crate::primitives::String;
 use crate::{account, hash::Hash, merkle, vote, Error, Kind, PublicKey, Signature};
-use sp_std::{
+use std::{
+    cmp::Reverse,
     convert::{TryFrom, TryInto},
     vec::Vec,
-    cmp::Reverse,
 };
 use tendermint_proto::types::SimpleValidator as RawSimpleValidator;
 use tendermint_proto::types::Validator as RawValidator;
 use tendermint_proto::types::ValidatorSet as RawValidatorSet;
 use tendermint_proto::Protobuf;
-use crate::primitives::String;
-use crate::primitives::format;
 
 /// Validator set contains a vector of validators
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -172,7 +172,10 @@ impl TryFrom<RawValidator> for Info {
     fn try_from(value: RawValidator) -> Result<Self, Self::Error> {
         Ok(Info {
             address: value.address.try_into()?,
-            pub_key: value.pub_key.ok_or(anyhow::anyhow!(Kind::MissingPublicKey))?.try_into()?,
+            pub_key: value
+                .pub_key
+                .ok_or(anyhow::anyhow!(Kind::MissingPublicKey))?
+                .try_into()?,
             voting_power: value.voting_power.try_into()?,
             proposer_priority: value.proposer_priority.try_into()?,
         })

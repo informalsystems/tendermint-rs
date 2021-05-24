@@ -7,10 +7,7 @@ pub use signature::{Signer, Verifier};
 pub use k256::ecdsa::Signature as Secp256k1;
 
 use crate::{Error, Kind};
-use sp_std::{
-    convert::TryFrom,
-    vec::Vec,
-};
+use std::{convert::TryFrom, vec::Vec};
 use tendermint_proto::Protobuf;
 
 /// Signatures

@@ -1,19 +1,19 @@
 //! Tendermint blockchain identifiers
 
 use crate::error::{Error, Kind};
+use crate::primitives::format;
+use crate::primitives::String;
+use crate::primitives::ToString;
+use anyhow::anyhow;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use sp_std::convert::TryFrom;
-use sp_std::{
+use std::{
     cmp::Ordering,
+    convert::TryFrom,
     fmt::{self, Debug, Display},
     hash::{Hash, Hasher},
     str::{self, FromStr},
 };
 use tendermint_proto::Protobuf;
-use crate::primitives::String;
-use crate::primitives::ToString;
-use crate::primitives::format;
-use anyhow::anyhow;
 
 /// Maximum length of a `chain::Id` name. Matches `MaxChainIDLen` from:
 /// <https://github.com/tendermint/tendermint/blob/develop/types/genesis.go>

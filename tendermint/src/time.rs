@@ -2,16 +2,16 @@
 
 use crate::error::{Error, Kind};
 
+use crate::primitives::String;
+use crate::primitives::{Duration, SystemTime, UNIX_EPOCH};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sp_std::{
+use std::{
     convert::{Infallible, TryFrom},
     fmt,
     ops::{Add, Sub},
     str::FromStr,
 };
-use crate::primitives::String;
-use crate::primitives::{SystemTime, UNIX_EPOCH, Duration};
 use tendermint_proto::google::protobuf::Timestamp;
 use tendermint_proto::serializers::timestamp;
 use tendermint_proto::Protobuf;

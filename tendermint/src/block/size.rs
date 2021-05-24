@@ -1,7 +1,7 @@
 //! Block size parameters
 
 use crate::{Error, Kind};
-use sp_std::convert::{TryFrom, TryInto};
+use std::convert::{TryFrom, TryInto};
 use tendermint_proto::Protobuf;
 use {
     crate::serializers,

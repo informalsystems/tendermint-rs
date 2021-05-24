@@ -3,17 +3,13 @@
 mod hash;
 
 pub use self::hash::Hash;
+use crate::primitives::format;
+use crate::primitives::String;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use sp_std::{fmt, slice};
+use std::vec::Vec;
+use std::{fmt, slice};
 use subtle_encoding::base64;
 use tendermint_proto::types::Data as RawData;
-use sp_std::vec::Vec;
-use sp_std::prelude::*;
-use crate::primitives::String;
-use crate::primitives::format;
-
-
-
 
 /// Transactions are arbitrary byte arrays whose contents are validated by the
 /// underlying Tendermint application.
@@ -102,7 +98,7 @@ impl From<RawData> for Data {
 impl From<Data> for RawData {
     fn from(value: Data) -> Self {
         if value.txs.is_none() {
-            return RawData { txs: vec![] };
+            return RawData { txs: Vec::new() };
         }
         RawData {
             txs: value

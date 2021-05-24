@@ -24,14 +24,14 @@ use anyhow::{bail, Result};
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
 use std::{
     collections::btree_map::BTreeMap,
-    fmt, path::{Path,PathBuf},
-    fs,
+    fmt, fs,
+    path::{Path, PathBuf},
     str::FromStr,
     vec::Vec,
 };
 
-use crate::primitives::{String, ToString};
 use crate::primitives::format;
+use crate::primitives::{String, ToString};
 
 /// Tendermint `config.toml` file
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -131,11 +131,10 @@ impl TendermintConfig {
     /// Load `genesis.json` file from the configured location
     pub fn load_genesis_file(&self, home: impl AsRef<Path>) -> Result<Genesis, Error> {
         let path = home.as_ref().join(&self.genesis_file);
-        let genesis_json = fs::read_to_string(&path)
-            .map_err(|e| {
-                let  context = format!("couldn't open: {}: {}", path.display(), e);
-                anyhow::Error::new(Kind::Parse).context(context)
-            })?;
+        let genesis_json = fs::read_to_string(&path).map_err(|e| {
+            let context = format!("couldn't open: {}: {}", path.display(), e);
+            anyhow::Error::new(Kind::Parse).context(context)
+        })?;
 
         Ok(serde_json::from_str(genesis_json.as_ref())?)
     }
@@ -183,7 +182,7 @@ impl LogLevel {
 }
 
 /// Iterator over log levels
-pub type LogLevelIter<'a> = sp_std::collections::btree_map::Iter<'a, String, String>;
+pub type LogLevelIter<'a> = std::collections::btree_map::Iter<'a, String, String>;
 
 impl FromStr for LogLevel {
     type Err = Error;

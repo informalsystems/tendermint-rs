@@ -1,12 +1,12 @@
 use crate::{Error, Kind};
 use anyhow::{anyhow, bail, Result};
 
-use serde::{de, de::Error as _, ser, Deserialize, Serialize};
-use sp_std::{fmt, ops::Deref, str::FromStr};
-use crate::primitives::String;
 use crate::primitives::format;
-use crate::primitives::ToString;
 use crate::primitives::Duration;
+use crate::primitives::String;
+use crate::primitives::ToString;
+use serde::{de, de::Error as _, ser, Deserialize, Serialize};
+use std::{fmt, ops::Deref, str::FromStr};
 
 /// Timeout durations
 #[derive(Copy, Clone, Debug)]
@@ -88,7 +88,6 @@ impl Serialize for Timeout {
 #[cfg(test)]
 mod tests {
     use super::Timeout;
-    use crate::error::Kind;
     use anyhow::format_err;
 
     #[test]
@@ -105,7 +104,7 @@ mod tests {
 
     #[test]
     fn reject_no_units() {
-        let expect = format_err!(Kind::Parse, "invalid units").to_string();
+        let expect = format_err!("{}","invalid units").to_string();
         let got = "123".parse::<Timeout>().unwrap_err().to_string();
 
         assert_eq!(got, expect);

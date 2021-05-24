@@ -31,7 +31,7 @@ impl NodeKey {
         P: AsRef<Path>,
     {
         let json_string = fs::read_to_string(path).map_err(|e| {
-            let  context = format!("couldn't open {}: {}", path.as_ref().display(), e);
+            let context = format!("couldn't open {}: {}", path.as_ref().display(), e);
             anyhow::Error::new(Kind::Parse).context(context)
         })?;
 

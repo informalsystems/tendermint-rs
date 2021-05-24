@@ -1,15 +1,12 @@
 //! Genesis data
 
+use crate::primitives::format;
+use crate::primitives::String;
 use crate::{chain, consensus, validator, Time};
 use chrono::DateTime;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize};
-use sp_std::{
-    convert::TryFrom,
-    vec::Vec,
-};
-use crate::primitives::String;
-use crate::primitives::format;
+use std::{convert::TryFrom, vec::Vec};
 
 use tendermint_proto::google::protobuf::Timestamp;
 

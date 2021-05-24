@@ -1,11 +1,11 @@
 //! Voting power
-use sp_std::convert::{TryFrom, TryInto};
-use sp_std::fmt;
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use crate::{Error, Kind};
-use crate::primitives::String;
 use crate::primitives::format;
+use crate::primitives::String;
 use crate::primitives::ToString;
+use crate::{Error, Kind};
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+use std::convert::{TryFrom, TryInto};
+use std::fmt;
 
 /// Voting power
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Default)]
@@ -21,7 +21,11 @@ impl TryFrom<i64> for Power {
     type Error = Error;
 
     fn try_from(value: i64) -> Result<Self, Self::Error> {
-        Ok(Power(value.try_into().map_err(|_| anyhow::anyhow!(Kind::NegativePower))?))
+        Ok(Power(
+            value
+                .try_into()
+                .map_err(|_| anyhow::anyhow!(Kind::NegativePower))?,
+        ))
     }
 }
 

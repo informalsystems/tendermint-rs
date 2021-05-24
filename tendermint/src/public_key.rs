@@ -9,27 +9,19 @@ mod pub_key_response;
 pub use pub_key_request::PubKeyRequest;
 pub use pub_key_response::PubKeyResponse;
 
+use crate::primitives::String;
 use crate::{
     error::{self, Error},
     signature::Signature,
 };
-use anyhow::{bail, anyhow, format_err};
+use anyhow::{anyhow, bail, format_err};
 use serde::{de, ser, Deserialize, Serialize};
 use signature::Verifier as _;
-use sp_std::{
-    convert::TryFrom,
-    cmp::Ordering,
-    fmt,
-    ops::Deref,
-    str::FromStr,
-    vec::Vec,
-    prelude::*,
-};
+use std::{cmp::Ordering, convert::TryFrom, fmt, ops::Deref, str::FromStr, vec::Vec};
 use subtle_encoding::{base64, bech32, hex};
 use tendermint_proto::crypto::public_key::Sum;
 use tendermint_proto::crypto::PublicKey as RawPublicKey;
 use tendermint_proto::Protobuf;
-use crate::primitives::String;
 
 // Note:On the golang side this is generic in the sense that it could everything that implements
 // github.com/tendermint/tendermint/crypto.PubKey
@@ -76,15 +68,22 @@ impl TryFrom<RawPublicKey> for PublicKey {
             .ok_or_else(|| format_err!(error::Kind::InvalidKey).context("empty sum"))?;
         if let Sum::Ed25519(b) = sum {
             return Self::from_raw_ed25519(b).ok_or_else(|| {
-                format_err!(error::Kind::InvalidKey).context("malformed ed25519 key").into()
+                format_err!(error::Kind::InvalidKey)
+                    .context("malformed ed25519 key")
+                    .into()
             });
         }
         #[cfg(feature = "secp256k1")]
         if let Sum::Secp256k1(b) = sum {
-            return Self::from_raw_secp256k1(b)
-                .ok_or_else(|| format_err!(error::Kind::InvalidKey).context("malformed key").into());
+            return Self::from_raw_secp256k1(b).ok_or_else(|| {
+                format_err!(error::Kind::InvalidKey)
+                    .context("malformed key")
+                    .into()
+            });
         }
-        Err(format_err!(error::Kind::InvalidKey).context("not an ed25519 key").into())
+        Err(format_err!(error::Kind::InvalidKey)
+            .context("not an ed25519 key")
+            .into())
     }
 }
 
@@ -143,14 +142,13 @@ impl PublicKey {
         match self {
             PublicKey::Ed25519(pk) => match signature {
                 Signature::Ed25519(sig) => pk.verify(msg, sig).map_err(|_| {
-                    format_err!(
-                        error::Kind::SignatureInvalid).context(
-                        "Ed25519 signature verification failed")
-                    .into()
+                    format_err!(error::Kind::SignatureInvalid)
+                        .context("Ed25519 signature verification failed")
+                        .into()
                 }),
-                Signature::None => {
-                    Err(format_err!(error::Kind::SignatureInvalid).context("missing signature").into())
-                }
+                Signature::None => Err(format_err!(error::Kind::SignatureInvalid)
+                    .context("missing signature")
+                    .into()),
             },
             #[cfg(feature = "secp256k1")]
             PublicKey::Secp256k1(_) => bail!(
@@ -178,13 +176,23 @@ impl PublicKey {
     pub fn to_bech32(self, hrp: &str) -> String {
         let backward_compatible_amino_prefixed_pubkey = match self {
             PublicKey::Ed25519(ref pk) => {
-                let mut key_bytes = vec![0x16, 0x24, 0xDE, 0x64, 0x20];
+                let mut key_bytes = Vec::new();
+                key_bytes.push(0x16);
+                key_bytes.push(0x24);
+                key_bytes.push(0xDE);
+                key_bytes.push(0x64);
+                key_bytes.push(0x20);
                 key_bytes.extend(pk.as_bytes());
                 key_bytes
             }
             #[cfg(feature = "secp256k1")]
             PublicKey::Secp256k1(ref pk) => {
-                let mut key_bytes = vec![0xEB, 0x5A, 0xE9, 0x87, 0x21];
+                let mut key_bytes = Vec::new();
+                key_bytes.push(0xEB);
+                key_bytes.push(0x5A);
+                key_bytes.push(0xE9);
+                key_bytes.push(0x87);
+                key_bytes.push(0x21);
                 key_bytes.extend(pk.as_bytes());
                 key_bytes
             }
@@ -260,10 +268,8 @@ impl TendermintKey {
         #[allow(unreachable_patterns)]
         match public_key {
             PublicKey::Ed25519(_) => Ok(TendermintKey::AccountKey(public_key)),
-            _ => bail!( anyhow!(
-                error::Kind::InvalidKey).context(
-                "only ed25519 consensus keys are supported")
-            ),
+            _ => bail!(anyhow!(error::Kind::InvalidKey)
+                .context("only ed25519 consensus keys are supported")),
         }
     }
 

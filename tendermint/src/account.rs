@@ -7,7 +7,7 @@ use crate::{
 
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
-use sp_std::{
+use std::{
     convert::TryInto,
     fmt::{self, Debug, Display},
     str::FromStr,
@@ -15,15 +15,15 @@ use sp_std::{
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
 
+use crate::primitives::String;
 #[cfg(feature = "secp256k1")]
 use crate::public_key::Secp256k1;
+use anyhow::{anyhow, Result};
 #[cfg(feature = "secp256k1")]
 use ripemd160::Ripemd160;
-use sp_std::convert::TryFrom;
+use std::convert::TryFrom;
+use std::vec::Vec;
 use tendermint_proto::Protobuf;
-use sp_std::vec::Vec;
-use crate::primitives::String;
-use anyhow::{anyhow, Result};
 
 /// Size of an  account ID in bytes
 pub const LENGTH: usize = 20;

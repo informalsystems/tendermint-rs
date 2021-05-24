@@ -61,11 +61,10 @@ tendermint-proto = { version = "0.19.0", path = "../proto" }
 toml = { version = "0.5" }
 url = { version = "2.2" }
 zeroize = { version = "1.1", default-features = false, features = ["zeroize_derive", "alloc"] }
-
 k256 = { version = "0.7", default-features = false, optional = true, features = ["ecdsa"] }
 ripemd160 = { version = "0.9", default-features = false, optional = true }
-
-sp-std = {version = "3.0.0", default-features = false }
+#sp-std = {version = "3.0.0", default-features = false }
+no-std-compat = { version = "0.4.1", features = [ "alloc" ] }
 displaydoc = {version = "0.2", default-features = false }
 
 [features]
@@ -89,7 +88,8 @@ std = [
     'subtle-encoding/std',
     'k256/std',
     'ripemd160/std',
-    'sp-std/std',
+#    'sp-std/std',
+    "no-std-compat/std",
     'anyhow/std',
     'displaydoc/std',
 ]

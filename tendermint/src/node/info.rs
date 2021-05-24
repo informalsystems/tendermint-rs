@@ -1,10 +1,10 @@
 //! Node information (used in RPC responses)
 
+use crate::primitives::format;
+use crate::primitives::String;
 use crate::{chain, channel::Channels, net, node, serializers, Moniker, Version};
 use serde::{Deserialize, Serialize};
-use sp_std::fmt::{self, Display};
-use crate::primitives::String;
-use crate::primitives::format;
+use std::fmt::{self, Display};
 
 /// Node information
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

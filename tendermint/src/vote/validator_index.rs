@@ -1,10 +1,10 @@
 use crate::error::{Error, Kind};
-use sp_std::{
+use anyhow::anyhow;
+use std::{
     convert::{TryFrom, TryInto},
-    fmt::{self, Debug,  Display},
+    fmt::{self, Debug, Display},
     str::FromStr,
 };
-use anyhow::anyhow;
 
 /// ValidatorIndex for a particular Vote
 #[derive(Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
@@ -15,7 +15,9 @@ impl TryFrom<i32> for ValidatorIndex {
 
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         Ok(ValidatorIndex(
-            value.try_into().map_err(|_| anyhow!(Kind::NegativeValidatorIndex))?,
+            value
+                .try_into()
+                .map_err(|_| anyhow!(Kind::NegativeValidatorIndex))?,
         ))
     }
 }
@@ -48,7 +50,9 @@ impl TryFrom<usize> for ValidatorIndex {
 
     fn try_from(value: usize) -> Result<Self, Self::Error> {
         Ok(ValidatorIndex(
-            value.try_into().map_err(|_| anyhow!(Kind::IntegerOverflow))?,
+            value
+                .try_into()
+                .map_err(|_| anyhow!(Kind::IntegerOverflow))?,
         ))
     }
 }

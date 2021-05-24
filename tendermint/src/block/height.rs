@@ -1,16 +1,15 @@
 use crate::error::{Error, Kind};
+use crate::primitives::format;
+use crate::primitives::String;
+use crate::primitives::ToString;
+use anyhow::anyhow;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use sp_std::convert::TryInto;
-use sp_std::{
-    convert::TryFrom,
+use std::{
+    convert::{TryFrom, TryInto},
     fmt::{self, Debug, Display},
     str::FromStr,
 };
-use anyhow::anyhow;
 use tendermint_proto::Protobuf;
-use crate::primitives::String;
-use crate::primitives::format;
-use crate::primitives::ToString;
 
 /// Block height for a particular chain (i.e. number of blocks created since
 /// the chain began)
@@ -25,7 +24,11 @@ impl TryFrom<i64> for Height {
     type Error = Error;
 
     fn try_from(value: i64) -> Result<Self, Self::Error> {
-        Ok(Height(value.try_into().map_err(|_| anyhow::anyhow!(Kind::NegativeHeight))?))
+        Ok(Height(
+            value
+                .try_into()
+                .map_err(|_| anyhow::anyhow!(Kind::NegativeHeight))?,
+        ))
     }
 }
 
