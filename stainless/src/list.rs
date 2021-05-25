@@ -24,7 +24,7 @@ impl ListSet<u128> {
     pub fn is_disjoint(&self, other: &ListSet<u128>) -> bool {
         is_equal(
             &self.list.contents().intersection(other.list.contents()),
-            &Set::empty(),
+            &Set::new(),
         )
     }
 
@@ -33,8 +33,8 @@ impl ListSet<u128> {
     }
 
     #[post(
-    !ret.contains(&t)
-    && ret.list.contents().is_subset_of(&self.list.contents())
+      !ret.contains(&t)
+      && ret.list.contents().is_subset(&self.list.contents())
     )]
     pub fn remove(self, t: &u128) -> Self {
         Self {
@@ -43,9 +43,9 @@ impl ListSet<u128> {
     }
 
     #[post(ret.contains(&t))]
-    pub fn add(self, t: u128) -> Self {
+    pub fn insert(self, t: u128) -> Self {
         Self {
-            list: self.list.add(t),
+            list: self.list.insert(t),
         }
     }
 
@@ -75,21 +75,21 @@ impl<V> ListMap<u128, V> {
 }
 
 fn is_equal<'a>(s1: &Set<&'a u128>, s2: &Set<&'a u128>) -> bool {
-    s1.is_subset_of(s2) && s2.is_subset_of(s1)
+    s1.is_subset(s2) && s2.is_subset(s1)
 }
 
 impl List<u128> {
     #[measure(self)]
     pub fn contents(&self) -> Set<&u128> {
         match self {
-            List::Nil => Set::empty(),
-            List::Cons(head, tail) => tail.contents().add(head),
+            List::Nil => Set::new(),
+            List::Cons(head, tail) => tail.contents().insert(head),
         }
     }
 
     #[post(
-    !ret.contents().contains(&t)
-    && ret.contents().is_subset_of(&self.contents())
+        !ret.contents().contains(&t)
+        && ret.contents().is_subset(&self.contents())
     )]
     pub fn remove(self, t: &u128) -> Self {
         match self {
@@ -99,7 +99,7 @@ impl List<u128> {
         }
     }
 
-    pub fn add(self, t: u128) -> Self {
+    pub fn insert(self, t: u128) -> Self {
         match self {
             List::Nil => List::Cons(t, Box::new(List::Nil)),
             _ => List::Cons(t, Box::new(self)),
@@ -110,8 +110,8 @@ impl List<u128> {
 impl<V> List<(u128, V)> {
     pub fn key_set(&self) -> Set<&u128> {
         match self {
-            List::Nil => Set::empty(),
-            List::Cons(head, tail) => tail.key_set().add(&head.0),
+            List::Nil => Set::new(),
+            List::Cons(head, tail) => tail.key_set().insert(&head.0),
         }
     }
 

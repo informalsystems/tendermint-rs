@@ -20,6 +20,8 @@ pub enum ErrorKind {
     NoWitnessLeft { context: Option<Box<ErrorKind>> },
 }
 
+pub struct Tuple<T, S>(T, S);
+
 // Copied imports end.
 
 /// A generic container mapping `u128`s to some type `T`,
@@ -123,20 +125,20 @@ impl<T> PeerList<T> {
         && !ret.0.witnesses.contains(&faulty_witness)
         && ret.0.faulty_nodes.contains(&faulty_witness)
     )]
-    pub fn replace_faulty_witness(self, faulty_witness: u128) -> (Self, Option<u128>) {
+    pub fn replace_faulty_witness(self, faulty_witness: u128) -> Tuple<Self, Option<u128>> {
         let mut result = None;
 
         let mut new_full = self.full_nodes;
         let mut new_witnesses = self.witnesses.remove(&faulty_witness);
 
         if let Some(new_witness) = new_full.first() {
-            new_witnesses = new_witnesses.add(new_witness);
+            new_witnesses = new_witnesses.insert(new_witness);
             new_full = new_full.remove(&new_witness);
             result = Some(new_witness);
         }
 
-        let new_faulty = self.faulty_nodes.add(faulty_witness);
-        (
+        let new_faulty = self.faulty_nodes.insert(faulty_witness);
+        Tuple(
             Self {
                 full_nodes: new_full,
                 witnesses: new_witnesses,
@@ -154,19 +156,19 @@ impl<T> PeerList<T> {
     /// - If there are no witness left, returns `ErrorKind::NoWitnessLeft`.
     #[pre(Self::invariant(&self))]
     #[post((matches!(ret, Ok(_))).implies(
-        match ret {
-            Ok((new_list, _)) => Self::invariant(&new_list)
-                && self.primary != new_list.primary
-                && new_list.faulty_nodes.contains(&self.primary)
-                && self.witnesses.contains(&new_list.primary),
-            _ => false,
-        }
-    ))]
+               match ret {
+                   Ok(Tuple(new_list, _)) => Self::invariant(&new_list)
+                       && self.primary != new_list.primary
+                       && new_list.faulty_nodes.contains(&self.primary)
+                       && self.witnesses.contains(&new_list.primary),
+                   _ => false,
+               }
+           ))]
     pub fn replace_faulty_primary(
         self,
         primary_error: Option<Box<ErrorKind>>,
-    ) -> Result<(Self, u128), Box<ErrorKind>> {
-        let new_faulty = self.faulty_nodes.add(self.primary);
+    ) -> Result<Tuple<Self, u128>, Box<ErrorKind>> {
+        let new_faulty = self.faulty_nodes.insert(self.primary);
 
         if let Some(new_primary) = self.witnesses.first() {
             let new_witnesses = self.witnesses.remove(&new_primary);
@@ -177,7 +179,7 @@ impl<T> PeerList<T> {
                 witnesses: new_witnesses,
                 ..self
             };
-            Ok((ret, new_primary))
+            Ok(Tuple(ret, new_primary))
         } else if let Some(err) = primary_error {
             bail!(ErrorKind::NoWitnessLeft { context: Some(err) })
         } else {
