@@ -17,17 +17,34 @@ description = """
 all-features = true
 
 [dependencies]
-prost = "0.7"
-prost-types = "0.7"
-bytes = "1.0"
-anomaly = "0.2"
-thiserror = "1.0"
-serde = { version = "1.0", features = ["derive"] }
-subtle-encoding = "0.5"
-serde_bytes = "0.11"
-num-traits = "0.2"
+prost = { version = "0.7", default-features = false }
+prost-types = { version = "0.7", default-features = false }
+bytes = {version = "1.0", default-features = false }
+anyhow = {version = "1.0", default-features = false }
+displaydoc = {version = "0.2", default-features = false}
+serde = { version = "1.0", default-features = false, features = ["derive"] }
+subtle-encoding = { version = "0.5", default-features = false, features = ["alloc", "hex", "base64"] }
+serde_bytes = { version = "0.11", default-features = false }
+num-traits = { version = "0.2", default-features = false }
 num-derive = "0.3"
-chrono = { version = "0.4", features = ["serde"] }
+chrono = { version = "0.4", default-features = false, features = ["serde", "clock"] }
+no-std-compat = { version = "0.4.1", features = [ "alloc" ] }
 
 [dev-dependencies]
 serde_json = "1.0"
+
+[features]
+default = ["std"]
+std = [
+    'bytes/std',
+    'chrono/std',
+    'prost/std',
+    'prost-types/std',
+    'anyhow/std',
+    'displaydoc/std',
+    'serde/std',
+    'serde_bytes/std',
+    'subtle-encoding/std',
+    'num-traits/std',
+    'no-std-compat/std',
+]
