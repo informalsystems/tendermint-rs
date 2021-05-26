@@ -85,6 +85,7 @@ pub struct AwaitingAuthSig {
 #[allow(clippy::use_self)]
 impl Handshake<AwaitingEphKey> {
     /// Initiate a handshake.
+    #[must_use]
     pub fn new(
         local_privkey: ed25519::Keypair,
         protocol_version: Version,
@@ -107,6 +108,11 @@ impl Handshake<AwaitingEphKey> {
 
     /// Performs a Diffie-Hellman key agreement and creates a local signature.
     /// Transitions Handshake into `AwaitingAuthSig` state.
+    ///
+    /// # Errors
+    ///
+    /// * if protocol order was violated, e.g. handshake missing
+    /// * if challenge signing fails
     pub fn got_key(
         &mut self,
         remote_eph_pubkey: EphemeralPublic,
@@ -174,6 +180,10 @@ impl Handshake<AwaitingEphKey> {
 
 impl Handshake<AwaitingAuthSig> {
     /// Returns a verified pubkey of the remote peer.
+    ///
+    /// # Errors
+    ///
+    /// * if signature scheme isn't supported
     pub fn got_signature(&mut self, auth_sig_msg: proto::p2p::AuthSigMessage) -> Result<PublicKey> {
         let remote_pubkey = auth_sig_msg
             .pub_key
@@ -486,6 +496,7 @@ fn share_auth_signature<IoHandler: Read + Write + Send + Sync>(
 }
 
 /// Return is of the form lo, hi
+#[must_use]
 pub fn sort32(first: [u8; 32], second: [u8; 32]) -> ([u8; 32], [u8; 32]) {
     if second > first {
         (first, second)

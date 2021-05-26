@@ -195,6 +195,7 @@ impl Version {
         buf
     }
 
+    #[allow(clippy::unused_self)]
     #[cfg(not(feature = "amino"))]
     fn encode_auth_signature_amino(
         self,
