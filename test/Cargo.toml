@@ -13,6 +13,7 @@ ed25519-dalek = "1"
 flume = "0.10"
 rand_core = { version = "0.5", features = ["std"] }
 readwrite = "^0.1.1"
+subtle-encoding = { version = "0.5" }
 x25519-dalek = "1.1"
 
 tendermint-p2p = { path = "../p2p" }

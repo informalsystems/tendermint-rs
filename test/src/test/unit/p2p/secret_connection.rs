@@ -11,6 +11,8 @@ use tendermint_proto as proto;
 
 use crate::pipe;
 
+mod public_key;
+
 #[test]
 fn test_handshake() {
     let (pipe1, pipe2) = pipe::async_bipipe_buffered();

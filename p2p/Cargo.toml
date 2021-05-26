@@ -34,7 +34,6 @@ prost = "0.7"
 rand_core = { version = "0.5", features = ["std"] }
 sha2 = "0.9"
 subtle = "2"
-subtle-encoding = { version = "0.5" }
 thiserror = "1"
 x25519-dalek = "1.1"
 zeroize = "1"
