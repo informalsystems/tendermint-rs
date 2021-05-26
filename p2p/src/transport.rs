@@ -1,4 +1,3 @@
-use std::io::{Read, Write};
 use std::net::SocketAddr;
 
 use eyre::Result;
@@ -23,10 +22,14 @@ pub enum Direction<Conn> {
     Outgoing(Conn),
 }
 
+pub trait StreamSend {
+    fn send(msg: Vec<u8>) -> Result<()>;
+}
+
 pub trait Connection: Send {
     type Error: std::error::Error + Send + Sync + 'static;
-    type Read: Read;
-    type Write: Write;
+    type StreamRead: Iterator<Item = Result<Vec<u8>>> + Send;
+    type StreamSend: StreamSend;
 
     fn advertised_addrs(&self) -> Vec<SocketAddr>;
     fn close(&self) -> Result<()>;
@@ -34,7 +37,7 @@ pub trait Connection: Send {
     fn open_bidirectional(
         &self,
         stream_id: StreamId,
-    ) -> Result<(Self::Read, Self::Write), Self::Error>;
+    ) -> Result<(Self::StreamRead, Self::StreamSend), Self::Error>;
     fn public_key(&self) -> PublicKey;
     fn remote_addr(&self) -> SocketAddr;
 }

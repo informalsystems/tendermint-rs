@@ -59,18 +59,22 @@ While being open to enable feature parity with current production installations
 based on tendermint-go's `MConn`.
 
 ``` rust
+pub trait StreamSend {
+    fn send(msg: Vec<u8>) -> Result<()>;
+}
+
 pub trait Connection: Send {
     type Error: std::error::Error + Send + Sync + 'static;
-    type Read: Read;
-    type Write: Write;
+    type StreamRead: Iterator<Item = Result<Vec<u8>>> + Send;
+    type StreamSend: StreamSend;
 
     fn advertised_addrs(&self) -> Vec<SocketAddr>;
     fn close(&self) -> Result<()>;
     fn local_addr(&self) -> SocketAddr;
     fn open_bidirectional(
         &self,
-        stream_id: &StreamId,
-    ) -> Result<(Self::Read, Self::Write), Self::Error>;
+        stream_id: StreamId,
+    ) -> Result<(Self::StreamRead, Self::StreamSend), Self::Error>;
     fn public_key(&self) -> PublicKey;
     fn remote_addr(&self) -> SocketAddr;
 }
