@@ -11,6 +11,7 @@ use tendermint_proto as proto;
 
 use crate::pipe;
 
+mod nonce;
 mod public_key;
 
 #[test]

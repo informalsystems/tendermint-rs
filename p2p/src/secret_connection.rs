@@ -22,7 +22,12 @@ use x25519_dalek::{EphemeralSecret, PublicKey as EphemeralPublic};
 
 use tendermint_proto as proto;
 
-pub use self::{kdf::Kdf, nonce::Nonce, protocol::Version, public_key::PublicKey};
+pub use self::{
+    kdf::Kdf,
+    nonce::{Nonce, SIZE as NONCE_SIZE},
+    protocol::Version,
+    public_key::PublicKey,
+};
 
 #[cfg(feature = "amino")]
 mod amino_types;
