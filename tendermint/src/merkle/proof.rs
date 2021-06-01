@@ -8,7 +8,7 @@ use tendermint_proto::Protobuf;
 
 use crate::primitives::String;
 use crate::serializers;
-use crate::Error;
+use crate::error::KindError as Error;
 use std::vec::Vec;
 
 /// Proof is Merkle proof defined by the list of ProofOps

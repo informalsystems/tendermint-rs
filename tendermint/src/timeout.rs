@@ -1,5 +1,4 @@
-use crate::{Error, Kind};
-use anyhow::{anyhow, bail, Result};
+use crate::error::{self,  KindError as Error};
 
 use crate::primitives::format;
 use crate::primitives::Duration;
@@ -38,20 +37,20 @@ impl FromStr for Timeout {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // Timeouts are either 'ms' or 's', and should always end with 's'
         if s.len() < 2 || !s.ends_with('s') {
-            bail!(anyhow!(Kind::Parse).context("invalid units"));
+            return Err(error::parse_error(anyhow::anyhow!("invalid units")));
         }
 
         let units = match s.chars().nth(s.len() - 2) {
             Some('m') => "ms",
             Some('0'..='9') => "s",
-            _ => bail!(anyhow!(Kind::Parse).context("invalid units")),
+            _ => return Err(error::parse_error(anyhow::anyhow!("invalid units"))),
         };
 
         let numeric_part = s.chars().take(s.len() - units.len()).collect::<String>();
 
         let numeric_value = numeric_part
             .parse::<u64>()
-            .map_err(|e| anyhow!(Kind::Parse).context(e))?;
+            .map_err(|e| error::parse_error(anyhow::anyhow!(e)))?;
 
         let duration = match units {
             "s" => Duration::from_secs(numeric_value),

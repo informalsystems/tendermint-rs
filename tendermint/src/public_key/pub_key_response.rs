@@ -1,4 +1,5 @@
-use crate::{Error, PublicKey};
+use crate::PublicKey;
+use crate::error::KindError as Error;
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::privval::{PubKeyResponse as RawPubKeyResponse, RemoteSignerError};
 use tendermint_proto::Protobuf;

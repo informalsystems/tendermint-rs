@@ -1,6 +1,6 @@
 //! Timestamps used by Tendermint blockchains
 
-use crate::error::{Error, Kind};
+use crate::error::{self,  KindError as Error};
 
 use crate::primitives::String;
 use crate::primitives::{Duration, SystemTime, UNIX_EPOCH};
@@ -67,7 +67,7 @@ impl Time {
         self.0
             .signed_duration_since(other.0)
             .to_std()
-            .map_err(|_| anyhow::anyhow!(Kind::OutOfRange).into())
+            .map_err(|_| error::out_of_range_error(anyhow::anyhow!("out of range error")))
     }
 
     /// Parse [`Time`] from an RFC 3339 date

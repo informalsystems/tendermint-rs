@@ -3,8 +3,7 @@
 use crate::hash::Algorithm;
 use crate::hash::SHA256_HASH_SIZE;
 use crate::Hash;
-use crate::{Error, Kind};
-use anyhow::anyhow;
+use crate::error::{self, KindError as Error};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use tendermint_proto::types::{
@@ -33,7 +32,7 @@ impl TryFrom<RawPartSetHeader> for Header {
 
     fn try_from(value: RawPartSetHeader) -> Result<Self, Self::Error> {
         if !value.hash.is_empty() && value.hash.len() != SHA256_HASH_SIZE {
-            return Err(anyhow::anyhow!(Kind::InvalidHashSize).into());
+            return Err(error::invalid_hash_size_error(anyhow::anyhow!("invalid hash size error")));
         }
         Ok(Self {
             total: value.total,
@@ -56,7 +55,7 @@ impl TryFrom<RawCanonicalPartSetHeader> for Header {
 
     fn try_from(value: RawCanonicalPartSetHeader) -> Result<Self, Self::Error> {
         if !value.hash.is_empty() && value.hash.len() != SHA256_HASH_SIZE {
-            return Err(anyhow::anyhow!(Kind::InvalidHashSize).into());
+            return Err(error::invalid_hash_size_error(anyhow::anyhow!("invalid hash size error")));
         }
         Ok(Self {
             total: value.total,
@@ -78,14 +77,10 @@ impl Header {
     /// constructor
     pub fn new(total: u32, hash: Hash) -> Result<Self, Error> {
         if total == 0 && hash != Hash::None {
-            return Err(anyhow!(Kind::InvalidPartSetHeader)
-                .context("zero total with existing hash")
-                .into());
+            return Err(error::invalid_part_set_header_error(anyhow::anyhow!("zero total with existing hash")));
         }
         if total != 0 && hash == Hash::None {
-            return Err(anyhow!(Kind::InvalidPartSetHeader)
-                .context("non-zero total with empty hash")
-                .into());
+            return Err(error::invalid_part_set_header_error(anyhow::anyhow!("non-zero total with empty hash")));
         }
         Ok(Header { total, hash })
     }

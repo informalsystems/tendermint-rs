@@ -1,6 +1,6 @@
 //! Paths to ABCI data
 
-use crate::error::Error;
+use crate::error::KindError as Error;
 use crate::primitives::String;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -22,7 +22,7 @@ impl Display for Path {
 impl FromStr for Path {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Error> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Path(s.to_owned()))
     }
 }

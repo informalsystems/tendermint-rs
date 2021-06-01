@@ -13,7 +13,7 @@ use crate::chain::Id as ChainId;
 use crate::consensus::State;
 use crate::Signature;
 use crate::Time;
-use crate::{Error, Kind};
+use crate::error::{self,  KindError as Error};
 use bytes::BufMut;
 use std::{
     convert::{TryFrom, TryInto},
@@ -48,7 +48,7 @@ impl TryFrom<RawProposal> for Proposal {
 
     fn try_from(value: RawProposal) -> Result<Self, Self::Error> {
         if value.pol_round < -1 {
-            return Err(anyhow::anyhow!(Kind::NegativePolRound).into());
+            return Err(error::negative_pol_round_error(anyhow::anyhow!("negative pol round error")));
         }
         let pol_round = match value.pol_round {
             -1 => None,

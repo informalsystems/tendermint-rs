@@ -1,9 +1,7 @@
 //! Tendermint accounts
 
-use crate::{
-    error::{Error, Kind},
-    public_key::Ed25519,
-};
+use crate::public_key::Ed25519;
+use crate::error::{self,  KindError as Error};
 
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
@@ -18,7 +16,6 @@ use subtle_encoding::hex;
 use crate::primitives::String;
 #[cfg(feature = "secp256k1")]
 use crate::public_key::Secp256k1;
-use anyhow::{anyhow, Result};
 #[cfg(feature = "secp256k1")]
 use ripemd160::Ripemd160;
 use std::convert::TryFrom;
@@ -39,7 +36,7 @@ impl TryFrom<Vec<u8>> for Id {
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         if value.len() != LENGTH {
-            return Err(anyhow::anyhow!(Kind::InvalidAccountIdLength).into());
+            return Err(error::invalid_account_id_length_error(anyhow::anyhow!("invalid account id length error")));
         }
         let mut slice: [u8; LENGTH] = [0; LENGTH];
         slice.copy_from_slice(&value[..]);
@@ -121,7 +118,7 @@ impl FromStr for Id {
         // Accept either upper or lower case hex
         let bytes = hex::decode_upper(s)
             .or_else(|_| hex::decode(s))
-            .map_err(|_| anyhow!(Kind::Parse).context("account id decode"))?;
+            .map_err(|_| error::parse_error(anyhow::anyhow!("account id decode")))?;
 
         bytes.try_into()
     }

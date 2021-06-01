@@ -16,11 +16,10 @@ pub use self::{node_key::NodeKey, priv_validator_key::PrivValidatorKey};
 
 use crate::{
     abci::tag,
-    error::{Error, Kind},
     genesis::Genesis,
     net, node, Moniker, Timeout,
 };
-use anyhow::{bail, Result};
+use crate::error::{self,  KindError as Error};
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
 use std::{
     collections::btree_map::BTreeMap,
@@ -122,7 +121,7 @@ impl TendermintConfig {
     {
         let toml_string = fs::read_to_string(path).map_err(|e| {
             let context = format!("couldn't open {}:{}", path.as_ref().display(), e);
-            anyhow::Error::new(Kind::Parse).context(context)
+            error::parse_error(anyhow::anyhow!(context))
         })?;
 
         Self::parse_toml(toml_string)
@@ -133,7 +132,7 @@ impl TendermintConfig {
         let path = home.as_ref().join(&self.genesis_file);
         let genesis_json = fs::read_to_string(&path).map_err(|e| {
             let context = format!("couldn't open: {}: {}", path.display(), e);
-            anyhow::Error::new(Kind::Parse).context(context)
+            error::parse_error(anyhow::anyhow!(context))
         })?;
 
         Ok(serde_json::from_str(genesis_json.as_ref())?)
@@ -195,7 +194,7 @@ impl FromStr for LogLevel {
 
             if parts.len() != 2 {
                 let context = format!("error parsing log level: {}", level);
-                bail!(anyhow::Error::new(Kind::Parse).context(context));
+                return Err(error::parse_error(anyhow::anyhow!(context)));
             }
 
             let key = parts[0].to_owned();
@@ -203,7 +202,7 @@ impl FromStr for LogLevel {
 
             if levels.insert(key, value).is_some() {
                 let context = format!("error parsing log level: {}", level);
-                bail!(anyhow::Error::new(Kind::Parse).context(context));
+                return Err(error::parse_error(anyhow::anyhow!(context)));
             }
         }
 

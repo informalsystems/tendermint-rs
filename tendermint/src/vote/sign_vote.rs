@@ -1,7 +1,7 @@
 use crate::chain;
 use crate::primitives::ToString;
 use crate::Vote;
-use crate::{Error, Kind};
+use crate::error::{self,  KindError as Error};
 use bytes::BufMut;
 use std::convert::TryFrom;
 use std::vec::Vec;
@@ -26,7 +26,7 @@ impl TryFrom<RawSignVoteRequest> for SignVoteRequest {
 
     fn try_from(value: RawSignVoteRequest) -> Result<Self, Self::Error> {
         if value.vote.is_none() {
-            return Err(anyhow::anyhow!(Kind::NoVoteFound).into());
+            return Err(error::no_vote_found_error(anyhow::anyhow!("no vote found error")));
         }
         Ok(SignVoteRequest {
             vote: Vote::try_from(value.vote.unwrap())?,

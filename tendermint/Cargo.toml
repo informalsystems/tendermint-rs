@@ -34,10 +34,10 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 anyhow = {version = "1.0", default-features = false}
+flex-error = { version = "0.1.1", default-features = false, features = ["anyhow_tracer"] }
 async-trait = "0.1"
 bytes = { version = "1.0", default-features = false }
 chrono = { version = "0.4", default-features = false, features = ["serde", "clock"] }
-js-sys = { version = "0.3", optional = true }
 ed25519 = { version = "1", default-features = false }
 # use features (u64 backend)
 ed25519-dalek = { version = "1", default-features = false, features = ["serde", "u64_backend"] }
@@ -64,7 +64,7 @@ zeroize = { version = "1.1", default-features = false, features = ["zeroize_deri
 k256 = { version = "0.7", default-features = false, optional = true, features = ["ecdsa"] }
 ripemd160 = { version = "0.9", default-features = false, optional = true }
 no-std-compat = { version = "0.4.1", features = [ "alloc" ] }
-displaydoc = {version = "0.2", default-features = false }
+#displaydoc = {version = "0.2", default-features = false }
 
 [features]
 secp256k1 = ["k256", "ripemd160"]
@@ -88,8 +88,9 @@ std = [
     'k256/std',
     'ripemd160/std',
     'no-std-compat/std',
+    'flex-error/std',
     'anyhow/std',
-    'displaydoc/std',
+#    'displaydoc/std',
 ]
 
 [dev-dependencies]

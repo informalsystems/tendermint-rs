@@ -1,7 +1,7 @@
 use super::Proposal;
 use crate::chain::Id as ChainId;
 use crate::primitives::ToString;
-use crate::{Error, Kind};
+use crate::error::{self,  KindError as Error};
 use bytes::BufMut;
 use std::convert::{TryFrom, TryInto};
 use std::vec::Vec;
@@ -28,7 +28,7 @@ impl TryFrom<RawSignProposalRequest> for SignProposalRequest {
 
     fn try_from(value: RawSignProposalRequest) -> Result<Self, Self::Error> {
         if value.proposal.is_none() {
-            return Err(anyhow::anyhow!(Kind::NoProposalFound).into());
+            return Err(error::no_proposal_found_error(anyhow::anyhow!("no proposal found error")));
         }
         Ok(SignProposalRequest {
             proposal: Proposal::try_from(value.proposal.unwrap())?,

@@ -1,8 +1,7 @@
 //! Block metadata
 
 use super::{Header, Id};
-use crate::{Error, Kind};
-use anyhow::anyhow;
+use crate::error::{self, KindError as Error};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::BlockMeta as RawMeta;
@@ -31,12 +30,12 @@ impl TryFrom<RawMeta> for Meta {
         Ok(Meta {
             block_id: value
                 .block_id
-                .ok_or_else(|| Error::from(anyhow!(Kind::InvalidBlock).context("no block_id")))?
+                .ok_or_else(|| error::invalid_block_error(anyhow::anyhow!("no block_id")))?
                 .try_into()?,
             block_size: value.block_size,
             header: value
                 .header
-                .ok_or_else(|| Error::from(anyhow!(Kind::InvalidBlock).context("no header")))?
+                .ok_or_else(|| error::invalid_block_error(anyhow::anyhow!("no header")))?
                 .try_into()?,
             num_txs: value.num_txs,
         })

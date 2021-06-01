@@ -1,6 +1,6 @@
 //! Monikers: names associated with validators
 
-use crate::error::Error;
+use crate::error::KindError as Error;
 use crate::primitives::String;
 use serde::{Deserialize, Serialize};
 use std::borrow::ToOwned;
@@ -16,7 +16,7 @@ pub struct Moniker(String);
 impl FromStr for Moniker {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Error> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Moniker(s.to_owned()))
     }
 }

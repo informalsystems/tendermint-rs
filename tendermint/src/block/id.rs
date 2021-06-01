@@ -2,10 +2,9 @@ use crate::primitives::String;
 use crate::primitives::ToString;
 use crate::{
     block::parts::Header as PartSetHeader,
-    error::{Error, Kind},
     hash::{Algorithm, Hash},
 };
-use anyhow::anyhow;
+use crate::error::{self, KindError as Error};
 use serde::{Deserialize, Serialize};
 use std::{
     convert::{TryFrom, TryInto},
@@ -68,9 +67,7 @@ impl TryFrom<RawBlockId> for Id {
 
     fn try_from(value: RawBlockId) -> Result<Self, Self::Error> {
         if value.part_set_header.is_none() {
-            return Err(anyhow!(Kind::InvalidPartSetHeader)
-                .context("part_set_header is None")
-                .into());
+            return Err(error::invalid_part_set_header_error(anyhow::anyhow!("part_set_header is None")));
         }
         Ok(Self {
             hash: value.hash.try_into()?,
@@ -107,9 +104,7 @@ impl TryFrom<RawCanonicalBlockId> for Id {
 
     fn try_from(value: RawCanonicalBlockId) -> Result<Self, Self::Error> {
         if value.part_set_header.is_none() {
-            return Err(anyhow!(Kind::InvalidPartSetHeader)
-                .context("part_set_header is None")
-                .into());
+            return Err(error::invalid_part_set_header_error(anyhow::anyhow!("part_set_header is None")));
         }
         Ok(Self {
             hash: value.hash.try_into()?,
@@ -147,7 +142,7 @@ impl Display for Id {
 impl FromStr for Id {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Error> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self {
             hash: Hash::from_hex_upper(Algorithm::Sha256, s)?,
             part_set_header: PartSetHeader::default(),

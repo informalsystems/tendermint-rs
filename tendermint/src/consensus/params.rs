@@ -2,7 +2,7 @@
 
 use crate::primitives::ToString;
 use crate::{block, evidence, public_key};
-use crate::{Error, Kind};
+use crate::error::{self,  KindError as Error};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use std::vec::Vec;
@@ -37,21 +37,21 @@ impl TryFrom<RawParams> for Params {
         Ok(Self {
             block: value
                 .block
-                .ok_or(anyhow::anyhow!(Kind::InvalidBlock))?
+                .ok_or(error::invalid_block_error(anyhow::anyhow!("invalid block error")))?
                 .try_into()?,
             evidence: value
                 .evidence
-                .ok_or(anyhow::anyhow!(Kind::InvalidEvidence))?
+                .ok_or(error::invalid_evidence_error(anyhow::anyhow!("invalid evidence error")))?
                 .try_into()?,
             validator: value
                 .validator
-                .ok_or(anyhow::anyhow!(Kind::InvalidValidatorParams))?
+                .ok_or(error::invalid_validator_params_error(anyhow::anyhow!("invalid validator params error")))?
                 .try_into()?,
             version: value
                 .version
                 .map(TryFrom::try_from)
                 .transpose()
-                .map_err(|_| anyhow::anyhow!(Kind::InvalidVersionParams))?,
+                .map_err(|_| error::invalid_version_params_error(anyhow::anyhow!("invalid version params error")))?,
         })
     }
 }

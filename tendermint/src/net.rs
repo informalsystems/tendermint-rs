@@ -1,10 +1,7 @@
 //! Remote addresses (`tcp://` or `unix://`)
 
-use crate::{
-    error::{Error, Kind},
-    node,
-};
-
+use crate::node;
+use crate::error::{self,  KindError as Error};
 use crate::primitives::format;
 use crate::primitives::String;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
@@ -13,8 +10,6 @@ use std::{
     fmt::{self, Display},
     str::{self, FromStr},
 };
-
-use anyhow::anyhow;
 use url::Url;
 
 /// URI prefix for TCP connections
@@ -70,14 +65,14 @@ impl Display for Address {
 impl FromStr for Address {
     type Err = Error;
 
-    fn from_str(addr: &str) -> Result<Self, Error> {
+    fn from_str(addr: &str) -> Result<Self, Self::Err> {
         let prefixed_addr = if addr.contains("://") {
             addr.to_owned()
         } else {
             // If the address has no scheme, assume it's TCP
             format!("{}{}", TCP_PREFIX, addr)
         };
-        let url = Url::parse(&prefixed_addr).map_err(|e| anyhow!(Kind::Parse).context(e))?;
+        let url = Url::parse(&prefixed_addr).map_err(|e| error::parse_error(anyhow::anyhow!(e)))?;
         match url.scheme() {
             "tcp" => Ok(Self::Tcp {
                 peer_id: if !url.username().is_empty() {
@@ -88,21 +83,17 @@ impl FromStr for Address {
                 host: url
                     .host_str()
                     .ok_or_else(|| {
-                        anyhow!(Kind::Parse)
-                            .context(format!("invalid TCP address (missing host): {}", addr))
+                        error::parse_error(anyhow::anyhow!(format!("invalid TCP address (missing host): {}", addr)))
                     })?
                     .to_owned(),
                 port: url.port().ok_or_else(|| {
-                    anyhow!(Kind::Parse)
-                        .context(format!("invalid TCP address (missing port): {}", addr))
+                    error::parse_error(anyhow::anyhow!(format!("invalid TCP address (missing port): {}", addr)))
                 })?,
             }),
             "unix" => Ok(Self::Unix {
                 path: PathBuf::from(url.path()),
             }),
-            _ => Err(anyhow!(Kind::Parse)
-                .context(format!("invalid address scheme: {:?}", addr))
-                .into()),
+            _ => Err(error::parse_error(anyhow::anyhow!(format!("invalid address scheme: {:?}", addr)))),
         }
     }
 }

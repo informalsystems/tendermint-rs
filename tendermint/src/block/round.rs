@@ -1,8 +1,7 @@
-use crate::error::{Error, Kind};
+use crate::error::{self, KindError as Error};
 use crate::primitives::format;
 use crate::primitives::String;
 use crate::primitives::ToString;
-use anyhow::anyhow;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     convert::{TryFrom, TryInto},
@@ -21,7 +20,7 @@ impl TryFrom<i32> for Round {
         Ok(Round(
             value
                 .try_into()
-                .map_err(|_| anyhow::anyhow!(Kind::NegativeRound))?,
+                .map_err(|_| error::negative_round_error(anyhow::anyhow!("negative round error")))?,
         ))
     }
 }
@@ -37,7 +36,7 @@ impl TryFrom<u32> for Round {
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
         if value > i32::MAX as u32 {
-            return Err(anyhow::anyhow!(Kind::IntegerOverflow).into());
+            return Err(error::integer_overflow_error(anyhow::anyhow!("integer overflow error")));
         }
         Ok(Round(value))
     }
@@ -94,10 +93,10 @@ impl Display for Round {
 impl FromStr for Round {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Error> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         Round::try_from(
             s.parse::<u32>()
-                .map_err(|_| anyhow!(Kind::Parse).context("round decode"))?,
+                .map_err(|_| error::parse_error(anyhow::anyhow!("round decode")))?,
         )
     }
 }

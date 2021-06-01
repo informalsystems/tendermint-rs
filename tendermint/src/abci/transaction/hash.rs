@@ -1,6 +1,6 @@
 //! Transaction hashes
 
-use crate::error::{Error, Kind};
+use crate::error::{self, KindError as Error};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
 use std::{
@@ -11,7 +11,6 @@ use std::{
 use crate::primitives::format;
 use crate::primitives::String;
 use crate::primitives::ToString;
-use anyhow::anyhow;
 
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
@@ -71,10 +70,10 @@ impl FromStr for Hash {
         // Accept either upper or lower case hex
         let bytes = hex::decode_upper(s)
             .or_else(|_| hex::decode(s))
-            .map_err(|_| anyhow!(Kind::Parse).context("hash decode"))?;
+            .map_err(|_| error::parse_error(anyhow::anyhow!("hash decode")))?;
 
         if bytes.len() != LENGTH {
-            return Err(anyhow!(Kind::Parse).context("hash length").into());
+            return Err(error::parse_error(anyhow::anyhow!("hash length")));
         }
 
         let mut result_bytes = [0u8; LENGTH];

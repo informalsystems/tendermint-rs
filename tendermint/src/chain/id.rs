@@ -1,10 +1,9 @@
 //! Tendermint blockchain identifiers
 
-use crate::error::{Error, Kind};
+use crate::error::{self, KindError as Error};
 use crate::primitives::format;
 use crate::primitives::String;
 use crate::primitives::ToString;
-use anyhow::anyhow;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     cmp::Ordering,
@@ -31,13 +30,13 @@ impl TryFrom<String> for Id {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         if value.is_empty() || value.len() > MAX_LENGTH {
-            return Err(anyhow::anyhow!(Kind::Length).into());
+            return Err(error::length_error(anyhow::anyhow!("length error")));
         }
 
         for byte in value.as_bytes() {
             match byte {
                 b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_' | b'.' => (),
-                _ => return Err(anyhow!(Kind::Parse).context("chain id charset").into()),
+                _ => return Err(error::parse_error(anyhow::anyhow!("chain id charset"))),
             }
         }
 
@@ -92,7 +91,7 @@ impl<'a> TryFrom<&'a str> for Id {
 impl FromStr for Id {
     type Err = Error;
     /// Parses string to create a new chain ID
-    fn from_str(name: &str) -> Result<Self, Error> {
+    fn from_str(name: &str) -> Result<Self, Self::Err> {
         Self::try_from(name.to_string())
     }
 }

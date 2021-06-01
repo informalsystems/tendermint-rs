@@ -1,5 +1,5 @@
 use crate::primitives::format;
-use crate::{Error, Kind};
+use crate::error::{self,  KindError as Error};
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::TryFrom;
@@ -21,7 +21,7 @@ impl TryFrom<i32> for Type {
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
             32 => Ok(Type::Proposal),
-            _ => Err(anyhow::anyhow!(Kind::InvalidMessageType).into()),
+            _ => Err(error::invalid_message_type_error(anyhow::anyhow!("invalid message type error"))),
         }
     }
 }

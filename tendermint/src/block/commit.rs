@@ -2,7 +2,7 @@
 
 use crate::block::commit_sig::CommitSig;
 use crate::block::{Height, Id, Round};
-use crate::{Error, Kind};
+use crate::error::{self,  KindError as Error};
 use serde::{Deserialize, Serialize};
 use std::{
     convert::{TryFrom, TryInto},
@@ -46,7 +46,7 @@ impl TryFrom<RawCommit> for Commit {
             round: value.round.try_into()?,
             block_id: value
                 .block_id
-                .ok_or(anyhow::anyhow!(Kind::InvalidBlock))?
+                .ok_or(error::invalid_block_error(anyhow::anyhow!("invalid block error")))?
                 .try_into()?, /* gogoproto.nullable = false */
             signatures: signatures?,
         })

@@ -1,6 +1,6 @@
 //! Block size parameters
 
-use crate::{Error, Kind};
+use crate::error::{self, KindError as Error};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::Protobuf;
 use {
@@ -31,7 +31,7 @@ impl TryFrom<RawSize> for Size {
             max_bytes: value
                 .max_bytes
                 .try_into()
-                .map_err(|_| Self::Error::from(anyhow::anyhow!(Kind::IntegerOverflow)))?,
+                .map_err(|_| error::integer_overflow_error(anyhow::anyhow!("integer overflow error")))?,
             max_gas: value.max_gas,
         })
     }

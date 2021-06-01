@@ -3,10 +3,10 @@
 use crate::public_key::TendermintKey;
 use crate::{
     account,
-    error::{Error, Kind},
     private_key::PrivateKey,
     public_key::PublicKey,
 };
+use crate::error::{self,  KindError as Error};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};
@@ -42,7 +42,7 @@ impl PrivValidatorKey {
     {
         let json_string = fs::read_to_string(path).map_err(|e| {
             let context = format!("couldn't open {}: {}", path.as_ref().display(), e);
-            anyhow::Error::new(Kind::Parse).context(context)
+            error::parse_error(anyhow::anyhow!(context))
         })?;
 
         Self::parse_json(json_string)
