@@ -89,7 +89,11 @@ To pull in updates from the origin repo, run
 
 ## Changelog
 
-Every non-trivial PR must update the [CHANGELOG.md].
+Every non-trivial PR must update the [CHANGELOG.md]. This is accomplished
+indirectly by adding entries to the `.changelog` folder in [unclog][unclog]
+format. `CHANGELOG.md` will be built by whomever is responsible for performing
+a release just prior to release - this is to avoid changelog conflicts prior to
+releases.
 
 The Changelog is *not* a record of what Pull Requests were merged;
 the commit history already shows that. The Changelog is a notice to the user
@@ -163,7 +167,8 @@ single commit for the PR with all the commit messages.
 Our release process is as follows:
 
 1. Update the [changelog](#changelog) to reflect and summarize all changes in
-   the release.
+   the release. Remember to run `unclog build` to produce an updated
+   `CHANGELOG.md` file prior to release.
 2. Push this to a branch `release/vX.Y.Z` according to the version number of
    the anticipated release (e.g. `release/v0.17.0`) and open a **draft PR**.
 3. Bump all relevant versions in the codebase to the new version and push these
@@ -185,3 +190,4 @@ Our release process is as follows:
 [CHANGELOG.md]: https://github.com/informalsystems/tendermint-rs/blob/master/CHANGELOG.md
 [`release.sh`]: https://github.com/informalsystems/tendermint-rs/blob/master/release.sh
 [crates.io]: https://crates.io
+[unclog]: https://github.com/informalsystems/unclog
