@@ -48,7 +48,7 @@ impl FromStr for Gas {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self::from(
-            s.parse::<u64>().map_err(|e| error::parse_error(e))?,
+            s.parse::<u64>().map_err(|e| error::parse_error(anyhow::anyhow!(e)))?,
         ))
     }
 }

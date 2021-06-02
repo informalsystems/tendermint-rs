@@ -64,7 +64,7 @@ zeroize = { version = "1.1", default-features = false, features = ["zeroize_deri
 k256 = { version = "0.7", default-features = false, optional = true, features = ["ecdsa"] }
 ripemd160 = { version = "0.9", default-features = false, optional = true }
 no-std-compat = { version = "0.4.1", features = [ "alloc" ] }
-#displaydoc = {version = "0.2", default-features = false }
+displaydoc = {version = "0.2", default-features = false }
 
 [features]
 secp256k1 = ["k256", "ripemd160"]
@@ -90,7 +90,7 @@ std = [
     'no-std-compat/std',
     'flex-error/std',
     'anyhow/std',
-#    'displaydoc/std',
+    'displaydoc/std',
 ]
 
 [dev-dependencies]

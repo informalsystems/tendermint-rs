@@ -95,7 +95,7 @@ impl TryFrom<RawCommitSig> for CommitSig {
                 timestamp: value
                     .timestamp
                     .ok_or(error::no_timestamp_error(anyhow::anyhow!("no timestamp error")))?
-                    .try_into()?,
+                    .try_into().map_err(|e: std::convert::Infallible| error::in_fallible_error(anyhow::anyhow!(e)))?,
                 signature: value.signature.try_into()?,
             });
         }
@@ -111,7 +111,7 @@ impl TryFrom<RawCommitSig> for CommitSig {
                 timestamp: value
                     .timestamp
                     .ok_or(error::no_timestamp_error(anyhow::anyhow!("no timestamp error")))?
-                    .try_into()?,
+                    .try_into().map_err(|e: std::convert::Infallible| error::in_fallible_error(anyhow::anyhow!(e)))?,
                 signature: value.signature.try_into()?,
             });
         }

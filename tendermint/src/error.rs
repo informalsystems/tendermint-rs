@@ -6,6 +6,7 @@ use flex_error::*;
 
 type Error = anyhow::Error;
 
+
 define_error! { KindError;
     Crypto
     [DisplayError<Error>]
@@ -144,4 +145,20 @@ define_error! { KindError;
     {account: account::Id}
     [DisplayError<Error>]
     |e| { format_args!("proposer with address '{0}' no found in validator set", e.account) },
+    InFallible
+    [DisplayError<Error>]
+    |_| { format_args!("infallible") },
+    ChronoParse
+    [DisplayError<Error>]
+    |_| { format_args!("chrono parse error") },
+    SubtleEncoding
+    [DisplayError<Error>]
+    |_| { format_args!("subtle encoding error") },
+    SerdeJson
+    [DisplayError<Error>]
+    |_| { format_args!("serde json error") },
+    Toml
+    [DisplayError<Error>]
+    |_| { format_args!("toml de error") },
 }
+

@@ -120,7 +120,7 @@ impl TryFrom<RawHeader> for Header {
             time: value
                 .time
                 .ok_or(error::no_timestamp_error(anyhow::anyhow!("no timestamp error")))?
-                .try_into()?,
+                .try_into().map_err(|e: std::convert::Infallible| error::in_fallible_error(anyhow::anyhow!(e)))?,
             last_block_id,
             last_commit_hash,
             data_hash: if value.data_hash.is_empty() {

@@ -84,7 +84,7 @@ impl Hash {
         match alg {
             Algorithm::Sha256 => {
                 let mut h = [0u8; SHA256_HASH_SIZE];
-                Hex::upper_case().decode_to_slice(s.as_bytes(), &mut h)?;
+                Hex::upper_case().decode_to_slice(s.as_bytes(), &mut h).map_err(|e: subtle_encoding::Error| error::subtle_encoding_error(anyhow::anyhow!(e)))?;
                 Ok(Hash::Sha256(h))
             }
         }
@@ -222,7 +222,7 @@ impl AppHash {
         for _ in 0..(s.len() / 2) {
             h.push(0);
         }
-        Hex::upper_case().decode_to_slice(s.as_bytes(), &mut h)?;
+        Hex::upper_case().decode_to_slice(s.as_bytes(), &mut h).map_err(|e: subtle_encoding::Error| error::subtle_encoding_error(anyhow::anyhow!(e)))?;
         Ok(AppHash(h))
     }
 }

@@ -100,7 +100,7 @@ impl TryFrom<RawDuplicateVoteEvidence> for DuplicateVoteEvidence {
             timestamp: value
                 .timestamp
                 .ok_or(error::missing_timestamp_error(anyhow::anyhow!("missing timestamp error")))?
-                .try_into()?,
+                .try_into().map_err(|e: std::convert::Infallible| error::in_fallible_error(anyhow::anyhow!(e)))?,
         })
     }
 }
