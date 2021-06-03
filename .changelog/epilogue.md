@@ -1,22 +1,3 @@
-## Unreleased
-
-### BUG FIXES
-
-- `[tendermint-abci,tendermint-rpc]` Fix DeliverTx response deserialization
-  issues with `gas_wanted` and `gas_used` fields ([#876])
-
-### REMOVED
-
-* `[tendermint-light-node]` We removed the `light-node` crate from the repo since
-  nobody's currently really using it. If anyone needs please log an issue and
-  we'll restore it. It will, of course, remain accessible in the
-  [repo history](last-light-node) for now.
-  ([#879])
-
-[#876]: https://github.com/informalsystems/tendermint-rs/issues/876
-[#879]: https://github.com/informalsystems/tendermint-rs/issues/879
-[last-light-node]: https://github.com/informalsystems/tendermint-rs/tree/f207ecc0a7c071a54d63f159794b16a216741b38
-
 ## v0.19.0
 
 This release primarily aims to enhance RPC and Light Client functionality,
