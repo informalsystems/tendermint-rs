@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use std::convert::{TryFrom, TryInto};
 use tendermint::block;
-use tendermint::Error;
+use tendermint::error::Error;
 use tendermint_proto::abci::ResponseInfo;
 
 /// Request ABCI information from a node

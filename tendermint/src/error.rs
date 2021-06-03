@@ -4,7 +4,7 @@ use crate::account;
 use crate::vote;
 use flex_error::*;
 
-type Error = anyhow::Error;
+pub type Error = anyhow::Error;
 
 
 define_error! { KindError;

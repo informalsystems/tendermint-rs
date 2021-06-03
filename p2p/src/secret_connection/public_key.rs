@@ -4,7 +4,7 @@ use ed25519_dalek as ed25519;
 use sha2::{digest::Digest, Sha256};
 use std::fmt::{self, Display};
 use tendermint::{
-    error::{self, Error},
+    error::{self, KindError as Error},
     node,
 };
 
@@ -20,7 +20,7 @@ impl PublicKey {
     pub fn from_raw_ed25519(bytes: &[u8]) -> Result<PublicKey, Error> {
         ed25519::PublicKey::from_bytes(bytes)
             .map(PublicKey::Ed25519)
-            .map_err(|_| error::Kind::Crypto.into())
+            .map_err(|_| error::crypto_error(anyhow::anyhow!("crypto error")))
     }
 
     /// Get Ed25519 public key

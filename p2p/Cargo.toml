@@ -30,7 +30,7 @@ subtle-encoding = { version = "0.5" }
 thiserror = "1"
 x25519-dalek = "1.1"
 zeroize = "1"
-
+anyhow = "1.0"
 # path dependencies
 tendermint = { path = "../tendermint", version = "0.19.0" }
 tendermint-proto = { path = "../proto", version = "0.19.0" }
