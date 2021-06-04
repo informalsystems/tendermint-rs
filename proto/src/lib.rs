@@ -20,7 +20,17 @@ mod tendermint;
 pub use tendermint::*;
 
 mod error;
-use anomaly::BoxError;
+
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+
+#[cfg(not(feature = "std"))]
+pub use alloc::boxed::Box;
+
+#[cfg(feature = "std")]
+pub use std::boxed::Box;
+
+type BoxError = Box<dyn anyhow::StdError + Send + Sync>;
 use bytes::{Buf, BufMut};
 pub use error::{Error, Kind};
 use prost::encoding::encoded_len_varint;
@@ -145,7 +155,7 @@ pub trait Protobuf<T: Message + From<Self> + Default>
     /// prior to constructing the destination type.
     ///
     /// [`prost::Message::decode`]: https://docs.rs/prost/*/prost/trait.Message.html#method.decode
-    fn decode<B: Buf>(buf: B) -> Result<Self, Error> {
+    fn decode<B: Buf>(buf: B) -> Result<Self, Error> where <Self as TryFrom<T>>::Error: Sync + std::fmt::Display + Send  + 'static{
         T::decode(buf).map_or_else(
             |e| Err(Kind::DecodeMessage.context(e).into()),
             |t| Self::try_from(t).map_err(|e| Kind::TryFromProtobuf.context(e).into()),
@@ -161,7 +171,7 @@ pub trait Protobuf<T: Message + From<Self> + Default>
     /// additional validation prior to constructing the destination type.
     ///
     /// [`prost::Message::decode_length_delimited`]: https://docs.rs/prost/*/prost/trait.Message.html#method.decode_length_delimited
-    fn decode_length_delimited<B: Buf>(buf: B) -> Result<Self, Error> {
+    fn decode_length_delimited<B: Buf>(buf: B) -> Result<Self, Error> where <Self as TryFrom<T>>::Error: Sync + std::fmt::Display + Send  + 'static{
         T::decode_length_delimited(buf).map_or_else(
             |e| Err(Kind::DecodeMessage.context(e).into()),
             |t| Self::try_from(t).map_err(|e| Kind::TryFromProtobuf.context(e).into()),
@@ -186,7 +196,7 @@ pub trait Protobuf<T: Message + From<Self> + Default>
 
     /// Constructor that attempts to decode a Protobuf-encoded instance from a
     /// `Vec<u8>` (or equivalent).
-    fn decode_vec(v: &[u8]) -> Result<Self, Error> {
+    fn decode_vec(v: &[u8]) -> Result<Self, Error> where <Self as TryFrom<T>>::Error: Sync + std::fmt::Display + Send + 'static {
         Self::decode(v)
     }
 
@@ -200,7 +210,7 @@ pub trait Protobuf<T: Message + From<Self> + Default>
 
     /// Constructor that attempts to decode a Protobuf-encoded instance with a
     /// length-delimiter from a `Vec<u8>` or equivalent.
-    fn decode_length_delimited_vec(v: &[u8]) -> Result<Self, Error> {
+    fn decode_length_delimited_vec(v: &[u8]) -> Result<Self, Error> where <Self as TryFrom<T>>::Error: Sync + std::fmt::Display + Send + 'static {
         Self::decode_length_delimited(v)
     }
 }
