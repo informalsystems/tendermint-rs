@@ -7,9 +7,7 @@
 
 /// Built-in prost_types with slight customization to enable JSON-encoding
 #[allow(warnings)]
-
 pub mod google {
-    #[cfg(feature = "std")]
     pub mod protobuf {
         include!("prost/google.protobuf.rs");
         // custom Timeout and Duration types that have valid doctest documentation texts
@@ -17,22 +15,18 @@ pub mod google {
     }
 }
 
-extern crate no_std_compat as std;
-
 #[allow(warnings)]
 mod tendermint;
 pub use tendermint::*;
 
 mod error;
-use anyhow::Error as BoxError;
+use anomaly::BoxError;
 use bytes::{Buf, BufMut};
 pub use error::{Error, Kind};
 use prost::encoding::encoded_len_varint;
 use prost::Message;
 use std::convert::{TryFrom, TryInto};
-use anyhow::anyhow;
 
-#[cfg(feature = "std")]
 pub mod serializers;
 
 /// Allows for easy Google Protocol Buffers encoding and decoding of domain
@@ -113,9 +107,9 @@ pub mod serializers;
 /// assert!(MyDomainType::decode(invalid_raw_bytes.as_ref()).is_err());
 /// ```
 pub trait Protobuf<T: Message + From<Self> + Default>
-where
-    Self: Sized + Clone + TryFrom<T>,
-    <Self as TryFrom<T>>::Error: Into<BoxError> + Send + Sync + std::fmt::Display + 'static,
+    where
+        Self: Sized + Clone + TryFrom<T>,
+        <Self as TryFrom<T>>::Error: Into<BoxError>,
 {
     /// Encode into a buffer in Protobuf format.
     ///
@@ -126,7 +120,7 @@ where
     fn encode<B: BufMut>(&self, buf: &mut B) -> Result<(), Error> {
         T::from(self.clone())
             .encode(buf)
-            .map_err(|e| anyhow!(Kind::EncodeMessage).context(e).into())
+            .map_err(|e| Kind::EncodeMessage.context(e).into())
     }
 
     /// Encode with a length-delimiter to a buffer in Protobuf format.
@@ -140,7 +134,7 @@ where
     fn encode_length_delimited<B: BufMut>(&self, buf: &mut B) -> Result<(), Error> {
         T::from(self.clone())
             .encode_length_delimited(buf)
-            .map_err(|e| anyhow!(Kind::EncodeMessage).context(e).into())
+            .map_err(|e| Kind::EncodeMessage.context(e).into())
     }
 
     /// Constructor that attempts to decode an instance from a buffer.
@@ -153,8 +147,8 @@ where
     /// [`prost::Message::decode`]: https://docs.rs/prost/*/prost/trait.Message.html#method.decode
     fn decode<B: Buf>(buf: B) -> Result<Self, Error> {
         T::decode(buf).map_or_else(
-            |e| Err(anyhow!(Kind::DecodeMessage).context(e).into()),
-            |t| Self::try_from(t).map_err(|e| anyhow!(Kind::TryFromProtobuf).context(e).into()),
+            |e| Err(Kind::DecodeMessage.context(e).into()),
+            |t| Self::try_from(t).map_err(|e| Kind::TryFromProtobuf.context(e).into()),
         )
     }
 
@@ -169,8 +163,8 @@ where
     /// [`prost::Message::decode_length_delimited`]: https://docs.rs/prost/*/prost/trait.Message.html#method.decode_length_delimited
     fn decode_length_delimited<B: Buf>(buf: B) -> Result<Self, Error> {
         T::decode_length_delimited(buf).map_or_else(
-            |e| Err(anyhow!(Kind::DecodeMessage).context(e).into()),
-            |t| Self::try_from(t).map_err(|e| anyhow!(Kind::TryFromProtobuf).context(e).into()),
+            |e| Err(Kind::DecodeMessage.context(e).into()),
+            |t| Self::try_from(t).map_err(|e| Kind::TryFromProtobuf.context(e).into()),
         )
     }
 
@@ -199,7 +193,7 @@ where
     /// Encode with a length-delimiter to a `Vec<u8>` Protobuf-encoded message.
     fn encode_length_delimited_vec(&self) -> Result<Vec<u8>, Error> {
         let len = self.encoded_len();
-        let lenu64 = len.try_into().map_err(|e| anyhow!(Kind::EncodeMessage).context(e))?;
+        let lenu64 = len.try_into().map_err(|e| Kind::EncodeMessage.context(e))?;
         let mut wire = Vec::with_capacity(len + encoded_len_varint(lenu64));
         self.encode_length_delimited(&mut wire).map(|_| wire)
     }
