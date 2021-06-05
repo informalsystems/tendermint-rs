@@ -1,6 +1,6 @@
 use std::env::var;
 use std::path::PathBuf;
-use tempdir::TempDir;
+use tempfile::tempdir;
 
 mod functions;
 use functions::{copy_files, find_proto_files, generate_tendermint_lib, get_commitish};
@@ -26,7 +26,7 @@ fn main() {
         .join("prost");
     let out_dir = var("OUT_DIR")
         .map(PathBuf::from)
-        .or_else(|_| TempDir::new("tendermint_proto_out").map(|d| d.into_path()))
+        .or_else(|_| tempdir().map(|d| d.into_path()))
         .unwrap();
     let tendermint_dir = PathBuf::from(var("TENDERMINT_DIR").unwrap_or_else(|_| {
         root.join("..")
