@@ -10,6 +10,7 @@ pub use pub_key_request::PubKeyRequest;
 pub use pub_key_response::PubKeyResponse;
 
 use crate::{
+    account,
     error::{self, Error},
     signature::Signature,
 };
@@ -128,6 +129,17 @@ impl PublicKey {
             PublicKey::Secp256k1(pk) => Some(pk),
             _ => None,
         }
+    }
+
+    /// Get the Bech32-encoded address for this public key
+    pub fn address(&self, prefix: &str) -> Result<account::Address, Error> {
+        let id = match self {
+            Self::Ed25519(pk) => account::Id::from(pk),
+            #[cfg(feature = "secp256k1")]
+            Self::Secp256k1(pk) => account::Id::from(pk),
+        };
+
+        account::Address::new(prefix, id)
     }
 
     /// Verify the given [`Signature`] using this public key

@@ -335,7 +335,7 @@ fn incoming_fixtures() {
                 assert!(!result.block.header.next_validators_hash.is_empty());
                 assert_ne!(
                     result.block.header.proposer_address.as_bytes(),
-                    [0u8; tendermint::account::LENGTH]
+                    [0u8; tendermint::account::Id::LENGTH]
                 );
                 assert!(
                     result
@@ -373,7 +373,7 @@ fn incoming_fixtures() {
                 assert!(!result.block.header.next_validators_hash.is_empty());
                 assert_ne!(
                     result.block.header.proposer_address.as_bytes(),
-                    [0u8; tendermint::account::LENGTH]
+                    [0u8; tendermint::account::Id::LENGTH]
                 );
                 assert!(
                     result
@@ -441,7 +441,7 @@ fn incoming_fixtures() {
                     assert!(!block_meta.header.next_validators_hash.is_empty());
                     assert_ne!(
                         block_meta.header.proposer_address.as_bytes(),
-                        [0u8; tendermint::account::LENGTH]
+                        [0u8; tendermint::account::Id::LENGTH]
                     );
                     assert!(
                         block_meta
@@ -597,7 +597,7 @@ fn incoming_fixtures() {
                 assert!(!result.signed_header.header.next_validators_hash.is_empty());
                 assert_ne!(
                     result.signed_header.header.proposer_address.as_bytes(),
-                    [0u8; tendermint::account::LENGTH]
+                    [0u8; tendermint::account::Id::LENGTH]
                 );
                 assert!(
                     result
@@ -665,7 +665,7 @@ fn incoming_fixtures() {
                 assert_eq!(result.genesis.validators.len(), 1);
                 assert_ne!(
                     result.genesis.validators[0].address.as_bytes(),
-                    [0; tendermint::account::LENGTH]
+                    [0; tendermint::account::Id::LENGTH]
                 );
                 assert_eq!(result.genesis.validators[0].power(), 10);
                 assert!(result.genesis.validators[0].pub_key.ed25519().is_some());
@@ -760,7 +760,7 @@ fn incoming_fixtures() {
                     assert!(!b.header.next_validators_hash.is_empty());
                     assert_ne!(
                         b.header.proposer_address.as_bytes(),
-                        [0u8; tendermint::account::LENGTH]
+                        [0u8; tendermint::account::Id::LENGTH]
                     );
                     assert!(
                         b.header
@@ -815,7 +815,7 @@ fn incoming_fixtures() {
                     assert!(!b.header.next_validators_hash.is_empty());
                     assert_ne!(
                         b.header.proposer_address.as_bytes(),
-                        [0u8; tendermint::account::LENGTH]
+                        [0u8; tendermint::account::Id::LENGTH]
                     );
                     assert!(
                         b.header
@@ -870,7 +870,7 @@ fn incoming_fixtures() {
                     assert!(!b.header.next_validators_hash.is_empty());
                     assert_ne!(
                         b.header.proposer_address.as_bytes(),
-                        [0u8; tendermint::account::LENGTH]
+                        [0u8; tendermint::account::Id::LENGTH]
                     );
                     assert!(
                         b.header
@@ -925,7 +925,7 @@ fn incoming_fixtures() {
                     assert!(!b.header.next_validators_hash.is_empty());
                     assert_ne!(
                         b.header.proposer_address.as_bytes(),
-                        [0u8; tendermint::account::LENGTH]
+                        [0u8; tendermint::account::Id::LENGTH]
                     );
                     assert!(
                         b.header
@@ -980,7 +980,7 @@ fn incoming_fixtures() {
                     assert!(!b.header.next_validators_hash.is_empty());
                     assert_ne!(
                         b.header.proposer_address.as_bytes(),
-                        [0u8; tendermint::account::LENGTH]
+                        [0u8; tendermint::account::Id::LENGTH]
                     );
                     assert!(
                         b.header

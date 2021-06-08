@@ -164,7 +164,7 @@ impl Default for Vote {
             round: Default::default(),
             block_id: None,
             timestamp: Some(Time::unix_epoch()),
-            validator_address: account::Id::new([0; account::LENGTH]),
+            validator_address: account::Id(Default::default()),
             validator_index: ValidatorIndex::try_from(0_i32).unwrap(),
             signature: Ed25519(ed25519Signature::new([0; ed25519SignatureLength])),
         }
