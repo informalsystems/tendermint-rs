@@ -482,6 +482,20 @@ pub struct MempoolConfig {
 
     /// Size of the cache (used to filter transactions we saw earlier) in transactions
     pub cache_size: u64,
+
+    /// Do not remove invalid transactions from the cache (default: false)
+    /// Set to true if it's not possible for any invalid transaction to become valid
+    /// again in the future.
+    pub keep_invalid_txs_in_cache: bool,
+
+    /// Maximum size of a single transaction.
+    /// NOTE: the max size of a tx transmitted over the network is {max-tx-bytes}.
+    pub max_tx_bytes: u64,
+
+    /// Maximum size of a batch of transactions to send to a peer
+    /// Including space needed by encoding (one varint per transaction).
+    /// XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
+    pub max_batch_bytes: u64,
 }
 
 /// consensus configuration options
