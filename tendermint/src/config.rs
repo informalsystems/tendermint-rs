@@ -74,10 +74,6 @@ pub struct TendermintConfig {
     /// Mechanism to connect to the ABCI application: socket | grpc
     pub abci: AbciMode,
 
-    /// TCP or UNIX socket address for the profiling server to listen on
-    #[serde(deserialize_with = "deserialize_optional_value")]
-    pub prof_laddr: Option<net::Address>,
-
     /// If `true`, query the ABCI app on connecting to a new peer
     /// so the app can decide if we should keep the connection or not
     pub filter_peers: bool,
