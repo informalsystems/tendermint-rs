@@ -41,7 +41,7 @@ pub struct TendermintConfig {
     /// and verifying their commits
     pub fast_sync: bool,
 
-    /// Database backend: `leveldb | memdb | cleveldb`
+    /// Database backend: `goleveldb | cleveldb | boltdb | rocksdb | badgerdb`
     pub db_backend: DbBackend,
 
     /// Database directory
@@ -144,35 +144,47 @@ impl TendermintConfig {
 /// Database backend
 #[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub enum DbBackend {
-    /// LevelDB backend
-    #[serde(rename = "leveldb")]
-    LevelDb,
-
-    /// MemDB backend
-    #[serde(rename = "memdb")]
-    MemDb,
+    /// GoLevelDB backend
+    #[serde(rename = "goleveldb")]
+    GoLevelDb,
 
     /// CLevelDB backend
     #[serde(rename = "cleveldb")]
     CLevelDb,
+
+    /// BoltDB backend
+    #[serde(rename = "boltdb")]
+    BoltDb,
+
+    /// RocksDB backend
+    #[serde(rename = "rocksdb")]
+    RocksDb,
+
+    /// BadgerDB backend
+    #[serde(rename = "badgerdb")]
+    BadgerDb,
 }
 
 /// Loglevel configuration
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct LogLevel(BTreeMap<String, String>);
+pub struct LogLevel {
+    /// A global log level
+    pub global: Option<String>,
+    components: BTreeMap<String, String>,
+}
 
 impl LogLevel {
-    /// Get the setting for the given key
+    /// Get the setting for the given key. If not found, returns the global setting, if any.
     pub fn get<S>(&self, key: S) -> Option<&str>
     where
         S: AsRef<str>,
     {
-        self.0.get(key.as_ref()).map(AsRef::as_ref)
+        self.components.get(key.as_ref()).or(self.global.as_ref()).map(AsRef::as_ref)
     }
 
-    /// Iterate over the levels
+    /// Iterate over the levels. This doesn't include the global setting, if any.
     pub fn iter(&self) -> LogLevelIter<'_> {
-        self.0.iter()
+        self.components.iter()
     }
 }
 
