@@ -12,7 +12,6 @@ mod priv_validator_key;
 pub use self::{node_key::NodeKey, priv_validator_key::PrivValidatorKey};
 
 use crate::{
-    abci::tag,
     error::{Error, Kind},
     genesis::Genesis,
     net, node, Moniker, Timeout,
@@ -538,18 +537,6 @@ pub struct TxIndexConfig {
     /// What indexer to use for transactions
     #[serde(default)]
     pub indexer: TxIndexer,
-
-    /// Comma-separated list of tags to index (by default the only tag is `tx.hash`)
-    // TODO(tarcieri): switch to `tendermint::abci::Tag`
-    #[serde(
-        serialize_with = "serialize_comma_separated_list",
-        deserialize_with = "deserialize_comma_separated_list"
-    )]
-    pub index_tags: Vec<tag::Key>,
-
-    /// When set to true, tells indexer to index all tags (predefined tags:
-    /// `tx.hash`, `tx.height` and all tags from DeliverTx responses).
-    pub index_all_tags: bool,
 }
 
 /// What indexer to use for transactions
