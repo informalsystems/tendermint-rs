@@ -179,7 +179,10 @@ impl LogLevel {
     where
         S: AsRef<str>,
     {
-        self.components.get(key.as_ref()).or(self.global.as_ref()).map(AsRef::as_ref)
+        self.components
+            .get(key.as_ref())
+            .or(self.global.as_ref())
+            .map(AsRef::as_ref)
     }
 
     /// Iterate over the levels. This doesn't include the global setting, if any.
@@ -195,33 +198,43 @@ impl FromStr for LogLevel {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut levels = BTreeMap::new();
+        let mut global = None;
+        let mut components = BTreeMap::new();
 
         for level in s.split(',') {
             let parts = level.split(':').collect::<Vec<_>>();
 
-            if parts.len() != 2 {
+            if parts.len() == 1 {
+                global = Some(parts[0].to_owned());
+                continue;
+            } else if parts.len() != 2 {
                 fail!(Kind::Parse, "error parsing log level: {}", level);
             }
 
             let key = parts[0].to_owned();
             let value = parts[1].to_owned();
 
-            if levels.insert(key, value).is_some() {
+            if components.insert(key, value).is_some() {
                 fail!(Kind::Parse, "duplicate log level setting for: {}", level);
             }
         }
 
-        Ok(LogLevel(levels))
+        Ok(LogLevel { global, components })
     }
 }
 
 impl fmt::Display for LogLevel {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (i, (k, v)) in self.0.iter().enumerate() {
+        if let Some(global) = &self.global {
+            write!(f, "{}", global)?;
+            if !self.components.is_empty() {
+                write!(f, ",")?;
+            }
+        }
+        for (i, (k, v)) in self.components.iter().enumerate() {
             write!(f, "{}:{}", k, v)?;
 
-            if i < self.0.len() - 1 {
+            if i < self.components.len() - 1 {
                 write!(f, ",")?;
             }
         }
