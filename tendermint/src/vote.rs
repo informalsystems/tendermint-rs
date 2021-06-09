@@ -236,9 +236,7 @@ impl TryFrom<i32> for Type {
         match value {
             1 => Ok(Type::Prevote),
             2 => Ok(Type::Precommit),
-            _ => Err(error::invalid_message_type_error(anyhow::anyhow!(
-                "invalid message type error"
-            ))),
+            _ => Err(error::invalid_message_type_error()),
         }
     }
 }
@@ -266,9 +264,7 @@ impl FromStr for Type {
         match s {
             "Prevote" => Ok(Self::Prevote),
             "Precommit" => Ok(Self::Precommit),
-            _ => Err(error::invalid_message_type_error(anyhow::anyhow!(
-                "invalid message type error"
-            ))),
+            _ => Err(error::invalid_message_type_error()),
         }
     }
 }

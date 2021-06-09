@@ -51,7 +51,6 @@ define_error! {
         |_| { format_args!("bad signature") },
 
         InvalidMessageType
-        [DisplayError<Error>]
         |_| { format_args!("invalid message type") },
 
         NegativeHeight

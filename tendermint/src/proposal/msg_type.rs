@@ -21,9 +21,7 @@ impl TryFrom<i32> for Type {
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
             32 => Ok(Type::Proposal),
-            _ => Err(error::invalid_message_type_error(anyhow::anyhow!(
-                "invalid message type error"
-            ))),
+            _ => Err(error::invalid_message_type_error()),
         }
     }
 }
