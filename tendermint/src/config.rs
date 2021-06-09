@@ -437,9 +437,6 @@ pub struct P2PConfig {
     /// Maximum number of outbound peers to connect to, excluding persistent peers
     pub max_num_outbound_peers: u64,
 
-    /// Maximum number of connections (inbound and outbound).
-    pub max_connections: u64,
-
     /// Rate limits the number of incoming connection attempts per IP address.
     pub max_incoming_connection_attempts: u64,
 
