@@ -649,7 +649,7 @@ pub struct StatesyncConfig {
     pub trust_hash: String,
 
     /// Trust period. See `rpc_servers` above.
-    pub trust_period: Timeout,
+    pub trust_period: String,
 
     /// Time to spend discovering snapshots before initiating a restore.
     pub discovery_time: Timeout,
