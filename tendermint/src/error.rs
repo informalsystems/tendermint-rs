@@ -163,7 +163,6 @@ define_error! {
         |_| { format_args!("invalid block id flag") },
 
         NegativePower
-        [DisplayError<Error>]
         |_| { format_args!("negative power") },
 
         RawVotingPowerMismatch
