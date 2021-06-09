@@ -23,7 +23,7 @@ pub enum Direction<Conn> {
 }
 
 pub trait StreamSend {
-    fn send(msg: Vec<u8>) -> Result<()>;
+    fn send<B: AsRef<[u8]>>(msg: B) -> Result<()>;
 }
 
 pub trait Connection: Send {
@@ -51,9 +51,14 @@ pub trait Endpoint: Send {
 
 pub trait Transport {
     type Connection: Connection;
-    type Endpoint: Endpoint<Connection = <Self as Transport>::Connection>;
+    type Endpoint: Endpoint<Connection = <Self as Transport>::Connection> + Drop;
     type Incoming: Iterator<Item = Result<<Self as Transport>::Connection>> + Send;
 
+    /// Consumes the transport to bind the resources in exchange for the `Endpoint` and `Incoming`
+    /// stream.
+    ///
+    /// # Errors
+    ///
+    /// * if resource allocation fails for lack of priviliges or being not available.
     fn bind(self, bind_info: BindInfo) -> Result<(Self::Endpoint, Self::Incoming)>;
-    fn shutdown(&self) -> Result<()>;
 }

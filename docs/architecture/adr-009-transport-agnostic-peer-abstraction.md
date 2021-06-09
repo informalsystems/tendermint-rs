@@ -34,8 +34,7 @@ pub trait Transport {
     type Endpoint: Endpoint<Connection = <Self as Transport>::Connection>;
     type Incoming: Iterator<Item = Result<<Self as Transport>::Connection>> + Send;
 
-    fn bind(&self, bind_info: BindInfo) -> Result<(Self::Endpoint, Self::Incoming)>;
-    fn shutdown(&self) -> Result<()>;
+    fn bind(self, bind_info: BindInfo) -> Result<(Self::Endpoint, Self::Incoming)>;
 }
 ```
 
@@ -60,7 +59,7 @@ based on tendermint-go's `MConn`.
 
 ``` rust
 pub trait StreamSend {
-    fn send(msg: Vec<u8>) -> Result<()>;
+    fn send<B: AsRef<[u8]>>(msg: B) -> Result<()>;
 }
 
 pub trait Connection: Send {

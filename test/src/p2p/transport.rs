@@ -20,7 +20,7 @@ impl Iterator for MemoryStreamRead {
 struct MemoryStreamSend;
 
 impl StreamSend for MemoryStreamSend {
-    fn send(msg: Vec<u8>) -> Result<()> {
+    fn send<B: AsRef<[u8]>>(msg: B) -> Result<()> {
         todo!()
     }
 }
@@ -69,6 +69,10 @@ impl Endpoint for MemoryEndpoint {
     }
 }
 
+impl Drop for MemoryEndpoint {
+    fn drop(&mut self) {}
+}
+
 pub struct MemoryIncoming;
 
 impl Iterator for MemoryIncoming {
@@ -87,9 +91,6 @@ impl Transport for Memory {
     type Incoming = MemoryIncoming;
 
     fn bind(self, bind_info: BindInfo) -> Result<(Self::Endpoint, Self::Incoming)> {
-        todo!()
-    }
-    fn shutdown(&self) -> Result<()> {
         todo!()
     }
 }
