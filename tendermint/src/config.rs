@@ -421,6 +421,22 @@ pub struct P2PConfig {
     /// Maximum number of outbound peers to connect to, excluding persistent peers
     pub max_num_outbound_peers: u64,
 
+    /// Maximum number of connections (inbound and outbound).
+    pub max_connections: u64,
+
+    /// Rate limits the number of incoming connection attempts per IP address.
+    pub max_incoming_connection_attempts : u64,
+
+    /// List of node IDs, to which a connection will be (re)established ignoring any existing limits
+    #[serde(
+        serialize_with = "serialize_comma_separated_list",
+        deserialize_with = "deserialize_comma_separated_list"
+    )]
+    pub unconditional_peer_ids: Vec<node::Id>,
+
+    /// Maximum pause when redialing a persistent peer (if zero, exponential backoff is used)
+    pub persistent_peers_max_dial_period: Timeout,
+
     /// Time to wait before flushing messages out on the connection
     pub flush_throttle_timeout: Timeout,
 
