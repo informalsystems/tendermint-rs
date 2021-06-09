@@ -28,7 +28,7 @@ impl StreamSend for MemoryStreamSend {
 pub struct MemoryConnection;
 
 impl Connection for MemoryConnection {
-    type Error = Report;
+    type Error = eyre::Report;
     type StreamRead = MemoryStreamRead;
     type StreamSend = MemoryStreamSend;
 
