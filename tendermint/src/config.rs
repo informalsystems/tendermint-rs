@@ -95,6 +95,12 @@ pub struct TendermintConfig {
 
     /// instrumentation configuration options
     pub instrumentation: InstrumentationConfig,
+
+    /// statesync configuration options
+    pub statesync: StatesyncConfig,
+
+    /// fastsync configuration options
+    pub fastsync: FastsyncConfig,
 }
 
 impl TendermintConfig {
@@ -331,7 +337,7 @@ pub struct RpcConfig {
     /// The name of a file containing matching private key that is used to create the HTTPS server.
     #[serde(deserialize_with = "deserialize_optional_value")]
     pub tls_key_file: Option<PathBuf>,
- 
+
     /// pprof listen address (https://golang.org/pkg/net/http/pprof)
     #[serde(deserialize_with = "deserialize_optional_value")]
     pub pprof_laddr: Option<net::Address>,
@@ -612,6 +618,54 @@ pub struct InstrumentationConfig {
 
     /// Instrumentation namespace
     pub namespace: String,
+}
+
+/// statesync configuration options
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct StatesyncConfig {
+    /// State sync rapidly bootstraps a new node by discovering, fetching, and restoring a state machine
+    /// snapshot from peers instead of fetching and replaying historical blocks. Requires some peers in
+    /// the network to take and serve state machine snapshots. State sync is not attempted if the node
+    /// has any local state (LastBlockHeight > 0). The node will have a truncated block history,
+    /// starting from the height of the snapshot.
+    pub enable: bool,
+
+    /// RPC servers (comma-separated) for light client verification of the synced state machine and
+    /// retrieval of state data for node bootstrapping. Also needs a trusted height and corresponding
+    /// header hash obtained from a trusted source, and a period during which validators can be trusted.
+    ///
+    /// For Cosmos SDK-based chains, trust-period should usually be about 2/3 of the unbonding time (~2
+    /// weeks) during which they can be financially punished (slashed) for misbehavior.
+    #[serde(
+        serialize_with = "serialize_comma_separated_list",
+        deserialize_with = "deserialize_comma_separated_list"
+    )]
+    pub rpc_servers: Vec<String>,
+
+    /// Trust height. See `rpc_servers` above.
+    pub trust_height: u64,
+
+    /// Trust hash. See `rpc_servers` above.
+    pub trust_hash: String,
+
+    /// Trust period. See `rpc_servers` above.
+    pub trust_period: Timeout,
+
+    /// Time to spend discovering snapshots before initiating a restore.
+    pub discovery_time: Timeout,
+
+    /// Temporary directory for state sync snapshot chunks, defaults to the OS tempdir (typically /tmp).
+    /// Will create a new, randomly named directory within, and remove it when done.
+    pub temp_dir: String,
+}
+
+/// fastsync configuration options
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct FastsyncConfig {
+    /// Fast Sync version to use:
+    ///   1) "v0" (default) - the legacy fast sync implementation
+    ///   2) "v2" - complete redesign of v0, optimized for testability & readability
+    pub version: String,
 }
 
 /// Rate at which bytes can be sent/received
