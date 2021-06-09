@@ -4,6 +4,7 @@
 
 - `[tendermint-abci,tendermint-rpc]` Fix DeliverTx response deserialization
   issues with `gas_wanted` and `gas_used` fields ([#876])
+- `[tendermint]` Update TendermintConfig for Tendermint v.0.34.x ([#896])
 
 ### REMOVED
 
