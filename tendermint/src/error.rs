@@ -67,7 +67,6 @@ define_error! {
         |_| { format_args!("negative POL round") },
 
         NegativeValidatorIndex
-        [DisplayError<Error>]
         |_| { format_args!("negative validator index") },
 
         InvalidHashSize

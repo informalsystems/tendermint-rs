@@ -14,7 +14,7 @@ impl TryFrom<i32> for ValidatorIndex {
 
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         Ok(ValidatorIndex(value.try_into().map_err(|_| {
-            error::negative_validator_index_error(anyhow::anyhow!("negative validator index error"))
+            error::negative_validator_index_error()
         })?))
     }
 }
