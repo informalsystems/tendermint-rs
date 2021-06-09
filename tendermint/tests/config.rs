@@ -26,11 +26,12 @@ mod files {
         );
         assert_eq!(config.moniker.as_ref(), "technodrome");
         assert!(config.fast_sync);
-        assert_eq!(config.db_backend, DbBackend::LevelDb);
+        assert_eq!(config.db_backend, DbBackend::GoLevelDb);
         assert_eq!(config.db_dir, PathBuf::from("data"));
+        assert_eq!(config.log_level.global, Some("info".to_string()));
         assert_eq!(config.log_level.get("main"), Some("info"));
         assert_eq!(config.log_level.get("state"), Some("info"));
-        assert_eq!(config.log_level.get("*"), Some("error"));
+        assert_eq!(config.log_level.get("*"), Some("info"));
         assert_eq!(config.log_format, LogFormat::Plain);
         assert_eq!(config.genesis_file, PathBuf::from("config/genesis.json"));
         assert_eq!(
@@ -44,10 +45,6 @@ mod files {
         assert_eq!(config.priv_validator_laddr, None);
         assert_eq!(config.node_key_file, PathBuf::from("config/node_key.json"));
         assert_eq!(config.abci, AbciMode::Socket);
-        assert_eq!(
-            config.prof_laddr,
-            Some("tcp://localhost:6060".parse::<net::Address>().unwrap())
-        );
         assert!(!config.filter_peers);
 
         // rpc server configuration options
@@ -188,9 +185,6 @@ mod files {
 
         let tx_index = &config.tx_index;
         assert_eq!(tx_index.indexer, TxIndexer::Kv);
-        assert_eq!(tx_index.index_tags.len(), 1);
-        assert_eq!(tx_index.index_tags[0].as_ref(), "tx.height");
-        assert!(tx_index.index_all_tags);
 
         // instrumentation configuration options
 
