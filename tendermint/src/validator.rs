@@ -45,8 +45,7 @@ impl TryFrom<RawValidatorSet> for Set {
         if raw_voting_power != validator_set.total_voting_power() {
             return Err(error::raw_voting_power_mismatch_error(
                 raw_voting_power,
-                validator_set.total_voting_power(),
-                anyhow::anyhow!("raw voting power mismatch error"),
+                validator_set.total_voting_power()
             ));
         }
 
@@ -99,10 +98,7 @@ impl Set {
             .iter()
             .find(|v| v.address == proposer_address)
             .cloned()
-            .ok_or(error::proposer_not_found_error(
-                proposer_address,
-                anyhow::anyhow!("proposer not found error"),
-            ))?;
+            .ok_or(error::proposer_not_found_error(proposer_address))?;
 
         // Create the validator set with the given proposer.
         // This is required by IBC on-chain validation.

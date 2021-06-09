@@ -31,9 +31,7 @@ impl TryFrom<Vec<u8>> for Signature {
             return Ok(Self::default());
         }
         if value.len() != ED25519_SIGNATURE_SIZE {
-            return Err(error::invalid_signature_id_length_error(anyhow::anyhow!(
-                "invalid signature id length"
-            )));
+            return Err(error::invalid_signature_id_length_error());
         }
         let mut slice: [u8; ED25519_SIGNATURE_SIZE] = [0; ED25519_SIGNATURE_SIZE];
         slice.copy_from_slice(&value[..]);

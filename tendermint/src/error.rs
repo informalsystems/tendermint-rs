@@ -43,7 +43,6 @@ define_error! {
         |_| { format_args!("protocol error") },
 
         OutOfRange
-        [DisplayError<Error>]
         |_| { format_args!("value out of range") },
 
         SignatureInvalid
@@ -62,7 +61,6 @@ define_error! {
         |_| { format_args!("negative round") },
 
         NegativePolRound
-        [DisplayError<Error>]
         |_| { format_args!("negative POL round") },
 
         NegativeValidatorIndex
@@ -84,7 +82,6 @@ define_error! {
         |_| { format_args!("invalid account ID length") },
 
         InvalidSignatureIdLength
-        [DisplayError<Error>]
         |_| { format_args!("invalid signature ID length") },
 
         IntegerOverflow
@@ -94,11 +91,9 @@ define_error! {
         |_| { format_args!("no vote found") },
 
         NoProposalFound
-        [DisplayError<Error>]
         |_| { format_args!("no proposal found") },
 
         InvalidAppHashLength
-        [DisplayError<Error>]
         |_| { format_args!("invalid app hash length") },
 
         InvalidPartSetHeader
@@ -166,7 +161,6 @@ define_error! {
 
         RawVotingPowerMismatch
         { raw: vote::Power, computed: vote::Power}
-        [DisplayError<Error>]
         |e| { format_args!("mismatch between raw voting ({0:?}) and computed one ({1:?})", e.raw, e.computed) },
 
         MissingPublicKey
@@ -190,7 +184,6 @@ define_error! {
 
         ProposerNotFound
         {account: account::Id}
-        [DisplayError<Error>]
         |e| { format_args!("proposer with address '{0}' no found in validator set", e.account) },
 
         InFallible

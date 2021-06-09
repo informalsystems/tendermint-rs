@@ -37,9 +37,7 @@ impl TryFrom<RawCanonicalProposal> for CanonicalProposal {
 
     fn try_from(value: RawCanonicalProposal) -> Result<Self, Self::Error> {
         if value.pol_round < -1 {
-            return Err(error::negative_pol_round_error(anyhow::anyhow!(
-                "negative pol round error"
-            )));
+            return Err(error::negative_pol_round_error());
         }
         let round = Round::try_from(
             i32::try_from(value.round)

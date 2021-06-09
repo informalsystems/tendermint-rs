@@ -222,9 +222,7 @@ impl AppHash {
     /// Decode a `Hash` from upper-case hexadecimal
     pub fn from_hex_upper(s: &str) -> Result<Self, Error> {
         if s.len() % 2 != 0 {
-            return Err(error::invalid_app_hash_length_error(anyhow::anyhow!(
-                "invalid app hash length error"
-            )));
+            return Err(error::invalid_app_hash_length_error());
         }
         let mut h = Vec::new();
         for _ in 0..(s.len() / 2) {

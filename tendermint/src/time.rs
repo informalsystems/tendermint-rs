@@ -67,7 +67,7 @@ impl Time {
         self.0
             .signed_duration_since(other.0)
             .to_std()
-            .map_err(|_| error::out_of_range_error(anyhow::anyhow!("out of range error")))
+            .map_err(|_| error::out_of_range_error())
     }
 
     /// Parse [`Time`] from an RFC 3339 date
