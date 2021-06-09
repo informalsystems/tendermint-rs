@@ -12,6 +12,7 @@ use std::{
     fmt::{self, Display},
     str::FromStr,
 };
+use std::prelude::v1::format;
 
 /// Gas: representation of transaction processing resource costs
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
@@ -55,8 +56,7 @@ impl FromStr for Gas {
 impl<'de> Deserialize<'de> for Gas {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         Self::from_str(&String::deserialize(deserializer)?)
-            // .map_err(|e| D::Error::custom(format!("{}", e)))
-            .map_err(|e| D::Error::custom(alloc::fmt::format(core::format_args!("{}", e))))
+            .map_err(|e| D::Error::custom(format!("{}", e)))
     }
 }
 

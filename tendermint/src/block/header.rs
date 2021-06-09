@@ -115,9 +115,7 @@ impl TryFrom<RawHeader> for Header {
         Ok(Header {
             version: value
                 .version
-                .ok_or(error::missing_version_error(anyhow::anyhow!(
-                    "missing version error"
-                )))?
+                .ok_or(error::missing_version_error())?
                 .try_into()?,
             chain_id: value.chain_id.try_into()?,
             height,

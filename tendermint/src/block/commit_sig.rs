@@ -94,9 +94,7 @@ impl TryFrom<RawCommitSig> for CommitSig {
                 )));
             }
             if value.validator_address.is_empty() {
-                return Err(error::invalid_validator_address_error(anyhow::anyhow!(
-                    "invalid validator address error"
-                )));
+                return Err(error::invalid_validator_address_error());
             }
             return Ok(CommitSig::BlockIdFlagCommit {
                 validator_address: value.validator_address.try_into()?,
@@ -117,9 +115,7 @@ impl TryFrom<RawCommitSig> for CommitSig {
                 )));
             }
             if value.validator_address.is_empty() {
-                return Err(error::invalid_validator_address_error(anyhow::anyhow!(
-                    "invalid validator address error"
-                )));
+                return Err(error::invalid_validator_address_error());
             }
             return Ok(CommitSig::BlockIdFlagNil {
                 validator_address: value.validator_address.try_into()?,
@@ -133,9 +129,7 @@ impl TryFrom<RawCommitSig> for CommitSig {
                 signature: value.signature.try_into()?,
             });
         }
-        Err(error::block_id_flag_error(anyhow::anyhow!(
-            "block id flag error"
-        )))
+        Err(error::block_id_flag_error())
     }
 }
 

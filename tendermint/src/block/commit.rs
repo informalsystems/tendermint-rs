@@ -6,8 +6,8 @@ use crate::error::{self, KindError as Error};
 use serde::{Deserialize, Serialize};
 use std::{
     convert::{TryFrom, TryInto},
-    vec::Vec,
 };
+use std::prelude::v1::*;
 
 use tendermint_proto::types::Commit as RawCommit;
 
@@ -73,7 +73,7 @@ impl Default for Commit {
             height: Height::from(0_u32),
             round: Default::default(),
             block_id: Default::default(),
-            signatures: Vec::new(),
+            signatures: vec![],
         }
     }
 }

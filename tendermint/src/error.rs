@@ -10,7 +10,6 @@ define_error! {
     #[derive(Debug)]
     KindError {
         Crypto
-        [DisplayError<Error>]
         |_| { format_args!("cryptographic error") },
 
         InvalidKey
@@ -22,7 +21,6 @@ define_error! {
         |_| { format_args!("I/O error") },
 
         Length
-        [DisplayError<Error>]
         |_| { format_args!("length error") },
 
         Parse
@@ -53,11 +51,9 @@ define_error! {
         |_| { format_args!("invalid message type") },
 
         NegativeHeight
-        [DisplayError<Error>]
         |_| { format_args!("negative height") },
 
         NegativeRound
-        [DisplayError<Error>]
         |_| { format_args!("negative round") },
 
         NegativePolRound
@@ -67,7 +63,6 @@ define_error! {
         |_| { format_args!("negative validator index") },
 
         InvalidHashSize
-        [DisplayError<Error>]
         |_| { format_args!("invalid hash: expected hash size to be 32 bytes") },
 
         NoTimestamp
@@ -78,7 +73,6 @@ define_error! {
         |_| { format_args!("invalid timestamp") },
 
         InvalidAccountIdLength
-        [DisplayError<Error>]
         |_| { format_args!("invalid account ID length") },
 
         InvalidSignatureIdLength
@@ -101,19 +95,15 @@ define_error! {
         |_| { format_args!("invalid part set header") },
 
         MissingHeader
-        [DisplayError<Error>]
         |_| { format_args!("missing header field") },
 
         MissingData
-        [DisplayError<Error>]
         |_| { format_args!("missing data field") },
 
         MissingEvidence
-        [DisplayError<Error>]
         |_| { format_args!("missing evidence field") },
 
         MissingTimestamp
-        [DisplayError<Error>]
         |_| { format_args!("missing timestamp field") },
 
         InvalidBlock
@@ -125,7 +115,6 @@ define_error! {
         |_| { format_args!("invalid first block") },
 
         MissingVersion
-        [DisplayError<Error>]
         |_| { format_args!("missing version") },
 
         InvalidHeader
@@ -141,19 +130,15 @@ define_error! {
         |_| { format_args!("invalid signature") },
 
         InvalidValidatorAddress
-        [DisplayError<Error>]
         |_| { format_args!("invalid validator address") },
 
         InvalidSignedHeader
-        [DisplayError<Error>]
         |_| { format_args!("invalid signed header") },
 
         InvalidEvidence
-        [DisplayError<Error>]
         |_| { format_args!("invalid evidence") },
 
         BlockIdFlag
-        [DisplayError<Error>]
         |_| { format_args!("invalid block id flag") },
 
         NegativePower
@@ -167,19 +152,15 @@ define_error! {
         |_| { format_args!("missing public key") },
 
         InvalidValidatorParams
-        [DisplayError<Error>]
         |_| { format_args!("invalid validator parameters") },
 
         InvalidVersionParams
-        [DisplayError<Error>]
         |_| { format_args!("invalid version parameters") },
 
         NegativeMaxAgeNum
-        [DisplayError<Error>]
         |_| { format_args!("negative max_age_num_blocks") },
 
         MissingMaxAgeDuration
-        [DisplayError<Error>]
         |_| { format_args!("missing max_age_duration") },
 
         ProposerNotFound

@@ -37,30 +37,22 @@ impl TryFrom<RawParams> for Params {
         Ok(Self {
             block: value
                 .block
-                .ok_or(error::invalid_block_error(anyhow::anyhow!(
-                    "invalid block error"
-                )))?
+                .ok_or(error::invalid_block_error(anyhow::anyhow!("invalid block error")))?
                 .try_into()?,
             evidence: value
                 .evidence
-                .ok_or(error::invalid_evidence_error(anyhow::anyhow!(
-                    "invalid evidence error"
-                )))?
+                .ok_or(error::invalid_evidence_error())?
                 .try_into()?,
             validator: value
                 .validator
-                .ok_or(error::invalid_validator_params_error(anyhow::anyhow!(
-                    "invalid validator params error"
-                )))?
+                .ok_or(error::invalid_validator_params_error())?
                 .try_into()?,
             version: value
                 .version
                 .map(TryFrom::try_from)
                 .transpose()
                 .map_err(|_| {
-                    error::invalid_version_params_error(anyhow::anyhow!(
-                        "invalid version params error"
-                    ))
+                    error::invalid_version_params_error()
                 })?,
         })
     }

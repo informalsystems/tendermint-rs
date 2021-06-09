@@ -23,7 +23,7 @@ impl TryFrom<i64> for Height {
 
     fn try_from(value: i64) -> Result<Self, Self::Error> {
         Ok(Height(value.try_into().map_err(|_| {
-            error::negative_height_error(anyhow::anyhow!("negative height error"))
+            error::negative_height_error()
         })?))
     }
 }

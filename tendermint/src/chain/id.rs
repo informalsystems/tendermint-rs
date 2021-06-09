@@ -29,7 +29,7 @@ impl TryFrom<String> for Id {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         if value.is_empty() || value.len() > MAX_LENGTH {
-            return Err(error::length_error(anyhow::anyhow!("length error")));
+            return Err(error::length_error());
         }
 
         for byte in value.as_bytes() {

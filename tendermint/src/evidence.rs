@@ -18,14 +18,6 @@ use tendermint_proto::types::EvidenceList as RawEvidenceList;
 use tendermint_proto::types::EvidenceParams as RawEvidenceParams;
 use tendermint_proto::Protobuf;
 
-mod time {
-    #[cfg(not(feature = "std"))]
-    pub use core::time::Duration;
-
-    #[cfg(feature = "std")]
-    pub use std::time::Duration;
-}
-
 /// Evidence of malfeasance by validators (i.e. signing conflicting votes).
 /// encoded using an Amino prefix. There is currently only a single type of
 /// evidence: `DuplicateVoteEvidence`.
@@ -53,9 +45,7 @@ impl TryFrom<RawEvidence> for Evidence {
     fn try_from(value: RawEvidence) -> Result<Self, Self::Error> {
         match value
             .sum
-            .ok_or(error::invalid_evidence_error(anyhow::anyhow!(
-                "invalid evidence error"
-            )))? {
+            .ok_or(error::invalid_evidence_error())? {
             Sum::DuplicateVoteEvidence(ev) => Ok(Evidence::DuplicateVote(ev.try_into()?)),
             Sum::LightClientAttackEvidence(_ev) => Ok(Evidence::LightClientAttackEvidence),
         }
@@ -91,23 +81,17 @@ impl TryFrom<RawDuplicateVoteEvidence> for DuplicateVoteEvidence {
         Ok(Self {
             vote_a: value
                 .vote_a
-                .ok_or(error::missing_evidence_error(anyhow::anyhow!(
-                    "missing evidence error"
-                )))?
+                .ok_or(error::missing_evidence_error())?
                 .try_into()?,
             vote_b: value
                 .vote_b
-                .ok_or(error::missing_evidence_error(anyhow::anyhow!(
-                    "missing evidence error"
-                )))?
+                .ok_or(error::missing_evidence_error())?
                 .try_into()?,
             total_voting_power: value.total_voting_power.try_into()?,
             validator_power: value.validator_power.try_into()?,
             timestamp: value
                 .timestamp
-                .ok_or(error::missing_timestamp_error(anyhow::anyhow!(
-                    "missing timestamp error"
-                )))?
+                .ok_or(error::missing_timestamp_error())?
                 .try_into()
                 .map_err(|e: std::convert::Infallible| {
                     error::in_fallible_error(anyhow::anyhow!(e))
@@ -132,9 +116,7 @@ impl DuplicateVoteEvidence {
     /// constructor
     pub fn new(vote_a: Vote, vote_b: Vote) -> Result<Self, Error> {
         if vote_a.height != vote_b.height {
-            return Err(error::invalid_evidence_error(anyhow::anyhow!(
-                "invalid evidence error"
-            )));
+            return Err(error::invalid_evidence_error());
         }
         // Todo: make more assumptions about what is considered a valid evidence for duplicate vote
         Ok(Self {
@@ -257,13 +239,11 @@ impl TryFrom<RawEvidenceParams> for Params {
     fn try_from(value: RawEvidenceParams) -> Result<Self, Self::Error> {
         Ok(Self {
             max_age_num_blocks: value.max_age_num_blocks.try_into().map_err(|_| {
-                error::negative_max_age_num_error(anyhow::anyhow!("negative max age num error"))
+                error::negative_max_age_num_error()
             })?,
             max_age_duration: value
                 .max_age_duration
-                .ok_or(error::missing_max_age_duration_error(anyhow::anyhow!(
-                    "missing max afe duration error"
-                )))?
+                .ok_or(error::missing_max_age_duration_error())?
                 .try_into()?,
             max_bytes: value.max_bytes,
         })
@@ -281,11 +261,7 @@ impl From<Params> for RawEvidenceParams {
     }
 }
 
-#[cfg(feature = "std")]
-use std::time::Duration as NativeDuration;
 
-#[cfg(not(feature = "std"))]
-use core::time::Duration as NativeDuration;
 
 /// Duration is a wrapper around std::time::Duration
 /// essentially, to keep the usages look cleaner
@@ -293,10 +269,10 @@ use core::time::Duration as NativeDuration;
 /// Todo: harmonize google::protobuf::Duration, std::time::Duration and this. Too many structs.
 /// <https://github.com/informalsystems/tendermint-rs/issues/741>
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
-pub struct Duration(#[serde(with = "serializers::time_duration")] pub crate::primitives::Duration);
+pub struct Duration(#[serde(with = "serializers::time_duration")] pub std::time::Duration);
 
-impl From<Duration> for NativeDuration {
-    fn from(d: Duration) -> NativeDuration {
+impl From<Duration> for std::time::Duration {
+    fn from(d: Duration) -> std::time::Duration {
         d.0
     }
 }
@@ -307,7 +283,7 @@ impl TryFrom<RawDuration> for Duration {
     type Error = Error;
 
     fn try_from(value: RawDuration) -> Result<Self, Self::Error> {
-        Ok(Self(NativeDuration::new(
+        Ok(Self(std::time::Duration::new(
             value.seconds.try_into().map_err(|_| {
                 error::integer_overflow_error()
             })?,

@@ -17,7 +17,7 @@ impl TryFrom<i32> for Round {
 
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         Ok(Round(value.try_into().map_err(|_| {
-            error::negative_round_error(anyhow::anyhow!("negative round error"))
+            error::negative_round_error()
         })?))
     }
 }

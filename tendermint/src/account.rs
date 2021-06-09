@@ -37,9 +37,7 @@ impl TryFrom<Vec<u8>> for Id {
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         if value.len() != LENGTH {
-            return Err(error::invalid_account_id_length_error(anyhow::anyhow!(
-                "invalid account id length error"
-            )));
+            return Err(error::invalid_account_id_length_error());
         }
         let mut slice: [u8; LENGTH] = [0; LENGTH];
         slice.copy_from_slice(&value[..]);

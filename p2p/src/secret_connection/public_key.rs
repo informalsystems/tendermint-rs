@@ -20,7 +20,7 @@ impl PublicKey {
     pub fn from_raw_ed25519(bytes: &[u8]) -> Result<PublicKey, Error> {
         ed25519::PublicKey::from_bytes(bytes)
             .map(PublicKey::Ed25519)
-            .map_err(|_| error::crypto_error(anyhow::anyhow!("crypto error")))
+            .map_err(|_| error::crypto_error())
     }
 
     /// Get Ed25519 public key
