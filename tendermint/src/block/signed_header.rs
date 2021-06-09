@@ -24,11 +24,15 @@ impl TryFrom<RawSignedHeader> for SignedHeader {
     fn try_from(value: RawSignedHeader) -> Result<Self, Self::Error> {
         let header = value
             .header
-            .ok_or(error::invalid_signed_header_error(anyhow::anyhow!("invalid signed header error")))?
+            .ok_or(error::invalid_signed_header_error(anyhow::anyhow!(
+                "invalid signed header error"
+            )))?
             .try_into()?;
         let commit = value
             .commit
-            .ok_or(error::invalid_signed_header_error(anyhow::anyhow!("invalid signed header error")))?
+            .ok_or(error::invalid_signed_header_error(anyhow::anyhow!(
+                "invalid signed header error"
+            )))?
             .try_into()?;
         Self::new(header, commit) // Additional checks
     }
@@ -47,7 +51,9 @@ impl SignedHeader {
     /// Constructor.
     pub fn new(header: block::Header, commit: block::Commit) -> Result<Self, Error> {
         if header.height != commit.height {
-            return Err(error::invalid_signed_header_error(anyhow::anyhow!("invalid signed header error")));
+            return Err(error::invalid_signed_header_error(anyhow::anyhow!(
+                "invalid signed header error"
+            )));
         }
         Ok(Self { header, commit })
     }

@@ -21,8 +21,8 @@ pub use self::{
     round::*,
     size::Size,
 };
+use crate::error::{self, KindError as Error};
 use crate::{abci::transaction, evidence};
-use crate::error::{self,  KindError as Error};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Block as RawBlock;
@@ -58,7 +58,9 @@ impl TryFrom<RawBlock> for Block {
     fn try_from(value: RawBlock) -> Result<Self, Self::Error> {
         let header: Header = value
             .header
-            .ok_or(error::missing_header_error(anyhow::anyhow!("missing header error")))?
+            .ok_or(error::missing_header_error(anyhow::anyhow!(
+                "missing header error"
+            )))?
             .try_into()?;
         // if last_commit is Commit::Default, it is considered nil by Go.
         let last_commit = value
@@ -67,7 +69,9 @@ impl TryFrom<RawBlock> for Block {
             .transpose()?
             .filter(|c| c != &Commit::default());
         if last_commit.is_none() && header.height.value() != 1 {
-            return Err(error::invalid_block_error(anyhow::anyhow!("last_commit is empty on non-first block")));
+            return Err(error::invalid_block_error(anyhow::anyhow!(
+                "last_commit is empty on non-first block"
+            )));
         }
         // Todo: Figure out requirements.
         //if last_commit.is_some() && header.height.value() == 1 {
@@ -78,11 +82,18 @@ impl TryFrom<RawBlock> for Block {
             header,
             data: value
                 .data
-                .ok_or(error::missing_data_error(anyhow::anyhow!("missing data error")))?
-                .try_into().map_err(|e: std::convert::Infallible| error::in_fallible_error(anyhow::anyhow!(e)))?,
+                .ok_or(error::missing_data_error(anyhow::anyhow!(
+                    "missing data error"
+                )))?
+                .try_into()
+                .map_err(|e: std::convert::Infallible| {
+                    error::in_fallible_error(anyhow::anyhow!(e))
+                })?,
             evidence: value
                 .evidence
-                .ok_or(error::missing_evidence_error(anyhow::anyhow!("missing evidence error")))?
+                .ok_or(error::missing_evidence_error(anyhow::anyhow!(
+                    "missing evidence error"
+                )))?
                 .try_into()?,
             last_commit,
         })
@@ -109,10 +120,14 @@ impl Block {
         last_commit: Option<Commit>,
     ) -> Result<Self, Error> {
         if last_commit.is_none() && header.height.value() != 1 {
-            return Err(error::invalid_block_error(anyhow::anyhow!("last_commit is empty on non-first block")));
+            return Err(error::invalid_block_error(anyhow::anyhow!(
+                "last_commit is empty on non-first block"
+            )));
         }
         if last_commit.is_some() && header.height.value() == 1 {
-            return Err(error::invalid_block_error(anyhow::anyhow!("last_commit is filled on first block")));
+            return Err(error::invalid_block_error(anyhow::anyhow!(
+                "last_commit is filled on first block"
+            )));
         }
         Ok(Block {
             header,

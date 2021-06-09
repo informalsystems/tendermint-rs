@@ -1,10 +1,9 @@
 //! Tendermint blockchain identifiers
 
 use crate::error::{self, KindError as Error};
-use crate::primitives::format;
-use crate::primitives::String;
-use crate::primitives::ToString;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+use std::prelude::v1::format;
+use std::string::{String, ToString};
 use std::{
     cmp::Ordering,
     convert::TryFrom,
@@ -36,7 +35,7 @@ impl TryFrom<String> for Id {
         for byte in value.as_bytes() {
             match byte {
                 b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_' | b'.' => (),
-                _ => return Err(error::parse_error(anyhow::anyhow!("chain id charset"))),
+                _ => return Err(error::parse_error("chain id charset".into())),
             }
         }
 

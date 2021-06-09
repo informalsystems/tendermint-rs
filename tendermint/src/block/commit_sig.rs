@@ -1,7 +1,7 @@
 //! CommitSig within Commit
 
-use crate::{account, Signature, Time};
 use crate::error::{self, KindError as Error};
+use crate::{account, Signature, Time};
 use num_traits::ToPrimitive;
 use std::convert::{TryFrom, TryInto};
 use std::vec::Vec;
@@ -75,47 +75,67 @@ impl TryFrom<RawCommitSig> for CommitSig {
                 let timestamp = value.timestamp.unwrap();
                 // 0001-01-01T00:00:00.000Z translates to EPOCH-62135596800 seconds
                 if timestamp.nanos != 0 || timestamp.seconds != -62135596800 {
-                    return Err(error::invalid_timestamp_error(anyhow::anyhow!("absent commitsig has non-zero timestamp")));
+                    return Err(error::invalid_timestamp_error(anyhow::anyhow!(
+                        "absent commitsig has non-zero timestamp"
+                    )));
                 }
             }
             if !value.signature.is_empty() {
-                return Err(error::invalid_signature_error(anyhow::anyhow!("invalid signature error")));
+                return Err(error::invalid_signature_error(anyhow::anyhow!(
+                    "invalid signature error"
+                )));
             }
             return Ok(CommitSig::BlockIdFlagAbsent);
         }
         if value.block_id_flag == BlockIdFlag::Commit.to_i32().unwrap() {
             if value.signature.is_empty() {
-                return Err(error::invalid_signature_error(anyhow::anyhow!("regular commitsig has no signature")));
+                return Err(error::invalid_signature_error(anyhow::anyhow!(
+                    "regular commitsig has no signature"
+                )));
             }
             if value.validator_address.is_empty() {
-                return Err(error::invalid_validator_address_error(anyhow::anyhow!("invalid validator address error")));
+                return Err(error::invalid_validator_address_error(anyhow::anyhow!(
+                    "invalid validator address error"
+                )));
             }
             return Ok(CommitSig::BlockIdFlagCommit {
                 validator_address: value.validator_address.try_into()?,
                 timestamp: value
                     .timestamp
-                    .ok_or(error::no_timestamp_error(anyhow::anyhow!("no timestamp error")))?
-                    .try_into().map_err(|e: std::convert::Infallible| error::in_fallible_error(anyhow::anyhow!(e)))?,
+                    .ok_or(error::no_timestamp_error())?
+                    .try_into()
+                    .map_err(|e: std::convert::Infallible| {
+                        error::in_fallible_error(anyhow::anyhow!(e))
+                    })?,
                 signature: value.signature.try_into()?,
             });
         }
         if value.block_id_flag == BlockIdFlag::Nil.to_i32().unwrap() {
             if value.signature.is_empty() {
-                return Err(error::invalid_signature_error(anyhow::anyhow!("nil commitsig has no signature")));
+                return Err(error::invalid_signature_error(anyhow::anyhow!(
+                    "nil commitsig has no signature"
+                )));
             }
             if value.validator_address.is_empty() {
-                return Err(error::invalid_validator_address_error(anyhow::anyhow!("invalid validator address error")));
+                return Err(error::invalid_validator_address_error(anyhow::anyhow!(
+                    "invalid validator address error"
+                )));
             }
             return Ok(CommitSig::BlockIdFlagNil {
                 validator_address: value.validator_address.try_into()?,
                 timestamp: value
                     .timestamp
-                    .ok_or(error::no_timestamp_error(anyhow::anyhow!("no timestamp error")))?
-                    .try_into().map_err(|e: std::convert::Infallible| error::in_fallible_error(anyhow::anyhow!(e)))?,
+                    .ok_or(error::no_timestamp_error())?
+                    .try_into()
+                    .map_err(|e: std::convert::Infallible| {
+                        error::in_fallible_error(anyhow::anyhow!(e))
+                    })?,
                 signature: value.signature.try_into()?,
             });
         }
-        Err(error::block_id_flag_error(anyhow::anyhow!("block id flag error")))
+        Err(error::block_id_flag_error(anyhow::anyhow!(
+            "block id flag error"
+        )))
     }
 }
 

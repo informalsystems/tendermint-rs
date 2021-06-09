@@ -1,11 +1,7 @@
 //! Node keys
 
-use crate::{
-    node,
-    private_key::PrivateKey,
-    public_key::PublicKey,
-};
-use crate::error::{self,  KindError as Error};
+use crate::error::{self, KindError as Error};
+use crate::{node, private_key::PrivateKey, public_key::PublicKey};
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -22,7 +18,8 @@ pub struct NodeKey {
 impl NodeKey {
     /// Parse `node_key.json`
     pub fn parse_json<T: AsRef<str>>(json_string: T) -> Result<Self, Error> {
-        Ok(serde_json::from_str(json_string.as_ref()).map_err(|e: serde_json::Error| error::serde_json_error(anyhow::anyhow!(e)))?)
+        Ok(serde_json::from_str(json_string.as_ref())
+            .map_err(|e: serde_json::Error| error::serde_json_error(anyhow::anyhow!(e)))?)
     }
 
     /// Load `node_key.json` from a file
@@ -32,7 +29,7 @@ impl NodeKey {
     {
         let json_string = fs::read_to_string(path).map_err(|e| {
             let context = format!("couldn't open {}: {}", path.as_ref().display(), e);
-            error::parse_error(anyhow::anyhow!(context))
+            error::parse_error(context)
         })?;
 
         Self::parse_json(json_string)

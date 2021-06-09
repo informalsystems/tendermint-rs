@@ -1,9 +1,9 @@
 //! Remote addresses (`tcp://` or `unix://`)
 
+use crate::error::{self, KindError as Error};
 use crate::node;
-use crate::error::{self,  KindError as Error};
-use crate::primitives::format;
-use crate::primitives::String;
+use std::prelude::v1::format;
+use std::string::String;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::path::PathBuf;
 use std::{
@@ -72,7 +72,7 @@ impl FromStr for Address {
             // If the address has no scheme, assume it's TCP
             format!("{}{}", TCP_PREFIX, addr)
         };
-        let url = Url::parse(&prefixed_addr).map_err(|e| error::parse_error(anyhow::anyhow!(e)))?;
+        let url = Url::parse(&prefixed_addr).map_err(|e| error::parse_url_error(e))?;
         match url.scheme() {
             "tcp" => Ok(Self::Tcp {
                 peer_id: if !url.username().is_empty() {
@@ -83,17 +83,20 @@ impl FromStr for Address {
                 host: url
                     .host_str()
                     .ok_or_else(|| {
-                        error::parse_error(anyhow::anyhow!(format!("invalid TCP address (missing host): {}", addr)))
+                        error::parse_error(format!("invalid TCP address (missing host): {}", addr))
                     })?
                     .to_owned(),
                 port: url.port().ok_or_else(|| {
-                    error::parse_error(anyhow::anyhow!(format!("invalid TCP address (missing port): {}", addr)))
+                    error::parse_error(format!("invalid TCP address (missing port): {}", addr))
                 })?,
             }),
             "unix" => Ok(Self::Unix {
                 path: PathBuf::from(url.path()),
             }),
-            _ => Err(error::parse_error(anyhow::anyhow!(format!("invalid address scheme: {:?}", addr)))),
+            _ => Err(error::parse_error(format!(
+                "invalid address scheme: {:?}",
+                addr
+            ))),
         }
     }
 }

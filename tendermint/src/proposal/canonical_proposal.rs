@@ -3,11 +3,11 @@
 use super::Type;
 use crate::block::{Height, Id as BlockId, Round};
 use crate::chain::Id as ChainId;
+use crate::error::{self, KindError as Error};
 use crate::Time;
-use crate::error::{self,  KindError as Error};
 use std::convert::{TryFrom, TryInto};
 
-use crate::primitives::ToString;
+use std::string::ToString;
 use tendermint_proto::types::CanonicalProposal as RawCanonicalProposal;
 use tendermint_proto::Protobuf;
 
@@ -37,16 +37,19 @@ impl TryFrom<RawCanonicalProposal> for CanonicalProposal {
 
     fn try_from(value: RawCanonicalProposal) -> Result<Self, Self::Error> {
         if value.pol_round < -1 {
-            return Err(error::negative_pol_round_error(anyhow::anyhow!("negative pol round error")));
+            return Err(error::negative_pol_round_error(anyhow::anyhow!(
+                "negative pol round error"
+            )));
         }
         let round = Round::try_from(
-            i32::try_from(value.round).map_err(|e| error::integer_overflow_error(anyhow::anyhow!(e)))?,
+            i32::try_from(value.round)
+                .map_err(|e| error::integer_overflow_error(anyhow::anyhow!(e)))?,
         )?;
         let pol_round = match value.pol_round {
             -1 => None,
-            n => Some(Round::try_from(
-                i32::try_from(n).map_err(|e| error::integer_overflow_error(anyhow::anyhow!(e)))?,
-            )?),
+            n => Some(Round::try_from(i32::try_from(n).map_err(|e| {
+                error::integer_overflow_error(anyhow::anyhow!(e))
+            })?)?),
         };
         // If the Hash is empty in BlockId, the BlockId should be empty.
         // See: https://github.com/informalsystems/tendermint-rs/issues/663
@@ -57,7 +60,9 @@ impl TryFrom<RawCanonicalProposal> for CanonicalProposal {
             round,
             pol_round,
             block_id: block_id.map(TryInto::try_into).transpose()?,
-            timestamp: value.timestamp.map(TryInto::try_into).transpose().map_err(|e: std::convert::Infallible| error::in_fallible_error(anyhow::anyhow!(e)))?,
+            timestamp: value.timestamp.map(TryInto::try_into).transpose().map_err(
+                |e: std::convert::Infallible| error::in_fallible_error(anyhow::anyhow!(e)),
+            )?,
             chain_id: ChainId::try_from(value.chain_id).unwrap(),
         })
     }

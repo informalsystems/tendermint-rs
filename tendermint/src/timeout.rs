@@ -1,10 +1,8 @@
-use crate::error::{self,  KindError as Error};
-
-use crate::primitives::format;
-use crate::primitives::Duration;
-use crate::primitives::String;
-use crate::primitives::ToString;
+use crate::error::{self, KindError as Error};
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
+use std::prelude::v1::format;
+use std::string::{String, ToString};
+use std::time::Duration;
 use std::{fmt, ops::Deref, str::FromStr};
 
 /// Timeout durations
@@ -37,20 +35,20 @@ impl FromStr for Timeout {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // Timeouts are either 'ms' or 's', and should always end with 's'
         if s.len() < 2 || !s.ends_with('s') {
-            return Err(error::parse_error(anyhow::anyhow!("invalid units")));
+            return Err(error::parse_error("invalid units".into()));
         }
 
         let units = match s.chars().nth(s.len() - 2) {
             Some('m') => "ms",
             Some('0'..='9') => "s",
-            _ => return Err(error::parse_error(anyhow::anyhow!("invalid units"))),
+            _ => return Err(error::parse_error("invalid units".into())),
         };
 
         let numeric_part = s.chars().take(s.len() - units.len()).collect::<String>();
 
         let numeric_value = numeric_part
             .parse::<u64>()
-            .map_err(|e| error::parse_error(anyhow::anyhow!(e)))?;
+            .map_err(|e| error::parse_int_error("parse int error".into(), e))?;
 
         let duration = match units {
             "s" => Duration::from_secs(numeric_value),
@@ -103,7 +101,7 @@ mod tests {
 
     #[test]
     fn reject_no_units() {
-        let expect = format_err!("{}","invalid units").to_string();
+        let expect = format_err!("{}", "invalid units").to_string();
         let got = "123".parse::<Timeout>().unwrap_err().to_string();
 
         assert_eq!(got, expect);

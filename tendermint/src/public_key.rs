@@ -9,11 +9,12 @@ mod pub_key_response;
 pub use pub_key_request::PubKeyRequest;
 pub use pub_key_response::PubKeyResponse;
 
-use crate::primitives::String;
+use crate::error::{self, KindError as Error};
 use crate::signature::Signature;
-use crate::error::{self,  KindError as Error};
 use serde::{de, ser, Deserialize, Serialize};
 use signature::Verifier as _;
+use std::prelude::v1::*;
+use std::string::String;
 use std::{cmp::Ordering, convert::TryFrom, fmt, ops::Deref, str::FromStr, vec::Vec};
 use subtle_encoding::{base64, bech32, hex};
 use tendermint_proto::crypto::public_key::Sum;
@@ -64,17 +65,17 @@ impl TryFrom<RawPublicKey> for PublicKey {
             .sum
             .ok_or_else(|| error::invalid_key_error(anyhow::anyhow!("empty sum")))?;
         if let Sum::Ed25519(b) = sum {
-            return Self::from_raw_ed25519(b).ok_or_else(|| {
-                error::invalid_key_error(anyhow::anyhow!("malformed ed25519 key"))
-            });
+            return Self::from_raw_ed25519(b)
+                .ok_or_else(|| error::invalid_key_error(anyhow::anyhow!("malformed ed25519 key")));
         }
         #[cfg(feature = "secp256k1")]
         if let Sum::Secp256k1(b) = sum {
-            return Self::from_raw_secp256k1(b).ok_or_else(|| {
-                error::invalid_key_error(anyhow::anyhow!("malformed key"))
-            });
+            return Self::from_raw_secp256k1(b)
+                .ok_or_else(|| error::invalid_key_error(anyhow::anyhow!("malformed key")));
         }
-        Err(error::invalid_key_error(anyhow::anyhow!("not an ed25519 key")))
+        Err(error::invalid_key_error(anyhow::anyhow!(
+            "not an ed25519 key"
+        )))
     }
 }
 
@@ -133,12 +134,20 @@ impl PublicKey {
         match self {
             PublicKey::Ed25519(pk) => match signature {
                 Signature::Ed25519(sig) => pk.verify(msg, sig).map_err(|_| {
-                    error::signature_invalid_error(anyhow::anyhow!("Ed25519 signature verification failed"))
+                    error::signature_invalid_error(anyhow::anyhow!(
+                        "Ed25519 signature verification failed"
+                    ))
                 }),
-                Signature::None => Err(error::signature_invalid_error(anyhow::anyhow!("missing signature"))),
+                Signature::None => Err(error::signature_invalid_error(anyhow::anyhow!(
+                    "missing signature"
+                ))),
             },
             #[cfg(feature = "secp256k1")]
-            PublicKey::Secp256k1(_) => return Err(error::invalid_error(anyhow::anyhow!("unsupported signature algorithm (ECDSA/secp256k1)"))),
+            PublicKey::Secp256k1(_) => {
+                return Err(error::invalid_error(anyhow::anyhow!(
+                    "unsupported signature algorithm (ECDSA/secp256k1)"
+                )))
+            }
         }
     }
 
@@ -160,23 +169,13 @@ impl PublicKey {
     pub fn to_bech32(self, hrp: &str) -> String {
         let backward_compatible_amino_prefixed_pubkey = match self {
             PublicKey::Ed25519(ref pk) => {
-                let mut key_bytes = Vec::new();
-                key_bytes.push(0x16);
-                key_bytes.push(0x24);
-                key_bytes.push(0xDE);
-                key_bytes.push(0x64);
-                key_bytes.push(0x20);
+                let mut key_bytes = vec![0x16, 0x24, 0xDE, 0x64, 0x20];
                 key_bytes.extend(pk.as_bytes());
                 key_bytes
             }
             #[cfg(feature = "secp256k1")]
             PublicKey::Secp256k1(ref pk) => {
-                let mut key_bytes = Vec::new();
-                key_bytes.push(0xEB);
-                key_bytes.push(0x5A);
-                key_bytes.push(0xE9);
-                key_bytes.push(0x87);
-                key_bytes.push(0x21);
+                let mut key_bytes = vec![0xEB, 0x5A, 0xE9, 0x87, 0x21];
                 key_bytes.extend(pk.as_bytes());
                 key_bytes
             }
@@ -252,7 +251,11 @@ impl TendermintKey {
         #[allow(unreachable_patterns)]
         match public_key {
             PublicKey::Ed25519(_) => Ok(TendermintKey::AccountKey(public_key)),
-            _ => return Err(error::invalid_key_error(anyhow::anyhow!("only ed25519 consensus keys are supported"))),
+            _ => {
+                return Err(error::invalid_key_error(anyhow::anyhow!(
+                    "only ed25519 consensus keys are supported"
+                )))
+            }
         }
     }
 
@@ -307,7 +310,7 @@ impl FromStr for Algorithm {
         match s {
             "ed25519" => Ok(Algorithm::Ed25519),
             "secp256k1" => Ok(Algorithm::Secp256k1),
-            _ => Err(error::parse_error(anyhow::anyhow!("parse error"))),
+            _ => Err(error::parse_error("unknown algorithm".into())),
         }
     }
 }

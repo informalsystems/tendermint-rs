@@ -1,9 +1,9 @@
 //! Monikers: names associated with validators
 
 use crate::error::KindError as Error;
-use crate::primitives::String;
 use serde::{Deserialize, Serialize};
 use std::borrow::ToOwned;
+use std::string::String;
 use std::{
     fmt::{self, Display},
     str::FromStr,

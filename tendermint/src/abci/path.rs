@@ -1,8 +1,8 @@
 //! Paths to ABCI data
 
 use crate::error::KindError as Error;
-use crate::primitives::String;
 use serde::{Deserialize, Serialize};
+use std::string::String;
 use std::{
     borrow::ToOwned,
     fmt::{self, Display},

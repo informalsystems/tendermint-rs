@@ -11,9 +11,9 @@ pub use sign_proposal::{SignProposalRequest, SignedProposalResponse};
 use crate::block::{Height, Id as BlockId, Round};
 use crate::chain::Id as ChainId;
 use crate::consensus::State;
+use crate::error::{self, KindError as Error};
 use crate::Signature;
 use crate::Time;
-use crate::error::{self,  KindError as Error};
 use bytes::BufMut;
 use std::{
     convert::{TryFrom, TryInto},
@@ -48,7 +48,9 @@ impl TryFrom<RawProposal> for Proposal {
 
     fn try_from(value: RawProposal) -> Result<Self, Self::Error> {
         if value.pol_round < -1 {
-            return Err(error::negative_pol_round_error(anyhow::anyhow!("negative pol round error")));
+            return Err(error::negative_pol_round_error(anyhow::anyhow!(
+                "negative pol round error"
+            )));
         }
         let pol_round = match value.pol_round {
             -1 => None,
@@ -60,7 +62,9 @@ impl TryFrom<RawProposal> for Proposal {
             round: value.round.try_into()?,
             pol_round,
             block_id: value.block_id.map(TryInto::try_into).transpose()?,
-            timestamp: value.timestamp.map(TryInto::try_into).transpose().map_err(|e: std::convert::Infallible| error::in_fallible_error(anyhow::anyhow!(e)))?,
+            timestamp: value.timestamp.map(TryInto::try_into).transpose().map_err(
+                |e: std::convert::Infallible| error::in_fallible_error(anyhow::anyhow!(e)),
+            )?,
             signature: value.signature.try_into()?,
         })
     }

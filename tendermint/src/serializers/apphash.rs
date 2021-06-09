@@ -1,8 +1,8 @@
 //! AppHash serialization with validation
 
-use crate::primitives::String;
 use crate::AppHash;
 use serde::{Deserialize, Deserializer, Serializer};
+use std::string::String;
 use subtle_encoding::hex;
 
 /// Deserialize hexstring into AppHash

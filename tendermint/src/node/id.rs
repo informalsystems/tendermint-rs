@@ -1,7 +1,7 @@
 //! Tendermint node IDs
 
+use crate::error::{self, KindError as Error};
 use crate::public_key::Ed25519;
-use crate::error::{self,  KindError as Error};
 
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
@@ -10,8 +10,8 @@ use std::{
     str::FromStr,
 };
 
-use crate::primitives::format;
-use crate::primitives::String;
+use std::string::String;
+use std::prelude::v1::format;
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
 
@@ -79,10 +79,10 @@ impl FromStr for Id {
         // Accept either upper or lower case hex
         let bytes = hex::decode_upper(s)
             .or_else(|_| hex::decode(s))
-            .map_err(|_| error::parse_error(anyhow::anyhow!("parse error")))?;
+            .map_err(|_| error::parse_error("Id decode error".into()))?;
 
         if bytes.len() != LENGTH {
-            return Err(error::parse_error(anyhow::anyhow!("parse error")));
+            return Err(error::parse_error("Id length error".into()));
         }
 
         let mut result_bytes = [0u8; LENGTH];

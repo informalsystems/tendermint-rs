@@ -3,10 +3,10 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use subtle_encoding::base64;
 
-use crate::primitives::format;
-use crate::primitives::String;
+use crate::error::{self, KindError as Error};
 use crate::{account, hash::Hash, merkle, vote, PublicKey, Signature};
-use crate::error::{self,  KindError as Error};
+use std::prelude::v1::format;
+use std::string::String;
 use std::{
     cmp::Reverse,
     convert::{TryFrom, TryInto},
@@ -46,7 +46,7 @@ impl TryFrom<RawValidatorSet> for Set {
             return Err(error::raw_voting_power_mismatch_error(
                 raw_voting_power,
                 validator_set.total_voting_power(),
-                anyhow::anyhow!("raw voting power mismatch error")
+                anyhow::anyhow!("raw voting power mismatch error"),
             ));
         }
 
@@ -99,7 +99,10 @@ impl Set {
             .iter()
             .find(|v| v.address == proposer_address)
             .cloned()
-            .ok_or(error::proposer_not_found_error(proposer_address, anyhow::anyhow!("proposer not found error")))?;
+            .ok_or(error::proposer_not_found_error(
+                proposer_address,
+                anyhow::anyhow!("proposer not found error"),
+            ))?;
 
         // Create the validator set with the given proposer.
         // This is required by IBC on-chain validation.
@@ -175,10 +178,14 @@ impl TryFrom<RawValidator> for Info {
             address: value.address.try_into()?,
             pub_key: value
                 .pub_key
-                .ok_or(error::missing_public_key_error(anyhow::anyhow!("missing public keyt error")))?
+                .ok_or(error::missing_public_key_error(anyhow::anyhow!(
+                    "missing public keyt error"
+                )))?
                 .try_into()?,
             voting_power: value.voting_power.try_into()?,
-            proposer_priority: value.proposer_priority.try_into().map_err(|e : std::convert::Infallible | error::in_fallible_error(anyhow::anyhow!(e)))?,
+            proposer_priority: value.proposer_priority.try_into().map_err(
+                |e: std::convert::Infallible| error::in_fallible_error(anyhow::anyhow!(e)),
+            )?,
         })
     }
 }

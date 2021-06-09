@@ -1,10 +1,10 @@
 //! Tendermint consensus parameters
 
-use crate::primitives::ToString;
+use crate::error::{self, KindError as Error};
 use crate::{block, evidence, public_key};
-use crate::error::{self,  KindError as Error};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
+use std::string::ToString;
 use std::vec::Vec;
 use tendermint_proto::abci::ConsensusParams as RawParams;
 use tendermint_proto::types::ValidatorParams as RawValidatorParams;
@@ -37,21 +37,31 @@ impl TryFrom<RawParams> for Params {
         Ok(Self {
             block: value
                 .block
-                .ok_or(error::invalid_block_error(anyhow::anyhow!("invalid block error")))?
+                .ok_or(error::invalid_block_error(anyhow::anyhow!(
+                    "invalid block error"
+                )))?
                 .try_into()?,
             evidence: value
                 .evidence
-                .ok_or(error::invalid_evidence_error(anyhow::anyhow!("invalid evidence error")))?
+                .ok_or(error::invalid_evidence_error(anyhow::anyhow!(
+                    "invalid evidence error"
+                )))?
                 .try_into()?,
             validator: value
                 .validator
-                .ok_or(error::invalid_validator_params_error(anyhow::anyhow!("invalid validator params error")))?
+                .ok_or(error::invalid_validator_params_error(anyhow::anyhow!(
+                    "invalid validator params error"
+                )))?
                 .try_into()?,
             version: value
                 .version
                 .map(TryFrom::try_from)
                 .transpose()
-                .map_err(|_| error::invalid_version_params_error(anyhow::anyhow!("invalid version params error")))?,
+                .map_err(|_| {
+                    error::invalid_version_params_error(anyhow::anyhow!(
+                        "invalid version params error"
+                    ))
+                })?,
         })
     }
 }

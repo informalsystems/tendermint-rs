@@ -1,8 +1,8 @@
 //! Tags
 
 use crate::error::KindError as Error;
-use crate::primitives::String;
 use serde::{Deserialize, Serialize};
+use std::string::String;
 use std::{fmt, str::FromStr};
 use tendermint_proto::serializers::bytes::base64string;
 

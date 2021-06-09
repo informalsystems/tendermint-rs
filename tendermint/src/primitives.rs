@@ -1,26 +1,12 @@
 //! primitive
 /// define String type in std and no_std
 extern crate std as _std;
-#[cfg(feature = "std")]
-pub use _std::string::{String, ToString};
-
-#[cfg(not(feature = "std"))]
-pub use alloc::string::{String, ToString};
-
 /// define time in std and no_std
 #[cfg(feature = "std")]
 pub use _std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[cfg(not(feature = "std"))]
 pub use no_std_time::{Duration, SystemTime, UNIX_EPOCH};
-
-/// define format macro in std and no_std
-#[cfg(feature = "std")]
-#[macro_export]
-pub use _std::format;
-
-#[cfg(not(feature = "std"))]
-pub use alloc::format;
 
 #[cfg(not(feature = "std"))]
 mod no_std_time {

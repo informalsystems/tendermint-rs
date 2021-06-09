@@ -1,17 +1,16 @@
 //! Hash functions and their outputs
 
-use crate::error::{self,  KindError as Error};
-use crate::primitives::format;
-use crate::primitives::String;
-use crate::primitives::ToString;
+use crate::error::{self, KindError as Error};
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::prelude::v1::format;
+use std::string::{String, ToString};
 use std::{
     convert::TryFrom,
     fmt::{self, Debug, Display},
     str::FromStr,
-    vec::Vec,
 };
+use std::prelude::v1::*;
 use subtle_encoding::{Encoding, Hex};
 use tendermint_proto::Protobuf;
 
@@ -52,7 +51,7 @@ impl From<Hash> for Vec<u8> {
     fn from(value: Hash) -> Self {
         match value {
             Hash::Sha256(s) => s.to_vec(),
-            Hash::None => Vec::new(),
+            Hash::None => vec![],
         }
     }
 }
@@ -70,7 +69,10 @@ impl Hash {
                     h.copy_from_slice(bytes);
                     Ok(Hash::Sha256(h))
                 } else {
-                    Err(error::parse_error(anyhow::anyhow!(format!("hash invalid length: {}", bytes.len()))))
+                    Err(error::parse_error(format!(
+                        "hash invalid length: {}",
+                        bytes.len()
+                    )))
                 }
             }
         }
@@ -84,7 +86,11 @@ impl Hash {
         match alg {
             Algorithm::Sha256 => {
                 let mut h = [0u8; SHA256_HASH_SIZE];
-                Hex::upper_case().decode_to_slice(s.as_bytes(), &mut h).map_err(|e: subtle_encoding::Error| error::subtle_encoding_error(anyhow::anyhow!(e)))?;
+                Hex::upper_case()
+                    .decode_to_slice(s.as_bytes(), &mut h)
+                    .map_err(|e: subtle_encoding::Error| {
+                        error::subtle_encoding_error(anyhow::anyhow!(e))
+                    })?;
                 Ok(Hash::Sha256(h))
             }
         }
@@ -216,13 +222,19 @@ impl AppHash {
     /// Decode a `Hash` from upper-case hexadecimal
     pub fn from_hex_upper(s: &str) -> Result<Self, Error> {
         if s.len() % 2 != 0 {
-            return Err(error::invalid_app_hash_length_error(anyhow::anyhow!("invalid app hash length error")));
+            return Err(error::invalid_app_hash_length_error(anyhow::anyhow!(
+                "invalid app hash length error"
+            )));
         }
         let mut h = Vec::new();
         for _ in 0..(s.len() / 2) {
             h.push(0);
         }
-        Hex::upper_case().decode_to_slice(s.as_bytes(), &mut h).map_err(|e: subtle_encoding::Error| error::subtle_encoding_error(anyhow::anyhow!(e)))?;
+        Hex::upper_case()
+            .decode_to_slice(s.as_bytes(), &mut h)
+            .map_err(|e: subtle_encoding::Error| {
+                error::subtle_encoding_error(anyhow::anyhow!(e))
+            })?;
         Ok(AppHash(h))
     }
 }

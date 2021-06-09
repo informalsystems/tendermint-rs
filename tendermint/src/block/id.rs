@@ -1,17 +1,16 @@
-use crate::primitives::String;
-use crate::primitives::ToString;
+use crate::error::{self, KindError as Error};
 use crate::{
     block::parts::Header as PartSetHeader,
     hash::{Algorithm, Hash},
 };
-use crate::error::{self, KindError as Error};
 use serde::{Deserialize, Serialize};
+use std::string::{String, ToString};
 use std::{
     convert::{TryFrom, TryInto},
     fmt::{self, Display},
     str::{self, FromStr},
-    vec::Vec,
 };
+use std::prelude::v1::*;
 use tendermint_proto::types::{
     BlockId as RawBlockId, CanonicalBlockId as RawCanonicalBlockId,
     PartSetHeader as RawPartSetHeader,
@@ -67,7 +66,9 @@ impl TryFrom<RawBlockId> for Id {
 
     fn try_from(value: RawBlockId) -> Result<Self, Self::Error> {
         if value.part_set_header.is_none() {
-            return Err(error::invalid_part_set_header_error(anyhow::anyhow!("part_set_header is None")));
+            return Err(error::invalid_part_set_header_error(anyhow::anyhow!(
+                "part_set_header is None"
+            )));
         }
         Ok(Self {
             hash: value.hash.try_into()?,
@@ -84,10 +85,10 @@ impl From<Id> for RawBlockId {
         // invalid.
         if value == Id::default() {
             RawBlockId {
-                hash: Vec::new(),
+                hash: vec![],
                 part_set_header: Some(RawPartSetHeader {
                     total: 0,
-                    hash: Vec::new(),
+                    hash: vec![],
                 }),
             }
         } else {
@@ -104,7 +105,9 @@ impl TryFrom<RawCanonicalBlockId> for Id {
 
     fn try_from(value: RawCanonicalBlockId) -> Result<Self, Self::Error> {
         if value.part_set_header.is_none() {
-            return Err(error::invalid_part_set_header_error(anyhow::anyhow!("part_set_header is None")));
+            return Err(error::invalid_part_set_header_error(anyhow::anyhow!(
+                "part_set_header is None"
+            )));
         }
         Ok(Self {
             hash: value.hash.try_into()?,

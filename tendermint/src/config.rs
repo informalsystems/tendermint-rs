@@ -14,12 +14,8 @@ mod priv_validator_key;
 
 pub use self::{node_key::NodeKey, priv_validator_key::PrivValidatorKey};
 
-use crate::{
-    abci::tag,
-    genesis::Genesis,
-    net, node, Moniker, Timeout,
-};
-use crate::error::{self,  KindError as Error};
+use crate::error::{self, KindError as Error};
+use crate::{abci::tag, genesis::Genesis, net, node, Moniker, Timeout};
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
 use std::{
     collections::btree_map::BTreeMap,
@@ -29,8 +25,8 @@ use std::{
     vec::Vec,
 };
 
-use crate::primitives::format;
-use crate::primitives::{String, ToString};
+use std::prelude::v1::format;
+use std::string::{String, ToString};
 
 /// Tendermint `config.toml` file
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -111,7 +107,8 @@ pub struct TendermintConfig {
 impl TendermintConfig {
     /// Parse Tendermint `config.toml`
     pub fn parse_toml<T: AsRef<str>>(toml_string: T) -> Result<Self, Error> {
-        Ok(toml::from_str(toml_string.as_ref()).map_err(|e: toml::de::Error| error::toml_error(anyhow::anyhow!(e)))?)
+        Ok(toml::from_str(toml_string.as_ref())
+            .map_err(|e: toml::de::Error| error::toml_error(anyhow::anyhow!(e)))?)
     }
 
     /// Load `config.toml` from a file
@@ -121,7 +118,7 @@ impl TendermintConfig {
     {
         let toml_string = fs::read_to_string(path).map_err(|e| {
             let context = format!("couldn't open {}:{}", path.as_ref().display(), e);
-            error::parse_error(anyhow::anyhow!(context))
+            error::parse_error(context)
         })?;
 
         Self::parse_toml(toml_string)
@@ -132,10 +129,11 @@ impl TendermintConfig {
         let path = home.as_ref().join(&self.genesis_file);
         let genesis_json = fs::read_to_string(&path).map_err(|e| {
             let context = format!("couldn't open: {}: {}", path.display(), e);
-            error::parse_error(anyhow::anyhow!(context))
+            error::parse_error(context)
         })?;
 
-        Ok(serde_json::from_str(genesis_json.as_ref()).map_err(|e: serde_json::Error| error::serde_json_error(anyhow::anyhow!(e)))?)
+        Ok(serde_json::from_str(genesis_json.as_ref())
+            .map_err(|e: serde_json::Error| error::serde_json_error(anyhow::anyhow!(e)))?)
     }
 
     /// Load `node_key.json` file from the configured location
@@ -194,7 +192,7 @@ impl FromStr for LogLevel {
 
             if parts.len() != 2 {
                 let context = format!("error parsing log level: {}", level);
-                return Err(error::parse_error(anyhow::anyhow!(context)));
+                return Err(error::parse_error(context));
             }
 
             let key = parts[0].to_owned();
@@ -202,7 +200,7 @@ impl FromStr for LogLevel {
 
             if levels.insert(key, value).is_some() {
                 let context = format!("error parsing log level: {}", level);
-                return Err(error::parse_error(anyhow::anyhow!(context)));
+                return Err(error::parse_error(context));
             }
         }
 

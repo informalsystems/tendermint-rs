@@ -8,9 +8,8 @@ use std::{
     str::FromStr,
 };
 
-use crate::primitives::format;
-use crate::primitives::String;
-use crate::primitives::ToString;
+use std::prelude::v1::format;
+use std::string::{String, ToString};
 
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
@@ -70,10 +69,10 @@ impl FromStr for Hash {
         // Accept either upper or lower case hex
         let bytes = hex::decode_upper(s)
             .or_else(|_| hex::decode(s))
-            .map_err(|_| error::parse_error(anyhow::anyhow!("hash decode")))?;
+            .map_err(|_| error::parse_error("hash decode error".into()))?;
 
         if bytes.len() != LENGTH {
-            return Err(error::parse_error(anyhow::anyhow!("hash length")));
+            return Err(error::parse_error("hash length error".into()));
         }
 
         let mut result_bytes = [0u8; LENGTH];

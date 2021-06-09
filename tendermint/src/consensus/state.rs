@@ -1,9 +1,9 @@
 //! Tendermint consensus state
 
 pub use crate::block;
-use crate::primitives::String;
 use serde::{Deserialize, Serialize};
 use std::borrow::ToOwned;
+use std::string::String;
 pub use std::{cmp::Ordering, fmt};
 
 /// Placeholder string to show when block ID is absent. Syntax from:

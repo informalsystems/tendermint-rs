@@ -1,11 +1,11 @@
 //! Timestamps used by Tendermint blockchains
 
-use crate::error::{self,  KindError as Error};
+use crate::error::{self, KindError as Error};
 
-use crate::primitives::String;
 use crate::primitives::{Duration, SystemTime, UNIX_EPOCH};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::string::String;
 use std::{
     convert::{Infallible, TryFrom},
     fmt,
@@ -72,7 +72,11 @@ impl Time {
 
     /// Parse [`Time`] from an RFC 3339 date
     pub fn parse_from_rfc3339(s: &str) -> Result<Time, Error> {
-        Ok(Time(DateTime::parse_from_rfc3339(s).map_err(|e: chrono::ParseError| error::chrono_parse_error(anyhow::anyhow!(e)))?.with_timezone(&Utc)))
+        Ok(Time(
+            DateTime::parse_from_rfc3339(s)
+                .map_err(|e: chrono::ParseError| error::chrono_parse_error(anyhow::anyhow!(e)))?
+                .with_timezone(&Utc),
+        ))
     }
 
     /// Return an RFC 3339 and ISO 8601 date and time string with 6 subseconds digits and Z.

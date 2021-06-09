@@ -3,211 +3,220 @@
 use crate::account;
 use crate::vote;
 use flex_error::*;
-
+use std::string::String;
 pub type Error = anyhow::Error;
 
+define_error! {
+    #[derive(Debug)]
+    KindError {
+        Crypto
+        [DisplayError<Error>]
+        |_| { format_args!("cryptographic error") },
 
-define_error! { KindError;
-    Crypto
-    [DisplayError<Error>]
-    |_| { format_args!("cryptographic error") },
+        InvalidKey
+        [DisplayError<Error>]
+        |_| { format_args!("invalid key") },
 
-    InvalidKey
-    [DisplayError<Error>]
-    |_| { format_args!("invalid key") },
+        Io
+        [DisplayError<Error>]
+        |_| { format_args!("I/O error") },
 
-    Io
-    [DisplayError<Error>]
-    |_| { format_args!("I/O error") },
+        Length
+        [DisplayError<Error>]
+        |_| { format_args!("length error") },
 
-    Length
-    [DisplayError<Error>]
-    |_| { format_args!("length error") },
+        Parse
+        {data: String}
+        | e | { format_args!("error parsing data {}", e.data) },
 
-    Parse
-    [DisplayError<Error>]
-    |_| { format_args!("parse error") },
+        ParseInt
+        {data: String}
+        [DisplayError<std::num::ParseIntError>]
+        | e | { format_args!("error parsing int data: {}", e.data) },
 
-    Protocol
-    [DisplayError<Error>]
-    |_| { format_args!("protocol error") },
+        ParseUrl
+        [DisplayError<url::ParseError>]
+        |_| { format_args!("error parsing url error") },
 
-    OutOfRange
-    [DisplayError<Error>]
-    |_| { format_args!("value out of range") },
+        Protocol
+        [DisplayError<Error>]
+        |_| { format_args!("protocol error") },
 
-    SignatureInvalid
-    [DisplayError<Error>]
-    |_| { format_args!("bad signature") },
+        OutOfRange
+        [DisplayError<Error>]
+        |_| { format_args!("value out of range") },
 
-    InvalidMessageType
-    [DisplayError<Error>]
-    |_| { format_args!("invalid message type") },
+        SignatureInvalid
+        [DisplayError<Error>]
+        |_| { format_args!("bad signature") },
 
-    NegativeHeight
-    [DisplayError<Error>]
-    |_| { format_args!("negative height") },
+        InvalidMessageType
+        [DisplayError<Error>]
+        |_| { format_args!("invalid message type") },
 
-    NegativeRound
-    [DisplayError<Error>]
-    |_| { format_args!("negative round") },
+        NegativeHeight
+        [DisplayError<Error>]
+        |_| { format_args!("negative height") },
 
-    NegativePolRound
-    [DisplayError<Error>]
-    |_| { format_args!("negative POL round") },
+        NegativeRound
+        [DisplayError<Error>]
+        |_| { format_args!("negative round") },
 
-    NegativeValidatorIndex
-    [DisplayError<Error>]
-    |_| { format_args!("negative validator index") },
+        NegativePolRound
+        [DisplayError<Error>]
+        |_| { format_args!("negative POL round") },
 
-    InvalidHashSize
-    [DisplayError<Error>]
-    |_| { format_args!("invalid hash: expected hash size to be 32 bytes") },
+        NegativeValidatorIndex
+        [DisplayError<Error>]
+        |_| { format_args!("negative validator index") },
 
-    NoTimestamp
-    [DisplayError<Error>]
-    |_| { format_args!("no timestamp") },
+        InvalidHashSize
+        [DisplayError<Error>]
+        |_| { format_args!("invalid hash: expected hash size to be 32 bytes") },
 
-    InvalidTimestamp
-    [DisplayError<Error>]
-    |_| { format_args!("invalid timestamp") },
+        NoTimestamp
+        |_| { format_args!("no timestamp") },
 
-    InvalidAccountIdLength
-    [DisplayError<Error>]
-    |_| { format_args!("invalid account ID length") },
+        InvalidTimestamp
+        [DisplayError<Error>]
+        |_| { format_args!("invalid timestamp") },
 
-    InvalidSignatureIdLength
-    [DisplayError<Error>]
-    |_| { format_args!("invalid signature ID length") },
+        InvalidAccountIdLength
+        [DisplayError<Error>]
+        |_| { format_args!("invalid account ID length") },
 
-    IntegerOverflow
-    [DisplayError<Error>]
-    |_| { format_args!("integer overflow") },
+        InvalidSignatureIdLength
+        [DisplayError<Error>]
+        |_| { format_args!("invalid signature ID length") },
 
-    NoVoteFound
-    [DisplayError<Error>]
-    |_| { format_args!("no vote found") },
+        IntegerOverflow
+        [DisplayError<Error>]
+        |_| { format_args!("integer overflow") },
 
-    NoProposalFound
-    [DisplayError<Error>]
-    |_| { format_args!("no proposal found") },
+        NoVoteFound
+        [DisplayError<Error>]
+        |_| { format_args!("no vote found") },
 
-    InvalidAppHashLength
-    [DisplayError<Error>]
-    |_| { format_args!("invalid app hash length") },
+        NoProposalFound
+        [DisplayError<Error>]
+        |_| { format_args!("no proposal found") },
 
-    InvalidPartSetHeader
-    [DisplayError<Error>]
-    |_| { format_args!("invalid part set header") },
+        InvalidAppHashLength
+        [DisplayError<Error>]
+        |_| { format_args!("invalid app hash length") },
 
-    MissingHeader
-    [DisplayError<Error>]
-    |_| { format_args!("missing header field") },
+        InvalidPartSetHeader
+        [DisplayError<Error>]
+        |_| { format_args!("invalid part set header") },
 
-    MissingData
-    [DisplayError<Error>]
-    |_| { format_args!("missing data field") },
+        MissingHeader
+        [DisplayError<Error>]
+        |_| { format_args!("missing header field") },
 
-    MissingEvidence
-    [DisplayError<Error>]
-    |_| { format_args!("missing evidence field") },
+        MissingData
+        [DisplayError<Error>]
+        |_| { format_args!("missing data field") },
 
-    MissingTimestamp
-    [DisplayError<Error>]
-    |_| { format_args!("missing timestamp field") },
+        MissingEvidence
+        [DisplayError<Error>]
+        |_| { format_args!("missing evidence field") },
 
-    InvalidBlock
-    [DisplayError<Error>]
-    |_| { format_args!("invalid block") },
+        MissingTimestamp
+        [DisplayError<Error>]
+        |_| { format_args!("missing timestamp field") },
 
-    InvalidFristBlock
-    [DisplayError<Error>]
-    |_| { format_args!("invalid first block") },
+        InvalidBlock
+        [DisplayError<Error>]
+        |_| { format_args!("invalid block") },
 
-    MissingVersion
-    [DisplayError<Error>]
-    |_| { format_args!("missing version") },
+        InvalidFristBlock
+        [DisplayError<Error>]
+        |_| { format_args!("invalid first block") },
 
-    InvalidHeader
-    [DisplayError<Error>]
-    |_| { format_args!("invalid header") },
+        MissingVersion
+        [DisplayError<Error>]
+        |_| { format_args!("missing version") },
 
-    InvalidFirstHeader
-    [DisplayError<Error>]
-    |_| { format_args!("invalid first header") },
+        InvalidHeader
+        [DisplayError<Error>]
+        |_| { format_args!("invalid header") },
 
-    InvalidSignature
-    [DisplayError<Error>]
-    |_| { format_args!("invalid signature") },
+        InvalidFirstHeader
+        [DisplayError<Error>]
+        |_| { format_args!("invalid first header") },
 
-    InvalidValidatorAddress
-    [DisplayError<Error>]
-    |_| { format_args!("invalid validator address") },
+        InvalidSignature
+        [DisplayError<Error>]
+        |_| { format_args!("invalid signature") },
 
-    InvalidSignedHeader
-    [DisplayError<Error>]
-    |_| { format_args!("invalid signed header") },
+        InvalidValidatorAddress
+        [DisplayError<Error>]
+        |_| { format_args!("invalid validator address") },
 
-    InvalidEvidence
-    [DisplayError<Error>]
-    |_| { format_args!("invalid evidence") },
+        InvalidSignedHeader
+        [DisplayError<Error>]
+        |_| { format_args!("invalid signed header") },
 
-    BlockIdFlag
-    [DisplayError<Error>]
-    |_| { format_args!("invalid block id flag") },
+        InvalidEvidence
+        [DisplayError<Error>]
+        |_| { format_args!("invalid evidence") },
 
-    NegativePower
-    [DisplayError<Error>]
-    |_| { format_args!("negative power") },
+        BlockIdFlag
+        [DisplayError<Error>]
+        |_| { format_args!("invalid block id flag") },
 
-    RawVotingPowerMismatch
-    { raw: vote::Power, computed: vote::Power}
-    [DisplayError<Error>]
-    |e| { format_args!("mismatch between raw voting ({0:?}) and computed one ({1:?})", e.raw, e.computed) },
+        NegativePower
+        [DisplayError<Error>]
+        |_| { format_args!("negative power") },
 
-    MissingPublicKey
-    [DisplayError<Error>]
-    |_| { format_args!("missing public key") },
+        RawVotingPowerMismatch
+        { raw: vote::Power, computed: vote::Power}
+        [DisplayError<Error>]
+        |e| { format_args!("mismatch between raw voting ({0:?}) and computed one ({1:?})", e.raw, e.computed) },
 
-    InvalidValidatorParams
-    [DisplayError<Error>]
-    |_| { format_args!("invalid validator parameters") },
+        MissingPublicKey
+        [DisplayError<Error>]
+        |_| { format_args!("missing public key") },
 
-    InvalidVersionParams
-    [DisplayError<Error>]
-    |_| { format_args!("invalid version parameters") },
+        InvalidValidatorParams
+        [DisplayError<Error>]
+        |_| { format_args!("invalid validator parameters") },
 
-    NegativeMaxAgeNum
-    [DisplayError<Error>]
-    |_| { format_args!("negative max_age_num_blocks") },
+        InvalidVersionParams
+        [DisplayError<Error>]
+        |_| { format_args!("invalid version parameters") },
 
-    MissingMaxAgeDuration
-    [DisplayError<Error>]
-    |_| { format_args!("missing max_age_duration") },
+        NegativeMaxAgeNum
+        [DisplayError<Error>]
+        |_| { format_args!("negative max_age_num_blocks") },
 
-    ProposerNotFound
-    {account: account::Id}
-    [DisplayError<Error>]
-    |e| { format_args!("proposer with address '{0}' no found in validator set", e.account) },
+        MissingMaxAgeDuration
+        [DisplayError<Error>]
+        |_| { format_args!("missing max_age_duration") },
 
-    InFallible
-    [DisplayError<Error>]
-    |_| { format_args!("infallible") },
+        ProposerNotFound
+        {account: account::Id}
+        [DisplayError<Error>]
+        |e| { format_args!("proposer with address '{0}' no found in validator set", e.account) },
 
-    ChronoParse
-    [DisplayError<Error>]
-    |_| { format_args!("chrono parse error") },
+        InFallible
+        [DisplayError<Error>]
+        |_| { format_args!("infallible") },
 
-    SubtleEncoding
-    [DisplayError<Error>]
-    |_| { format_args!("subtle encoding error") },
+        ChronoParse
+        [DisplayError<Error>]
+        |_| { format_args!("chrono parse error") },
 
-    SerdeJson
-    [DisplayError<Error>]
-    |_| { format_args!("serde json error") },
+        SubtleEncoding
+        [DisplayError<Error>]
+        |_| { format_args!("subtle encoding error") },
 
-    Toml
-    [DisplayError<Error>]
-    |_| { format_args!("toml de error") },
+        SerdeJson
+        [DisplayError<Error>]
+        |_| { format_args!("serde json error") },
+
+        Toml
+        [DisplayError<Error>]
+        |_| { format_args!("toml de error") },
+    }
 }
-

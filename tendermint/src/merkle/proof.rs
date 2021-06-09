@@ -6,9 +6,9 @@ use tendermint_proto::crypto::ProofOp as RawProofOp;
 use tendermint_proto::crypto::ProofOps as RawProofOps;
 use tendermint_proto::Protobuf;
 
-use crate::primitives::String;
-use crate::serializers;
 use crate::error::KindError as Error;
+use crate::serializers;
+use std::string::String;
 use std::vec::Vec;
 
 /// Proof is Merkle proof defined by the list of ProofOps

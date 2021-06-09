@@ -1,4 +1,4 @@
-use crate::error::{self,  KindError as Error};
+use crate::error::{self, KindError as Error};
 use std::{
     convert::{TryFrom, TryInto},
     fmt::{self, Debug, Display},
@@ -13,11 +13,9 @@ impl TryFrom<i32> for ValidatorIndex {
     type Error = Error;
 
     fn try_from(value: i32) -> Result<Self, Self::Error> {
-        Ok(ValidatorIndex(
-            value
-                .try_into()
-                .map_err(|_| error::negative_validator_index_error(anyhow::anyhow!("negative validator index error")))?,
-        ))
+        Ok(ValidatorIndex(value.try_into().map_err(|_| {
+            error::negative_validator_index_error(anyhow::anyhow!("negative validator index error"))
+        })?))
     }
 }
 
@@ -32,7 +30,9 @@ impl TryFrom<u32> for ValidatorIndex {
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
         if value > i32::MAX as u32 {
-            return Err(error::integer_overflow_error(anyhow::anyhow!("integer overflow error")));
+            return Err(error::integer_overflow_error(anyhow::anyhow!(
+                "integer overflow error"
+            )));
         }
         Ok(ValidatorIndex(value))
     }
@@ -48,11 +48,9 @@ impl TryFrom<usize> for ValidatorIndex {
     type Error = Error;
 
     fn try_from(value: usize) -> Result<Self, Self::Error> {
-        Ok(ValidatorIndex(
-            value
-                .try_into()
-                .map_err(|_| error::integer_overflow_error(anyhow::anyhow!("integer overflow error")))?,
-        ))
+        Ok(ValidatorIndex(value.try_into().map_err(|_| {
+            error::integer_overflow_error(anyhow::anyhow!("integer overflow error"))
+        })?))
     }
 }
 
@@ -90,7 +88,7 @@ impl FromStr for ValidatorIndex {
     fn from_str(s: &str) -> Result<Self, Error> {
         ValidatorIndex::try_from(
             s.parse::<u32>()
-                .map_err(|_| error::parse_error(anyhow::anyhow!("validator index decode")))?,
+                .map_err(|e| error::parse_int_error("validator index decode".into(), e))?,
         )
     }
 }

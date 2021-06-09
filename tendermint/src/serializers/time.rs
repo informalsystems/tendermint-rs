@@ -2,9 +2,9 @@
 //! RFC3339-compatible timestamps to that provided by the `tendermint-proto`
 //! crate.
 
-use crate::primitives::String;
 use crate::Time;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::string::String;
 
 /// Serialize from `Time` into `String`
 pub fn serialize<S>(value: &Time, serializer: S) -> Result<S::Ok, S::Error>

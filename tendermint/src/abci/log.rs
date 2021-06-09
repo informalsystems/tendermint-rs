@@ -1,7 +1,7 @@
-use crate::primitives::String;
 use serde::{Deserialize, Serialize};
 use std::borrow::ToOwned;
 use std::fmt::{self, Display};
+use std::string::String;
 
 /// ABCI log data
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]

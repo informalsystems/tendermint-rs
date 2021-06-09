@@ -107,9 +107,9 @@ pub mod serializers;
 /// assert!(MyDomainType::decode(invalid_raw_bytes.as_ref()).is_err());
 /// ```
 pub trait Protobuf<T: Message + From<Self> + Default>
-    where
-        Self: Sized + Clone + TryFrom<T>,
-        <Self as TryFrom<T>>::Error: Into<BoxError>,
+where
+    Self: Sized + Clone + TryFrom<T>,
+    <Self as TryFrom<T>>::Error: Into<BoxError>,
 {
     /// Encode into a buffer in Protobuf format.
     ///

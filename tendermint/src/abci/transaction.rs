@@ -3,10 +3,10 @@
 mod hash;
 
 pub use self::hash::Hash;
-use crate::primitives::format;
-use crate::primitives::String;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use std::vec::Vec;
+use std::prelude::v1::format;
+use std::string::String;
+use std::prelude::v1::*;
 use std::{fmt, slice};
 use subtle_encoding::base64;
 use tendermint_proto::types::Data as RawData;
@@ -98,7 +98,7 @@ impl From<RawData> for Data {
 impl From<Data> for RawData {
     fn from(value: Data) -> Self {
         if value.txs.is_none() {
-            return RawData { txs: Vec::new() };
+            return RawData { txs: vec![] };
         }
         RawData {
             txs: value

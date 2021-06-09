@@ -1,11 +1,11 @@
 //! Block headers
 
+use crate::error::{self, KindError as Error};
 use crate::merkle::simple_hash_from_byte_vectors;
 use crate::{account, block, chain, AppHash, Hash, Time};
-use crate::error::{self, KindError as Error};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
-use std::vec::Vec;
+use std::prelude::v1::*;
 use tendermint_proto::types::Header as RawHeader;
 use tendermint_proto::version::Consensus as RawConsensusVersion;
 use tendermint_proto::Protobuf;
@@ -91,7 +91,9 @@ impl TryFrom<RawHeader> for Header {
         // height").into());
         //}
         if last_block_id.is_some() && height.value() == 1 {
-            return Err(error::invalid_first_header_error(anyhow::anyhow!("last_block_id is not null on first height")));
+            return Err(error::invalid_first_header_error(anyhow::anyhow!(
+                "last_block_id is not null on first height"
+            )));
         }
         //if last_commit_hash.is_none() && height.value() != 1 {
         //    return Err(Kind::InvalidHeader.context("last_commit_hash is null on non-first
@@ -113,14 +115,19 @@ impl TryFrom<RawHeader> for Header {
         Ok(Header {
             version: value
                 .version
-                .ok_or(error::missing_version_error(anyhow::anyhow!("missing version error")))?
+                .ok_or(error::missing_version_error(anyhow::anyhow!(
+                    "missing version error"
+                )))?
                 .try_into()?,
             chain_id: value.chain_id.try_into()?,
             height,
             time: value
                 .time
-                .ok_or(error::no_timestamp_error(anyhow::anyhow!("no timestamp error")))?
-                .try_into().map_err(|e: std::convert::Infallible| error::in_fallible_error(anyhow::anyhow!(e)))?,
+                .ok_or(error::no_timestamp_error())?
+                .try_into()
+                .map_err(|e: std::convert::Infallible| {
+                    error::in_fallible_error(anyhow::anyhow!(e))
+                })?,
             last_block_id,
             last_commit_hash,
             data_hash: if value.data_hash.is_empty() {
@@ -172,32 +179,28 @@ impl Header {
         // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/block.go#L393
         // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/encoding_helper.go#L9:6
 
-        let mut fields_bytes = Vec::new();
-        fields_bytes.push(self.version.encode_vec().unwrap());
-        fields_bytes.push(self.chain_id.encode_vec().unwrap());
-        fields_bytes.push(self.height.encode_vec().unwrap());
-        fields_bytes.push(self.time.encode_vec().unwrap());
-        fields_bytes.push(self.last_block_id.unwrap_or_default().encode_vec().unwrap());
-        fields_bytes.push(
+        let fields_bytes = vec![
+            self.version.encode_vec().unwrap(),
+            self.chain_id.encode_vec().unwrap(),
+            self.height.encode_vec().unwrap(),
+            self.time.encode_vec().unwrap(),
+            self.last_block_id.unwrap_or_default().encode_vec().unwrap(),
             self.last_commit_hash
                 .unwrap_or_default()
                 .encode_vec()
                 .unwrap(),
-        );
-        fields_bytes.push(self.data_hash.unwrap_or_default().encode_vec().unwrap());
-        fields_bytes.push(self.validators_hash.encode_vec().unwrap());
-        fields_bytes.push(self.next_validators_hash.encode_vec().unwrap());
-        fields_bytes.push(self.consensus_hash.encode_vec().unwrap());
-        fields_bytes.push(self.app_hash.encode_vec().unwrap());
-        fields_bytes.push(
+            self.data_hash.unwrap_or_default().encode_vec().unwrap(),
+            self.validators_hash.encode_vec().unwrap(),
+            self.next_validators_hash.encode_vec().unwrap(),
+            self.consensus_hash.encode_vec().unwrap(),
+            self.app_hash.encode_vec().unwrap(),
             self.last_results_hash
                 .unwrap_or_default()
                 .encode_vec()
                 .unwrap(),
-        );
-        fields_bytes.push(self.evidence_hash.unwrap_or_default().encode_vec().unwrap());
-        fields_bytes.push(self.proposer_address.encode_vec().unwrap());
-
+            self.evidence_hash.unwrap_or_default().encode_vec().unwrap(),
+            self.proposer_address.encode_vec().unwrap(),
+        ];
         Hash::Sha256(simple_hash_from_byte_vectors(fields_bytes))
     }
 }
