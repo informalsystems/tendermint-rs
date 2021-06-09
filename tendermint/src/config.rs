@@ -486,6 +486,7 @@ pub struct MempoolConfig {
     /// Do not remove invalid transactions from the cache (default: false)
     /// Set to true if it's not possible for any invalid transaction to become valid
     /// again in the future.
+    #[serde(rename = "keep-invalid-txs-in-cache")]
     pub keep_invalid_txs_in_cache: bool,
 
     /// Maximum size of a single transaction.
