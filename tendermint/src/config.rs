@@ -318,6 +318,12 @@ pub struct RpcConfig {
     /// How long to wait for a tx to be committed during `/broadcast_tx_commit`.
     pub timeout_broadcast_tx_commit: Timeout,
 
+    /// Maximum size of request body, in bytes
+    pub max_body_bytes: u64,
+
+    /// Maximum size of request header, in bytes
+    pub max_header_bytes: u64,
+
     /// The name of a file containing certificate that is used to create the HTTPS server.
     #[serde(deserialize_with = "deserialize_optional_value")]
     pub tls_cert_file: Option<PathBuf>,
@@ -325,6 +331,10 @@ pub struct RpcConfig {
     /// The name of a file containing matching private key that is used to create the HTTPS server.
     #[serde(deserialize_with = "deserialize_optional_value")]
     pub tls_key_file: Option<PathBuf>,
+ 
+    /// pprof listen address (https://golang.org/pkg/net/http/pprof)
+    #[serde(deserialize_with = "deserialize_optional_value")]
+    pub pprof_laddr: Option<net::Address>,
 }
 
 /// Origin hosts allowed with CORS requests to the RPC API
