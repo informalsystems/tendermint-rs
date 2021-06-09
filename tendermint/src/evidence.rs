@@ -43,9 +43,7 @@ impl TryFrom<RawEvidence> for Evidence {
     type Error = Error;
 
     fn try_from(value: RawEvidence) -> Result<Self, Self::Error> {
-        match value
-            .sum
-            .ok_or(error::invalid_evidence_error())? {
+        match value.sum.ok_or(error::invalid_evidence_error())? {
             Sum::DuplicateVoteEvidence(ev) => Ok(Evidence::DuplicateVote(ev.try_into()?)),
             Sum::LightClientAttackEvidence(_ev) => Ok(Evidence::LightClientAttackEvidence),
         }
@@ -238,9 +236,10 @@ impl TryFrom<RawEvidenceParams> for Params {
 
     fn try_from(value: RawEvidenceParams) -> Result<Self, Self::Error> {
         Ok(Self {
-            max_age_num_blocks: value.max_age_num_blocks.try_into().map_err(|_| {
-                error::negative_max_age_num_error()
-            })?,
+            max_age_num_blocks: value
+                .max_age_num_blocks
+                .try_into()
+                .map_err(|_| error::negative_max_age_num_error())?,
             max_age_duration: value
                 .max_age_duration
                 .ok_or(error::missing_max_age_duration_error())?
@@ -260,8 +259,6 @@ impl From<Params> for RawEvidenceParams {
         }
     }
 }
-
-
 
 /// Duration is a wrapper around std::time::Duration
 /// essentially, to keep the usages look cleaner
@@ -284,12 +281,14 @@ impl TryFrom<RawDuration> for Duration {
 
     fn try_from(value: RawDuration) -> Result<Self, Self::Error> {
         Ok(Self(std::time::Duration::new(
-            value.seconds.try_into().map_err(|_| {
-                error::integer_overflow_error()
-            })?,
-            value.nanos.try_into().map_err(|_| {
-                error::integer_overflow_error()
-            })?,
+            value
+                .seconds
+                .try_into()
+                .map_err(|_| error::integer_overflow_error())?,
+            value
+                .nanos
+                .try_into()
+                .map_err(|_| error::integer_overflow_error())?,
         )))
     }
 }

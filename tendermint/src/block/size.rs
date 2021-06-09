@@ -28,9 +28,10 @@ impl TryFrom<RawSize> for Size {
 
     fn try_from(value: RawSize) -> Result<Self, Self::Error> {
         Ok(Self {
-            max_bytes: value.max_bytes.try_into().map_err(|_| {
-                error::integer_overflow_error()
-            })?,
+            max_bytes: value
+                .max_bytes
+                .try_into()
+                .map_err(|_| error::integer_overflow_error())?,
             max_gas: value.max_gas,
         })
     }

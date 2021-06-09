@@ -2,10 +2,10 @@
 
 use crate::error::{self, KindError as Error};
 use crate::node;
-use std::prelude::v1::format;
-use std::string::String;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::path::PathBuf;
+use std::prelude::v1::format;
+use std::string::String;
 use std::{
     fmt::{self, Display},
     str::{self, FromStr},

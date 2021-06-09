@@ -4,7 +4,7 @@
 use crate::block;
 use crate::error::{self, KindError as Error};
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, From, TryInto};
+use std::convert::{From, TryFrom, TryInto};
 use tendermint_proto::types::SignedHeader as RawSignedHeader;
 
 /// Signed block headers

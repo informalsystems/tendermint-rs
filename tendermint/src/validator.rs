@@ -9,7 +9,7 @@ use std::prelude::v1::format;
 use std::string::String;
 use std::{
     cmp::Reverse,
-    convert::{TryFrom, From, TryInto},
+    convert::{From, TryFrom, TryInto},
     vec::Vec,
 };
 use tendermint_proto::types::SimpleValidator as RawSimpleValidator;
@@ -45,7 +45,7 @@ impl TryFrom<RawValidatorSet> for Set {
         if raw_voting_power != validator_set.total_voting_power() {
             return Err(error::raw_voting_power_mismatch_error(
                 raw_voting_power,
-                validator_set.total_voting_power()
+                validator_set.total_voting_power(),
             ));
         }
 

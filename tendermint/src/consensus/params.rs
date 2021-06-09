@@ -37,7 +37,9 @@ impl TryFrom<RawParams> for Params {
         Ok(Self {
             block: value
                 .block
-                .ok_or(error::invalid_block_error(anyhow::anyhow!("invalid block error")))?
+                .ok_or(error::invalid_block_error(anyhow::anyhow!(
+                    "invalid block error"
+                )))?
                 .try_into()?,
             evidence: value
                 .evidence
@@ -51,9 +53,7 @@ impl TryFrom<RawParams> for Params {
                 .version
                 .map(TryFrom::try_from)
                 .transpose()
-                .map_err(|_| {
-                    error::invalid_version_params_error()
-                })?,
+                .map_err(|_| error::invalid_version_params_error())?,
         })
     }
 }

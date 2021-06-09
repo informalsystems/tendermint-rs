@@ -10,8 +10,8 @@ use std::{
     str::FromStr,
 };
 
-use std::string::String;
 use std::prelude::v1::format;
+use std::string::String;
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
 

@@ -40,14 +40,13 @@ impl TryFrom<RawCanonicalProposal> for CanonicalProposal {
             return Err(error::negative_pol_round_error());
         }
         let round = Round::try_from(
-            i32::try_from(value.round)
-                .map_err(|_| error::integer_overflow_error())?,
+            i32::try_from(value.round).map_err(|_| error::integer_overflow_error())?,
         )?;
         let pol_round = match value.pol_round {
             -1 => None,
-            n => Some(Round::try_from(i32::try_from(n).map_err(|_| {
-                error::integer_overflow_error()
-            })?)?),
+            n => Some(Round::try_from(
+                i32::try_from(n).map_err(|_| error::integer_overflow_error())?,
+            )?),
         };
         // If the Hash is empty in BlockId, the BlockId should be empty.
         // See: https://github.com/informalsystems/tendermint-rs/issues/663

@@ -13,9 +13,11 @@ impl TryFrom<i32> for ValidatorIndex {
     type Error = Error;
 
     fn try_from(value: i32) -> Result<Self, Self::Error> {
-        Ok(ValidatorIndex(value.try_into().map_err(|_| {
-            error::negative_validator_index_error()
-        })?))
+        Ok(ValidatorIndex(
+            value
+                .try_into()
+                .map_err(|_| error::negative_validator_index_error())?,
+        ))
     }
 }
 
@@ -46,9 +48,11 @@ impl TryFrom<usize> for ValidatorIndex {
     type Error = Error;
 
     fn try_from(value: usize) -> Result<Self, Self::Error> {
-        Ok(ValidatorIndex(value.try_into().map_err(|_| {
-            error::integer_overflow_error()
-        })?))
+        Ok(ValidatorIndex(
+            value
+                .try_into()
+                .map_err(|_| error::integer_overflow_error())?,
+        ))
     }
 }
 

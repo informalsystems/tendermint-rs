@@ -4,13 +4,13 @@ use crate::error::{self, KindError as Error};
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::prelude::v1::format;
+use std::prelude::v1::*;
 use std::string::{String, ToString};
 use std::{
     convert::TryFrom,
     fmt::{self, Debug, Display},
     str::FromStr,
 };
-use std::prelude::v1::*;
 use subtle_encoding::{Encoding, Hex};
 use tendermint_proto::Protobuf;
 

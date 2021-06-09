@@ -22,9 +22,11 @@ impl TryFrom<i64> for Height {
     type Error = Error;
 
     fn try_from(value: i64) -> Result<Self, Self::Error> {
-        Ok(Height(value.try_into().map_err(|_| {
-            error::negative_height_error()
-        })?))
+        Ok(Height(
+            value
+                .try_into()
+                .map_err(|_| error::negative_height_error())?,
+        ))
     }
 }
 

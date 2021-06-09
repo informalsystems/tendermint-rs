@@ -20,9 +20,11 @@ impl TryFrom<i64> for Power {
     type Error = Error;
 
     fn try_from(value: i64) -> Result<Self, Self::Error> {
-        Ok(Power(value.try_into().map_err(|_| {
-            error::negative_power_error()
-        })?))
+        Ok(Power(
+            value
+                .try_into()
+                .map_err(|_| error::negative_power_error())?,
+        ))
     }
 }
 
