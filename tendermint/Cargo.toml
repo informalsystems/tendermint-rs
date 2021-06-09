@@ -34,7 +34,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 anyhow = {version = "1.0", default-features = false}
-flex-error = { version = "0.2.0", default-features = false, features = ["anyhow_tracer"], git = "https://github.com/DaviRain-Su/flex-error.git", branch = "stderror-feature", commit = "e927961fa7b58a106b509729aaeba47598ba4aff"}
+flex-error = { version = "0.2.0", default-features = false, features = ["anyhow_tracer"]}
 async-trait = "0.1"
 bytes = { version = "1.0", default-features = false }
 chrono = { version = "0.4", default-features = false, features = ["serde", "clock"] }
