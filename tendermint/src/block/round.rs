@@ -33,9 +33,7 @@ impl TryFrom<u32> for Round {
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
         if value > i32::MAX as u32 {
-            return Err(error::integer_overflow_error(anyhow::anyhow!(
-                "integer overflow error"
-            )));
+            return Err(error::integer_overflow_error());
         }
         Ok(Round(value))
     }

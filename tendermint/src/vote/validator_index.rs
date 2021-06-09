@@ -30,9 +30,7 @@ impl TryFrom<u32> for ValidatorIndex {
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
         if value > i32::MAX as u32 {
-            return Err(error::integer_overflow_error(anyhow::anyhow!(
-                "integer overflow error"
-            )));
+            return Err(error::integer_overflow_error());
         }
         Ok(ValidatorIndex(value))
     }
@@ -49,7 +47,7 @@ impl TryFrom<usize> for ValidatorIndex {
 
     fn try_from(value: usize) -> Result<Self, Self::Error> {
         Ok(ValidatorIndex(value.try_into().map_err(|_| {
-            error::integer_overflow_error(anyhow::anyhow!("integer overflow error"))
+            error::integer_overflow_error()
         })?))
     }
 }

@@ -90,7 +90,6 @@ define_error! {
         |_| { format_args!("invalid signature ID length") },
 
         IntegerOverflow
-        [DisplayError<Error>]
         |_| { format_args!("integer overflow") },
 
         NoVoteFound

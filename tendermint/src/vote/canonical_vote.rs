@@ -42,9 +42,7 @@ impl TryFrom<RawCanonicalVote> for CanonicalVote {
         }
         if value.round > i32::MAX as i64 {
             // CanonicalVote uses sfixed64, Vote uses int32. They translate to u64 vs i32 in Rust.
-            return Err(error::integer_overflow_error(anyhow::anyhow!(
-                "integer overflow error"
-            )));
+            return Err(error::integer_overflow_error());
         }
         // If the Hash is empty in BlockId, the BlockId should be empty.
         // See: https://github.com/informalsystems/tendermint-rs/issues/663

@@ -309,10 +309,10 @@ impl TryFrom<RawDuration> for Duration {
     fn try_from(value: RawDuration) -> Result<Self, Self::Error> {
         Ok(Self(NativeDuration::new(
             value.seconds.try_into().map_err(|_| {
-                error::integer_overflow_error(anyhow::anyhow!("integer overflow error"))
+                error::integer_overflow_error()
             })?,
             value.nanos.try_into().map_err(|_| {
-                error::integer_overflow_error(anyhow::anyhow!("integer overflow error"))
+                error::integer_overflow_error()
             })?,
         )))
     }

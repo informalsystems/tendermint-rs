@@ -37,9 +37,7 @@ impl TryFrom<u64> for Power {
 
     fn try_from(value: u64) -> Result<Self, Self::Error> {
         if value > i64::MAX as u64 {
-            return Err(error::integer_overflow_error(anyhow::anyhow!(
-                "integer overflow error"
-            )));
+            return Err(error::integer_overflow_error());
         }
         Ok(Power(value))
     }
