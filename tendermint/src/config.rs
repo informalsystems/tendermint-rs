@@ -558,6 +558,12 @@ pub struct ConsensusConfig {
     /// Commit timeout
     pub timeout_commit: Timeout,
 
+    /// How many blocks to look back to check existence of the node's consensus votes before joining consensus
+    /// When non-zero, the node will panic upon restart
+    /// if the same consensus key was used to sign {double-sign-check-height} last blocks.
+    /// So, validators should stop the state machine, wait for some blocks, and then restart the state machine to avoid panic.
+    pub double_sign_check_height: u64,
+
     /// Make progress as soon as we have all the precommits (as if TimeoutCommit = 0)
     pub skip_timeout_commit: bool,
 
