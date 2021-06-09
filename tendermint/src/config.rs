@@ -435,7 +435,7 @@ pub struct P2PConfig {
     pub max_connections: u64,
 
     /// Rate limits the number of incoming connection attempts per IP address.
-    pub max_incoming_connection_attempts : u64,
+    pub max_incoming_connection_attempts: u64,
 
     /// List of node IDs, to which a connection will be (re)established ignoring any existing limits
     #[serde(
