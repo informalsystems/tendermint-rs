@@ -338,7 +338,7 @@ pub struct RpcConfig {
     #[serde(deserialize_with = "deserialize_optional_value")]
     pub tls_key_file: Option<PathBuf>,
 
-    /// pprof listen address (https://golang.org/pkg/net/http/pprof)
+    /// pprof listen address <https://golang.org/pkg/net/http/pprof>
     #[serde(deserialize_with = "deserialize_optional_value")]
     pub pprof_laddr: Option<net::Address>,
 }
@@ -521,7 +521,7 @@ pub struct MempoolConfig {
 
     /// Maximum size of a batch of transactions to send to a peer
     /// Including space needed by encoding (one varint per transaction).
-    /// XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
+    /// XXX: Unused due to <https://github.com/tendermint/tendermint/issues/5796>
     pub max_batch_bytes: u64,
 }
 
