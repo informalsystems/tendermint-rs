@@ -31,4 +31,4 @@ pub mod secret_connection;
 mod message;
 mod peer;
 pub mod supervisor;
-mod transport;
+pub mod transport;
