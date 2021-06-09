@@ -182,7 +182,7 @@ impl LogLevel {
     {
         self.components
             .get(key.as_ref())
-            .or(self.global.as_ref())
+            .or_else(|| self.global.as_ref())
             .map(AsRef::as_ref)
     }
 
