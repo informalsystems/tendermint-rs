@@ -178,9 +178,7 @@ impl TryFrom<RawValidator> for Info {
             address: value.address.try_into()?,
             pub_key: value
                 .pub_key
-                .ok_or(error::missing_public_key_error(anyhow::anyhow!(
-                    "missing public keyt error"
-                )))?
+                .ok_or(error::missing_public_key_error())?
                 .try_into()?,
             voting_power: value.voting_power.try_into()?,
             proposer_priority: value.proposer_priority.try_into().map_err(

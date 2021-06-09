@@ -170,7 +170,6 @@ define_error! {
         |e| { format_args!("mismatch between raw voting ({0:?}) and computed one ({1:?})", e.raw, e.computed) },
 
         MissingPublicKey
-        [DisplayError<Error>]
         |_| { format_args!("missing public key") },
 
         InvalidValidatorParams
