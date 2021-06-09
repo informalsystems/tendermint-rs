@@ -9,7 +9,7 @@ use std::prelude::v1::format;
 use std::string::String;
 use std::{
     cmp::Reverse,
-    convert::{TryFrom, TryInto},
+    convert::{TryFrom, From, TryInto},
     vec::Vec,
 };
 use tendermint_proto::types::SimpleValidator as RawSimpleValidator;
