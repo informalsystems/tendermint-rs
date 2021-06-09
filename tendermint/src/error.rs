@@ -92,7 +92,6 @@ define_error! {
         |_| { format_args!("integer overflow") },
 
         NoVoteFound
-        [DisplayError<Error>]
         |_| { format_args!("no vote found") },
 
         NoProposalFound

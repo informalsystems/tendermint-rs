@@ -26,9 +26,7 @@ impl TryFrom<RawSignVoteRequest> for SignVoteRequest {
 
     fn try_from(value: RawSignVoteRequest) -> Result<Self, Self::Error> {
         if value.vote.is_none() {
-            return Err(error::no_vote_found_error(anyhow::anyhow!(
-                "no vote found error"
-            )));
+            return Err(error::no_vote_found_error());
         }
         Ok(SignVoteRequest {
             vote: Vote::try_from(value.vote.unwrap())?,
