@@ -1,9 +1,13 @@
 use crate::error::{self, KindError as Error};
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
-use std::prelude::v1::format;
-use std::string::{String, ToString};
-use std::time::Duration;
-use std::{fmt, ops::Deref, str::FromStr};
+use std::{
+    fmt,
+    ops::Deref,
+    prelude::v1::format,
+    str::FromStr,
+    string::{String, ToString},
+    time::Duration,
+};
 
 /// Timeout durations
 #[derive(Copy, Clone, Debug)]

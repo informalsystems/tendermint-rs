@@ -4,12 +4,12 @@ use crate::{
     hash::{Algorithm, Hash},
 };
 use serde::{Deserialize, Serialize};
-use std::prelude::v1::*;
-use std::string::{String, ToString};
 use std::{
     convert::{TryFrom, TryInto},
     fmt::{self, Display},
+    prelude::v1::*,
     str::{self, FromStr},
+    string::{String, ToString},
 };
 use tendermint_proto::types::{
     BlockId as RawBlockId, CanonicalBlockId as RawCanonicalBlockId,

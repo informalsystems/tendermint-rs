@@ -18,9 +18,9 @@ use bytes::BufMut;
 use ed25519::Signature as ed25519Signature;
 use ed25519::SIGNATURE_LENGTH as ed25519SignatureLength;
 use serde::{Deserialize, Serialize};
-use std::fmt;
 use std::{
     convert::{TryFrom, TryInto},
+    fmt,
     vec::Vec,
 };
 use tendermint_proto::types::Vote as RawVote;

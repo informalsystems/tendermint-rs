@@ -3,9 +3,9 @@
 use super::{code::Code, data::Data, gas::Gas, info::Info, log::Log, tag::Tag};
 use crate::{consensus, serializers, validator};
 use serde::{Deserialize, Deserializer, Serialize};
-use std::string::String;
 use std::{
     fmt::{self, Display},
+    string::String,
     vec::Vec,
 };
 

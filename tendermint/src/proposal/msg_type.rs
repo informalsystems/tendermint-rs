@@ -1,8 +1,7 @@
 use crate::error::{self, KindError as Error};
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::convert::TryFrom;
-use std::prelude::v1::format;
+use std::{convert::TryFrom, prelude::v1::format};
 use tendermint_proto::Protobuf;
 
 /// Types of proposals

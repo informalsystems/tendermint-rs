@@ -2,8 +2,7 @@
 
 use crate::error::KindError as Error;
 use serde::{Deserialize, Serialize};
-use std::string::String;
-use std::{fmt, str::FromStr};
+use std::{fmt, str::FromStr, string::String};
 use tendermint_proto::serializers::bytes::base64string;
 
 /// Tags

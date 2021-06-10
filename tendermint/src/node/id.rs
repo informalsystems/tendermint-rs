@@ -7,11 +7,11 @@ use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
 use std::{
     fmt::{self, Debug, Display},
+    prelude::v1::format,
     str::FromStr,
+    string::String,
 };
 
-use std::prelude::v1::format;
-use std::string::String;
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
 

@@ -7,11 +7,11 @@
 
 use crate::error::{self, KindError as Error};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use std::prelude::v1::format;
-use std::string::{String, ToString};
 use std::{
     fmt::{self, Display},
+    prelude::v1::format,
     str::FromStr,
+    string::{String, ToString},
 };
 
 /// Gas: representation of transaction processing resource costs

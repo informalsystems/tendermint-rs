@@ -3,12 +3,12 @@
 use crate::error::{self, KindError as Error};
 use crate::node;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use std::path::PathBuf;
-use std::prelude::v1::format;
-use std::string::String;
 use std::{
     fmt::{self, Display},
+    path::PathBuf,
+    prelude::v1::format,
     str::{self, FromStr},
+    string::String,
 };
 use url::Url;
 

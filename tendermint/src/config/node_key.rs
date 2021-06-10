@@ -2,10 +2,7 @@
 
 use crate::error::{self, KindError as Error};
 use crate::{node, private_key::PrivateKey, public_key::PublicKey};
-
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
-// TODO sp_std no fs path Path
 use std::{fs, path::Path};
 
 /// P2P node private keys

@@ -4,10 +4,7 @@ mod hash;
 
 pub use self::hash::Hash;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use std::prelude::v1::format;
-use std::prelude::v1::*;
-use std::string::String;
-use std::{fmt, slice};
+use std::{fmt, prelude::v1::format, prelude::v1::*, slice, string::String};
 use subtle_encoding::base64;
 use tendermint_proto::types::Data as RawData;
 

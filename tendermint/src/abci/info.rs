@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
-use std::fmt::{self, Display};
-use std::string::String;
+use std::{
+    fmt::{self, Display},
+    string::String,
+};
 
 /// ABCI info
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

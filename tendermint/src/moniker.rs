@@ -2,11 +2,11 @@
 
 use crate::error::KindError as Error;
 use serde::{Deserialize, Serialize};
-use std::borrow::ToOwned;
-use std::string::String;
 use std::{
+    borrow::ToOwned,
     fmt::{self, Display},
     str::FromStr,
+    string::String,
 };
 
 /// Validator display names

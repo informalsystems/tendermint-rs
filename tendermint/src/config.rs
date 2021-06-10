@@ -21,12 +21,11 @@ use std::{
     collections::btree_map::BTreeMap,
     fmt, fs,
     path::{Path, PathBuf},
+    prelude::v1::format,
     str::FromStr,
+    string::{String, ToString},
     vec::Vec,
 };
-
-use std::prelude::v1::format;
-use std::string::{String, ToString};
 
 /// Tendermint `config.toml` file
 #[derive(Clone, Debug, Deserialize, Serialize)]

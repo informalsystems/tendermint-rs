@@ -1,10 +1,6 @@
 //! Define traits and instances for dealing with trust thresholds.
 
-#[cfg(feature = "std")]
 use std::fmt::{self, Debug, Display};
-
-#[cfg(not(feature = "std"))]
-use core::fmt::{self, Debug, Display};
 
 use crate::serializers;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};

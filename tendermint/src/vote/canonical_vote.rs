@@ -2,8 +2,10 @@ use crate::chain::Id as ChainId;
 use crate::error::{self, KindError as Error};
 use crate::{block, Time};
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
-use std::string::ToString;
+use std::{
+    convert::{TryFrom, TryInto},
+    string::ToString,
+};
 use tendermint_proto::types::CanonicalVote as RawCanonicalVote;
 use tendermint_proto::Protobuf;
 

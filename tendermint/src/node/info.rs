@@ -2,9 +2,11 @@
 
 use crate::{chain, channel::Channels, net, node, serializers, Moniker, Version};
 use serde::{Deserialize, Serialize};
-use std::fmt::{self, Display};
-use std::prelude::v1::format;
-use std::string::String;
+use std::{
+    fmt::{self, Display},
+    prelude::v1::format,
+    string::String,
+};
 
 /// Node information
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

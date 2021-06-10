@@ -6,9 +6,13 @@ use crate::public_key::Ed25519;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
 use std::{
+    convert::TryFrom,
     convert::TryInto,
     fmt::{self, Debug, Display},
+    prelude::v1::format,
     str::FromStr,
+    string::String,
+    vec::Vec,
 };
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
@@ -17,10 +21,6 @@ use subtle_encoding::hex;
 use crate::public_key::Secp256k1;
 #[cfg(feature = "secp256k1")]
 use ripemd160::Ripemd160;
-use std::convert::TryFrom;
-use std::prelude::v1::format;
-use std::string::String;
-use std::vec::Vec;
 use tendermint_proto::Protobuf;
 
 /// Size of an  account ID in bytes

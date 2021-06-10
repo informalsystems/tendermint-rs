@@ -2,9 +2,11 @@ use super::Proposal;
 use crate::chain::Id as ChainId;
 use crate::error::{self, KindError as Error};
 use bytes::BufMut;
-use std::convert::{TryFrom, TryInto};
-use std::string::ToString;
-use std::vec::Vec;
+use std::{
+    convert::{TryFrom, TryInto},
+    string::ToString,
+    vec::Vec,
+};
 use tendermint_proto::privval::RemoteSignerError;
 use tendermint_proto::privval::SignProposalRequest as RawSignProposalRequest;
 use tendermint_proto::privval::SignedProposalResponse as RawSignedProposalResponse;

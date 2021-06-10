@@ -13,9 +13,10 @@ use crate::error::{self, KindError as Error};
 use crate::signature::Signature;
 use serde::{de, ser, Deserialize, Serialize};
 use signature::Verifier as _;
-use std::prelude::v1::*;
-use std::string::String;
-use std::{cmp::Ordering, convert::TryFrom, fmt, ops::Deref, str::FromStr, vec::Vec};
+use std::{
+    cmp::Ordering, convert::TryFrom, fmt, ops::Deref, prelude::v1::*, str::FromStr, string::String,
+    vec::Vec,
+};
 use subtle_encoding::{base64, bech32, hex};
 use tendermint_proto::crypto::public_key::Sum;
 use tendermint_proto::crypto::PublicKey as RawPublicKey;

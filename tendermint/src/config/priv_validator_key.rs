@@ -3,7 +3,6 @@
 use crate::error::{self, KindError as Error};
 use crate::public_key::TendermintKey;
 use crate::{account, private_key::PrivateKey, public_key::PublicKey};
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};
 

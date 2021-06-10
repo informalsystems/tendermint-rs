@@ -5,11 +5,11 @@ use subtle_encoding::base64;
 
 use crate::error::{self, KindError as Error};
 use crate::{account, hash::Hash, merkle, vote, PublicKey, Signature};
-use std::prelude::v1::format;
-use std::string::String;
 use std::{
     cmp::Reverse,
     convert::{From, TryFrom, TryInto},
+    prelude::v1::format,
+    string::String,
     vec::Vec,
 };
 use tendermint_proto::types::SimpleValidator as RawSimpleValidator;

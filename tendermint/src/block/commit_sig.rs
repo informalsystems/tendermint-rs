@@ -3,8 +3,10 @@
 use crate::error::{self, KindError as Error};
 use crate::{account, Signature, Time};
 use num_traits::ToPrimitive;
-use std::convert::{TryFrom, TryInto};
-use std::vec::Vec;
+use std::{
+    convert::{TryFrom, TryInto},
+    vec::Vec,
+};
 use tendermint_proto::types::BlockIdFlag;
 use tendermint_proto::types::CommitSig as RawCommitSig;
 

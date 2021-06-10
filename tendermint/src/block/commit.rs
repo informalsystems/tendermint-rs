@@ -4,8 +4,10 @@ use crate::block::commit_sig::CommitSig;
 use crate::block::{Height, Id, Round};
 use crate::error::{self, KindError as Error};
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
-use std::prelude::v1::*;
+use std::{
+    convert::{TryFrom, TryInto},
+    prelude::v1::*,
+};
 
 use tendermint_proto::types::Commit as RawCommit;
 

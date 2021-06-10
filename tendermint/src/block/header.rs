@@ -4,8 +4,10 @@ use crate::error::{self, KindError as Error};
 use crate::merkle::simple_hash_from_byte_vectors;
 use crate::{account, block, chain, AppHash, Hash, Time};
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
-use std::prelude::v1::*;
+use std::{
+    convert::{TryFrom, TryInto},
+    prelude::v1::*,
+};
 use tendermint_proto::types::Header as RawHeader;
 use tendermint_proto::version::Consensus as RawConsensusVersion;
 use tendermint_proto::Protobuf;

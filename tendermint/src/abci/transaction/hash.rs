@@ -2,15 +2,12 @@
 
 use crate::error::{self, KindError as Error};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-
 use std::{
     fmt::{self, Debug, Display},
+    prelude::v1::format,
     str::FromStr,
+    string::{String, ToString},
 };
-
-use std::prelude::v1::format;
-use std::string::{String, ToString};
-
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
 

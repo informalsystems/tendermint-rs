@@ -17,8 +17,10 @@ mod no_std_time {
     use no_std_compat::convert::TryFrom;
     use no_std_compat::ops::{Add, AddAssign, Sub, SubAssign};
 
+    /// define no_std time UNIX_EPOCH
     pub const UNIX_EPOCH: SystemTime = SystemTime { inner: 0.0 };
 
+    /// define no_std time SystemTime
     #[derive(Debug, Copy, Clone)]
     pub struct SystemTime {
         /// Unit is milliseconds.
@@ -48,14 +50,45 @@ mod no_std_time {
     }
 
     impl SystemTime {
-        pub const UNIX_EPOCH: SystemTime = SystemTime { inner: 0.0 };
-
+        /// Returns the system time corresponding to "now".
+        ///
+        /// # Examples
+        ///
+        /// ```
+        /// use std::time::SystemTime;
+        ///
+        /// let sys_time = SystemTime::now();
+        /// ```
         pub fn now() -> SystemTime {
             let val = chrono::Utc::now();
             let val = val.timestamp() as f64;
             SystemTime { inner: val }
         }
 
+        /// Returns the amount of time elapsed from an earlier point in time.
+        ///
+        /// This function may fail because measurements taken earlier are not
+        /// guaranteed to always be before later measurements (due to anomalies such
+        /// as the system clock being adjusted either forwards or backwards).
+        /// [`Instant`] can be used to measure elapsed time without this risk of failure.
+        ///
+        /// If successful, [`Ok`]`(`[`Duration`]`)` is returned where the duration represents
+        /// the amount of time elapsed from the specified measurement to this one.
+        ///
+        /// Returns an [`Err`] if `earlier` is later than `self`, and the error
+        /// contains how far from `self` the time is.
+        ///
+        /// # Examples
+        ///
+        /// ```no_run
+        /// use std::time::SystemTime;
+        ///
+        /// let sys_time = SystemTime::now();
+        /// let new_sys_time = SystemTime::now();
+        /// let difference = new_sys_time.duration_since(sys_time)
+        ///     .expect("Clock may have gone backwards");
+        /// println!("{:?}", difference);
+        /// ```
         pub fn duration_since(&self, earlier: SystemTime) -> Result<Duration, ()> {
             let dur_ms = self.inner - earlier.inner;
             if dur_ms < 0.0 {
@@ -64,14 +97,45 @@ mod no_std_time {
             Ok(Duration::from_millis(dur_ms as u64))
         }
 
+        /// Returns the difference between the clock time when this
+        /// system time was created, and the current clock time.
+        ///
+        /// This function may fail as the underlying system clock is susceptible to
+        /// drift and updates (e.g., the system clock could go backwards), so this
+        /// function may not always succeed. If successful, [`Ok`]`(`[`Duration`]`)` is
+        /// returned where the duration represents the amount of time elapsed from
+        /// this time measurement to the current time.
+        ///
+        /// To measure elapsed time reliably, use [`Instant`] instead.
+        ///
+        /// Returns an [`Err`] if `self` is later than the current system time, and
+        /// the error contains how far from the current system time `self` is.
+        ///
+        /// # Examples
+        ///
+        /// ```no_run
+        /// use std::thread::sleep;
+        /// use std::time::{Duration, SystemTime};
+        ///
+        /// let sys_time = SystemTime::now();
+        /// let one_sec = Duration::from_secs(1);
+        /// sleep(one_sec);
+        /// assert!(sys_time.elapsed().unwrap() >= one_sec);
+        /// ```
         pub fn elapsed(&self) -> Result<Duration, ()> {
             self.duration_since(SystemTime::now())
         }
 
+        /// Returns `Some(t)` where `t` is the time `self + duration` if `t` can be represented as
+        /// `SystemTime` (which means it's inside the bounds of the underlying data structure), `None`
+        /// otherwise.
         pub fn checked_add(&self, duration: Duration) -> Option<SystemTime> {
             Some(*self + duration)
         }
 
+        /// Returns `Some(t)` where `t` is the time `self - duration` if `t` can be represented as
+        /// `SystemTime` (which means it's inside the bounds of the underlying data structure), `None`
+        /// otherwise.
         pub fn checked_sub(&self, duration: Duration) -> Option<SystemTime> {
             Some(*self - duration)
         }
