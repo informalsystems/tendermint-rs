@@ -93,7 +93,7 @@ impl Transport for Memory {
     type Endpoint = MemoryEndpoint;
     type Incoming = MemoryIncoming;
 
-    fn bind(self, bind_info: BindInfo) -> Result<(Self::Endpoint, Self::Incoming)> {
+    fn bind(self, _bind_info: BindInfo) -> Result<(Self::Endpoint, Self::Incoming)> {
         todo!()
     }
 }
