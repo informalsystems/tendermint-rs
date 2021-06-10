@@ -1,3 +1,3 @@
 - `[tendermint-abci,tendermint-rpc]` Fix DeliverTx response deserialization
   issues with `gas_wanted` and `gas_used` fields
-  ([#897](https://github.com/informalsystems/tendermint-rs/pull/897))
+  ([#876](https://github.com/informalsystems/tendermint-rs/issues/876))
