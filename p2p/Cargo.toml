@@ -19,7 +19,7 @@ description = """
 chacha20poly1305 = "0.7"
 ed25519-dalek = "1"
 eyre = "0.6"
-flume = "0.10"
+flume = "=0.10.5" # workaround for https://github.com/zesterer/flume/issues/83
 hkdf = "0.10.0"
 merlin = "2"
 prost = "0.7"
