@@ -12,7 +12,6 @@ mod priv_validator_key;
 pub use self::{node_key::NodeKey, priv_validator_key::PrivValidatorKey};
 
 use crate::{
-    abci::tag,
     error::{Error, Kind},
     genesis::Genesis,
     net, node, Moniker, Timeout,
@@ -41,7 +40,7 @@ pub struct TendermintConfig {
     /// and verifying their commits
     pub fast_sync: bool,
 
-    /// Database backend: `leveldb | memdb | cleveldb`
+    /// Database backend: `goleveldb | cleveldb | boltdb | rocksdb | badgerdb`
     pub db_backend: DbBackend,
 
     /// Database directory
@@ -75,10 +74,6 @@ pub struct TendermintConfig {
     /// Mechanism to connect to the ABCI application: socket | grpc
     pub abci: AbciMode,
 
-    /// TCP or UNIX socket address for the profiling server to listen on
-    #[serde(deserialize_with = "deserialize_optional_value")]
-    pub prof_laddr: Option<net::Address>,
-
     /// If `true`, query the ABCI app on connecting to a new peer
     /// so the app can decide if we should keep the connection or not
     pub filter_peers: bool,
@@ -100,6 +95,12 @@ pub struct TendermintConfig {
 
     /// instrumentation configuration options
     pub instrumentation: InstrumentationConfig,
+
+    /// statesync configuration options
+    pub statesync: StatesyncConfig,
+
+    /// fastsync configuration options
+    pub fastsync: FastsyncConfig,
 }
 
 impl TendermintConfig {
@@ -144,35 +145,50 @@ impl TendermintConfig {
 /// Database backend
 #[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub enum DbBackend {
-    /// LevelDB backend
-    #[serde(rename = "leveldb")]
-    LevelDb,
-
-    /// MemDB backend
-    #[serde(rename = "memdb")]
-    MemDb,
+    /// GoLevelDB backend
+    #[serde(rename = "goleveldb")]
+    GoLevelDb,
 
     /// CLevelDB backend
     #[serde(rename = "cleveldb")]
     CLevelDb,
+
+    /// BoltDB backend
+    #[serde(rename = "boltdb")]
+    BoltDb,
+
+    /// RocksDB backend
+    #[serde(rename = "rocksdb")]
+    RocksDb,
+
+    /// BadgerDB backend
+    #[serde(rename = "badgerdb")]
+    BadgerDb,
 }
 
 /// Loglevel configuration
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct LogLevel(BTreeMap<String, String>);
+pub struct LogLevel {
+    /// A global log level
+    pub global: Option<String>,
+    components: BTreeMap<String, String>,
+}
 
 impl LogLevel {
-    /// Get the setting for the given key
+    /// Get the setting for the given key. If not found, returns the global setting, if any.
     pub fn get<S>(&self, key: S) -> Option<&str>
     where
         S: AsRef<str>,
     {
-        self.0.get(key.as_ref()).map(AsRef::as_ref)
+        self.components
+            .get(key.as_ref())
+            .or_else(|| self.global.as_ref())
+            .map(AsRef::as_ref)
     }
 
-    /// Iterate over the levels
+    /// Iterate over the levels. This doesn't include the global setting, if any.
     pub fn iter(&self) -> LogLevelIter<'_> {
-        self.0.iter()
+        self.components.iter()
     }
 }
 
@@ -183,33 +199,43 @@ impl FromStr for LogLevel {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut levels = BTreeMap::new();
+        let mut global = None;
+        let mut components = BTreeMap::new();
 
         for level in s.split(',') {
             let parts = level.split(':').collect::<Vec<_>>();
 
-            if parts.len() != 2 {
+            if parts.len() == 1 {
+                global = Some(parts[0].to_owned());
+                continue;
+            } else if parts.len() != 2 {
                 fail!(Kind::Parse, "error parsing log level: {}", level);
             }
 
             let key = parts[0].to_owned();
             let value = parts[1].to_owned();
 
-            if levels.insert(key, value).is_some() {
+            if components.insert(key, value).is_some() {
                 fail!(Kind::Parse, "duplicate log level setting for: {}", level);
             }
         }
 
-        Ok(LogLevel(levels))
+        Ok(LogLevel { global, components })
     }
 }
 
 impl fmt::Display for LogLevel {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (i, (k, v)) in self.0.iter().enumerate() {
+        if let Some(global) = &self.global {
+            write!(f, "{}", global)?;
+            if !self.components.is_empty() {
+                write!(f, ",")?;
+            }
+        }
+        for (i, (k, v)) in self.components.iter().enumerate() {
             write!(f, "{}:{}", k, v)?;
 
-            if i < self.0.len() - 1 {
+            if i < self.components.len() - 1 {
                 write!(f, ",")?;
             }
         }
@@ -298,6 +324,12 @@ pub struct RpcConfig {
     /// How long to wait for a tx to be committed during `/broadcast_tx_commit`.
     pub timeout_broadcast_tx_commit: Timeout,
 
+    /// Maximum size of request body, in bytes
+    pub max_body_bytes: u64,
+
+    /// Maximum size of request header, in bytes
+    pub max_header_bytes: u64,
+
     /// The name of a file containing certificate that is used to create the HTTPS server.
     #[serde(deserialize_with = "deserialize_optional_value")]
     pub tls_cert_file: Option<PathBuf>,
@@ -305,6 +337,10 @@ pub struct RpcConfig {
     /// The name of a file containing matching private key that is used to create the HTTPS server.
     #[serde(deserialize_with = "deserialize_optional_value")]
     pub tls_key_file: Option<PathBuf>,
+
+    /// pprof listen address <https://golang.org/pkg/net/http/pprof>
+    #[serde(deserialize_with = "deserialize_optional_value")]
+    pub pprof_laddr: Option<net::Address>,
 }
 
 /// Origin hosts allowed with CORS requests to the RPC API
@@ -401,6 +437,16 @@ pub struct P2PConfig {
     /// Maximum number of outbound peers to connect to, excluding persistent peers
     pub max_num_outbound_peers: u64,
 
+    /// List of node IDs, to which a connection will be (re)established ignoring any existing limits
+    #[serde(
+        serialize_with = "serialize_comma_separated_list",
+        deserialize_with = "deserialize_comma_separated_list"
+    )]
+    pub unconditional_peer_ids: Vec<node::Id>,
+
+    /// Maximum pause when redialing a persistent peer (if zero, exponential backoff is used)
+    pub persistent_peers_max_dial_period: Timeout,
+
     /// Time to wait before flushing messages out on the connection
     pub flush_throttle_timeout: Timeout,
 
@@ -462,6 +508,21 @@ pub struct MempoolConfig {
 
     /// Size of the cache (used to filter transactions we saw earlier) in transactions
     pub cache_size: u64,
+
+    /// Do not remove invalid transactions from the cache (default: false)
+    /// Set to true if it's not possible for any invalid transaction to become valid
+    /// again in the future.
+    #[serde(rename = "keep-invalid-txs-in-cache")]
+    pub keep_invalid_txs_in_cache: bool,
+
+    /// Maximum size of a single transaction.
+    /// NOTE: the max size of a tx transmitted over the network is {max-tx-bytes}.
+    pub max_tx_bytes: u64,
+
+    /// Maximum size of a batch of transactions to send to a peer
+    /// Including space needed by encoding (one varint per transaction).
+    /// XXX: Unused due to <https://github.com/tendermint/tendermint/issues/5796>
+    pub max_batch_bytes: u64,
 }
 
 /// consensus configuration options
@@ -491,6 +552,12 @@ pub struct ConsensusConfig {
     /// Commit timeout
     pub timeout_commit: Timeout,
 
+    /// How many blocks to look back to check existence of the node's consensus votes before joining consensus
+    /// When non-zero, the node will panic upon restart
+    /// if the same consensus key was used to sign {double-sign-check-height} last blocks.
+    /// So, validators should stop the state machine, wait for some blocks, and then restart the state machine to avoid panic.
+    pub double_sign_check_height: u64,
+
     /// Make progress as soon as we have all the precommits (as if TimeoutCommit = 0)
     pub skip_timeout_commit: bool,
 
@@ -513,18 +580,6 @@ pub struct TxIndexConfig {
     /// What indexer to use for transactions
     #[serde(default)]
     pub indexer: TxIndexer,
-
-    /// Comma-separated list of tags to index (by default the only tag is `tx.hash`)
-    // TODO(tarcieri): switch to `tendermint::abci::Tag`
-    #[serde(
-        serialize_with = "serialize_comma_separated_list",
-        deserialize_with = "deserialize_comma_separated_list"
-    )]
-    pub index_tags: Vec<tag::Key>,
-
-    /// When set to true, tells indexer to index all tags (predefined tags:
-    /// `tx.hash`, `tx.height` and all tags from DeliverTx responses).
-    pub index_all_tags: bool,
 }
 
 /// What indexer to use for transactions
@@ -563,6 +618,54 @@ pub struct InstrumentationConfig {
 
     /// Instrumentation namespace
     pub namespace: String,
+}
+
+/// statesync configuration options
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct StatesyncConfig {
+    /// State sync rapidly bootstraps a new node by discovering, fetching, and restoring a state machine
+    /// snapshot from peers instead of fetching and replaying historical blocks. Requires some peers in
+    /// the network to take and serve state machine snapshots. State sync is not attempted if the node
+    /// has any local state (LastBlockHeight > 0). The node will have a truncated block history,
+    /// starting from the height of the snapshot.
+    pub enable: bool,
+
+    /// RPC servers (comma-separated) for light client verification of the synced state machine and
+    /// retrieval of state data for node bootstrapping. Also needs a trusted height and corresponding
+    /// header hash obtained from a trusted source, and a period during which validators can be trusted.
+    ///
+    /// For Cosmos SDK-based chains, trust-period should usually be about 2/3 of the unbonding time (~2
+    /// weeks) during which they can be financially punished (slashed) for misbehavior.
+    #[serde(
+        serialize_with = "serialize_comma_separated_list",
+        deserialize_with = "deserialize_comma_separated_list"
+    )]
+    pub rpc_servers: Vec<String>,
+
+    /// Trust height. See `rpc_servers` above.
+    pub trust_height: u64,
+
+    /// Trust hash. See `rpc_servers` above.
+    pub trust_hash: String,
+
+    /// Trust period. See `rpc_servers` above.
+    pub trust_period: String,
+
+    /// Time to spend discovering snapshots before initiating a restore.
+    pub discovery_time: Timeout,
+
+    /// Temporary directory for state sync snapshot chunks, defaults to the OS tempdir (typically /tmp).
+    /// Will create a new, randomly named directory within, and remove it when done.
+    pub temp_dir: String,
+}
+
+/// fastsync configuration options
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct FastsyncConfig {
+    /// Fast Sync version to use:
+    ///   1) "v0" (default) - the legacy fast sync implementation
+    ///   2) "v2" - complete redesign of v0, optimized for testability & readability
+    pub version: String,
 }
 
 /// Rate at which bytes can be sent/received

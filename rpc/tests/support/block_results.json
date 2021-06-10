@@ -8,8 +8,8 @@
         "code": "0",
         "log": "[{\"msg_index\":\"0\",\"success\":true,\"log\":\"\"}]",
         "info": "",
-        "gasWanted": "200000",
-        "gasUsed": "105662",
+        "gas_wanted": "200000",
+        "gas_used": "105662",
         "data": null,
         "events": [
           {
@@ -36,8 +36,8 @@
         "code": "0",
         "log": "[{\"msg_index\":\"0\",\"success\":true,\"log\":\"\"}]",
         "info": "",
-        "gasWanted": "99164",
-        "gasUsed": "99164",
+        "gas_wanted": "99164",
+        "gas_used": "99164",
         "data": null,
         "events": [
           {
@@ -64,8 +64,8 @@
         "code": "0",
         "log": "[{\"msg_index\":\"0\",\"success\":true,\"log\":\"\"}]",
         "info": "",
-        "gasWanted": "200000",
-        "gasUsed": "106515",
+        "gas_wanted": "200000",
+        "gas_used": "106515",
         "data": null,
         "events": [
           {

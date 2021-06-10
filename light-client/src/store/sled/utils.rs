@@ -102,11 +102,11 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempdir::TempDir;
+    use tempfile::tempdir;
 
     #[test]
     fn iter_next_returns_lowest_height() {
-        let tmp_dir = TempDir::new("tendermint_light_client_sled_utils_test").unwrap();
+        let tmp_dir = tempdir().unwrap();
         let db = sled::open(tmp_dir).unwrap();
         let kv = HeightIndexedDb::new(db.open_tree("light_store/verified").unwrap());
 
@@ -126,7 +126,7 @@ mod tests {
 
     #[test]
     fn iter_next_back_returns_highest_height() {
-        let tmp_dir = TempDir::new("tendermint_light_client_sled_utils_test").unwrap();
+        let tmp_dir = tempdir().unwrap();
         let db = sled::open(tmp_dir).unwrap();
         let kv = HeightIndexedDb::new(db.open_tree("light_store/verified").unwrap());
 
