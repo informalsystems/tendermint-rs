@@ -1,19 +1,27 @@
 [package]
-name       = "tendermint-p2p"
-version    = "0.19.0"
-edition    = "2018"
-license    = "Apache-2.0"
-repository = "https://github.com/informalsystems/tendermint-rs"
-readme     = "README.md"
-keywords   = ["p2p", "tendermint", "cosmos"]
-authors    = [
+name        = "tendermint-p2p"
+version     = "0.19.0"
+edition     = "2018"
+license     = "Apache-2.0"
+repository  = "https://github.com/informalsystems/tendermint-rs"
+homepage    = "https://tendermint.com"
+readme      = "README.md"
+keywords    = ["p2p", "tendermint", "cosmos"]
+categories  = ["cryptography::cryptocurrencies", "network-programming"]
+authors     = [
   "Tony Arcieri <tony@iqlusion.io>",
   "Ismail Khoffi <Ismail.Khoffi@gmail.com>"
 ]
 
 description = """
-    The Tendermint P2P stack.
+    The Tendermint P2P stack in Rust.
     """
+
+[lib]
+test = false
+
+[features]
+amino = ["prost-amino", "prost-amino-derive"]
 
 [dependencies]
 chacha20poly1305 = "0.7"
@@ -26,7 +34,6 @@ prost = "0.7"
 rand_core = { version = "0.5", features = ["std"] }
 sha2 = "0.9"
 subtle = "2"
-subtle-encoding = { version = "0.5" }
 thiserror = "1"
 x25519-dalek = "1.1"
 zeroize = "1"
@@ -38,9 +45,3 @@ tendermint-proto = { path = "../proto", version = "0.19.0" }
 # optional dependencies
 prost-amino = { version = "0.6", optional = true }
 prost-amino-derive = { version = "0.6", optional = true }
-
-[dev-dependencies]
-readwrite = "^0.1.1"
-
-[features]
-amino = ["prost-amino", "prost-amino-derive"]

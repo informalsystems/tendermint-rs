@@ -17,12 +17,17 @@ use eyre::{eyre, Result, WrapErr};
 use merlin::Transcript;
 use rand_core::OsRng;
 use subtle::ConstantTimeEq;
+use thiserror::Error;
 use x25519_dalek::{EphemeralSecret, PublicKey as EphemeralPublic};
 
 use tendermint_proto as proto;
 
-pub use self::{kdf::Kdf, nonce::Nonce, protocol::Version, public_key::PublicKey};
-use crate::error::Error;
+pub use self::{
+    kdf::Kdf,
+    nonce::{Nonce, SIZE as NONCE_SIZE},
+    protocol::Version,
+    public_key::PublicKey,
+};
 
 #[cfg(feature = "amino")]
 mod amino_types;
@@ -31,9 +36,6 @@ mod kdf;
 mod nonce;
 mod protocol;
 mod public_key;
-
-#[cfg(test)]
-mod pipe;
 
 /// Size of the MAC tag
 pub const TAG_SIZE: usize = 16;
@@ -45,23 +47,39 @@ pub const DATA_MAX_SIZE: usize = 1024;
 const DATA_LEN_SIZE: usize = 4;
 const TOTAL_FRAME_SIZE: usize = DATA_MAX_SIZE + DATA_LEN_SIZE;
 
-/// Handshake is a process of establishing the SecretConnection between two peers.
-/// Specification: https://github.com/tendermint/spec/blob/master/spec/p2p/peer.md#authenticated-encryption-handshake
-struct Handshake<S> {
+/// Kinds of errors
+#[derive(Copy, Clone, Debug, Error, Eq, PartialEq)]
+pub enum Error {
+    /// Cryptographic operation failed
+    #[error("cryptographic error")]
+    Crypto,
+
+    /// Malformatted or otherwise invalid cryptographic key
+    #[error("invalid key")]
+    InvalidKey,
+
+    /// Network protocol-related errors
+    #[error("protocol error")]
+    Protocol,
+}
+
+/// Handshake is a process of establishing the `SecretConnection` between two peers.
+/// [Specification](https://github.com/tendermint/spec/blob/master/spec/p2p/peer.md#authenticated-encryption-handshake)
+pub struct Handshake<S> {
     protocol_version: Version,
     state: S,
 }
 
 /// Handshake states
 
-/// AwaitingEphKey means we're waiting for the remote ephemeral pubkey.
-struct AwaitingEphKey {
+/// `AwaitingEphKey` means we're waiting for the remote ephemeral pubkey.
+pub struct AwaitingEphKey {
     local_privkey: ed25519::Keypair,
     local_eph_privkey: Option<EphemeralSecret>,
 }
 
-/// AwaitingAuthSig means we're waiting for the remote authenticated signature.
-struct AwaitingAuthSig {
+/// `AwaitingAuthSig` means we're waiting for the remote authenticated signature.
+pub struct AwaitingAuthSig {
     sc_mac: [u8; 32],
     kdf: Kdf,
     recv_cipher: ChaCha20Poly1305,
@@ -69,8 +87,10 @@ struct AwaitingAuthSig {
     local_signature: ed25519::Signature,
 }
 
+#[allow(clippy::use_self)]
 impl Handshake<AwaitingEphKey> {
     /// Initiate a handshake.
+    #[must_use]
     pub fn new(
         local_privkey: ed25519::Keypair,
         protocol_version: Version,
@@ -80,7 +100,7 @@ impl Handshake<AwaitingEphKey> {
         let local_eph_pubkey = EphemeralPublic::from(&local_eph_privkey);
 
         (
-            Handshake {
+            Self {
                 protocol_version,
                 state: AwaitingEphKey {
                     local_privkey,
@@ -92,7 +112,12 @@ impl Handshake<AwaitingEphKey> {
     }
 
     /// Performs a Diffie-Hellman key agreement and creates a local signature.
-    /// Transitions Handshake into AwaitingAuthSig state.
+    /// Transitions Handshake into `AwaitingAuthSig` state.
+    ///
+    /// # Errors
+    ///
+    /// * if protocol order was violated, e.g. handshake missing
+    /// * if challenge signing fails
     pub fn got_key(
         &mut self,
         remote_eph_pubkey: EphemeralPublic,
@@ -160,6 +185,10 @@ impl Handshake<AwaitingEphKey> {
 
 impl Handshake<AwaitingAuthSig> {
     /// Returns a verified pubkey of the remote peer.
+    ///
+    /// # Errors
+    ///
+    /// * if signature scheme isn't supported
     pub fn got_signature(&mut self, auth_sig_msg: proto::p2p::AuthSigMessage) -> Result<PublicKey> {
         let remote_pubkey = auth_sig_msg
             .pub_key
@@ -169,19 +198,19 @@ impl Handshake<AwaitingAuthSig> {
                 }
                 proto::crypto::public_key::Sum::Secp256k1(_) => None,
             })
-            .ok_or(Error::CryptoError)?;
+            .ok_or(Error::Crypto)?;
 
-        let remote_sig = ed25519::Signature::try_from(auth_sig_msg.sig.as_slice())
-            .map_err(|_| Error::CryptoError)?;
+        let remote_sig =
+            ed25519::Signature::try_from(auth_sig_msg.sig.as_slice()).map_err(|_| Error::Crypto)?;
 
         if self.protocol_version.has_transcript() {
             remote_pubkey
                 .verify(&self.state.sc_mac, &remote_sig)
-                .map_err(|_| Error::CryptoError)?;
+                .map_err(|_| Error::Crypto)?;
         } else {
             remote_pubkey
                 .verify(&self.state.kdf.challenge, &remote_sig)
-                .map_err(|_| Error::CryptoError)?;
+                .map_err(|_| Error::Crypto)?;
         }
 
         // We've authorized.
@@ -207,12 +236,18 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         self.remote_pubkey.expect("remote_pubkey uninitialized")
     }
 
-    /// Performs a handshake and returns a new SecretConnection.
+    /// Performs a handshake and returns a new `SecretConnection`.
+    ///
+    /// # Errors
+    ///
+    /// * if sharing of the pubkey fails
+    /// * if sharing of the signature fails
+    /// * if receiving the signature fails
     pub fn new(
         mut io_handler: IoHandler,
         local_privkey: ed25519::Keypair,
         protocol_version: Version,
-    ) -> Result<SecretConnection<IoHandler>> {
+    ) -> Result<Self> {
         // Start a handshake process.
         let local_pubkey = PublicKey::from(&local_privkey);
         let (mut h, local_eph_pubkey) = Handshake::new(local_privkey, protocol_version);
@@ -224,7 +259,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         // Compute a local signature (also recv_cipher & send_cipher)
         let mut h = h.got_key(remote_eph_pubkey)?;
 
-        let mut sc = SecretConnection {
+        let mut sc = Self {
             io_handler,
             protocol_version,
             recv_buffer: vec![],
@@ -252,6 +287,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
     }
 
     /// Encrypt AEAD authenticated data
+    #[allow(clippy::cast_possible_truncation)]
     fn encrypt(
         &self,
         chunk: &[u8],
@@ -274,7 +310,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
                 b"",
                 &mut sealed_frame[..TOTAL_FRAME_SIZE],
             )
-            .map_err(|_| Error::CryptoError)?;
+            .map_err(|_| Error::Crypto)?;
 
         sealed_frame[TOTAL_FRAME_SIZE..].copy_from_slice(tag.as_slice());
 
@@ -284,7 +320,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
     /// Decrypt AEAD authenticated data
     fn decrypt(&self, ciphertext: &[u8], out: &mut [u8]) -> Result<usize> {
         if ciphertext.len() < TAG_SIZE {
-            return Err(Error::CryptoError).wrap_err_with(|| {
+            return Err(Error::Crypto).wrap_err_with(|| {
                 format!(
                     "ciphertext must be at least as long as a MAC tag {}",
                     TAG_SIZE
@@ -296,7 +332,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         let (ct, tag) = ciphertext.split_at(ciphertext.len() - TAG_SIZE);
 
         if out.len() < ct.len() {
-            return Err(Error::CryptoError).wrap_err("output buffer is too small");
+            return Err(Error::Crypto).wrap_err("output buffer is too small");
         }
 
         let in_out = &mut out[..ct.len()];
@@ -309,7 +345,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
                 in_out,
                 tag.into(),
             )
-            .map_err(|_| Error::CryptoError)?;
+            .map_err(|_| Error::Crypto)?;
 
         Ok(in_out.len())
     }
@@ -324,31 +360,34 @@ where
         if !self.recv_buffer.is_empty() {
             let n = cmp::min(data.len(), self.recv_buffer.len());
             data.copy_from_slice(&self.recv_buffer[..n]);
-            let mut leftover_portion = vec![0; self.recv_buffer.len().checked_sub(n).unwrap()];
+            let mut leftover_portion = vec![
+                0;
+                self.recv_buffer
+                    .len()
+                    .checked_sub(n)
+                    .expect("leftover calculation failed")
+            ];
             leftover_portion.clone_from_slice(&self.recv_buffer[n..]);
             self.recv_buffer = leftover_portion;
 
             return Ok(n);
         }
 
-        let mut sealed_frame = [0u8; TAG_SIZE + TOTAL_FRAME_SIZE];
+        let mut sealed_frame = [0_u8; TAG_SIZE + TOTAL_FRAME_SIZE];
         self.io_handler.read_exact(&mut sealed_frame)?;
 
         // decrypt the frame
-        let mut frame = [0u8; TOTAL_FRAME_SIZE];
+        let mut frame = [0_u8; TOTAL_FRAME_SIZE];
         let res = self.decrypt(&sealed_frame, &mut frame);
 
-        if res.is_err() {
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                res.err().unwrap().to_string(),
-            ));
+        if let Err(err) = res {
+            return Err(io::Error::new(io::ErrorKind::Other, err.to_string()));
         }
 
         self.recv_nonce.increment();
         // end decryption
 
-        let chunk_length = u32::from_le_bytes(frame[..4].try_into().unwrap());
+        let chunk_length = u32::from_le_bytes(frame[..4].try_into().expect("chunk framing failed"));
 
         if chunk_length as usize > DATA_MAX_SIZE {
             return Err(io::Error::new(
@@ -359,7 +398,10 @@ where
 
         let mut chunk = vec![0; chunk_length as usize];
         chunk.clone_from_slice(
-            &frame[DATA_LEN_SIZE..(DATA_LEN_SIZE.checked_add(chunk_length as usize).unwrap())],
+            &frame[DATA_LEN_SIZE
+                ..(DATA_LEN_SIZE
+                    .checked_add(chunk_length as usize)
+                    .expect("chunk size addition overflow"))],
         );
 
         let n = cmp::min(data.len(), chunk.len());
@@ -377,7 +419,7 @@ where
     // Writes encrypted frames of `TAG_SIZE` + `TOTAL_FRAME_SIZE`
     // CONTRACT: data smaller than DATA_MAX_SIZE is read atomically.
     fn write(&mut self, data: &[u8]) -> io::Result<usize> {
-        let mut n = 0usize;
+        let mut n = 0_usize;
         let mut data_copy = data;
         while !data_copy.is_empty() {
             let chunk: &[u8];
@@ -386,21 +428,20 @@ where
                 data_copy = &data_copy[DATA_MAX_SIZE..];
             } else {
                 chunk = data_copy;
-                data_copy = &[0u8; 0];
+                data_copy = &[0_u8; 0];
             }
-            let sealed_frame = &mut [0u8; TAG_SIZE + TOTAL_FRAME_SIZE];
+            let sealed_frame = &mut [0_u8; TAG_SIZE + TOTAL_FRAME_SIZE];
             let res = self.encrypt(chunk, sealed_frame);
-            if res.is_err() {
-                return Err(io::Error::new(
-                    io::ErrorKind::Other,
-                    res.err().unwrap().to_string(),
-                ));
+            if let Err(err) = res {
+                return Err(io::Error::new(io::ErrorKind::Other, err.to_string()));
             }
             self.send_nonce.increment();
             // end encryption
 
             self.io_handler.write_all(&sealed_frame[..])?;
-            n = n.checked_add(chunk.len()).unwrap();
+            n = n
+                .checked_add(chunk.len())
+                .expect("overflow when adding chunk lenghts");
         }
 
         Ok(n)
@@ -411,7 +452,7 @@ where
     }
 }
 
-/// Returns remote_eph_pubkey
+/// Returns `remote_eph_pubkey`
 fn share_eph_pubkey<IoHandler: Read + Write + Send + Sync>(
     handler: &mut IoHandler,
     local_eph_pubkey: &EphemeralPublic,
@@ -421,23 +462,14 @@ fn share_eph_pubkey<IoHandler: Read + Write + Send + Sync>(
     // TODO(ismail): on the go side this is done in parallel, here we do send and receive after
     // each other. thread::spawn would require a static lifetime.
     // Should still work though.
-    handler.write_all(&protocol_version.encode_initial_handshake(&local_eph_pubkey))?;
+    handler.write_all(&protocol_version.encode_initial_handshake(local_eph_pubkey))?;
 
-    let mut response_len = 0u8;
+    let mut response_len = 0_u8;
     handler.read_exact(slice::from_mut(&mut response_len))?;
 
     let mut buf = vec![0; response_len as usize];
     handler.read_exact(&mut buf)?;
     protocol_version.decode_initial_handshake(&buf)
-}
-
-/// Return is of the form lo, hi
-fn sort32(first: [u8; 32], second: [u8; 32]) -> ([u8; 32], [u8; 32]) {
-    if second > first {
-        (first, second)
-    } else {
-        (second, first)
-    }
 }
 
 /// Sign the challenge with the local private key
@@ -447,7 +479,7 @@ fn sign_challenge(
 ) -> Result<ed25519::Signature> {
     local_privkey
         .try_sign(challenge)
-        .map_err(|_| Error::CryptoError.into())
+        .map_err(|_| Error::Crypto.into())
 }
 
 // TODO(ismail): change from DecodeError to something more generic
@@ -459,7 +491,7 @@ fn share_auth_signature<IoHandler: Read + Write + Send + Sync>(
 ) -> Result<proto::p2p::AuthSigMessage> {
     let buf = sc
         .protocol_version
-        .encode_auth_signature(pubkey, &local_signature);
+        .encode_auth_signature(pubkey, local_signature);
 
     sc.write_all(&buf)?;
 
@@ -468,133 +500,12 @@ fn share_auth_signature<IoHandler: Read + Write + Send + Sync>(
     sc.protocol_version.decode_auth_signature(&buf)
 }
 
-#[cfg(tests)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_sort() {
-        // sanity check
-        let t1 = [
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0,
-        ];
-        let t2 = [
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 1,
-        ];
-        let (ref t3, ref t4) = sort32(t1, t2);
-        assert_eq!(t1, *t3);
-        assert_eq!(t2, *t4);
-    }
-
-    #[test]
-    fn test_dh_compatibility() {
-        let local_priv = &[
-            15, 54, 189, 54, 63, 255, 158, 244, 56, 168, 155, 63, 246, 79, 208, 192, 35, 194, 39,
-            232, 170, 187, 179, 36, 65, 36, 237, 12, 225, 176, 201, 54,
-        ];
-        let remote_pub = &[
-            193, 34, 183, 46, 148, 99, 179, 185, 242, 148, 38, 40, 37, 150, 76, 251, 25, 51, 46,
-            143, 189, 201, 169, 218, 37, 136, 51, 144, 88, 196, 10, 20,
-        ];
-
-        // generated using computeDHSecret in go
-        let expected_dh = &[
-            92, 56, 205, 118, 191, 208, 49, 3, 226, 150, 30, 205, 230, 157, 163, 7, 36, 28, 223,
-            84, 165, 43, 78, 38, 126, 200, 40, 217, 29, 36, 43, 37,
-        ];
-        let got_dh = diffie_hellman(local_priv, remote_pub);
-
-        assert_eq!(expected_dh, &got_dh);
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use std::thread;
-
-    use super::*;
-
-    #[test]
-    fn test_handshake() {
-        let (pipe1, pipe2) = pipe::async_bipipe_buffered();
-
-        let peer1 = thread::spawn(|| {
-            let mut csprng = OsRng {};
-            let privkey1: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-            let conn1 = SecretConnection::new(pipe2, privkey1, Version::V0_34);
-            assert_eq!(conn1.is_ok(), true);
-        });
-
-        let peer2 = thread::spawn(|| {
-            let mut csprng = OsRng {};
-            let privkey2: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-            let conn2 = SecretConnection::new(pipe1, privkey2, Version::V0_34);
-            assert_eq!(conn2.is_ok(), true);
-        });
-
-        peer1.join().expect("peer1 thread has panicked");
-        peer2.join().expect("peer2 thread has panicked");
-    }
-
-    #[test]
-    fn test_read_write_single_message() {
-        let (pipe1, pipe2) = pipe::async_bipipe_buffered();
-
-        const MESSAGE: &str = "The Queen's Gambit";
-
-        let sender = thread::spawn(move || {
-            let mut csprng = OsRng {};
-            let privkey1: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-            let mut conn1 = SecretConnection::new(pipe2, privkey1, Version::V0_34)
-                .expect("handshake to succeed");
-
-            conn1
-                .write_all(MESSAGE.as_bytes())
-                .expect("expected to write message");
-        });
-
-        let receiver = thread::spawn(move || {
-            let mut csprng = OsRng {};
-            let privkey2: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-            let mut conn2 = SecretConnection::new(pipe1, privkey2, Version::V0_34)
-                .expect("handshake to succeed");
-
-            let mut buf = [0; MESSAGE.len()];
-            conn2
-                .read_exact(&mut buf)
-                .expect("expected to read message");
-            assert_eq!(MESSAGE.as_bytes(), &buf);
-        });
-
-        sender.join().expect("sender thread has panicked");
-        receiver.join().expect("receiver thread has panicked");
-    }
-
-    #[test]
-    fn test_evil_peer_shares_invalid_eph_key() {
-        let mut csprng = OsRng {};
-        let local_privkey: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-        let (mut h, _) = Handshake::new(local_privkey, Version::V0_34);
-        let bytes: [u8; 32] = [0; 32];
-        let res = h.got_key(EphemeralPublic::from(bytes));
-        assert_eq!(res.is_err(), true);
-    }
-
-    #[test]
-    fn test_evil_peer_shares_invalid_auth_sig() {
-        let mut csprng = OsRng {};
-        let local_privkey: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-        let (mut h, _) = Handshake::new(local_privkey, Version::V0_34);
-        let res = h.got_key(EphemeralPublic::from(x25519_dalek::X25519_BASEPOINT_BYTES));
-        assert_eq!(res.is_err(), false);
-
-        let mut h = res.unwrap();
-        let res = h.got_signature(proto::p2p::AuthSigMessage {
-            pub_key: None,
-            sig: vec![],
-        });
-        assert_eq!(res.is_err(), true);
+/// Return is of the form lo, hi
+#[must_use]
+pub fn sort32(first: [u8; 32], second: [u8; 32]) -> ([u8; 32], [u8; 32]) {
+    if second > first {
+        (first, second)
+    } else {
+        (second, first)
     }
 }
