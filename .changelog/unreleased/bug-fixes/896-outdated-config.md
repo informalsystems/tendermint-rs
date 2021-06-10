@@ -1,0 +1,1 @@
+- `[tendermint]` Update TendermintConfig for Tendermint v.0.34.x ([#896](https://github.com/informalsystems/tendermint-rs/issues/896))
