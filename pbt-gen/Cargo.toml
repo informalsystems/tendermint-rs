@@ -3,6 +3,11 @@ name = "tendermint-pbt-gen"
 version = "0.19.0"
 authors = ["Shon Feder <shon@informal.systems>"]
 edition = "2018"
+license     = "Apache-2.0"
+readme      = "README.md"
+categories  = ["development-tools"]
+keywords    = ["tendermint", "property-based testing"]
+repository  = "https://github.com/informalsystems/tendermint-rs"
 description = """
             An internal crate providing proptest generators used across our
             crates and not depending on any code internal to those crates.
