@@ -68,9 +68,8 @@ define_error! {
         NoTimestamp
         |_| { format_args!("no timestamp") },
 
-        InvalidTimestamp
-        [DisplayError<Error>]
-        |_| { format_args!("invalid timestamp") },
+        NonZeroTimestamp
+        | _ | { "absent commitsig has non-zero timestamp" },
 
         InvalidAccountIdLength
         |_| { format_args!("invalid account ID length") },
@@ -107,27 +106,18 @@ define_error! {
         |_| { format_args!("missing timestamp field") },
 
         InvalidBlock
-        [DisplayError<Error>]
-        |_| { format_args!("invalid block") },
-
-        InvalidFristBlock
-        [DisplayError<Error>]
-        |_| { format_args!("invalid first block") },
+        { reason: String }
+        | e | { format_args!("invalid block reason {}", e.reason) },
 
         MissingVersion
         |_| { format_args!("missing version") },
 
-        InvalidHeader
-        [DisplayError<Error>]
-        |_| { format_args!("invalid header") },
-
         InvalidFirstHeader
-        [DisplayError<Error>]
-        |_| { format_args!("invalid first header") },
+        |_| { format_args!("last_block_id is not null on first height") },
 
         InvalidSignature
-        [DisplayError<Error>]
-        |_| { format_args!("invalid signature") },
+        { reason: String }
+        | e | { format_args!("invalid signature reason: {}", e.reason) },
 
         InvalidValidatorAddress
         |_| { format_args!("invalid validator address") },
@@ -172,19 +162,19 @@ define_error! {
         |_| { format_args!("infallible") },
 
         ChronoParse
-        [DisplayError<Error>]
+        [DisplayError<chrono::ParseError>]
         |_| { format_args!("chrono parse error") },
 
         SubtleEncoding
-        [DisplayError<Error>]
+        [DisplayError<subtle_encoding::Error>]
         |_| { format_args!("subtle encoding error") },
 
         SerdeJson
-        [DisplayError<Error>]
+        [DisplayError<serde_json::Error>]
         |_| { format_args!("serde json error") },
 
         Toml
-        [DisplayError<Error>]
+        [DisplayError<toml::de::Error>]
         |_| { format_args!("toml de error") },
     }
 }

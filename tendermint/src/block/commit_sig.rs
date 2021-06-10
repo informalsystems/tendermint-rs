@@ -77,23 +77,17 @@ impl TryFrom<RawCommitSig> for CommitSig {
                 let timestamp = value.timestamp.unwrap();
                 // 0001-01-01T00:00:00.000Z translates to EPOCH-62135596800 seconds
                 if timestamp.nanos != 0 || timestamp.seconds != -62135596800 {
-                    return Err(error::invalid_timestamp_error(anyhow::anyhow!(
-                        "absent commitsig has non-zero timestamp"
-                    )));
+                    return Err(error::non_zero_timestamp_error());
                 }
             }
             if !value.signature.is_empty() {
-                return Err(error::invalid_signature_error(anyhow::anyhow!(
-                    "invalid signature error"
-                )));
+                return Err(error::invalid_signature_error("invalid signature error".into()));
             }
             return Ok(CommitSig::BlockIdFlagAbsent);
         }
         if value.block_id_flag == BlockIdFlag::Commit.to_i32().unwrap() {
             if value.signature.is_empty() {
-                return Err(error::invalid_signature_error(anyhow::anyhow!(
-                    "regular commitsig has no signature"
-                )));
+                return Err(error::invalid_signature_error("regular commitsig has no signature".into()));
             }
             if value.validator_address.is_empty() {
                 return Err(error::invalid_validator_address_error());
@@ -112,9 +106,7 @@ impl TryFrom<RawCommitSig> for CommitSig {
         }
         if value.block_id_flag == BlockIdFlag::Nil.to_i32().unwrap() {
             if value.signature.is_empty() {
-                return Err(error::invalid_signature_error(anyhow::anyhow!(
-                    "nil commitsig has no signature"
-                )));
+                return Err(error::invalid_signature_error("nil commitsig has no signature".into()));
             }
             if value.validator_address.is_empty() {
                 return Err(error::invalid_validator_address_error());

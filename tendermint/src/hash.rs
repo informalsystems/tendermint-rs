@@ -89,7 +89,7 @@ impl Hash {
                 Hex::upper_case()
                     .decode_to_slice(s.as_bytes(), &mut h)
                     .map_err(|e: subtle_encoding::Error| {
-                        error::subtle_encoding_error(anyhow::anyhow!(e))
+                        error::subtle_encoding_error(e)
                     })?;
                 Ok(Hash::Sha256(h))
             }
@@ -231,7 +231,7 @@ impl AppHash {
         Hex::upper_case()
             .decode_to_slice(s.as_bytes(), &mut h)
             .map_err(|e: subtle_encoding::Error| {
-                error::subtle_encoding_error(anyhow::anyhow!(e))
+                error::subtle_encoding_error(e)
             })?;
         Ok(AppHash(h))
     }

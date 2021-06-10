@@ -46,9 +46,7 @@ impl TryFrom<RawCommit> for Commit {
             round: value.round.try_into()?,
             block_id: value
                 .block_id
-                .ok_or(error::invalid_block_error(anyhow::anyhow!(
-                    "invalid block error"
-                )))?
+                .ok_or(error::invalid_block_error("invalid block error".into()))?
                 .try_into()?, /* gogoproto.nullable = false */
             signatures: signatures?,
         })

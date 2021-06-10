@@ -4,7 +4,7 @@ use gumdrop::Options;
 use serde::{Deserialize, Serialize};
 use simple_error::*;
 use std::convert::TryFrom;
-use tendermint::consensus::state::Ordering;
+use std::cmp::Ordering;
 use tendermint::{account, private_key, public_key, public_key::PublicKey, validator, vote};
 
 #[derive(Debug, Options, Serialize, Deserialize, Clone)]

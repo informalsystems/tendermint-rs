@@ -74,7 +74,7 @@ impl Time {
     pub fn parse_from_rfc3339(s: &str) -> Result<Time, Error> {
         Ok(Time(
             DateTime::parse_from_rfc3339(s)
-                .map_err(|e: chrono::ParseError| error::chrono_parse_error(anyhow::anyhow!(e)))?
+                .map_err(|e| error::chrono_parse_error(e))?
                 .with_timezone(&Utc),
         ))
     }

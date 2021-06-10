@@ -93,9 +93,7 @@ impl TryFrom<RawHeader> for Header {
         // height").into());
         //}
         if last_block_id.is_some() && height.value() == 1 {
-            return Err(error::invalid_first_header_error(anyhow::anyhow!(
-                "last_block_id is not null on first height"
-            )));
+            return Err(error::invalid_first_header_error());
         }
         //if last_commit_hash.is_none() && height.value() != 1 {
         //    return Err(Kind::InvalidHeader.context("last_commit_hash is null on non-first
