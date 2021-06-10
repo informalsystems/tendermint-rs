@@ -1,13 +1,16 @@
 use std::net::SocketAddr;
 
-use eyre::{Report, Result};
+use eyre::Result;
 
 use tendermint::public_key::PublicKey;
 use tendermint_p2p::transport::{
     BindInfo, ConnectInfo, Connection, Endpoint, StreamId, StreamSend, Transport,
 };
 
-struct MemoryStreamRead;
+#[derive(Debug, thiserror::Error)]
+pub enum Error {}
+
+pub struct MemoryStreamRead;
 
 impl Iterator for MemoryStreamRead {
     type Item = Result<Vec<u8>>;
@@ -17,10 +20,10 @@ impl Iterator for MemoryStreamRead {
     }
 }
 
-struct MemoryStreamSend;
+pub struct MemoryStreamSend;
 
 impl StreamSend for MemoryStreamSend {
-    fn send<B: AsRef<[u8]>>(msg: B) -> Result<()> {
+    fn send<B: AsRef<[u8]>>(_msg: B) -> Result<()> {
         todo!()
     }
 }
@@ -28,7 +31,7 @@ impl StreamSend for MemoryStreamSend {
 pub struct MemoryConnection;
 
 impl Connection for MemoryConnection {
-    type Error = eyre::Report;
+    type Error = Error;
     type StreamRead = MemoryStreamRead;
     type StreamSend = MemoryStreamSend;
 
@@ -43,7 +46,7 @@ impl Connection for MemoryConnection {
     }
     fn open_bidirectional(
         &self,
-        stream_id: StreamId,
+        _stream_id: StreamId,
     ) -> Result<(Self::StreamRead, Self::StreamSend), Self::Error> {
         todo!()
     }
@@ -60,7 +63,7 @@ pub struct MemoryEndpoint;
 impl Endpoint for MemoryEndpoint {
     type Connection = MemoryConnection;
 
-    fn connect(&self, info: ConnectInfo) -> Result<Self::Connection> {
+    fn connect(&self, _info: ConnectInfo) -> Result<Self::Connection> {
         todo!()
     }
 
