@@ -6,7 +6,6 @@ use crate::primitives::{Duration, SystemTime, UNIX_EPOCH};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::{
-    convert::{Infallible, TryFrom},
     fmt,
     ops::{Add, Sub},
     str::FromStr,
@@ -23,10 +22,9 @@ pub struct Time(DateTime<Utc>);
 
 impl Protobuf<Timestamp> for Time {}
 
-impl TryFrom<Timestamp> for Time {
-    type Error = Infallible;
 
-    fn try_from(value: Timestamp) -> Result<Self, Self::Error> {
+impl From<Timestamp> for Time {
+    fn from(value: Timestamp) -> Self {
         // prost_types::Timestamp has a SystemTime converter but
         // tendermint_proto::Timestamp can be JSON-encoded
         let prost_value = prost_types::Timestamp {
@@ -34,7 +32,7 @@ impl TryFrom<Timestamp> for Time {
             nanos: value.nanos,
         };
 
-        Ok(SystemTime::from(prost_value).into())
+        SystemTime::from(prost_value).into()
     }
 }
 

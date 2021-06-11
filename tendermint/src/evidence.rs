@@ -90,10 +90,7 @@ impl TryFrom<RawDuplicateVoteEvidence> for DuplicateVoteEvidence {
             timestamp: value
                 .timestamp
                 .ok_or(error::missing_timestamp_error())?
-                .try_into()
-                .map_err(|e| {
-                    error::in_fallible_error(e)
-                })?,
+                .into(),
         })
     }
 }

@@ -79,10 +79,7 @@ impl TryFrom<RawBlock> for Block {
             data: value
                 .data
                 .ok_or(error::missing_data_error())?
-                .try_into()
-                .map_err(|e| {
-                    error::in_fallible_error(e)
-                })?,
+                .into(),
             evidence: value
                 .evidence
                 .ok_or(error::missing_evidence_error())?
