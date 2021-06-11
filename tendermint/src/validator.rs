@@ -178,7 +178,7 @@ impl TryFrom<RawValidator> for Info {
                 .try_into()?,
             voting_power: value.voting_power.try_into()?,
             proposer_priority: value.proposer_priority.try_into().map_err(
-                |e: std::convert::Infallible| error::in_fallible_error(anyhow::anyhow!(e)),
+                |e | error::in_fallible_error(e),
             )?,
         })
     }

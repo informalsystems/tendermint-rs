@@ -158,7 +158,7 @@ define_error! {
         |e| { format_args!("proposer with address '{0}' no found in validator set", e.account) },
 
         InFallible
-        [DisplayError<Error>]
+        [DisplayError<std::convert::Infallible>]
         |_| { format_args!("infallible") },
 
         ChronoParse

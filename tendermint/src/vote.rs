@@ -81,7 +81,7 @@ impl TryFrom<RawVote> for Vote {
                 .transpose()?
                 .filter(|i| i != &block::Id::default()),
             timestamp: value.timestamp.map(TryInto::try_into).transpose().map_err(
-                |e: std::convert::Infallible| error::in_fallible_error(anyhow::anyhow!(e)),
+                |e | error::in_fallible_error(e),
             )?,
             validator_address: value.validator_address.try_into()?,
             validator_index: value.validator_index.try_into()?,

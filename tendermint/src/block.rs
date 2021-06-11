@@ -80,8 +80,8 @@ impl TryFrom<RawBlock> for Block {
                 .data
                 .ok_or(error::missing_data_error())?
                 .try_into()
-                .map_err(|e: std::convert::Infallible| {
-                    error::in_fallible_error(anyhow::anyhow!(e))
+                .map_err(|e| {
+                    error::in_fallible_error(e)
                 })?,
             evidence: value
                 .evidence
