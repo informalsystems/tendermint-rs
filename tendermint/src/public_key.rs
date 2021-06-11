@@ -2,7 +2,7 @@
 
 pub use ed25519_dalek::PublicKey as Ed25519;
 #[cfg(feature = "secp256k1")]
-pub use k256::EncodedPoint as Secp256k1;
+pub use k256::ecdsa::VerifyingKey as Secp256k1;
 
 mod pub_key_request;
 mod pub_key_response;
@@ -91,7 +91,7 @@ impl From<PublicKey> for RawPublicKey {
             #[cfg(feature = "secp256k1")]
             PublicKey::Secp256k1(ref pk) => RawPublicKey {
                 sum: Some(tendermint_proto::crypto::public_key::Sum::Secp256k1(
-                    pk.as_bytes().to_vec(),
+                    pk.to_bytes().to_vec(),
                 )),
             },
         }
@@ -103,7 +103,9 @@ impl PublicKey {
     #[cfg(feature = "secp256k1")]
     #[cfg_attr(docsrs, doc(cfg(feature = "secp256k1")))]
     pub fn from_raw_secp256k1(bytes: &[u8]) -> Option<PublicKey> {
-        Secp256k1::from_bytes(bytes).ok().map(PublicKey::Secp256k1)
+        Secp256k1::from_sec1_bytes(bytes)
+            .ok()
+            .map(PublicKey::Secp256k1)
     }
 
     /// From raw Ed25519 public key bytes
@@ -153,18 +155,13 @@ impl PublicKey {
         }
     }
 
-    /// View this key as a byte slice
-    pub fn as_bytes(&self) -> &[u8] {
+    /// Serialize this key as a byte vector.
+    pub fn to_bytes(&self) -> Vec<u8> {
         match self {
-            PublicKey::Ed25519(pk) => pk.as_bytes(),
+            PublicKey::Ed25519(pk) => pk.as_bytes().to_vec(),
             #[cfg(feature = "secp256k1")]
-            PublicKey::Secp256k1(pk) => pk.as_bytes(),
+            PublicKey::Secp256k1(pk) => pk.to_bytes().to_vec(),
         }
-    }
-
-    /// Get a vector containing the byte serialization of this key
-    pub fn to_vec(self) -> Vec<u8> {
-        self.as_bytes().to_vec()
     }
 
     /// Serialize this key as Bech32 with the given human readable prefix
@@ -178,7 +175,7 @@ impl PublicKey {
             #[cfg(feature = "secp256k1")]
             PublicKey::Secp256k1(ref pk) => {
                 let mut key_bytes = vec![0xEB, 0x5A, 0xE9, 0x87, 0x21];
-                key_bytes.extend(pk.as_bytes());
+                key_bytes.extend(pk.to_bytes());
                 key_bytes
             }
         };
@@ -187,7 +184,7 @@ impl PublicKey {
 
     /// Serialize this key as hexadecimal
     pub fn to_hex(self) -> String {
-        String::from_utf8(hex::encode_upper(self.as_bytes())).unwrap()
+        String::from_utf8(hex::encode_upper(self.to_bytes())).unwrap()
     }
 }
 
@@ -222,7 +219,7 @@ impl Ord for PublicKey {
             PublicKey::Secp256k1(a) => match other {
                 PublicKey::Ed25519(_) => Ordering::Greater,
                 #[cfg(feature = "secp256k1")]
-                PublicKey::Secp256k1(b) => a.as_bytes().cmp(b.as_bytes()),
+                PublicKey::Secp256k1(b) => a.cmp(b),
             },
         }
     }
@@ -346,7 +343,7 @@ fn serialize_secp256k1_base64<S>(pk: &Secp256k1, serializer: S) -> Result<S::Ok,
 where
     S: ser::Serializer,
 {
-    String::from_utf8(base64::encode(pk.as_bytes()))
+    String::from_utf8(base64::encode(pk.to_bytes()))
         .unwrap()
         .serialize(serializer)
 }
@@ -369,7 +366,7 @@ where
     use de::Error;
     let encoded = String::deserialize(deserializer)?;
     let bytes = base64::decode(&encoded).map_err(D::Error::custom)?;
-    Secp256k1::from_bytes(&bytes).map_err(|_| D::Error::custom("invalid secp256k1 key"))
+    Secp256k1::from_sec1_bytes(&bytes).map_err(|_| D::Error::custom("invalid secp256k1 key"))
 }
 
 #[cfg(test)]
