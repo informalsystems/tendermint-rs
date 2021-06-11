@@ -37,19 +37,23 @@ pub enum Version {
 
 impl Version {
     /// Does this version of Secret Connection use a transcript hash
+    #[must_use]
     pub fn has_transcript(self) -> bool {
-        self != Version::Legacy
+        self != Self::Legacy
     }
 
     /// Are messages encoded using Protocol Buffers?
-    pub fn is_protobuf(self) -> bool {
+    #[must_use]
+    pub const fn is_protobuf(self) -> bool {
         match self {
-            Version::V0_34 => true,
-            Version::V0_33 | Version::Legacy => false,
+            Self::V0_34 => true,
+            Self::V0_33 | Self::Legacy => false,
         }
     }
 
     /// Encode the initial handshake message (i.e. first one sent by both peers)
+    #[allow(clippy::cast_possible_truncation)]
+    #[must_use]
     pub fn encode_initial_handshake(self, eph_pubkey: &EphemeralPublic) -> Vec<u8> {
         if self.is_protobuf() {
             // Equivalent Go implementation:
@@ -73,17 +77,21 @@ impl Version {
     }
 
     /// Decode the initial handshake message
+    ///
+    /// # Errors
+    ///
+    /// * if the message is malformed
     pub fn decode_initial_handshake(self, bytes: &[u8]) -> Result<EphemeralPublic> {
         let eph_pubkey = if self.is_protobuf() {
             // Equivalent Go implementation:
             // https://github.com/tendermint/tendermint/blob/9e98c74/p2p/conn/secret_connection.go#L315-L323
             // TODO(tarcieri): proper protobuf framing
             if bytes.len() != 34 || bytes[..2] != [0x0a, 0x20] {
-                return Err(Error::ProtocolError)
+                return Err(Error::Protocol)
                     .wrap_err("malformed handshake message (protocol version mismatch?)");
             }
 
-            let eph_pubkey_bytes: [u8; 32] = bytes[2..].try_into().unwrap();
+            let eph_pubkey_bytes: [u8; 32] = bytes[2..].try_into().expect("framing failed");
             EphemeralPublic::from(eph_pubkey_bytes)
         } else {
             // Equivalent Go implementation:
@@ -91,11 +99,11 @@ impl Version {
             //
             // Check that the length matches what we expect and the length prefix is correct
             if bytes.len() != 33 || bytes[0] != 32 {
-                return Err(Error::ProtocolError)
+                return Err(Error::Protocol)
                     .wrap_err("malformed handshake message (protocol version mismatch?)");
             }
 
-            let eph_pubkey_bytes: [u8; 32] = bytes[1..].try_into().unwrap();
+            let eph_pubkey_bytes: [u8; 32] = bytes[1..].try_into().expect("framing failed");
             EphemeralPublic::from(eph_pubkey_bytes)
         };
 
@@ -108,6 +116,7 @@ impl Version {
     }
 
     /// Encode signature which authenticates the handshake
+    #[must_use]
     pub fn encode_auth_signature(
         self,
         pub_key: &ed25519::PublicKey,
@@ -136,7 +145,8 @@ impl Version {
     }
 
     /// Get the length of the auth message response for this protocol version
-    pub fn auth_sig_msg_response_len(self) -> usize {
+    #[must_use]
+    pub const fn auth_sig_msg_response_len(self) -> usize {
         if self.is_protobuf() {
             // 32 + 64 + (proto overhead = 1 prefix + 2 fields + 2 lengths + total length)
             103
@@ -147,6 +157,10 @@ impl Version {
     }
 
     /// Decode signature message which authenticates the handshake
+    ///
+    /// # Errors
+    ///
+    /// * if the decoding of the bytes fails
     pub fn decode_auth_signature(self, bytes: &[u8]) -> Result<proto::p2p::AuthSigMessage> {
         if self.is_protobuf() {
             // Parse Protobuf-encoded `AuthSigMessage`
@@ -155,13 +169,14 @@ impl Version {
                     "malformed handshake message (protocol version mismatch?): {}",
                     e
                 );
-                Report::new(Error::ProtocolError).wrap_err(message)
+                Report::new(Error::Protocol).wrap_err(message)
             })
         } else {
             self.decode_auth_signature_amino(bytes)
         }
     }
 
+    #[allow(clippy::unused_self)]
     #[cfg(feature = "amino")]
     fn encode_auth_signature_amino(
         self,
@@ -180,6 +195,7 @@ impl Version {
         buf
     }
 
+    #[allow(clippy::unused_self)]
     #[cfg(not(feature = "amino"))]
     fn encode_auth_signature_amino(
         self,
@@ -189,6 +205,7 @@ impl Version {
         panic!("attempted to encode auth signature using amino, but 'amino' feature is not present")
     }
 
+    #[allow(clippy::unused_self)]
     #[cfg(feature = "amino")]
     fn decode_auth_signature_amino(self, bytes: &[u8]) -> Result<proto::p2p::AuthSigMessage> {
         // Legacy Amino encoded `AuthSigMessage`
@@ -203,6 +220,7 @@ impl Version {
         })
     }
 
+    #[allow(clippy::unused_self)]
     #[cfg(not(feature = "amino"))]
     fn decode_auth_signature_amino(self, _: &[u8]) -> Result<proto::p2p::AuthSigMessage> {
         panic!("attempted to decode auth signature using amino, but 'amino' feature is not present")
@@ -216,6 +234,7 @@ impl Version {
 /// Software Countermeasures (see "Rejecting Known Bad Points" subsection):
 ///
 /// <https://eprint.iacr.org/2017/806.pdf>
+#[allow(clippy::match_same_arms)]
 fn is_low_order_point(point: &EphemeralPublic) -> bool {
     // Note: as these are public points and do not interact with secret-key
     // material in any way, this check does not need to be performed in

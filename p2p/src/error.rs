@@ -7,7 +7,7 @@ use thiserror::Error;
 pub enum Error {
     /// Cryptographic operation failed
     #[error("cryptographic error")]
-    CryptoError,
+    Crypto,
 
     /// Malformatted or otherwise invalid cryptographic key
     #[error("invalid key")]
@@ -15,5 +15,5 @@ pub enum Error {
 
     /// Network protocol-related errors
     #[error("protocol error")]
-    ProtocolError,
+    Protocol,
 }
