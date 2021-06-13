@@ -186,10 +186,6 @@ Proposed
 
 ## Open Questions
 
-* Should serialization be transport specific to allow for optimisations on the
-  wire per transport instead of expecting the same byte layout no matter which
-  wire protocol in use?
-
 ## References
 
 * [rfc: add P2P stream proposal](https://github.com/tendermint/spec/pull/227)
