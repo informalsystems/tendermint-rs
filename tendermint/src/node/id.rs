@@ -1,18 +1,20 @@
 //! Tendermint node IDs
 
-use crate::{
-    error::{Error, Kind},
-    public_key::Ed25519,
+use std::{
+    convert::TryFrom,
+    fmt::{self, Debug, Display},
+    str::FromStr,
 };
 
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
-use std::{
-    fmt::{self, Debug, Display},
-    str::FromStr,
-};
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
+
+use crate::{
+    error::{Error, Kind},
+    public_key::{Ed25519, PublicKey},
+};
 
 /// Length of a Node ID in bytes
 pub const LENGTH: usize = 20;
@@ -93,6 +95,18 @@ impl FromStr for Id {
 impl PartialEq for Id {
     fn eq(&self, other: &Id) -> bool {
         self.ct_eq(other).into()
+    }
+}
+
+impl TryFrom<PublicKey> for Id {
+    type Error = Error;
+
+    fn try_from(pk: PublicKey) -> Result<Self, Self::Error> {
+        match pk {
+            PublicKey::Ed25519(ed25519) => Ok(Id::from(ed25519)),
+            #[cfg(feature = "secp256k1")]
+            _ => Err(Kind::UnsupportedKeyType.into()),
+        }
     }
 }
 
