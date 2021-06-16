@@ -64,7 +64,10 @@ pub struct TendermintConfig {
 
     /// TCP or UNIX socket address for Tendermint to listen on for
     /// connections from an external PrivValidator process
-    #[serde(deserialize_with = "deserialize_optional_value")]
+    #[serde(
+        deserialize_with = "deserialize_optional_value",
+        serialize_with = "serialize_optional_value"
+    )]
     pub priv_validator_laddr: Option<net::Address>,
 
     /// Path to the JSON file containing the private key to use for node authentication in the p2p
@@ -300,7 +303,10 @@ pub struct RpcConfig {
 
     /// TCP or UNIX socket address for the gRPC server to listen on
     /// NOTE: This server only supports `/broadcast_tx_commit`
-    #[serde(deserialize_with = "deserialize_optional_value")]
+    #[serde(
+        deserialize_with = "deserialize_optional_value",
+        serialize_with = "serialize_optional_value"
+    )]
     pub grpc_laddr: Option<net::Address>,
 
     /// Maximum number of simultaneous GRPC connections.
@@ -331,15 +337,24 @@ pub struct RpcConfig {
     pub max_header_bytes: u64,
 
     /// The name of a file containing certificate that is used to create the HTTPS server.
-    #[serde(deserialize_with = "deserialize_optional_value")]
+    #[serde(
+        deserialize_with = "deserialize_optional_value",
+        serialize_with = "serialize_optional_value"
+    )]
     pub tls_cert_file: Option<PathBuf>,
 
     /// The name of a file containing matching private key that is used to create the HTTPS server.
-    #[serde(deserialize_with = "deserialize_optional_value")]
+    #[serde(
+        deserialize_with = "deserialize_optional_value",
+        serialize_with = "serialize_optional_value"
+    )]
     pub tls_key_file: Option<PathBuf>,
 
     /// pprof listen address <https://golang.org/pkg/net/http/pprof>
-    #[serde(deserialize_with = "deserialize_optional_value")]
+    #[serde(
+        deserialize_with = "deserialize_optional_value",
+        serialize_with = "serialize_optional_value"
+    )]
     pub pprof_laddr: Option<net::Address>,
 }
 
@@ -404,7 +419,10 @@ pub struct P2PConfig {
     /// If empty, will use the same port as the laddr,
     /// and will introspect on the listener or use UPnP
     /// to figure out the address.
-    #[serde(deserialize_with = "deserialize_optional_value")]
+    #[serde(
+        deserialize_with = "deserialize_optional_value",
+        serialize_with = "serialize_optional_value"
+    )]
     pub external_address: Option<net::Address>,
 
     /// Comma separated list of seed nodes to connect to
@@ -495,7 +513,10 @@ pub struct MempoolConfig {
     pub broadcast: bool,
 
     /// WAL dir
-    #[serde(deserialize_with = "deserialize_optional_value")]
+    #[serde(
+        deserialize_with = "deserialize_optional_value",
+        serialize_with = "serialize_optional_value"
+    )]
     pub wal_dir: Option<PathBuf>,
 
     /// Maximum number of transactions in the mempool
@@ -686,7 +707,7 @@ where
     T: FromStr<Err = E>,
     E: fmt::Display,
 {
-    let string = String::deserialize(deserializer)?;
+    let string = Option::<String>::deserialize(deserializer).map(|str| str.unwrap_or_default())?;
 
     if string.is_empty() {
         return Ok(None);
@@ -696,6 +717,17 @@ where
         .parse()
         .map(Some)
         .map_err(|e| D::Error::custom(format!("{}", e)))
+}
+
+fn serialize_optional_value<S, T>(value: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: ser::Serializer,
+    T: Serialize,
+{
+    match value {
+        Some(value) => value.serialize(serializer),
+        None => "".serialize(serializer),
+    }
 }
 
 /// Deserialize a comma separated list of types that impl `FromStr` as a `Vec`
