@@ -216,4 +216,17 @@ mod files {
             "F26BF4B2A2E84CEB7A53C3F1AE77408779B20064782FBADBDF0E365959EE4534"
         );
     }
+
+    /// Parse an example `config.toml` file to a `TendermintConfig` struct, then
+    /// serialize it and parse again.
+    #[test]
+    fn parsing_roundtrip() {
+        let config_toml = read_fixture("config.toml");
+        let config = TendermintConfig::parse_toml(&config_toml).unwrap();
+
+        let written_config_toml = toml::to_string(&config).unwrap();
+        let _written_config = TendermintConfig::parse_toml(&written_config_toml).unwrap();
+
+        // assert_eq!(config, written_config);
+    }
 }
