@@ -5,7 +5,7 @@ use serde::{de, de::Error as _, ser, Deserialize, Serialize};
 use std::{fmt, ops::Deref, str::FromStr, time::Duration};
 
 /// Timeout durations
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Timeout(Duration);
 
 impl Deref for Timeout {

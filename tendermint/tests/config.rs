@@ -3,6 +3,8 @@
 //! Test config files are located in the `tests/support/config` subdirectory.
 
 mod files {
+    #[cfg(test)]
+    use pretty_assertions::assert_eq;
     use std::{fs, path::PathBuf, time::Duration};
     use tendermint::{config::*, net, node};
 
@@ -225,8 +227,12 @@ mod files {
         let config = TendermintConfig::parse_toml(&config_toml).unwrap();
 
         let written_config_toml = toml::to_string(&config).unwrap();
-        let _written_config = TendermintConfig::parse_toml(&written_config_toml).unwrap();
+        let written_config = TendermintConfig::parse_toml(&written_config_toml).unwrap();
 
-        // assert_eq!(config, written_config);
+        assert_eq!(
+            config, written_config,
+            "written config {}",
+            written_config_toml
+        );
     }
 }

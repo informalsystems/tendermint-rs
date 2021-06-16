@@ -26,7 +26,7 @@ use std::{
 };
 
 /// Tendermint `config.toml` file
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct TendermintConfig {
     /// TCP or UNIX socket address of the ABCI application,
     /// or the name of an ABCI application compiled in with the Tendermint binary.
@@ -285,7 +285,7 @@ pub enum AbciMode {
 }
 
 /// Tendermint `config.toml` file's `[rpc]` section
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct RpcConfig {
     /// TCP or UNIX socket address for the RPC server to listen on
     pub laddr: net::Address,
@@ -360,7 +360,7 @@ pub struct RpcConfig {
 
 /// Origin hosts allowed with CORS requests to the RPC API
 // TODO(tarcieri): parse and validate this string
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct CorsOrigin(String);
 
 impl AsRef<str> for CorsOrigin {
@@ -377,7 +377,7 @@ impl fmt::Display for CorsOrigin {
 
 /// HTTP methods allowed with CORS requests to the RPC API
 // TODO(tarcieri): parse and validate this string
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct CorsMethod(String);
 
 impl AsRef<str> for CorsMethod {
@@ -394,7 +394,7 @@ impl fmt::Display for CorsMethod {
 
 /// HTTP headers allowed to be sent via CORS to the RPC API
 // TODO(tarcieri): parse and validate this string
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct CorsHeader(String);
 
 impl AsRef<str> for CorsHeader {
@@ -410,7 +410,7 @@ impl fmt::Display for CorsHeader {
 }
 
 /// peer to peer configuration options
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct P2PConfig {
     /// Address to listen for incoming connections
     pub laddr: net::Address,
@@ -504,7 +504,7 @@ pub struct P2PConfig {
 }
 
 /// mempool configuration options
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct MempoolConfig {
     /// Recheck enabled
     pub recheck: bool,
@@ -547,7 +547,7 @@ pub struct MempoolConfig {
 }
 
 /// consensus configuration options
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct ConsensusConfig {
     /// Path to WAL file
     pub wal_file: PathBuf,
@@ -596,7 +596,7 @@ pub struct ConsensusConfig {
 }
 
 /// transactions indexer configuration options
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct TxIndexConfig {
     /// What indexer to use for transactions
     #[serde(default)]
@@ -624,7 +624,7 @@ impl Default for TxIndexer {
 }
 
 /// instrumentation configuration options
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct InstrumentationConfig {
     /// When `true`, Prometheus metrics are served under /metrics on
     /// PrometheusListenAddr.
@@ -642,7 +642,7 @@ pub struct InstrumentationConfig {
 }
 
 /// statesync configuration options
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct StatesyncConfig {
     /// State sync rapidly bootstraps a new node by discovering, fetching, and restoring a state machine
     /// snapshot from peers instead of fetching and replaying historical blocks. Requires some peers in
@@ -681,7 +681,7 @@ pub struct StatesyncConfig {
 }
 
 /// fastsync configuration options
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct FastsyncConfig {
     /// Fast Sync version to use:
     ///   1) "v0" (default) - the legacy fast sync implementation
@@ -690,7 +690,7 @@ pub struct FastsyncConfig {
 }
 
 /// Rate at which bytes can be sent/received
-#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct TransferRate(u64);
 
 impl TransferRate {

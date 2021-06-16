@@ -65,5 +65,6 @@ ripemd160 = { version = "0.9", optional = true }
 secp256k1 = ["k256", "ripemd160"]
 
 [dev-dependencies]
+pretty_assertions = "0.7.2"
 proptest = "0.10.1"
 tendermint-pbt-gen = { path = "../pbt-gen" }
