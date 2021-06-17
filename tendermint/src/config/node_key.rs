@@ -1,6 +1,6 @@
 //! Node keys
 
-use crate::error::{self, KindError as Error};
+use crate::error::{self, Error};
 use crate::{node, private_key::PrivateKey, public_key::PublicKey};
 use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};

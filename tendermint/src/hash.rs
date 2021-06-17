@@ -1,6 +1,6 @@
 //! Hash functions and their outputs
 
-use crate::error::{self, KindError as Error};
+use crate::error::{self, Error};
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{

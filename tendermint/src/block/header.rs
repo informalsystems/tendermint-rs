@@ -1,6 +1,6 @@
 //! Block headers
 
-use crate::error::{self, KindError as Error};
+use crate::error::{self, Error};
 use crate::merkle::simple_hash_from_byte_vectors;
 use crate::{account, block, chain, AppHash, Hash, Time};
 use serde::{Deserialize, Serialize};

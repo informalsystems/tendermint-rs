@@ -1,6 +1,6 @@
 //! Timestamps used by Tendermint blockchains
 
-use crate::error::{self, KindError as Error};
+use crate::error::{self, Error};
 
 use crate::primitives::{Duration, SystemTime, UNIX_EPOCH};
 use chrono::{DateTime, Utc};

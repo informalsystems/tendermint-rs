@@ -6,7 +6,7 @@ use tendermint_proto::crypto::ProofOp as RawProofOp;
 use tendermint_proto::crypto::ProofOps as RawProofOps;
 use tendermint_proto::Protobuf;
 
-use crate::error::KindError as Error;
+use crate::error::Error;
 use crate::serializers;
 
 /// Proof is Merkle proof defined by the list of ProofOps

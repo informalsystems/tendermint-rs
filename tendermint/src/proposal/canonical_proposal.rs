@@ -3,7 +3,7 @@
 use super::Type;
 use crate::block::{Height, Id as BlockId, Round};
 use crate::chain::Id as ChainId;
-use crate::error::{self, KindError as Error};
+use crate::error::{self, Error};
 use crate::Time;
 use std::{
     convert::{TryFrom, TryInto},

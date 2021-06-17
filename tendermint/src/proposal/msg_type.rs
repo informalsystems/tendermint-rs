@@ -1,4 +1,4 @@
-use crate::error::{self, KindError as Error};
+use crate::error::{self, Error};
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{convert::TryFrom, prelude::v1::format};

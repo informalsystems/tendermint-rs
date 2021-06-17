@@ -1,6 +1,6 @@
 //! Transaction hashes
 
-use crate::error::{self, KindError as Error};
+use crate::error::{self, Error};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     fmt::{self, Debug, Display},

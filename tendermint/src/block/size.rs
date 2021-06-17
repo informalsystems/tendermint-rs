@@ -1,6 +1,6 @@
 //! Block size parameters
 
-use crate::error::{self, KindError as Error};
+use crate::error::{self, Error};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::Protobuf;
 use {

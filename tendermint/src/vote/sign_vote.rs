@@ -1,5 +1,5 @@
 use crate::chain;
-use crate::error::{self, KindError as Error};
+use crate::error::{self, Error};
 use crate::Vote;
 use bytes::BufMut;
 use std::{convert::TryFrom, string::ToString, vec::Vec};

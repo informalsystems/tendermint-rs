@@ -1,7 +1,7 @@
 //! Block metadata
 
 use super::{Header, Id};
-use crate::error::{self, KindError as Error};
+use crate::error::{self, Error};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::BlockMeta as RawMeta;

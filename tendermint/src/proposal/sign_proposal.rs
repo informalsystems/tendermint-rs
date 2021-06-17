@@ -1,6 +1,6 @@
 use super::Proposal;
 use crate::chain::Id as ChainId;
-use crate::error::{self, KindError as Error};
+use crate::error::{self, Error};
 use bytes::BufMut;
 use std::{
     convert::{TryFrom, TryInto},

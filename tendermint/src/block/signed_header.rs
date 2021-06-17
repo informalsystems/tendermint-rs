@@ -2,7 +2,7 @@
 //! It is what the rpc endpoint /commit returns and hence can be used by a
 //! light client.
 use crate::block;
-use crate::error::{self, KindError as Error};
+use crate::error::{self, Error};
 use serde::{Deserialize, Serialize};
 use std::convert::{From, TryFrom, TryInto};
 use tendermint_proto::types::SignedHeader as RawSignedHeader;

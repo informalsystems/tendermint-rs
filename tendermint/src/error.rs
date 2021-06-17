@@ -2,49 +2,48 @@
 
 use crate::account;
 use crate::vote;
-use flex_error::*;
+use flex_error::{define_error, DisplayError};
 use std::string::String;
-pub type Error = anyhow::Error;
 
 define_error! {
     #[derive(Debug)]
-    KindError {
+    Error {
         Crypto
             |_| { format_args!("cryptographic error") },
 
         InvalidKey
-            [DisplayError<Error>]
+            { detail: String }
             |_| { format_args!("invalid key") },
 
         Io
-            [DisplayError<Error>]
+            { detail: String }
             |_| { format_args!("I/O error") },
 
         Length
             |_| { format_args!("length error") },
 
         Parse
-            {data: String}
+            { data: String }
             | e | { format_args!("error parsing data {}", e.data) },
 
         ParseInt
-            {data: String}
-            [DisplayError<std::num::ParseIntError>]
+            { data: String }
+            [ DisplayError<std::num::ParseIntError>]
             | e | { format_args!("error parsing int data: {}", e.data) },
 
         ParseUrl
-            [DisplayError<url::ParseError>]
+            [ DisplayError<url::ParseError> ]
             |_| { format_args!("error parsing url error") },
 
         Protocol
-            [DisplayError<Error>]
+            { detail: String }
             |_| { format_args!("protocol error") },
 
         OutOfRange
             |_| { format_args!("value out of range") },
 
         SignatureInvalid
-            [DisplayError<Error>]
+            { detail: String }
             |_| { format_args!("bad signature") },
 
         InvalidMessageType
@@ -90,7 +89,7 @@ define_error! {
             |_| { format_args!("invalid app hash length") },
 
         InvalidPartSetHeader
-            [DisplayError<Error>]
+            { detail : String }
             |_| { format_args!("invalid part set header") },
 
         MissingHeader
@@ -135,7 +134,7 @@ define_error! {
             |_| { format_args!("negative power") },
 
         RawVotingPowerMismatch
-            { raw: vote::Power, computed: vote::Power}
+            { raw: vote::Power, computed: vote::Power }
             |e| { format_args!("mismatch between raw voting ({0:?}) and computed one ({1:?})", e.raw, e.computed) },
 
         MissingPublicKey
@@ -154,27 +153,27 @@ define_error! {
             |_| { format_args!("missing max_age_duration") },
 
         ProposerNotFound
-            {account: account::Id}
+            { account: account::Id }
             |e| { format_args!("proposer with address '{0}' no found in validator set", e.account) },
 
         InFallible
-            [DisplayError<std::convert::Infallible>]
+            [ DisplayError<std::convert::Infallible> ]
             |_| { format_args!("infallible") },
 
         ChronoParse
-            [DisplayError<chrono::ParseError>]
+            [ DisplayError<chrono::ParseError> ]
             |_| { format_args!("chrono parse error") },
 
         SubtleEncoding
-            [DisplayError<subtle_encoding::Error>]
+            [ DisplayError<subtle_encoding::Error> ]
             |_| { format_args!("subtle encoding error") },
 
         SerdeJson
-            [DisplayError<serde_json::Error>]
+            [ DisplayError<serde_json::Error> ]
             |_| { format_args!("serde json error") },
 
         Toml
-            [DisplayError<toml::de::Error>]
+            [ DisplayError<toml::de::Error> ]
             |_| { format_args!("toml de error") },
     }
 }

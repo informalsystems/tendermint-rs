@@ -1,6 +1,6 @@
 //! Evidence of malfeasance by validators (i.e. signing conflicting votes).
 
-use crate::error::{self, KindError as Error};
+use crate::error::{self, Error};
 use crate::{block::signed_header::SignedHeader, serializers, vote::Power, Time, Vote};
 use serde::{Deserialize, Serialize};
 use std::{

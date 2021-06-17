@@ -1,4 +1,4 @@
-use crate::error::{self, KindError as Error};
+use crate::error::{self, Error};
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
 use std::{
     fmt,

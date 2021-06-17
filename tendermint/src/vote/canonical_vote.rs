@@ -1,5 +1,5 @@
 use crate::chain::Id as ChainId;
-use crate::error::{self, KindError as Error};
+use crate::error::{self, Error};
 use crate::{block, Time};
 use serde::{Deserialize, Serialize};
 use std::{

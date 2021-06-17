@@ -1,4 +1,4 @@
-use crate::error::{self, KindError as Error};
+use crate::error::{self, Error};
 use std::{
     convert::{TryFrom, TryInto},
     fmt::{self, Debug, Display},

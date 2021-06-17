@@ -1,6 +1,6 @@
 //! Block parts
 
-use crate::error::{self, KindError as Error};
+use crate::error::{self, Error};
 use crate::hash::Algorithm;
 use crate::hash::SHA256_HASH_SIZE;
 use crate::Hash;
@@ -77,14 +77,10 @@ impl Header {
     /// constructor
     pub fn new(total: u32, hash: Hash) -> Result<Self, Error> {
         if total == 0 && hash != Hash::None {
-            return Err(error::invalid_part_set_header_error(anyhow::anyhow!(
-                "zero total with existing hash"
-            )));
+            return Err(error::invalid_part_set_header_error("zero total with existing hash".into()));
         }
         if total != 0 && hash == Hash::None {
-            return Err(error::invalid_part_set_header_error(anyhow::anyhow!(
-                "non-zero total with empty hash"
-            )));
+            return Err(error::invalid_part_set_header_error("non-zero total with empty hash".into()));
         }
         Ok(Header { total, hash })
     }

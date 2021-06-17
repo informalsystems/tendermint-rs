@@ -11,7 +11,7 @@ pub use self::sign_vote::*;
 pub use self::validator_index::ValidatorIndex;
 use crate::chain::Id as ChainId;
 use crate::consensus::State;
-use crate::error::{self, KindError as Error};
+use crate::error::{self, Error};
 use crate::hash;
 use crate::{account, block, Signature, Time};
 use bytes::BufMut;

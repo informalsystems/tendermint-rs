@@ -3,7 +3,7 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use subtle_encoding::base64;
 
-use crate::error::{self, KindError as Error};
+use crate::error::{self, Error};
 use crate::{account, hash::Hash, merkle, vote, PublicKey, Signature};
 use std::{
     cmp::Reverse,

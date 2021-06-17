@@ -1,6 +1,6 @@
 //! CommitSig within Commit
 
-use crate::error::{self, KindError as Error};
+use crate::error::{self, Error};
 use crate::{account, Signature, Time};
 use num_traits::ToPrimitive;
 use std::{

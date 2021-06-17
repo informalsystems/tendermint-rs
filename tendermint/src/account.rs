@@ -1,6 +1,6 @@
 //! Tendermint accounts
 
-use crate::error::{self, KindError as Error};
+use crate::error::{self, Error};
 use crate::public_key::Ed25519;
 
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};

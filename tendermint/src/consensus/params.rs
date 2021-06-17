@@ -1,6 +1,6 @@
 //! Tendermint consensus parameters
 
-use crate::error::{self, KindError as Error};
+use crate::error::{self, Error};
 use crate::{block, evidence, public_key};
 use serde::{Deserialize, Serialize};
 use std::{

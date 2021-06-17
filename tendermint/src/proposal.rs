@@ -11,7 +11,7 @@ pub use sign_proposal::{SignProposalRequest, SignedProposalResponse};
 use crate::block::{Height, Id as BlockId, Round};
 use crate::chain::Id as ChainId;
 use crate::consensus::State;
-use crate::error::{self, KindError as Error};
+use crate::error::{self, Error};
 use crate::Signature;
 use crate::Time;
 use bytes::BufMut;
