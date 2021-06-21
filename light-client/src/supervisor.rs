@@ -751,11 +751,10 @@ mod tests {
         assert_eq!(expected_state, &new_state);
 
         // Check that we successfully disconnected from the "faulty" primary node
-        assert!(latest_status
+        assert!(!latest_status
             .connected_nodes
             .iter()
-            .find(|&&peer| peer == primary[0].provider)
-            .is_none());
+            .any(|&peer| peer == primary[0].provider));
     }
 
     #[test]
@@ -779,11 +778,10 @@ mod tests {
         // and continues verification
         // Check if the node was removed from the list
 
-        assert!(latest_status
+        assert!(!latest_status
             .connected_nodes
             .iter()
-            .find(|&&peer| peer == primary[0].provider)
-            .is_none());
+            .any(|&peer| peer == primary[0].provider));
     }
 
     #[test]
@@ -809,10 +807,9 @@ mod tests {
         // and continues verification
         // Check if the node was removed from the list
 
-        assert!(latest_status
+        assert!(!latest_status
             .connected_nodes
             .iter()
-            .find(|&&peer| peer == primary[0].provider)
-            .is_none());
+            .any(|&peer| peer == primary[0].provider));
     }
 }
