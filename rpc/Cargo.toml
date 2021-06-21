@@ -86,7 +86,8 @@ hyper = { version = "0.14", optional = true, features = ["client", "http1", "htt
 hyper-proxy = { version = "0.9", optional = true }
 hyper-rustls = { version = "0.22.1", optional = true }
 structopt = { version = "0.3", optional = true }
-tokio = { version = "1.0", optional = true }
+# TODO(thane): Unpin this version once Tokio fixes the documentation compiling problem in v1.7+.
+tokio = { version = "~1.6.2", optional = true }
 tracing = { version = "0.1", optional = true }
 tracing-subscriber = { version = "0.2", optional = true }
 
