@@ -3,4 +3,4 @@
   we'll restore it. It will, of course, remain accessible in the
   [repo history](https://github.com/informalsystems/tendermint-rs/tree/f207ecc0a7c071a54d63f159794b16a216741b38)
   for now.
-  ([#879](https://github.com/informalsystems/tendermint-rs/issues/879)
+  ([#879](https://github.com/informalsystems/tendermint-rs/issues/879))

@@ -1,23 +1,68 @@
-## Unreleased
+# CHANGELOG
+
+## v0.20.0
+
+*Jun 22, 2021*
+
+This release's number is bumped up to v0.20.0 due to two minor breaking changes
+in our public APIs (see the breaking changes section below for details).
+
+Also, since nobody was really making use of the Light Node, we decided to remove
+its crate from the repo for now. If anyone needs it back, please contact us and
+we'll restore it (although, we are considering migrating any and all binaries to
+their own repositories in the future to separate library-level concerns from
+operational ones).
+
+The `tendermint-p2p` crate is still undergoing significant expansion (thanks to
+@xla and @melekes). A lot's been done and we're in the process of finalizing
+this new architecture, which will form the basis for future work towards
+building more Tendermint nodes in Rust. More on this in future
+releases.
+
+Other than that, this release mainly contains various small bug fixes,
+improvements and dependency updates.
+
+### BREAKING CHANGES
+
+* `[tendermint-p2p]` Remove superfluous module name suffixes in `p2p::error` ([#898](https://github.com/informalsystems/tendermint-rs/pull/898))
+* `[tendermint]` Rename `time::Time::to_rfc3339` to `as_rfc3339` to be
+  consistent with Rust's [self reference
+  conventions](https://rust-lang.github.io/rust-clippy/master/index.html#wrong_self_convention)
+  ([#910](https://github.com/informalsystems/tendermint-rs/pull/910))
 
 ### BUG FIXES
 
-- `[tendermint-abci,tendermint-rpc]` Fix DeliverTx response deserialization
-  issues with `gas_wanted` and `gas_used` fields ([#876])
+* `[tendermint-abci,tendermint-rpc]` Fix DeliverTx response deserialization
+  issues with `gas_wanted` and `gas_used` fields
+  ([#876](https://github.com/informalsystems/tendermint-rs/issues/876))
+* `[tendermint]` Update TendermintConfig for Tendermint v.0.34.x ([#897](https://github.com/informalsystems/tendermint-rs/issues/897))
+* `[tendermint]` Better handling of optional values in TendermintConfig ([#908](https://github.com/informalsystems/tendermint-rs/issues/908))
+
+### IMPROVEMENTS
+
+* `[tendermint-light-client]` Replaced `tempdir` dev dependency (deprecated)
+  with `tempfile`
+  ([#851](https://github.com/informalsystems/tendermint-rs/issues/851))
+* Updated the changelog process to use
+  [unclog](https://github.com/informalsystems/unclog) format and unblock the PR
+  merge process
+  ([#891](https://github.com/informalsystems/tendermint-rs/pull/891)).
+* `[tendermint]` Changed `tendermint::public_key::Secp256k1` to be an alias
+  of `k256::ecdsa::VerifyingKey`
+  ([#900](https://github.com/informalsystems/tendermint-rs/pull/900))
 
 ### REMOVED
 
 * `[tendermint-light-node]` We removed the `light-node` crate from the repo since
   nobody's currently really using it. If anyone needs please log an issue and
   we'll restore it. It will, of course, remain accessible in the
-  [repo history](last-light-node) for now.
-  ([#879])
-
-[#876]: https://github.com/informalsystems/tendermint-rs/issues/876
-[#879]: https://github.com/informalsystems/tendermint-rs/issues/879
-[last-light-node]: https://github.com/informalsystems/tendermint-rs/tree/f207ecc0a7c071a54d63f159794b16a216741b38
+  [repo history](https://github.com/informalsystems/tendermint-rs/tree/f207ecc0a7c071a54d63f159794b16a216741b38)
+  for now.
+  ([#879](https://github.com/informalsystems/tendermint-rs/issues/879))
 
 ## v0.19.0
+
+*Apr 7, 2021*
 
 This release primarily aims to enhance RPC and Light Client functionality,
 thereby improving [`ibc-rs`] and fixing an important bug affecting the Light

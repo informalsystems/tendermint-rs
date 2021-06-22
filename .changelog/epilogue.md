@@ -1,5 +1,7 @@
 ## v0.19.0
 
+*Apr 7, 2021*
+
 This release primarily aims to enhance RPC and Light Client functionality,
 thereby improving [`ibc-rs`] and fixing an important bug affecting the Light
 Client ([#831]).
