@@ -51,7 +51,8 @@ serde_derive = "1.0.106"
 sled = { version = "0.34.3", optional = true }
 static_assertions = "1.1.0"
 thiserror = "1.0.15"
-tokio = { version = "1.0", features = ["rt"], optional = true }
+# TODO(thane): Unpin this version once Tokio fixes the documentation compiling problem in v1.7+.
+tokio = { version = "~1.6.2", features = ["rt"], optional = true }
 
 [dev-dependencies]
 tendermint-testgen = { path = "../testgen" }

@@ -22,7 +22,6 @@
 
 use std::cmp::min;
 use std::io::{self, BufRead, Read, Write};
-use std::mem::replace;
 
 use flume::{self, Receiver, SendError, Sender, TrySendError};
 
@@ -141,7 +140,7 @@ impl Write for BufWriter {
             self.flush()?;
         } else {
             // reserve capacity later to avoid needless allocations
-            let data = replace(&mut self.buffer, Vec::new());
+            let data = std::mem::take(&mut self.buffer);
 
             // buffer still has space but try to send it in case the other side already awaits
             match self.sender().try_send(data) {
@@ -162,7 +161,7 @@ impl Write for BufWriter {
         if self.buffer.is_empty() {
             Ok(())
         } else {
-            let data = replace(&mut self.buffer, Vec::new());
+            let data = std::mem::take(&mut self.buffer);
             match self.sender().send(data) {
                 Ok(_) => {
                     self.buffer.reserve(self.size);
@@ -184,7 +183,7 @@ impl Write for BufWriter {
 impl Drop for BufWriter {
     fn drop(&mut self) {
         if !self.buffer.is_empty() {
-            let data = replace(&mut self.buffer, Vec::new());
+            let data = std::mem::take(&mut self.buffer);
             self.sender().send(data).ok();
         }
     }

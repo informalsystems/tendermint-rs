@@ -22,14 +22,14 @@ fn test_handshake() {
         let mut csprng = OsRng {};
         let privkey1: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
         let conn1 = SecretConnection::new(pipe2, privkey1, Version::V0_34);
-        assert_eq!(conn1.is_ok(), true);
+        assert!(conn1.is_ok());
     });
 
     let peer2 = thread::spawn(|| {
         let mut csprng = OsRng {};
         let privkey2: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
         let conn2 = SecretConnection::new(pipe1, privkey2, Version::V0_34);
-        assert_eq!(conn2.is_ok(), true);
+        assert!(conn2.is_ok());
     });
 
     peer1.join().expect("peer1 thread has panicked");
@@ -77,7 +77,7 @@ fn test_evil_peer_shares_invalid_eph_key() {
     let (mut h, _) = Handshake::new(local_privkey, Version::V0_34);
     let bytes: [u8; 32] = [0; 32];
     let res = h.got_key(EphemeralPublic::from(bytes));
-    assert_eq!(res.is_err(), true);
+    assert!(res.is_err());
 }
 
 #[test]
@@ -86,14 +86,14 @@ fn test_evil_peer_shares_invalid_auth_sig() {
     let local_privkey: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
     let (mut h, _) = Handshake::new(local_privkey, Version::V0_34);
     let res = h.got_key(EphemeralPublic::from(x25519_dalek::X25519_BASEPOINT_BYTES));
-    assert_eq!(res.is_err(), false);
+    assert!(res.is_ok());
 
     let mut h = res.unwrap();
     let res = h.got_signature(proto::p2p::AuthSigMessage {
         pub_key: None,
         sig: vec![],
     });
-    assert_eq!(res.is_err(), true);
+    assert!(res.is_err());
 }
 
 #[test]

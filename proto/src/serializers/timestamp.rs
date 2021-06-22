@@ -47,7 +47,7 @@ where
     }
     match Utc.timestamp_opt(value.seconds, value.nanos as u32) {
         LocalResult::None => Err(S::Error::custom("invalid time")),
-        LocalResult::Single(t) => Ok(to_rfc3339_nanos(&t)),
+        LocalResult::Single(t) => Ok(as_rfc3339_nanos(&t)),
         LocalResult::Ambiguous(_, _) => Err(S::Error::custom("ambiguous time")),
     }?
     .serialize(serializer)
@@ -58,7 +58,7 @@ where
 /// This reproduces the behavior of Go's `time.RFC3339Nano` format,
 /// ie. a RFC3339 date-time with left-padded subsecond digits without
 ///     trailing zeros and no trailing dot.
-pub fn to_rfc3339_nanos(t: &DateTime<Utc>) -> String {
+pub fn as_rfc3339_nanos(t: &DateTime<Utc>) -> String {
     use chrono::format::{Fixed, Item, Numeric::*, Pad::Zero};
 
     const PREFIX: &[Item<'_>] = &[
