@@ -2,9 +2,8 @@
 
 ## v0.20.0
 
-This release's number is bumped up to v0.20.0 due to one breaking change in the
-`tendermint-p2p` crate's error naming conventions to make them more idiomatic
-(see [#898](https://github.com/informalsystems/tendermint-rs/pull/898)).
+This release's number is bumped up to v0.20.0 due to two minor breaking changes
+in our public APIs (see the breaking changes section below for details).
 
 Also, since nobody was really making use of the Light Node, we decided to remove
 its crate from the repo for now. If anyone needs it back, please contact us and
@@ -24,6 +23,10 @@ improvements and dependency updates.
 ### BREAKING CHANGES
 
 * `[tendermint-p2p]` Remove superfluous module name suffixes in `p2p::error` ([#898](https://github.com/informalsystems/tendermint-rs/pull/898))
+* `[tendermint]` Rename `time::Time::to_rfc3339` to `as_rfc3339` to be
+  consistent with Rust's [self reference
+  conventions](https://rust-lang.github.io/rust-clippy/master/index.html#wrong_self_convention)
+  ([#910](https://github.com/informalsystems/tendermint-rs/pull/910))
 
 ### BUG FIXES
 
