@@ -2,6 +2,8 @@
 
 ## v0.20.0
 
+*Jun 22, 2021*
+
 This release's number is bumped up to v0.20.0 due to two minor breaking changes
 in our public APIs (see the breaking changes section below for details).
 
@@ -59,6 +61,8 @@ improvements and dependency updates.
   ([#879](https://github.com/informalsystems/tendermint-rs/issues/879))
 
 ## v0.19.0
+
+*Apr 7, 2021*
 
 This release primarily aims to enhance RPC and Light Client functionality,
 thereby improving [`ibc-rs`] and fixing an important bug affecting the Light
