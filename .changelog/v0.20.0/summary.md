@@ -1,3 +1,5 @@
+*Jun 22, 2021*
+
 This release's number is bumped up to v0.20.0 due to two minor breaking changes
 in our public APIs (see the breaking changes section below for details).
 
