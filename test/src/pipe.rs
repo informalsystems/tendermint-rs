@@ -20,16 +20,16 @@
 
 //! Asynchronous in-memory pipe
 
-use flume::{self, Receiver, SendError, Sender, TrySendError};
 use std::cmp::min;
 use std::io::{self, BufRead, Read, Write};
-use std::mem::replace;
+
+use flume::{self, Receiver, SendError, Sender, TrySendError};
 
 // value for libstd
 const DEFAULT_BUF_SIZE: usize = 8 * 1024;
 
 /// The `Read` end of a pipe (see `pipe()`)
-pub struct PipeReader {
+pub struct Reader {
     receiver: Receiver<Vec<u8>>,
     buffer: Vec<u8>,
     position: usize,
@@ -37,23 +37,23 @@ pub struct PipeReader {
 
 /// The `Write` end of a pipe (see `pipe()`) that will buffer small writes before sending
 /// to the reader end.
-pub struct PipeBufWriter {
+pub struct BufWriter {
     sender: Option<Sender<Vec<u8>>>,
     buffer: Vec<u8>,
     size: usize,
 }
 
 /// Creates an asynchronous memory pipe with buffered writer
-pub fn async_pipe_buffered() -> (PipeReader, PipeBufWriter) {
+pub fn async_pipe_buffered() -> (Reader, BufWriter) {
     let (tx, rx) = flume::unbounded();
 
     (
-        PipeReader {
+        Reader {
             receiver: rx,
             buffer: Vec::new(),
             position: 0,
         },
-        PipeBufWriter {
+        BufWriter {
             sender: Some(tx),
             buffer: Vec::with_capacity(DEFAULT_BUF_SIZE),
             size: DEFAULT_BUF_SIZE,
@@ -63,8 +63,8 @@ pub fn async_pipe_buffered() -> (PipeReader, PipeBufWriter) {
 
 /// Creates a pair of pipes for bidirectional communication using buffered writer, a bit like UNIX's `socketpair(2)`.
 pub fn async_bipipe_buffered() -> (
-    readwrite::ReadWrite<PipeReader, PipeBufWriter>,
-    readwrite::ReadWrite<PipeReader, PipeBufWriter>,
+    readwrite::ReadWrite<Reader, BufWriter>,
+    readwrite::ReadWrite<Reader, BufWriter>,
 ) {
     let (r1, w1) = async_pipe_buffered();
     let (r2, w2) = async_pipe_buffered();
@@ -75,7 +75,7 @@ fn epipe() -> io::Error {
     io::Error::new(io::ErrorKind::BrokenPipe, "pipe reader has been dropped")
 }
 
-impl PipeBufWriter {
+impl BufWriter {
     #[inline]
     /// Gets a reference to the underlying `Sender`
     pub fn sender(&self) -> &Sender<Vec<u8>> {
@@ -85,7 +85,7 @@ impl PipeBufWriter {
     }
 }
 
-impl BufRead for PipeReader {
+impl BufRead for Reader {
     fn fill_buf(&mut self) -> io::Result<&[u8]> {
         while self.position >= self.buffer.len() {
             match self.receiver.recv() {
@@ -107,7 +107,7 @@ impl BufRead for PipeReader {
     }
 }
 
-impl Read for PipeReader {
+impl Read for Reader {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         if buf.is_empty() {
             return Ok(0);
@@ -124,7 +124,7 @@ impl Read for PipeReader {
     }
 }
 
-impl Write for PipeBufWriter {
+impl Write for BufWriter {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         let buffer_len = self.buffer.len();
         let bytes_written = if buf.len() > self.size {
@@ -140,7 +140,7 @@ impl Write for PipeBufWriter {
             self.flush()?;
         } else {
             // reserve capacity later to avoid needless allocations
-            let data = replace(&mut self.buffer, Vec::new());
+            let data = std::mem::take(&mut self.buffer);
 
             // buffer still has space but try to send it in case the other side already awaits
             match self.sender().try_send(data) {
@@ -161,7 +161,7 @@ impl Write for PipeBufWriter {
         if self.buffer.is_empty() {
             Ok(())
         } else {
-            let data = replace(&mut self.buffer, Vec::new());
+            let data = std::mem::take(&mut self.buffer);
             match self.sender().send(data) {
                 Ok(_) => {
                     self.buffer.reserve(self.size);
@@ -180,11 +180,11 @@ impl Write for PipeBufWriter {
 /// recommended that `flush()` be used explicitly instead of relying on Drop.
 ///
 /// This final flush can be avoided by using `drop(writer.into_inner())`.
-impl Drop for PipeBufWriter {
+impl Drop for BufWriter {
     fn drop(&mut self) {
         if !self.buffer.is_empty() {
-            let data = replace(&mut self.buffer, Vec::new());
-            let _ = self.sender().send(data);
+            let data = std::mem::take(&mut self.buffer);
+            self.sender().send(data).ok();
         }
     }
 }

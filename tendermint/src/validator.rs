@@ -272,7 +272,7 @@ impl From<&Info> for SimpleValidator {
             )),
             #[cfg(feature = "secp256k1")]
             PublicKey::Secp256k1(pk) => Some(tendermint_proto::crypto::public_key::Sum::Secp256k1(
-                pk.as_bytes().to_vec(),
+                pk.to_bytes().to_vec(),
             )),
         };
         SimpleValidator {

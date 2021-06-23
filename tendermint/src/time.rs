@@ -78,14 +78,14 @@ impl Time {
     }
 
     /// Return an RFC 3339 and ISO 8601 date and time string with 6 subseconds digits and Z.
-    pub fn to_rfc3339(&self) -> String {
-        timestamp::to_rfc3339_nanos(&self.0)
+    pub fn as_rfc3339(&self) -> String {
+        timestamp::as_rfc3339_nanos(&self.0)
     }
 }
 
 impl fmt::Display for Time {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.to_rfc3339())
+        write!(f, "{}", self.as_rfc3339())
     }
 }
 

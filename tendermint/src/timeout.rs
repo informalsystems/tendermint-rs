@@ -10,7 +10,7 @@ use std::{
 };
 
 /// Timeout durations
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Timeout(Duration);
 
 impl Deref for Timeout {

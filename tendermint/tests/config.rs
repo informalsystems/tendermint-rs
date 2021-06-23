@@ -3,6 +3,8 @@
 //! Test config files are located in the `tests/support/config` subdirectory.
 
 mod files {
+    #[cfg(test)]
+    use pretty_assertions::assert_eq;
     use std::{fs, path::PathBuf, time::Duration};
     use tendermint::{config::*, net, node};
 
@@ -26,11 +28,12 @@ mod files {
         );
         assert_eq!(config.moniker.as_ref(), "technodrome");
         assert!(config.fast_sync);
-        assert_eq!(config.db_backend, DbBackend::LevelDb);
+        assert_eq!(config.db_backend, DbBackend::GoLevelDb);
         assert_eq!(config.db_dir, PathBuf::from("data"));
+        assert_eq!(config.log_level.global, Some("info".to_string()));
         assert_eq!(config.log_level.get("main"), Some("info"));
         assert_eq!(config.log_level.get("state"), Some("info"));
-        assert_eq!(config.log_level.get("*"), Some("error"));
+        assert_eq!(config.log_level.get("*"), Some("info"));
         assert_eq!(config.log_format, LogFormat::Plain);
         assert_eq!(config.genesis_file, PathBuf::from("config/genesis.json"));
         assert_eq!(
@@ -44,10 +47,6 @@ mod files {
         assert_eq!(config.priv_validator_laddr, None);
         assert_eq!(config.node_key_file, PathBuf::from("config/node_key.json"));
         assert_eq!(config.abci, AbciMode::Socket);
-        assert_eq!(
-            config.prof_laddr,
-            Some("tcp://localhost:6060".parse::<net::Address>().unwrap())
-        );
         assert!(!config.filter_peers);
 
         // rpc server configuration options
@@ -188,9 +187,6 @@ mod files {
 
         let tx_index = &config.tx_index;
         assert_eq!(tx_index.indexer, TxIndexer::Kv);
-        assert_eq!(tx_index.index_tags.len(), 1);
-        assert_eq!(tx_index.index_tags[0].as_ref(), "tx.height");
-        assert!(tx_index.index_all_tags);
 
         // instrumentation configuration options
 
@@ -220,6 +216,23 @@ mod files {
         assert_eq!(
             priv_validator_key.consensus_pubkey().to_hex(),
             "F26BF4B2A2E84CEB7A53C3F1AE77408779B20064782FBADBDF0E365959EE4534"
+        );
+    }
+
+    /// Parse an example `config.toml` file to a `TendermintConfig` struct, then
+    /// serialize it and parse again.
+    #[test]
+    fn parsing_roundtrip() {
+        let config_toml = read_fixture("config.toml");
+        let config = TendermintConfig::parse_toml(&config_toml).unwrap();
+
+        let written_config_toml = toml::to_string(&config).unwrap();
+        let written_config = TendermintConfig::parse_toml(&written_config_toml).unwrap();
+
+        assert_eq!(
+            config, written_config,
+            "written config {}",
+            written_config_toml
         );
     }
 }

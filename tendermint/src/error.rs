@@ -133,6 +133,9 @@ define_error! {
         NegativePower
             |_| { format_args!("negative power") },
 
+        UnsupportedKeyType
+            |_| { format_args!("unsupported key type" ) },
+
         RawVotingPowerMismatch
             { raw: vote::Power, computed: vote::Power }
             |e| { format_args!("mismatch between raw voting ({0:?}) and computed one ({1:?})", e.raw, e.computed) },

@@ -1,0 +1,28 @@
+[package]
+name        = "tendermint-test"
+description = "Tendermint workspace tests and common utilities for testing."
+version     = "0.20.0"
+edition     = "2018"
+license     = "Apache-2.0"
+categories  = ["development", "test", "tools"]
+repository  = "https://github.com/informalsystems/tendermint-rs"
+keywords    = ["blockchain", "tendermint", "testing"]
+readme      = "README.md"
+authors     = ["Alexander Simmerl <a.simmerl@gmail.com>"]
+
+[lib]
+test = true
+
+[dev-dependencies]
+ed25519-dalek = "1"
+eyre = "0.6"
+flume = "0.10"
+rand_core = { version = "0.5", features = ["std"] }
+readwrite = "^0.1.1"
+subtle-encoding = { version = "0.5" }
+thiserror = "1"
+x25519-dalek = "1.1"
+
+tendermint = { path = "../tendermint" }
+tendermint-p2p = { path = "../p2p" }
+tendermint-proto = { path = "../proto" }

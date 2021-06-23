@@ -75,7 +75,7 @@ impl Signature {
     }
 
     /// Get a vector containing the byte serialization of this key
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(self) -> Vec<u8> {
         self.as_bytes().to_vec()
     }
 }

@@ -117,7 +117,7 @@ fn block_results() {
     let log_json_value = serde_json::Value::from_str(log_json.as_str()).unwrap();
 
     assert_eq!(log_json_value[0]["msg_index"].as_str().unwrap(), "0");
-    assert_eq!(log_json_value[0]["success"].as_bool().unwrap(), true);
+    assert!(log_json_value[0]["success"].as_bool().unwrap());
 
     assert_eq!(deliver_tx[0].gas_wanted.value(), 200_000);
     assert_eq!(deliver_tx[0].gas_used.value(), 105_662);
@@ -469,7 +469,7 @@ fn consensus_state() {
                 vec![123, 185, 116, 225, 186, 64]
             );
             assert_eq!(
-                summary.timestamp.to_rfc3339(),
+                summary.timestamp.as_rfc3339(),
                 "2019-08-01T11:52:35.513572509Z"
             );
         }
@@ -496,7 +496,7 @@ fn consensus_state() {
                 vec![139, 94, 255, 254, 171, 205]
             );
             assert_eq!(
-                summary.timestamp.to_rfc3339(),
+                summary.timestamp.as_rfc3339(),
                 "2019-08-01T11:52:36.25600005Z"
             );
         }

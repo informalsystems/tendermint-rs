@@ -56,7 +56,7 @@ jobs:
           override: true
       - uses: actions-rs/cargo@v1
         env:
-          RUSTFLAGS: "--cfg docsrs"
+          RUSTDOCFLAGS: "--cfg docsrs"
         with:
           command: doc
           args: --all-features

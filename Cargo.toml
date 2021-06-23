@@ -5,11 +5,12 @@ members = [
     "light-client",
     "light-client-js",
     "p2p",
+    "pbt-gen",
     "proto",
     "rpc",
     "tendermint",
-    "testgen",
-    "pbt-gen"
+    "test",
+    "testgen"
 ]
 
 exclude = [

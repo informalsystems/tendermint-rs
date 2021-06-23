@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint"
-version    = "0.19.0" # Also update `html_root_url` in lib.rs and
+version    = "0.20.0" # Also update `html_root_url` in lib.rs and
                       # depending crates (rpc, light-node, ..) when bumping this
 license    = "Apache-2.0"
 homepage   = "https://www.tendermint.com/"
@@ -57,14 +57,15 @@ sha2 = { version = "0.9", default-features = false }
 signature = { version = "1.2", default-features = false }
 subtle = { version = "2", default-features = false }
 subtle-encoding = { version = "0.5", default-features = false, features = ["bech32-preview"] }
-tendermint-proto = { version = "0.19.0", path = "../proto" }
+tendermint-proto = { version = "0.20.0", path = "../proto" }
 toml = { version = "0.5" }
 url = { version = "2.2" }
 zeroize = { version = "1.1", default-features = false, features = ["zeroize_derive", "alloc"] }
-k256 = { version = "0.8.1", default-features = false, optional = true, features = ["ecdsa"] }
+k256 = { version = "0.9", default-features = false, optional = true, features = ["ecdsa"] }
 ripemd160 = { version = "0.9", default-features = false, optional = true }
 no-std-compat = { version = "0.4.1", default-features = false,   features = [ "alloc" ] }
 displaydoc = {version = "0.2", default-features = false }
+
 
 [features]
 secp256k1 = ["k256", "ripemd160"]
@@ -94,5 +95,6 @@ std = [
 ]
 
 [dev-dependencies]
+pretty_assertions = "0.7.2"
 proptest = "0.10.1"
 tendermint-pbt-gen = { path = "../pbt-gen" }

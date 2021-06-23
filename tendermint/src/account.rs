@@ -95,7 +95,7 @@ impl Debug for Id {
 #[cfg(feature = "secp256k1")]
 impl From<Secp256k1> for Id {
     fn from(pk: Secp256k1) -> Id {
-        let sha_digest = Sha256::digest(pk.as_bytes());
+        let sha_digest = Sha256::digest(&pk.to_bytes());
         let ripemd_digest = Ripemd160::digest(&sha_digest[..]);
         let mut bytes = [0u8; LENGTH];
         bytes.copy_from_slice(&ripemd_digest[..LENGTH]);
@@ -185,7 +185,7 @@ mod tests {
         let id_bytes = Id::from_str(id_hex).expect("expected id_hex to decode properly");
 
         // get id for pubkey
-        let pubkey = Secp256k1::from_bytes(pubkey_bytes).unwrap();
+        let pubkey = Secp256k1::from_sec1_bytes(pubkey_bytes).unwrap();
         let id = Id::from(pubkey);
 
         assert_eq!(id_bytes.ct_eq(&id).unwrap_u8(), 1);

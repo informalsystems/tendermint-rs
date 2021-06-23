@@ -1,10 +1,11 @@
 [package]
 name       = "tendermint-light-client"
-version    = "0.19.0"
+version    = "0.20.0"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
 keywords   = ["blockchain", "bft", "consensus", "cosmos", "tendermint"]
+categories = ["cryptography::cryptocurrencies", "network-programming"]
 repository = "https://github.com/informalsystems/tendermint-rs"
 authors    = [
   "Sean Braithwaite <sean@informal.systems>",
@@ -36,8 +37,8 @@ lightstore-sled = ["sled"]
 unstable = []
 
 [dependencies]
-tendermint = { version = "0.19.0", path = "../tendermint" }
-tendermint-rpc = { version = "0.19.0", path = "../rpc", default-features = false }
+tendermint = { version = "0.20.0", path = "../tendermint" }
+tendermint-rpc = { version = "0.20.0", path = "../rpc", default-features = false }
 
 anomaly = { version = "0.2.0", features = ["serializer"] }
 contracts = "0.4.0"
@@ -58,5 +59,5 @@ tendermint-testgen = { path = "../testgen" }
 serde_json = "1.0.51"
 gumdrop = "0.8.0"
 rand = "0.7.3"
-tempdir = "0.3.7"
+tempfile = "3.2.0"
 proptest = "0.10.1"

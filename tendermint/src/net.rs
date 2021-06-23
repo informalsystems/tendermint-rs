@@ -56,7 +56,16 @@ impl<'de> Deserialize<'de> for Address {
 impl Display for Address {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Address::Tcp { host, port, .. } => write!(f, "{}{}:{}", TCP_PREFIX, host, port),
+            Address::Tcp {
+                peer_id: None,
+                host,
+                port,
+            } => write!(f, "{}{}:{}", TCP_PREFIX, host, port),
+            Address::Tcp {
+                peer_id: Some(peer_id),
+                host,
+                port,
+            } => write!(f, "{}{}@{}:{}", TCP_PREFIX, peer_id, host, port),
             Address::Unix { path } => write!(f, "{}{}", UNIX_PREFIX, path.display()),
         }
     }

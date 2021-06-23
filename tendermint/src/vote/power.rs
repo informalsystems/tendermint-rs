@@ -97,7 +97,7 @@ impl<'de> Deserialize<'de> for Power {
 
 impl Serialize for Power {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let proto_int: i64 = self.clone().into();
+        let proto_int: i64 = (*self).into();
         proto_int.to_string().serialize(serializer)
     }
 }
