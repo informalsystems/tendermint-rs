@@ -203,7 +203,7 @@ mod rpc {
         let status = localhost_http_client().status().await.unwrap();
 
         // For lack of better things to test
-        assert_eq!(status.validator_info.voting_power.value(), 10);
+        assert_eq!(status.validator_info.voting.value(), 10);
     }
 
     #[tokio::test]
