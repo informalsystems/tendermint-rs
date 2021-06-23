@@ -98,7 +98,10 @@ impl TryFrom<RawCommitSig> for CommitSig {
             }
             return Ok(CommitSig::BlockIdFlagCommit {
                 validator_address: value.validator_address.try_into()?,
-                timestamp: value.timestamp.ok_or_else(error::no_timestamp_error)?.into(),
+                timestamp: value
+                    .timestamp
+                    .ok_or_else(error::no_timestamp_error)?
+                    .into(),
                 signature: value.signature.try_into()?,
             });
         }
@@ -113,7 +116,10 @@ impl TryFrom<RawCommitSig> for CommitSig {
             }
             return Ok(CommitSig::BlockIdFlagNil {
                 validator_address: value.validator_address.try_into()?,
-                timestamp: value.timestamp.ok_or_else(error::no_timestamp_error)?.into(),
+                timestamp: value
+                    .timestamp
+                    .ok_or_else(error::no_timestamp_error)?
+                    .into(),
                 signature: value.signature.try_into()?,
             });
         }

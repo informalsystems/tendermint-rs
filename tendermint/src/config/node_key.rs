@@ -15,8 +15,7 @@ pub struct NodeKey {
 impl NodeKey {
     /// Parse `node_key.json`
     pub fn parse_json<T: AsRef<str>>(json_string: T) -> Result<Self, Error> {
-        serde_json::from_str(json_string.as_ref())
-            .map_err(error::serde_json_error)
+        serde_json::from_str(json_string.as_ref()).map_err(error::serde_json_error)
     }
 
     /// Load `node_key.json` from a file

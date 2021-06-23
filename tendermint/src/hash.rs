@@ -88,7 +88,7 @@ impl Hash {
                 let mut h = [0u8; SHA256_HASH_SIZE];
                 Hex::upper_case()
                     .decode_to_slice(s.as_bytes(), &mut h)
-                    .map_err( error::subtle_encoding_error)?;
+                    .map_err(error::subtle_encoding_error)?;
                 Ok(Hash::Sha256(h))
             }
         }
@@ -225,7 +225,7 @@ impl AppHash {
         let mut h = vec![0; s.len() / 2];
         Hex::upper_case()
             .decode_to_slice(s.as_bytes(), &mut h)
-            .map_err( error::subtle_encoding_error)?;
+            .map_err(error::subtle_encoding_error)?;
         Ok(AppHash(h))
     }
 }

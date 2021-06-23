@@ -243,11 +243,9 @@ impl TendermintKey {
         #[allow(unreachable_patterns)]
         match public_key {
             PublicKey::Ed25519(_) => Ok(TendermintKey::AccountKey(public_key)),
-            _ => {
-                Err(error::invalid_key_error(
-                    "only ed25519 consensus keys are supported".into(),
-                ))
-            }
+            _ => Err(error::invalid_key_error(
+                "only ed25519 consensus keys are supported".into(),
+            )),
         }
     }
 
