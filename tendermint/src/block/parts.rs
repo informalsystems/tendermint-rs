@@ -77,10 +77,14 @@ impl Header {
     /// constructor
     pub fn new(total: u32, hash: Hash) -> Result<Self, Error> {
         if total == 0 && hash != Hash::None {
-            return Err(error::invalid_part_set_header_error("zero total with existing hash".into()));
+            return Err(error::invalid_part_set_header_error(
+                "zero total with existing hash".into(),
+            ));
         }
         if total != 0 && hash == Hash::None {
-            return Err(error::invalid_part_set_header_error("non-zero total with empty hash".into()));
+            return Err(error::invalid_part_set_header_error(
+                "non-zero total with empty hash".into(),
+            ));
         }
         Ok(Header { total, hash })
     }

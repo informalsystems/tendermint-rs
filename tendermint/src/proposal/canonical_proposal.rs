@@ -58,9 +58,11 @@ impl TryFrom<RawCanonicalProposal> for CanonicalProposal {
             round,
             pol_round,
             block_id: block_id.map(TryInto::try_into).transpose()?,
-            timestamp: value.timestamp.map(TryInto::try_into).transpose().map_err(
-                |e | error::in_fallible_error(e),
-            )?,
+            timestamp: value
+                .timestamp
+                .map(TryInto::try_into)
+                .transpose()
+                .map_err(|e| error::in_fallible_error(e))?,
             chain_id: ChainId::try_from(value.chain_id).unwrap(),
         })
     }

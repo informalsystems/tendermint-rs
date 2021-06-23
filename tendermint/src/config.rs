@@ -14,7 +14,6 @@ mod priv_validator_key;
 
 pub use self::{node_key::NodeKey, priv_validator_key::PrivValidatorKey};
 
-
 use crate::error::{self, Error};
 use crate::{genesis::Genesis, net, node, Moniker, Timeout};
 
@@ -215,7 +214,7 @@ impl FromStr for LogLevel {
             if parts.len() == 1 {
                 global = Some(parts[0].to_owned());
                 continue;
-            }else if parts.len() != 2 {
+            } else if parts.len() != 2 {
                 let context = format!("error parsing log level: {}", level);
                 return Err(error::parse_error(context));
             }
@@ -226,7 +225,6 @@ impl FromStr for LogLevel {
             if components.insert(key, value).is_some() {
                 let context = format!("duplicate log level setting for: {}", level);
                 return Err(error::parse_error(context));
-
             }
         }
 
@@ -462,7 +460,8 @@ pub struct P2PConfig {
     /// Maximum number of outbound peers to connect to, excluding persistent peers
     pub max_num_outbound_peers: u64,
 
-    /// List of node IDs, to which a connection will be (re)established ignoring any existing limits
+    /// List of node IDs, to which a connection will be (re)established ignoring any existing
+    /// limits
     #[serde(
         serialize_with = "serialize_comma_separated_list",
         deserialize_with = "deserialize_comma_separated_list"
@@ -580,10 +579,11 @@ pub struct ConsensusConfig {
     /// Commit timeout
     pub timeout_commit: Timeout,
 
-    /// How many blocks to look back to check existence of the node's consensus votes before joining consensus
-    /// When non-zero, the node will panic upon restart
+    /// How many blocks to look back to check existence of the node's consensus votes before
+    /// joining consensus When non-zero, the node will panic upon restart
     /// if the same consensus key was used to sign {double-sign-check-height} last blocks.
-    /// So, validators should stop the state machine, wait for some blocks, and then restart the state machine to avoid panic.
+    /// So, validators should stop the state machine, wait for some blocks, and then restart the
+    /// state machine to avoid panic.
     pub double_sign_check_height: u64,
 
     /// Make progress as soon as we have all the precommits (as if TimeoutCommit = 0)
@@ -651,19 +651,20 @@ pub struct InstrumentationConfig {
 /// statesync configuration options
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct StatesyncConfig {
-    /// State sync rapidly bootstraps a new node by discovering, fetching, and restoring a state machine
-    /// snapshot from peers instead of fetching and replaying historical blocks. Requires some peers in
-    /// the network to take and serve state machine snapshots. State sync is not attempted if the node
-    /// has any local state (LastBlockHeight > 0). The node will have a truncated block history,
-    /// starting from the height of the snapshot.
+    /// State sync rapidly bootstraps a new node by discovering, fetching, and restoring a state
+    /// machine snapshot from peers instead of fetching and replaying historical blocks.
+    /// Requires some peers in the network to take and serve state machine snapshots. State
+    /// sync is not attempted if the node has any local state (LastBlockHeight > 0). The node
+    /// will have a truncated block history, starting from the height of the snapshot.
     pub enable: bool,
 
     /// RPC servers (comma-separated) for light client verification of the synced state machine and
-    /// retrieval of state data for node bootstrapping. Also needs a trusted height and corresponding
-    /// header hash obtained from a trusted source, and a period during which validators can be trusted.
+    /// retrieval of state data for node bootstrapping. Also needs a trusted height and
+    /// corresponding header hash obtained from a trusted source, and a period during which
+    /// validators can be trusted.
     ///
-    /// For Cosmos SDK-based chains, trust-period should usually be about 2/3 of the unbonding time (~2
-    /// weeks) during which they can be financially punished (slashed) for misbehavior.
+    /// For Cosmos SDK-based chains, trust-period should usually be about 2/3 of the unbonding time
+    /// (~2 weeks) during which they can be financially punished (slashed) for misbehavior.
     #[serde(
         serialize_with = "serialize_comma_separated_list",
         deserialize_with = "deserialize_comma_separated_list"
@@ -682,8 +683,8 @@ pub struct StatesyncConfig {
     /// Time to spend discovering snapshots before initiating a restore.
     pub discovery_time: Timeout,
 
-    /// Temporary directory for state sync snapshot chunks, defaults to the OS tempdir (typically /tmp).
-    /// Will create a new, randomly named directory within, and remove it when done.
+    /// Temporary directory for state sync snapshot chunks, defaults to the OS tempdir (typically
+    /// /tmp). Will create a new, randomly named directory within, and remove it when done.
     pub temp_dir: String,
 }
 

@@ -67,7 +67,9 @@ impl TryFrom<RawBlock> for Block {
             .transpose()?
             .filter(|c| c != &Commit::default());
         if last_commit.is_none() && header.height.value() != 1 {
-            return Err(error::invalid_block_error("last_commit is empty on non-first block".into()));
+            return Err(error::invalid_block_error(
+                "last_commit is empty on non-first block".into(),
+            ));
         }
         // Todo: Figure out requirements.
         //if last_commit.is_some() && header.height.value() == 1 {
@@ -76,10 +78,7 @@ impl TryFrom<RawBlock> for Block {
         //}
         Ok(Block {
             header,
-            data: value
-                .data
-                .ok_or(error::missing_data_error())?
-                .into(),
+            data: value.data.ok_or(error::missing_data_error())?.into(),
             evidence: value
                 .evidence
                 .ok_or(error::missing_evidence_error())?
@@ -109,10 +108,14 @@ impl Block {
         last_commit: Option<Commit>,
     ) -> Result<Self, Error> {
         if last_commit.is_none() && header.height.value() != 1 {
-            return Err(error::invalid_block_error("last_commit is empty on non-first block".into()));
+            return Err(error::invalid_block_error(
+                "last_commit is empty on non-first block".into(),
+            ));
         }
         if last_commit.is_some() && header.height.value() == 1 {
-            return Err(error::invalid_block_error("last_commit is filled on first block".into()));
+            return Err(error::invalid_block_error(
+                "last_commit is filled on first block".into(),
+            ));
         }
         Ok(Block {
             header,

@@ -119,10 +119,7 @@ impl TryFrom<RawHeader> for Header {
                 .try_into()?,
             chain_id: value.chain_id.try_into()?,
             height,
-            time: value
-                .time
-                .ok_or(error::no_timestamp_error())?
-                .into(),
+            time: value.time.ok_or(error::no_timestamp_error())?.into(),
             last_block_id,
             last_commit_hash,
             data_hash: if value.data_hash.is_empty() {

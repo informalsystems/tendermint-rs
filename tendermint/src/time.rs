@@ -22,7 +22,6 @@ pub struct Time(DateTime<Utc>);
 
 impl Protobuf<Timestamp> for Time {}
 
-
 impl From<Timestamp> for Time {
     fn from(value: Timestamp) -> Self {
         // prost_types::Timestamp has a SystemTime converter but

@@ -244,7 +244,9 @@ impl TendermintKey {
         match public_key {
             PublicKey::Ed25519(_) => Ok(TendermintKey::AccountKey(public_key)),
             _ => {
-                return Err(error::invalid_key_error("only ed25519 consensus keys are supported".into()))
+                return Err(error::invalid_key_error(
+                    "only ed25519 consensus keys are supported".into(),
+                ))
             }
         }
     }

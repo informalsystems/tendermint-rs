@@ -81,39 +81,39 @@ impl TryFrom<RawCommitSig> for CommitSig {
                 }
             }
             if !value.signature.is_empty() {
-                return Err(error::invalid_signature_error("invalid signature error".into()));
+                return Err(error::invalid_signature_error(
+                    "invalid signature error".into(),
+                ));
             }
             return Ok(CommitSig::BlockIdFlagAbsent);
         }
         if value.block_id_flag == BlockIdFlag::Commit.to_i32().unwrap() {
             if value.signature.is_empty() {
-                return Err(error::invalid_signature_error("regular commitsig has no signature".into()));
+                return Err(error::invalid_signature_error(
+                    "regular commitsig has no signature".into(),
+                ));
             }
             if value.validator_address.is_empty() {
                 return Err(error::invalid_validator_address_error());
             }
             return Ok(CommitSig::BlockIdFlagCommit {
                 validator_address: value.validator_address.try_into()?,
-                timestamp: value
-                    .timestamp
-                    .ok_or(error::no_timestamp_error())?
-                    .into(),
+                timestamp: value.timestamp.ok_or(error::no_timestamp_error())?.into(),
                 signature: value.signature.try_into()?,
             });
         }
         if value.block_id_flag == BlockIdFlag::Nil.to_i32().unwrap() {
             if value.signature.is_empty() {
-                return Err(error::invalid_signature_error("nil commitsig has no signature".into()));
+                return Err(error::invalid_signature_error(
+                    "nil commitsig has no signature".into(),
+                ));
             }
             if value.validator_address.is_empty() {
                 return Err(error::invalid_validator_address_error());
             }
             return Ok(CommitSig::BlockIdFlagNil {
                 validator_address: value.validator_address.try_into()?,
-                timestamp: value
-                    .timestamp
-                    .ok_or(error::no_timestamp_error())?
-                    .into(),
+                timestamp: value.timestamp.ok_or(error::no_timestamp_error())?.into(),
                 signature: value.signature.try_into()?,
             });
         }

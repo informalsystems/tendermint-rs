@@ -127,15 +127,15 @@ mod no_std_time {
         }
 
         /// Returns `Some(t)` where `t` is the time `self + duration` if `t` can be represented as
-        /// `SystemTime` (which means it's inside the bounds of the underlying data structure), `None`
-        /// otherwise.
+        /// `SystemTime` (which means it's inside the bounds of the underlying data structure),
+        /// `None` otherwise.
         pub fn checked_add(&self, duration: Duration) -> Option<SystemTime> {
             Some(*self + duration)
         }
 
         /// Returns `Some(t)` where `t` is the time `self - duration` if `t` can be represented as
-        /// `SystemTime` (which means it's inside the bounds of the underlying data structure), `None`
-        /// otherwise.
+        /// `SystemTime` (which means it's inside the bounds of the underlying data structure),
+        /// `None` otherwise.
         pub fn checked_sub(&self, duration: Duration) -> Option<SystemTime> {
             Some(*self - duration)
         }

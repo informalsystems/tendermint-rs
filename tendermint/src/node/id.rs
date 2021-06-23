@@ -14,11 +14,8 @@ use std::{
     string::String,
 };
 
-
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
-
-
 
 /// Length of a Node ID in bytes
 pub const LENGTH: usize = 20;

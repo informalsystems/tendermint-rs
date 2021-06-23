@@ -25,7 +25,6 @@ impl PublicKey {
         ed25519::PublicKey::from_bytes(bytes)
             .map(Self::Ed25519)
             .map_err(|_| error::crypto_error())
-
     }
 
     /// Get Ed25519 public key

@@ -60,9 +60,11 @@ impl TryFrom<RawProposal> for Proposal {
             round: value.round.try_into()?,
             pol_round,
             block_id: value.block_id.map(TryInto::try_into).transpose()?,
-            timestamp: value.timestamp.map(TryInto::try_into).transpose().map_err(
-                |e | error::in_fallible_error(e),
-            )?,
+            timestamp: value
+                .timestamp
+                .map(TryInto::try_into)
+                .transpose()
+                .map_err(|e| error::in_fallible_error(e))?,
             signature: value.signature.try_into()?,
         })
     }
