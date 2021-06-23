@@ -45,9 +45,7 @@ pub trait VotingPowerCalculator: Send + Sync {
         validator_set
             .validators()
             .iter()
-            .fold(0u64, |total, val_info| {
-                total + val_info.voting_power.value()
-            })
+            .fold(0u64, |total, val_info| total + val_info.power.value())
     }
 
     /// Check against the given threshold that there is enough trust

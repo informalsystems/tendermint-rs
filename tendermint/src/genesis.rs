@@ -1,5 +1,6 @@
 //! Genesis data
 
+use crate::serializers;
 use crate::{chain, consensus, validator, Time};
 use chrono::DateTime;
 use serde::de::Error;
@@ -16,6 +17,10 @@ pub struct Genesis<AppState = serde_json::Value> {
     /// Chain ID
     pub chain_id: chain::Id,
 
+    /// Starting height of the blockchain
+    #[serde(with = "serializers::from_str")]
+    pub initial_height: i64,
+
     /// Consensus parameters
     pub consensus_params: consensus::Params,
 
@@ -24,8 +29,7 @@ pub struct Genesis<AppState = serde_json::Value> {
     pub validators: Vec<validator::Info>,
 
     /// App hash
-    #[serde(skip_serializing_if = "Vec::is_empty", with = "serde_bytes")]
-    pub app_hash: Vec<u8>,
+    pub app_hash: String,
 
     /// App state
     #[serde(default)]

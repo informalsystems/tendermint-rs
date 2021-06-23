@@ -276,7 +276,7 @@ fn status() {
 
     assert_eq!(response.node_info.network.as_str(), EXAMPLE_CHAIN);
     assert_eq!(response.sync_info.latest_block_height.value(), 410_744);
-    assert_eq!(response.validator_info.voting_power.value(), 0);
+    assert_eq!(response.validator_info.power.value(), 0);
 }
 
 #[test]
