@@ -114,7 +114,7 @@ impl LightBlock {
             .height(height)
             .chain_id(&chain_id)
             .next_validators(&validators)
-            .time(time); // just wanted to initialize time with some value
+            .time(time);
 
         let commit = Commit::new(header.clone(), 1);
 
