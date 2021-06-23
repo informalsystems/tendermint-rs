@@ -58,7 +58,7 @@ impl TryFrom<RawCanonicalVote> for CanonicalVote {
                 .timestamp
                 .map(TryInto::try_into)
                 .transpose()
-                .map_err(|e| error::in_fallible_error(e))?,
+                .map_err(error::in_fallible_error)?,
             chain_id: ChainId::try_from(value.chain_id)?,
         })
     }

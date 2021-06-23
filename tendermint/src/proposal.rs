@@ -64,7 +64,7 @@ impl TryFrom<RawProposal> for Proposal {
                 .timestamp
                 .map(TryInto::try_into)
                 .transpose()
-                .map_err(|e| error::in_fallible_error(e))?,
+                .map_err( error::in_fallible_error)?,
             signature: value.signature.try_into()?,
         })
     }

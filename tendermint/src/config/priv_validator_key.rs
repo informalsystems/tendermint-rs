@@ -23,7 +23,7 @@ impl PrivValidatorKey {
     /// Parse `priv_validator_key.json`
     pub fn parse_json<T: AsRef<str>>(json_string: T) -> Result<Self, Error> {
         let result = serde_json::from_str::<Self>(json_string.as_ref())
-            .map_err(|e: serde_json::Error| error::serde_json_error(e))?;
+            .map_err( error::serde_json_error)?;
 
         // Validate that the parsed key type is usable as a consensus key
         TendermintKey::new_consensus_key(result.priv_key.public_key())?;

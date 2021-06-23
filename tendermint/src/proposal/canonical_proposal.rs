@@ -62,7 +62,7 @@ impl TryFrom<RawCanonicalProposal> for CanonicalProposal {
                 .timestamp
                 .map(TryInto::try_into)
                 .transpose()
-                .map_err(|e| error::in_fallible_error(e))?,
+                .map_err( error::in_fallible_error)?,
             chain_id: ChainId::try_from(value.chain_id).unwrap(),
         })
     }

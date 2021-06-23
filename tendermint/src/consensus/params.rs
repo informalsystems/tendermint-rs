@@ -39,15 +39,15 @@ impl TryFrom<RawParams> for Params {
         Ok(Self {
             block: value
                 .block
-                .ok_or(error::invalid_block_error("invalid block error".into()))?
+                .ok_or_else(|| error::invalid_block_error("invalid block error".into()))?
                 .try_into()?,
             evidence: value
                 .evidence
-                .ok_or(error::invalid_evidence_error())?
+                .ok_or_else(error::invalid_evidence_error)?
                 .try_into()?,
             validator: value
                 .validator
-                .ok_or(error::invalid_validator_params_error())?
+                .ok_or_else(error::invalid_validator_params_error)?
                 .try_into()?,
             version: value
                 .version

@@ -81,7 +81,7 @@ impl FromStr for Address {
             // If the address has no scheme, assume it's TCP
             format!("{}{}", TCP_PREFIX, addr)
         };
-        let url = Url::parse(&prefixed_addr).map_err(|e| error::parse_url_error(e))?;
+        let url = Url::parse(&prefixed_addr).map_err(error::parse_url_error)?;
         match url.scheme() {
             "tcp" => Ok(Self::Tcp {
                 peer_id: if !url.username().is_empty() {

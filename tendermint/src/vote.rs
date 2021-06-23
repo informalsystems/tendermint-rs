@@ -84,7 +84,7 @@ impl TryFrom<RawVote> for Vote {
                 .timestamp
                 .map(TryInto::try_into)
                 .transpose()
-                .map_err(|e| error::in_fallible_error(e))?,
+                .map_err(error::in_fallible_error)?,
             validator_address: value.validator_address.try_into()?,
             validator_index: value.validator_index.try_into()?,
             signature: value.signature.try_into()?,

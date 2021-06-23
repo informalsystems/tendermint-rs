@@ -24,11 +24,11 @@ impl TryFrom<RawSignedHeader> for SignedHeader {
     fn try_from(value: RawSignedHeader) -> Result<Self, Self::Error> {
         let header = value
             .header
-            .ok_or(error::invalid_signed_header_error())?
+            .ok_or_else(error::invalid_signed_header_error)?
             .try_into()?;
         let commit = value
             .commit
-            .ok_or(error::invalid_signed_header_error())?
+            .ok_or_else(error::invalid_signed_header_error)?
             .try_into()?;
         Self::new(header, commit) // Additional checks
     }

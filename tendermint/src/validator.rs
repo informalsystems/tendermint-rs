@@ -98,7 +98,7 @@ impl Set {
             .iter()
             .find(|v| v.address == proposer_address)
             .cloned()
-            .ok_or(error::proposer_not_found_error(proposer_address))?;
+            .ok_or_else(|| error::proposer_not_found_error(proposer_address))?;
 
         // Create the validator set with the given proposer.
         // This is required by IBC on-chain validation.
@@ -174,7 +174,7 @@ impl TryFrom<RawValidator> for Info {
             address: value.address.try_into()?,
             pub_key: value
                 .pub_key
-                .ok_or(error::missing_public_key_error())?
+                .ok_or_else(error::missing_public_key_error)?
                 .try_into()?,
             voting_power: value.voting_power.try_into()?,
             proposer_priority: value.proposer_priority.into(),

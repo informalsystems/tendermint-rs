@@ -43,7 +43,7 @@ impl TryFrom<RawEvidence> for Evidence {
     type Error = Error;
 
     fn try_from(value: RawEvidence) -> Result<Self, Self::Error> {
-        match value.sum.ok_or(error::invalid_evidence_error())? {
+        match value.sum.ok_or_else(error::invalid_evidence_error)? {
             Sum::DuplicateVoteEvidence(ev) => Ok(Evidence::DuplicateVote(ev.try_into()?)),
             Sum::LightClientAttackEvidence(_ev) => Ok(Evidence::LightClientAttackEvidence),
         }
@@ -79,17 +79,17 @@ impl TryFrom<RawDuplicateVoteEvidence> for DuplicateVoteEvidence {
         Ok(Self {
             vote_a: value
                 .vote_a
-                .ok_or(error::missing_evidence_error())?
+                .ok_or_else(error::missing_evidence_error)?
                 .try_into()?,
             vote_b: value
                 .vote_b
-                .ok_or(error::missing_evidence_error())?
+                .ok_or_else(error::missing_evidence_error)?
                 .try_into()?,
             total_voting_power: value.total_voting_power.try_into()?,
             validator_power: value.validator_power.try_into()?,
             timestamp: value
                 .timestamp
-                .ok_or(error::missing_timestamp_error())?
+                .ok_or_else(error::missing_timestamp_error)?
                 .into(),
         })
     }
@@ -239,7 +239,7 @@ impl TryFrom<RawEvidenceParams> for Params {
                 .map_err(|_| error::negative_max_age_num_error())?,
             max_age_duration: value
                 .max_age_duration
-                .ok_or(error::missing_max_age_duration_error())?
+                .ok_or_else(error::missing_max_age_duration_error)?
                 .try_into()?,
             max_bytes: value.max_bytes,
         })
