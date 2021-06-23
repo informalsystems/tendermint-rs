@@ -9,7 +9,6 @@ use tendermint::node::Id as PeerId;
 use tendermint::validator;
 use tendermint::validator::Set as ValidatorSet;
 use tendermint::{block::signed_header::SignedHeader, Hash};
-
 /// A light block is the core data structure used by the light client.
 /// It records everything the light client needs to know about a block.
 /// NOTE: This struct & associated `impl` below are a copy of light-client's `LightBlock`.
@@ -94,6 +93,28 @@ impl LightBlock {
             .chain_id("test-chain")
             .next_validators(&validators)
             .time(height); // just wanted to initialize time with some value
+
+        let commit = Commit::new(header.clone(), 1);
+
+        Self {
+            header: Some(header),
+            commit: Some(commit),
+            validators: Some(validators.to_vec()),
+            next_validators: Some(validators.to_vec()),
+            provider: Some(default_peer_id()),
+        }
+    }
+
+    pub fn new_default_with_time_and_chain_id(chain_id: String, time: u64, height: u64) -> Self {
+        let validators = [
+            Validator::new("1").voting_power(50),
+            Validator::new("2").voting_power(50),
+        ];
+        let header = Header::new(&validators)
+            .height(height)
+            .chain_id(&chain_id)
+            .next_validators(&validators)
+            .time(time); // just wanted to initialize time with some value
 
         let commit = Commit::new(header.clone(), 1);
 
