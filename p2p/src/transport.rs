@@ -70,7 +70,7 @@ pub trait StreamSend {
 /// `[Transport]`.
 pub trait Connection: Send {
     /// Errors emitted by the connection.
-    type Error;
+    type Error: std::error::Error + Send + Sync + 'static;
     /// Read end of a bidirectional stream. Carries a finite stream of framed messages. Decoding is
     /// left to the caller and should correspond to the type of stream.
     type StreamRead: Iterator<Item = Result<Vec<u8>>> + Send;
