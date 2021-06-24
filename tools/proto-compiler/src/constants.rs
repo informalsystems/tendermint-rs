@@ -6,7 +6,7 @@ pub const TENDERMINT_REPO: &str = "https://github.com/tendermint/tendermint";
 // Tag: v0.34.0-rc4
 // Branch: master
 // Commit ID (full length): d7d0ffea13c60c98b812d243ba5a2c375f341c15
-pub const TENDERMINT_COMMITISH: &str = "v0.34.0";
+pub const TENDERMINT_COMMITISH: &str = "v0.34.9";
 
 /// Predefined custom attributes for message annotations
 const PRIMITIVE_ENUM: &str = r#"#[derive(::num_derive::FromPrimitive, ::num_derive::ToPrimitive)]"#;
@@ -140,7 +140,10 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.BlockMeta.block_size", QUOTED),
     (".tendermint.types.BlockMeta.num_txs", QUOTED),
     (".tendermint.crypto.PublicKey.sum.ed25519", RENAME_EDPUBKEY),
-    (".tendermint.crypto.PublicKey.sum.secp256k1", RENAME_SECPPUBKEY),
+    (
+        ".tendermint.crypto.PublicKey.sum.secp256k1",
+        RENAME_SECPPUBKEY,
+    ),
     (
         ".tendermint.types.Evidence.sum.duplicate_vote_evidence",
         RENAME_DUPLICATEVOTE,
