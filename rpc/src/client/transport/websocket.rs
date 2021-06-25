@@ -223,6 +223,12 @@ impl TryFrom<net::Address> for WebSocketClientUrl {
     }
 }
 
+impl From<WebSocketClientUrl> for Url {
+    fn from(url: WebSocketClientUrl) -> Self {
+        url.0
+    }
+}
+
 mod sealed {
     use super::{
         DriverCommand, SimpleRequestCommand, SubscribeCommand, UnsubscribeCommand,

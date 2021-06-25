@@ -143,6 +143,12 @@ impl TryFrom<net::Address> for HttpClientUrl {
     }
 }
 
+impl From<HttpClientUrl> for Url {
+    fn from(url: HttpClientUrl) -> Self {
+        url.0
+    }
+}
+
 impl TryFrom<HttpClientUrl> for hyper::Uri {
     type Error = Error;
 
