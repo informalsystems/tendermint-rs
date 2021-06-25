@@ -172,7 +172,7 @@ impl SubscriptionClient for WebSocketClient {
 /// A URL limited to use with WebSocket clients.
 ///
 /// Facilitates useful type conversions and inferences.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct WebSocketClientUrl(Url);
 
 impl TryFrom<Url> for WebSocketClientUrl {

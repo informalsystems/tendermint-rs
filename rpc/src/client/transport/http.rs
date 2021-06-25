@@ -92,7 +92,7 @@ impl Client for HttpClient {
 /// A URL limited to use with HTTP clients.
 ///
 /// Facilitates useful type conversions and inferences.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct HttpClientUrl(Url);
 
 impl TryFrom<Url> for HttpClientUrl {
