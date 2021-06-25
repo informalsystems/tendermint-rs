@@ -66,7 +66,7 @@ impl Set {
         // Compute the total voting power
         let total_voting_power = validators
             .iter()
-            .map(|v| v.voting_power.value())
+            .map(|v| v.power.value())
             .sum::<u64>()
             .try_into()
             .unwrap();
@@ -118,7 +118,7 @@ impl Set {
     /// Sort the validators according to the current Tendermint requirements
     /// (v. 0.34 -> first by validator power, descending, then by address, ascending)
     fn sort_validators(vals: &mut Vec<Info>) {
-        vals.sort_by_key(|v| (std::cmp::Reverse(v.voting_power), v.address));
+        vals.sort_by_key(|v| (std::cmp::Reverse(v.power), v.address));
     }
 
     /// Returns the validator with the given Id if its in the Set.
@@ -143,7 +143,7 @@ impl Set {
 
 /// Validator information
 // Todo: Remove address and make it into a function that generates it on the fly from pub_key.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, Eq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Eq)]
 pub struct Info {
     /// Validator account address
     pub address: account::Id,
@@ -153,8 +153,11 @@ pub struct Info {
 
     /// Validator voting power
     // Compatibility with genesis.json https://github.com/tendermint/tendermint/issues/5549
-    #[serde(alias = "power", alias = "total_voting_power")]
-    pub voting_power: vote::Power,
+    #[serde(alias = "voting_power", alias = "total_voting_power")]
+    pub power: vote::Power,
+
+    /// Validator name
+    pub name: Option<String>,
 
     /// Validator proposer priority
     #[serde(skip)]
@@ -168,7 +171,8 @@ impl TryFrom<RawValidator> for Info {
         Ok(Info {
             address: value.address.try_into()?,
             pub_key: value.pub_key.ok_or(Kind::MissingPublicKey)?.try_into()?,
-            voting_power: value.voting_power.try_into()?,
+            power: value.voting_power.try_into()?,
+            name: None,
             proposer_priority: value.proposer_priority.try_into()?,
         })
     }
@@ -179,7 +183,7 @@ impl From<Info> for RawValidator {
         RawValidator {
             address: value.address.into(),
             pub_key: Some(value.pub_key.into()),
-            voting_power: value.voting_power.into(),
+            voting_power: value.power.into(),
             proposer_priority: value.proposer_priority.into(),
         }
     }
@@ -188,7 +192,7 @@ impl From<Info> for RawValidator {
 impl Info {
     /// Return the voting power of the validator.
     pub fn power(&self) -> u64 {
-        self.voting_power.value()
+        self.power.value()
     }
 
     /// Verify the given signature against the given sign_bytes using the validators
@@ -214,7 +218,8 @@ impl Info {
         Info {
             address: account::Id::from(pk),
             pub_key: pk,
-            voting_power: vp,
+            power: vp,
+            name: None,
             proposer_priority: ProposerPriority::default(),
         }
     }
@@ -269,7 +274,7 @@ impl From<&Info> for SimpleValidator {
         };
         SimpleValidator {
             pub_key: Some(tendermint_proto::crypto::PublicKey { sum }),
-            voting_power: info.voting_power,
+            voting_power: info.power,
         }
     }
 }
@@ -409,7 +414,7 @@ mod tests {
             22, 57, 84, 71, 122, 200, 169, 192, 252, 41, 148, 223, 180,
         ];
 
-        let val_set = Set::without_proposer(vec![v1, v2, v3]);
+        let val_set = Set::without_proposer(vec![v1.clone(), v2.clone(), v3.clone()]);
         let hash = val_set.hash();
         assert_eq!(hash_expect, hash.as_bytes().to_vec());
 

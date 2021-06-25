@@ -108,7 +108,8 @@ impl Generator<validator::Info> for Validator {
         let info = validator::Info {
             address: account::Id::from(keypair.public),
             pub_key: PublicKey::from(keypair.public),
-            voting_power: vote::Power::try_from(self.voting_power.unwrap_or(0)).unwrap(),
+            power: vote::Power::try_from(self.voting_power.unwrap_or(0)).unwrap(),
+            name: None,
             proposer_priority: validator::ProposerPriority::from(
                 self.proposer_priority.unwrap_or_default(),
             ),
@@ -130,7 +131,7 @@ pub fn sort_validators(vals: &[Validator]) -> Vec<Validator> {
     let mut sorted = vals.to_owned();
     sorted.sort_by_key(|v| {
         let v = v.generate().unwrap();
-        (std::cmp::Reverse(v.voting_power), v.address)
+        (std::cmp::Reverse(v.power), v.address)
     });
     sorted
 }
@@ -186,7 +187,7 @@ mod tests {
 
         let mut block_val = val.generate().unwrap();
 
-        block_val.voting_power = vote::Power::from(30_u32);
+        block_val.power = vote::Power::from(30_u32);
         assert_ne!(val.generate().unwrap(), block_val);
 
         let val = val.voting_power(30);

@@ -717,7 +717,7 @@ fn incoming_fixtures() {
                         > 0
                 );
                 assert!(result.validator_info.pub_key.ed25519().is_some());
-                assert_eq!(result.validator_info.voting_power.value(), 10);
+                assert_eq!(result.validator_info.power.value(), 10);
             }
             "subscribe_malformed" => {
                 let result = endpoint::subscribe::Response::from_string(content)

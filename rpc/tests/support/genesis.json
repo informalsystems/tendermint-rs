@@ -5,6 +5,7 @@
     "genesis": {
       "genesis_time": "2019-03-13T23:00:00Z",
       "chain_id": "cosmoshub-2",
+      "initial_height": "0",
       "consensus_params": {
         "block": {
           "max_bytes": "200000",
