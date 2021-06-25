@@ -25,7 +25,8 @@ pub struct Genesis<AppState = serde_json::Value> {
     pub validators: Vec<validator::Info>,
 
     /// App hash
-    pub app_hash: String,
+    #[serde(with = "serializers::bytes::hexstring")]
+    pub app_hash: Vec<u8>,
 
     /// App state
     #[serde(default)]
