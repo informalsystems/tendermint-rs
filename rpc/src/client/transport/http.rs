@@ -92,7 +92,7 @@ impl Client for HttpClient {
 /// A URL limited to use with HTTP clients.
 ///
 /// Facilitates useful type conversions and inferences.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct HttpClientUrl(Url);
 
 impl TryFrom<Url> for HttpClientUrl {
@@ -140,6 +140,12 @@ impl TryFrom<net::Address> for HttpClientUrl {
                 "only TCP-based node addresses are supported",
             )),
         }
+    }
+}
+
+impl From<HttpClientUrl> for Url {
+    fn from(url: HttpClientUrl) -> Self {
+        url.0
     }
 }
 

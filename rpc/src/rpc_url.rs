@@ -7,7 +7,7 @@ use std::fmt;
 use std::str::FromStr;
 
 /// The various schemes supported by Tendermint RPC clients.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Scheme {
     Http,
     Https,
@@ -50,7 +50,7 @@ impl FromStr for Scheme {
 ///
 /// Re-implements relevant parts of [`url::Url`]'s interface with convenience
 /// mechanisms for transformation to/from other types.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Url {
     inner: url::Url,
     scheme: Scheme,
