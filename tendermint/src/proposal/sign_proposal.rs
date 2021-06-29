@@ -4,9 +4,9 @@ use crate::error::{self, Error};
 use bytes::BufMut;
 use std::{
     convert::{TryFrom, TryInto},
-    string::ToString,
     vec::Vec,
 };
+use alloc::string::ToString;
 use tendermint_proto::privval::RemoteSignerError;
 use tendermint_proto::privval::SignProposalRequest as RawSignProposalRequest;
 use tendermint_proto::privval::SignedProposalResponse as RawSignedProposalResponse;

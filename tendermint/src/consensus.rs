@@ -3,4 +3,5 @@
 pub mod params;
 pub mod state;
 
-pub use self::{params::Params, state::State};
+pub use self::params::Params;
+pub use state::State;

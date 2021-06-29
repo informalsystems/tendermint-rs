@@ -6,11 +6,11 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     convert::TryFrom,
     fmt::{self, Debug, Display},
-    prelude::v1::format,
-    prelude::v1::*,
+    prelude::*,
     str::FromStr,
-    string::{String, ToString},
 };
+use alloc::format;
+use alloc::string::{String, ToString};
 use subtle_encoding::{Encoding, Hex};
 use tendermint_proto::Protobuf;
 

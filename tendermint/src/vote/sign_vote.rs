@@ -2,7 +2,7 @@ use crate::chain;
 use crate::error::{self, Error};
 use crate::Vote;
 use bytes::BufMut;
-use std::{convert::TryFrom, string::ToString, vec::Vec};
+use std::{convert::TryFrom, vec::Vec};
 use tendermint_proto::privval::SignedVoteResponse as RawSignedVoteResponse;
 use tendermint_proto::privval::{RemoteSignerError, SignVoteRequest as RawSignVoteRequest};
 use tendermint_proto::Error as ProtobufError;

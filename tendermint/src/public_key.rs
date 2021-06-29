@@ -14,9 +14,10 @@ use crate::signature::Signature;
 use serde::{de, ser, Deserialize, Serialize};
 use signature::Verifier as _;
 use std::{
-    cmp::Ordering, convert::TryFrom, fmt, ops::Deref, prelude::v1::*, str::FromStr, string::String,
+    cmp::Ordering, convert::TryFrom, fmt, ops::Deref, prelude::*, str::FromStr,
     vec::Vec,
 };
+use alloc::string::String;
 use subtle_encoding::{base64, bech32, hex};
 use tendermint_proto::crypto::public_key::Sum;
 use tendermint_proto::crypto::PublicKey as RawPublicKey;

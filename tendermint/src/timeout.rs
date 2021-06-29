@@ -3,11 +3,11 @@ use serde::{de, de::Error as _, ser, Deserialize, Serialize};
 use std::{
     fmt,
     ops::Deref,
-    prelude::v1::format,
     str::FromStr,
-    string::{String, ToString},
-    time::Duration,
 };
+use alloc::format;
+use alloc::string::{String, ToString};
+use core::time::Duration;
 
 /// Timeout durations
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]

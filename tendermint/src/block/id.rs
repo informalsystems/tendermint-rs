@@ -7,10 +7,10 @@ use serde::{Deserialize, Serialize};
 use std::{
     convert::{TryFrom, TryInto},
     fmt::{self, Display},
-    prelude::v1::*,
+    prelude::*,
     str::{self, FromStr},
-    string::{String, ToString},
 };
+use alloc::string::{String, ToString};
 use tendermint_proto::types::{
     BlockId as RawBlockId, CanonicalBlockId as RawCanonicalBlockId,
     PartSetHeader as RawPartSetHeader,

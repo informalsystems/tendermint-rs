@@ -6,8 +6,8 @@ use std::{
     borrow::ToOwned,
     fmt::{self, Display},
     str::FromStr,
-    string::String,
 };
+use alloc::string::String;
 
 /// Validator display names
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]

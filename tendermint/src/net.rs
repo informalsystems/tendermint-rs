@@ -5,11 +5,11 @@ use crate::node;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     fmt::{self, Display},
-    path::PathBuf,
-    prelude::v1::format,
     str::{self, FromStr},
-    string::String,
 };
+use _std::path::PathBuf;
+use alloc::format;
+use alloc::string::{String, ToString};
 use url::Url;
 
 /// URI prefix for TCP connections

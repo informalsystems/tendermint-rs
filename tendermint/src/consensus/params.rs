@@ -5,9 +5,9 @@ use crate::{block, evidence, public_key};
 use serde::{Deserialize, Serialize};
 use std::{
     convert::{TryFrom, TryInto},
-    string::ToString,
     vec::Vec,
 };
+use alloc::string::ToString;
 use tendermint_proto::abci::ConsensusParams as RawParams;
 use tendermint_proto::types::ValidatorParams as RawValidatorParams;
 use tendermint_proto::types::VersionParams as RawVersionParams;

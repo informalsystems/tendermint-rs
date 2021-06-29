@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 use std::{
     borrow::ToOwned,
     fmt::{self, Display},
-    string::String,
 };
+use alloc::string::String;
 
 /// ABCI log data
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]

@@ -9,10 +9,10 @@ use crate::error::{self, Error};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     fmt::{self, Display},
-    prelude::v1::format,
     str::FromStr,
-    string::{String, ToString},
 };
+use alloc::format;
+use alloc::string::{String, ToString};
 
 /// Gas: representation of transaction processing resource costs
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]

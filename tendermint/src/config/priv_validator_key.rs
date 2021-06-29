@@ -4,7 +4,7 @@ use crate::error::{self, Error};
 use crate::public_key::TendermintKey;
 use crate::{account, private_key::PrivateKey, public_key::PublicKey};
 use serde::{Deserialize, Serialize};
-use std::{fs, path::Path};
+use _std::{fs, path::Path};
 
 /// Validator private key
 #[derive(Serialize, Deserialize)] // JSON custom serialization for priv_validator_key.json

@@ -9,10 +9,10 @@ use sha2::{Digest, Sha256};
 use std::{
     convert::TryFrom,
     fmt::{self, Debug, Display},
-    prelude::v1::format,
     str::FromStr,
-    string::String,
 };
+use alloc::format;
+use alloc::string::String;
 
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;

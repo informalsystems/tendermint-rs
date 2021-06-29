@@ -63,7 +63,7 @@ url = { version = "2.2" }
 zeroize = { version = "1.1", default-features = false, features = ["zeroize_derive", "alloc"] }
 k256 = { version = "0.9", default-features = false, optional = true, features = ["ecdsa"] }
 ripemd160 = { version = "0.9", default-features = false, optional = true }
-no-std-compat = { version = "0.4.1", default-features = false,   features = [ "alloc" ] }
+sp-std = { version = "3.0.0", default-features = false}
 displaydoc = {version = "0.2", default-features = false }
 
 
@@ -88,7 +88,7 @@ std = [
     'subtle-encoding/std',
     'k256/std',
     'ripemd160/std',
-    'no-std-compat/std',
+    'sp-std/std',
     'flex-error/std',
     'anyhow/std',
     'displaydoc/std',

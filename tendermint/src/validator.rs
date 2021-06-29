@@ -8,10 +8,10 @@ use crate::{account, hash::Hash, merkle, vote, PublicKey, Signature};
 use std::{
     cmp::Reverse,
     convert::{From, TryFrom, TryInto},
-    prelude::v1::format,
-    string::String,
     vec::Vec,
 };
+use alloc::format;
+use alloc::string::String;
 use tendermint_proto::types::SimpleValidator as RawSimpleValidator;
 use tendermint_proto::types::Validator as RawValidator;
 use tendermint_proto::types::ValidatorSet as RawValidatorSet;

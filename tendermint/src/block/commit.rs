@@ -6,7 +6,7 @@ use crate::error::{self, Error};
 use serde::{Deserialize, Serialize};
 use std::{
     convert::{TryFrom, TryInto},
-    prelude::v1::*,
+    prelude::*,
 };
 
 use tendermint_proto::types::Commit as RawCommit;

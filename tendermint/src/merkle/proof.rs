@@ -1,7 +1,8 @@
 //! Merkle proofs
 use serde::{Deserialize, Serialize};
 
-use std::{convert::TryFrom, string::String, vec::Vec};
+use std::{convert::TryFrom, vec::Vec};
+use alloc::string::String;
 use tendermint_proto::crypto::ProofOp as RawProofOp;
 use tendermint_proto::crypto::ProofOps as RawProofOps;
 use tendermint_proto::Protobuf;

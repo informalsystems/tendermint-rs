@@ -22,7 +22,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
-extern crate no_std_compat as std;
+extern crate sp_std as std;
+extern crate std as _std;
 
 #[macro_use]
 pub mod error;

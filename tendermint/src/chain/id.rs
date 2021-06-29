@@ -7,10 +7,10 @@ use std::{
     convert::TryFrom,
     fmt::{self, Debug, Display},
     hash::{Hash, Hasher},
-    prelude::v1::format,
     str::{self, FromStr},
-    string::{String, ToString},
 };
+use alloc::format;
+use alloc::string::{String, ToString};
 use tendermint_proto::Protobuf;
 
 /// Maximum length of a `chain::Id` name. Matches `MaxChainIDLen` from:

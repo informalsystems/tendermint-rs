@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{self, Debug, Display},
-    string::String,
 };
+use alloc::string::String;
 
 /// Tendermint version
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]

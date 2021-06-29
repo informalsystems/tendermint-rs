@@ -3,10 +3,10 @@ use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     convert::{TryFrom, TryInto},
     fmt::{self, Debug, Display},
-    prelude::v1::format,
     str::FromStr,
-    string::{String, ToString},
 };
+use alloc::format;
+use alloc::string::{String, ToString};
 use tendermint_proto::Protobuf;
 
 /// Block height for a particular chain (i.e. number of blocks created since

@@ -4,8 +4,8 @@ use crate::{block, Time};
 use serde::{Deserialize, Serialize};
 use std::{
     convert::{TryFrom, TryInto},
-    string::ToString,
 };
+use alloc::string::ToString;
 use tendermint_proto::types::CanonicalVote as RawCanonicalVote;
 use tendermint_proto::Protobuf;
 

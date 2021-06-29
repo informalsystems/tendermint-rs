@@ -7,8 +7,8 @@ use crate::serializers;
 pub use serde::{Deserialize, Serialize};
 use std::{
     fmt::{self, Display},
-    string::String,
 };
+use alloc::string::String;
 
 /// Channels
 #[derive(Clone, Debug, Deserialize, Serialize)]

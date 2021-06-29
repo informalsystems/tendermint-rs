@@ -9,8 +9,8 @@ use std::{
     fmt,
     ops::{Add, Sub},
     str::FromStr,
-    string::String,
 };
+use alloc::string::String;
 use tendermint_proto::google::protobuf::Timestamp;
 use tendermint_proto::serializers::timestamp;
 use tendermint_proto::Protobuf;

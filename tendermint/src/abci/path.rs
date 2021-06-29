@@ -6,8 +6,8 @@ use std::{
     borrow::ToOwned,
     fmt::{self, Display},
     str::FromStr,
-    string::String,
 };
+use alloc::string::String;
 
 /// Path to ABCI data
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]

@@ -4,10 +4,10 @@ use crate::error::{self, Error};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     fmt::{self, Debug, Display},
-    prelude::v1::format,
     str::FromStr,
-    string::{String, ToString},
 };
+use alloc::format;
+use alloc::string::{String, ToString};
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
 

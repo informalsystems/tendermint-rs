@@ -5,9 +5,9 @@ use crate::{consensus, serializers, validator};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::{
     fmt::{self, Display},
-    string::String,
     vec::Vec,
 };
+use alloc::string::String;
 
 /// Responses for ABCI calls which occur during block processing.
 ///

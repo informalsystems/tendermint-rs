@@ -6,7 +6,7 @@ use crate::{account, block, chain, AppHash, Hash, Time};
 use serde::{Deserialize, Serialize};
 use std::{
     convert::{TryFrom, TryInto},
-    prelude::v1::*,
+    prelude::*,
 };
 use tendermint_proto::types::Header as RawHeader;
 use tendermint_proto::version::Consensus as RawConsensusVersion;

@@ -20,13 +20,15 @@ use crate::{genesis::Genesis, net, node, Moniker, Timeout};
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
 use std::{
     collections::btree_map::BTreeMap,
-    fmt, fs,
-    path::{Path, PathBuf},
-    prelude::v1::format,
+    fmt,
     str::FromStr,
-    string::{String, ToString},
     vec::Vec,
 };
+use _std::{
+   fs, path::{Path, PathBuf}
+};
+use alloc::format;
+use alloc::string::{String, ToString};
 
 /// Tendermint `config.toml` file
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]

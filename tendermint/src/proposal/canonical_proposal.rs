@@ -7,8 +7,8 @@ use crate::error::{self, Error};
 use crate::Time;
 use std::{
     convert::{TryFrom, TryInto},
-    string::ToString,
 };
+use alloc::string::ToString;
 use tendermint_proto::types::CanonicalProposal as RawCanonicalProposal;
 use tendermint_proto::Protobuf;
 

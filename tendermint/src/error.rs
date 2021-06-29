@@ -3,7 +3,7 @@
 use crate::account;
 use crate::vote;
 use flex_error::{define_error, DisplayError};
-use std::string::String;
+use alloc::string::String;
 
 define_error! {
     #[derive(Debug)]

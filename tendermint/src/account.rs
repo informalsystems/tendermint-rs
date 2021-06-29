@@ -9,11 +9,11 @@ use std::{
     convert::TryFrom,
     convert::TryInto,
     fmt::{self, Debug, Display},
-    prelude::v1::format,
     str::FromStr,
-    string::String,
     vec::Vec,
 };
+use alloc::format;
+use alloc::string::String;
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
 

@@ -263,10 +263,10 @@ impl From<Params> for RawEvidenceParams {
 /// Todo: harmonize google::protobuf::Duration, std::time::Duration and this. Too many structs.
 /// <https://github.com/informalsystems/tendermint-rs/issues/741>
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
-pub struct Duration(#[serde(with = "serializers::time_duration")] pub std::time::Duration);
+pub struct Duration(#[serde(with = "serializers::time_duration")] pub core::time::Duration);
 
-impl From<Duration> for std::time::Duration {
-    fn from(d: Duration) -> std::time::Duration {
+impl From<Duration> for core::time::Duration {
+    fn from(d: Duration) -> core::time::Duration {
         d.0
     }
 }
@@ -277,7 +277,7 @@ impl TryFrom<RawDuration> for Duration {
     type Error = Error;
 
     fn try_from(value: RawDuration) -> Result<Self, Self::Error> {
-        Ok(Self(std::time::Duration::new(
+        Ok(Self(core::time::Duration::new(
             value
                 .seconds
                 .try_into()
