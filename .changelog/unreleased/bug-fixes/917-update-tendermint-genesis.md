@@ -1,0 +1,1 @@
+- `[tendermint]` Update Genesis for Tendermint v.0.34.x ([#917](https://github.com/informalsystems/tendermint-rs/pull/917))

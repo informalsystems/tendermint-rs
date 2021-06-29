@@ -8,6 +8,7 @@ pub fn default_consensus_params() -> consensus::Params {
         block: block::Size {
             max_bytes: 22020096,
             max_gas: -1, // Tendetmint-go also has TimeIotaMs: 1000, // 1s
+            time_iota_ms: 1000,
         },
         evidence: evidence::Params {
             max_age_num_blocks: 100000,

@@ -19,6 +19,10 @@ pub struct Size {
     /// Maximum amount of gas which can be spent on a block
     #[serde(with = "serializers::from_str")]
     pub max_gas: i64,
+
+    /// This parameter has no value anymore in Tendermint-core
+    #[serde(with = "serializers::from_str")]
+    pub time_iota_ms: i64,
 }
 
 impl Protobuf<RawSize> for Size {}
@@ -33,6 +37,7 @@ impl TryFrom<RawSize> for Size {
                 .try_into()
                 .map_err(|_| error::integer_overflow_error())?,
             max_gas: value.max_gas,
+            time_iota_ms: 1000,
         })
     }
 }

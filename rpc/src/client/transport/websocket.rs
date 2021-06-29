@@ -172,7 +172,7 @@ impl SubscriptionClient for WebSocketClient {
 /// A URL limited to use with WebSocket clients.
 ///
 /// Facilitates useful type conversions and inferences.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct WebSocketClientUrl(Url);
 
 impl TryFrom<Url> for WebSocketClientUrl {
@@ -220,6 +220,12 @@ impl TryFrom<net::Address> for WebSocketClientUrl {
                 "only TCP-based node addresses are supported",
             )),
         }
+    }
+}
+
+impl From<WebSocketClientUrl> for Url {
+    fn from(url: WebSocketClientUrl) -> Self {
+        url.0
     }
 }
 

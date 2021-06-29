@@ -1,8 +1,9 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Message {
     #[prost(oneof="message::Sum", tags="1, 2, 3, 4")]
-    pub sum: ::std::option::Option<message::Sum>,
+    pub sum: ::core::option::Option<message::Sum>,
 }
+/// Nested message and enum types in `Message`.
 pub mod message {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Sum {
@@ -27,10 +28,10 @@ pub struct SnapshotsResponse {
     pub format: u32,
     #[prost(uint32, tag="3")]
     pub chunks: u32,
-    #[prost(bytes, tag="4")]
-    pub hash: std::vec::Vec<u8>,
-    #[prost(bytes, tag="5")]
-    pub metadata: std::vec::Vec<u8>,
+    #[prost(bytes="vec", tag="4")]
+    pub hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="vec", tag="5")]
+    pub metadata: ::prost::alloc::vec::Vec<u8>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ChunkRequest {
@@ -49,8 +50,8 @@ pub struct ChunkResponse {
     pub format: u32,
     #[prost(uint32, tag="3")]
     pub index: u32,
-    #[prost(bytes, tag="4")]
-    pub chunk: std::vec::Vec<u8>,
+    #[prost(bytes="vec", tag="4")]
+    pub chunk: ::prost::alloc::vec::Vec<u8>,
     #[prost(bool, tag="5")]
     pub missing: bool,
 }
