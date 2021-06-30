@@ -1,6 +1,6 @@
 //! Hash functions and their outputs
 
-use crate::error::{Error, Kind};
+use crate::error::{self, Error};
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::TryFrom;
@@ -66,9 +66,7 @@ impl Hash {
                     h.copy_from_slice(bytes);
                     Ok(Hash::Sha256(h))
                 } else {
-                    Err(Kind::Parse
-                        .context(format!("hash invalid length: {}", bytes.len()))
-                        .into())
+                    Err(error::invalid_hash_size_error())
                 }
             }
         }
@@ -82,7 +80,9 @@ impl Hash {
         match alg {
             Algorithm::Sha256 => {
                 let mut h = [0u8; SHA256_HASH_SIZE];
-                Hex::upper_case().decode_to_slice(s.as_bytes(), &mut h)?;
+                Hex::upper_case()
+                    .decode_to_slice(s.as_bytes(), &mut h)
+                    .map_err(error::subtle_encoding_error)?;
                 Ok(Hash::Sha256(h))
             }
         }
@@ -214,10 +214,12 @@ impl AppHash {
     /// Decode a `Hash` from upper-case hexadecimal
     pub fn from_hex_upper(s: &str) -> Result<Self, Error> {
         if s.len() % 2 != 0 {
-            return Err(Kind::InvalidAppHashLength.into());
+            return Err(error::invalid_app_hash_length_error());
         }
         let mut h = vec![0; s.len() / 2];
-        Hex::upper_case().decode_to_slice(s.as_bytes(), &mut h)?;
+        Hex::upper_case()
+            .decode_to_slice(s.as_bytes(), &mut h)
+            .map_err(error::subtle_encoding_error)?;
         Ok(AppHash(h))
     }
 }

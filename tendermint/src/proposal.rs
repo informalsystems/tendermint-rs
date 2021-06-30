@@ -11,9 +11,9 @@ pub use sign_proposal::{SignProposalRequest, SignedProposalResponse};
 use crate::block::{Height, Id as BlockId, Round};
 use crate::chain::Id as ChainId;
 use crate::consensus::State;
+use crate::error::{self, Error};
 use crate::Signature;
 use crate::Time;
-use crate::{Error, Kind};
 use bytes::BufMut;
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Proposal as RawProposal;
@@ -45,7 +45,7 @@ impl TryFrom<RawProposal> for Proposal {
 
     fn try_from(value: RawProposal) -> Result<Self, Self::Error> {
         if value.pol_round < -1 {
-            return Err(Kind::NegativePolRound.into());
+            return Err(error::negative_pol_round_error());
         }
         let pol_round = match value.pol_round {
             -1 => None,
@@ -57,7 +57,7 @@ impl TryFrom<RawProposal> for Proposal {
             round: value.round.try_into()?,
             pol_round,
             block_id: value.block_id.map(TryInto::try_into).transpose()?,
-            timestamp: value.timestamp.map(TryInto::try_into).transpose()?,
+            timestamp: value.timestamp.map(|t| t.into()),
             signature: value.signature.try_into()?,
         })
     }

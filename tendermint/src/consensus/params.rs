@@ -1,7 +1,7 @@
 //! Tendermint consensus parameters
 
+use crate::error::{self, Error};
 use crate::{block, evidence, public_key};
-use crate::{Error, Kind};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::abci::ConsensusParams as RawParams;
@@ -33,17 +33,19 @@ impl TryFrom<RawParams> for Params {
 
     fn try_from(value: RawParams) -> Result<Self, Self::Error> {
         Ok(Self {
-            block: value.block.ok_or(Kind::InvalidBlock)?.try_into()?,
-            evidence: value.evidence.ok_or(Kind::InvalidEvidence)?.try_into()?,
+            block: value
+                .block
+                .ok_or_else(|| error::invalid_block_error("missing block".to_string()))?
+                .try_into()?,
+            evidence: value
+                .evidence
+                .ok_or_else(error::invalid_evidence_error)?
+                .try_into()?,
             validator: value
                 .validator
-                .ok_or(Kind::InvalidValidatorParams)?
+                .ok_or_else(error::invalid_validator_params_error)?
                 .try_into()?,
-            version: value
-                .version
-                .map(TryFrom::try_from)
-                .transpose()
-                .map_err(|_| Kind::InvalidVersionParams)?,
+            version: value.version.map(TryFrom::try_from).transpose()?,
         })
     }
 }

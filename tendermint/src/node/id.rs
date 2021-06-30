@@ -12,7 +12,7 @@ use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
 
 use crate::{
-    error::{Error, Kind},
+    error::{self, Error},
     public_key::{Ed25519, PublicKey},
 };
 
@@ -80,10 +80,10 @@ impl FromStr for Id {
         // Accept either upper or lower case hex
         let bytes = hex::decode_upper(s)
             .or_else(|_| hex::decode(s))
-            .map_err(|_| Kind::Parse)?;
+            .map_err(error::subtle_encoding_error)?;
 
         if bytes.len() != LENGTH {
-            return Err(Kind::Parse.into());
+            return Err(error::parse_error("invalid length".to_string()));
         }
 
         let mut result_bytes = [0u8; LENGTH];
@@ -105,7 +105,7 @@ impl TryFrom<PublicKey> for Id {
         match pk {
             PublicKey::Ed25519(ed25519) => Ok(Id::from(ed25519)),
             #[cfg(feature = "secp256k1")]
-            _ => Err(Kind::UnsupportedKeyType.into()),
+            _ => Err(error::unsupported_key_type_error()),
         }
     }
 }

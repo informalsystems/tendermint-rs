@@ -6,7 +6,7 @@ pub use signature::{Signer, Verifier};
 #[cfg(feature = "secp256k1")]
 pub use k256::ecdsa::Signature as Secp256k1;
 
-use crate::{Error, Kind};
+use crate::error::{self, Error};
 use std::convert::TryFrom;
 use tendermint_proto::Protobuf;
 
@@ -31,7 +31,7 @@ impl TryFrom<Vec<u8>> for Signature {
             return Ok(Self::default());
         }
         if value.len() != ED25519_SIGNATURE_SIZE {
-            return Err(Kind::InvalidSignatureIdLength.into());
+            return Err(error::invalid_signature_id_length_error());
         }
         let mut slice: [u8; ED25519_SIGNATURE_SIZE] = [0; ED25519_SIGNATURE_SIZE];
         slice.copy_from_slice(&value[..]);

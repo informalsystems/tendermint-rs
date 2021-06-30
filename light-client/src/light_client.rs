@@ -138,8 +138,8 @@ impl LightClient {
     ///   should be trusted based on a previously verified light block.
     /// - When doing _forward_ verification, the Scheduler component decides which height to try to
     ///   verify next, in case the current block pass verification but cannot be trusted yet.
-    /// - When doing _backward_ verification, the Hasher component is used to determine
-    ///   whether the `last_block_id` hash of a block matches the hash of the block right below it.
+    /// - When doing _backward_ verification, the Hasher component is used to determine whether the
+    ///   `last_block_id` hash of a block matches the hash of the block right below it.
     ///
     /// ## Implements
     /// - [LCV-DIST-SAFE.1]

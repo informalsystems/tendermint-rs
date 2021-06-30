@@ -1,6 +1,6 @@
 use crate::chain::Id as ChainId;
+use crate::error::{self, Error};
 use crate::{block, Time};
-use crate::{Error, Kind::*};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::CanonicalVote as RawCanonicalVote;
@@ -37,12 +37,13 @@ impl TryFrom<RawCanonicalVote> for CanonicalVote {
 
     fn try_from(value: RawCanonicalVote) -> Result<Self, Self::Error> {
         if value.timestamp.is_none() {
-            return Err(NoTimestamp.into());
+            return Err(error::missing_timestamp_error());
         }
-        if value.round > i32::MAX as i64 {
-            // CanonicalVote uses sfixed64, Vote uses int32. They translate to u64 vs i32 in Rust.
-            return Err(IntegerOverflow.into());
-        }
+        let _val: i32 = value
+            .round
+            .try_into()
+            .map_err(error::integer_overflow_error)?;
+
         // If the Hash is empty in BlockId, the BlockId should be empty.
         // See: https://github.com/informalsystems/tendermint-rs/issues/663
         let block_id = value.block_id.filter(|i| !i.hash.is_empty());
@@ -50,8 +51,8 @@ impl TryFrom<RawCanonicalVote> for CanonicalVote {
             vote_type: value.r#type.try_into()?,
             height: value.height.try_into()?,
             round: (value.round as i32).try_into()?,
-            block_id: block_id.map(TryInto::try_into).transpose()?,
-            timestamp: value.timestamp.map(TryInto::try_into).transpose()?,
+            block_id: block_id.map(|b| b.try_into()).transpose()?,
+            timestamp: value.timestamp.map(|t| t.into()),
             chain_id: ChainId::try_from(value.chain_id)?,
         })
     }

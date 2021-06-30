@@ -5,7 +5,7 @@
 //!
 //! <https://tendermint.com/docs/spec/abci/apps.html#gas>
 
-use crate::{Error, Kind};
+use crate::error::{self, Error};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     fmt::{self, Display},
@@ -45,7 +45,12 @@ impl FromStr for Gas {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        Ok(Self::from(s.parse::<u64>().map_err(|_| Kind::Parse)?))
+        let res = s
+            .parse::<u64>()
+            .map_err(|e| error::parse_int_error(s.to_string(), e))?
+            .into();
+
+        Ok(res)
     }
 }
 
