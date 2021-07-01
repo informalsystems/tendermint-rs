@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    errors::{Error, ErrorExt, ErrorKind},
+    errors::{Error, ErrorDetail, ErrorExt},
     operations::{Hasher, ProdHasher},
     state::State,
     store::memory::MemoryStore,
@@ -31,9 +31,9 @@ pub enum Fork {
         witness: LightBlock,
     },
     /// The node has been deemed faulty for this `LightBlock`
-    Faulty(LightBlock, ErrorKind),
+    Faulty(LightBlock, ErrorDetail),
     /// The node has timed out
-    Timeout(PeerId, ErrorKind),
+    Timeout(PeerId, ErrorDetail),
 }
 
 /// Interface for a fork detector
@@ -122,16 +122,16 @@ impl ForkDetector for ProdForkDetector {
                     primary: verified_block.clone(),
                     witness: witness_block,
                 }),
-                Err(e) if e.kind().has_expired() => {
+                Err(e) if e.detail.has_expired() => {
                     forks.push(Fork::Forked {
                         primary: verified_block.clone(),
                         witness: witness_block,
                     });
                 }
-                Err(e) if e.kind().is_timeout() => {
-                    forks.push(Fork::Timeout(witness_block.provider, e.kind().clone()))
+                Err(e) if e.detail.is_timeout() => {
+                    forks.push(Fork::Timeout(witness_block.provider, e.detail.clone()))
                 }
-                Err(e) => forks.push(Fork::Faulty(witness_block, e.kind().clone())),
+                Err(e) => forks.push(Fork::Faulty(witness_block, e.detail.clone())),
             }
         }
 

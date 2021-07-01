@@ -1,8 +1,7 @@
 //! Provides a peer list for use within the `Supervisor`
 
 use crate::{
-    bail,
-    errors::{Error, ErrorKind},
+    errors::{self as error, Error},
     types::PeerId,
 };
 
@@ -149,9 +148,9 @@ impl<T> PeerList<T> {
             self.witnesses.remove(&new_primary);
             Ok(new_primary)
         } else if let Some(err) = primary_error {
-            bail!(ErrorKind::NoWitnessLeft.context(err))
+            Err(err)
         } else {
-            bail!(ErrorKind::NoWitnessLeft)
+            Err(error::no_witnesses_left_error())
         }
     }
 
@@ -239,6 +238,7 @@ impl<T> PeerListBuilder<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::errors::ErrorDetail;
 
     trait BTreeSetExt<T> {
         fn to_vec(&self) -> Vec<T>;
@@ -307,10 +307,17 @@ mod tests {
         let mut peer_list = dummy_peer_list();
         let _ = peer_list.replace_faulty_primary(None).unwrap();
         let new_primary = peer_list.replace_faulty_primary(None);
-        assert_eq!(
-            new_primary.err().map(|e| e.kind().clone()),
-            Some(ErrorKind::NoWitnessLeft)
-        );
+        match new_primary {
+            Err(e) => match e.detail {
+                ErrorDetail::NoWitnessesLeft(_) => {}
+                _ => panic!("expected NoWitnessesLeft error"),
+            },
+            _ => panic!("expected NoWitnessesLeft error"),
+        }
+        // assert_eq!(
+        //     new_primary.err().map(|e| e.kind().clone()),
+        //     Some(error::no_witnesses_left_error())
+        // );
     }
 
     #[test]
