@@ -2,6 +2,7 @@
 
 use flex_error::define_error;
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 
 use crate::errors::ErrorExt;
 use crate::operations::voting_power::VotingPowerTally;
@@ -172,7 +173,7 @@ impl ErrorExt for VerificationErrorDetail {
         matches!(self, Self::NotWithinTrustPeriod { .. })
     }
 
-    fn is_timeout(&self) -> bool {
-        false
+    fn is_timeout(&self) -> Option<Duration> {
+        None
     }
 }

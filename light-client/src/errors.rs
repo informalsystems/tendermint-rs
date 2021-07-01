@@ -1,10 +1,10 @@
 //! Toplevel errors raised by the light client.
 
 use std::fmt::Debug;
+use std::time::Duration;
 
 use crate::operations::voting_power::VotingPowerTally;
 use crossbeam_channel as crossbeam;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     components::io::IoError,
@@ -15,10 +15,10 @@ use crate::{
 use flex_error::{define_error, DisplayError, TraceError};
 
 define_error! {
-    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+    #[derive(Debug)]
     Error {
         Io
-            [ DisplayError<IoError> ]
+            [ IoError ]
             | _ | { "io error" },
 
         Store
@@ -127,7 +127,7 @@ pub trait ErrorExt {
 
     /// Whether this error means that a timeout occured when
     /// querying a node.
-    fn is_timeout(&self) -> bool;
+    fn is_timeout(&self) -> Option<Duration>;
 }
 
 impl ErrorExt for ErrorDetail {
@@ -148,11 +148,11 @@ impl ErrorExt for ErrorDetail {
     }
 
     /// Whether this error means that a timeout occured when querying a node.
-    fn is_timeout(&self) -> bool {
+    fn is_timeout(&self) -> Option<Duration> {
         if let Self::Io(e) = self {
             e.source.is_timeout()
         } else {
-            false
+            None
         }
     }
 }

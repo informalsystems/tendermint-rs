@@ -4,7 +4,7 @@ use crate::account;
 use crate::vote;
 use alloc::string::String;
 use core::num::TryFromIntError;
-use flex_error::{define_error, DisplayError};
+use flex_error::{define_error, DisplayError, DisplayOnly};
 use std::io::Error as IoError;
 use time::OutOfRangeError;
 
@@ -19,12 +19,12 @@ define_error! {
             |e| { format_args!("invalid key: {}", e) },
 
         Io
-            [ DisplayError<IoError> ]
+            [ DisplayOnly<IoError> ]
             |_| { format_args!("I/O error") },
 
         FileIo
             { path: String }
-            [ DisplayError<IoError> ]
+            [ DisplayOnly<IoError> ]
             |e| { format_args!("failed to open file: {}", e.path) },
 
         Length
@@ -184,7 +184,7 @@ define_error! {
             |_| { format_args!("subtle encoding error") },
 
         SerdeJson
-            [ DisplayError<serde_json::Error> ]
+            [ DisplayOnly<serde_json::Error> ]
             |_| { format_args!("serde json error") },
 
         Toml

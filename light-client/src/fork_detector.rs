@@ -1,7 +1,5 @@
 //! Fork detection data structures and implementation.
 
-use serde::{Deserialize, Serialize};
-
 use crate::{
     errors::{Error, ErrorDetail, ErrorExt},
     operations::{Hasher, ProdHasher},
@@ -12,7 +10,7 @@ use crate::{
 };
 
 /// Result of fork detection
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug)]
 pub enum ForkDetection {
     /// One or more forks have been detected
     Detected(Vec<Fork>),
@@ -21,7 +19,7 @@ pub enum ForkDetection {
 }
 
 /// Types of fork
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug)]
 pub enum Fork {
     /// An actual fork was found for this `LightBlock`
     Forked {
@@ -128,10 +126,13 @@ impl ForkDetector for ProdForkDetector {
                         witness: witness_block,
                     });
                 }
-                Err(e) if e.detail.is_timeout() => {
-                    forks.push(Fork::Timeout(witness_block.provider, e.detail.clone()))
+                Err(e) => {
+                    if e.detail.is_timeout().is_some() {
+                        forks.push(Fork::Timeout(witness_block.provider, e.detail))
+                    } else {
+                        forks.push(Fork::Faulty(witness_block, e.detail))
+                    }
                 }
-                Err(e) => forks.push(Fork::Faulty(witness_block, e.detail.clone())),
             }
         }
 

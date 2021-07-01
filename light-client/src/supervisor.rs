@@ -423,12 +423,11 @@ impl Handle for SupervisorHandle {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::components::io::IoError;
     use crate::light_client::Options;
     use crate::operations::ProdHasher;
     use crate::{
         components::{
-            io::{AtHeight, Io},
+            io::{self, AtHeight, Io},
             scheduler,
             verifier::ProdVerifier,
         },
@@ -650,12 +649,12 @@ mod tests {
             Err(ErrorReport {
                 detail: error::ErrorDetail::Io(e),
                 trace: _,
-            }) => {
-                assert_eq!(
-                    e.source,
-                    IoError::RpcError(rpc::Error::new(Code::InvalidRequest, None,))
-                );
-            }
+            }) => match e.source {
+                io::IoErrorDetail::Rpc(e) => {
+                    assert_eq!(e.source, rpc::Error::new(Code::InvalidRequest, None))
+                }
+                _ => panic!("expected Rpc error"),
+            },
             _ => panic!("expected NoWitnesses error"),
         }
     }

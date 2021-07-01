@@ -1,6 +1,9 @@
 //! Fork evidence data structures and interfaces.
 
-use crate::{components::io::IoError, types::PeerId};
+use crate::{
+    components::io::{self, IoError},
+    types::PeerId,
+};
 
 use tendermint::abci::transaction::Hash;
 
@@ -44,15 +47,13 @@ mod prod {
         fn report(&self, e: Evidence, peer: PeerId) -> Result<Hash, IoError> {
             let client = self.rpc_client_for(peer)?;
 
-            let res = block_on(
+            let response = block_on(
                 self.timeout,
                 async move { client.broadcast_evidence(e).await },
-            )?;
+            )?
+            .map_err(io::rpc_error)?;
 
-            match res {
-                Ok(response) => Ok(response.hash),
-                Err(err) => Err(IoError::RpcError(err)),
-            }
+            Ok(response.hash)
         }
     }
 
@@ -70,7 +71,7 @@ mod prod {
         #[pre(self.peer_map.contains_key(&peer))]
         fn rpc_client_for(&self, peer: PeerId) -> Result<rpc::HttpClient, IoError> {
             let peer_addr = self.peer_map.get(&peer).unwrap().to_owned();
-            Ok(rpc::HttpClient::new(peer_addr).map_err(IoError::from)?)
+            Ok(rpc::HttpClient::new(peer_addr).map_err(io::rpc_error)?)
         }
     }
 }
