@@ -96,7 +96,7 @@ impl CommitValidator for ProdCommitValidator {
 
             if validator_set.validator(*validator_address) == None {
                 return Err(error::faulty_signer_error(
-                    validator_address.clone(),
+                    *validator_address,
                     self.hasher.hash_validator_set(validator_set),
                 ));
             }

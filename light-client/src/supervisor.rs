@@ -390,7 +390,7 @@ impl Handle for SupervisorHandle {
             .send(HandleInput::LatestTrusted(sender))
             .map_err(error::send_error)?;
 
-        Ok(receiver.recv().map_err(error::recv_error)?)
+        receiver.recv().map_err(error::recv_error)
     }
 
     fn latest_status(&self) -> Result<LatestStatus, Error> {
@@ -398,7 +398,7 @@ impl Handle for SupervisorHandle {
         self.sender
             .send(HandleInput::GetStatus(sender))
             .map_err(error::send_error)?;
-        Ok(receiver.recv().map_err(error::recv_error)?)
+        receiver.recv().map_err(error::recv_error)
     }
 
     fn verify_to_highest(&self) -> Result<LightBlock, Error> {
@@ -416,7 +416,7 @@ impl Handle for SupervisorHandle {
             .send(HandleInput::Terminate(sender))
             .map_err(error::send_error)?;
 
-        Ok(receiver.recv().map_err(error::recv_error)?)
+        receiver.recv().map_err(error::recv_error)
     }
 }
 
@@ -710,7 +710,7 @@ mod tests {
             None,
         );
 
-        let peer_list = make_peer_list(Some(primary), Some(vec![witness.clone()]), get_time(11));
+        let peer_list = make_peer_list(Some(primary), Some(vec![witness]), get_time(11));
 
         let (result, _) = run_bisection_test(peer_list, 5);
 

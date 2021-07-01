@@ -163,7 +163,7 @@ define_error! {
 impl ErrorExt for VerificationErrorDetail {
     fn not_enough_trust(&self) -> Option<VotingPowerTally> {
         match &self {
-            Self::NotEnoughTrust(e) => Some(e.tally.clone()),
+            Self::NotEnoughTrust(e) => Some(e.tally),
             _ => None,
         }
     }
