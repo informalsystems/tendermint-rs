@@ -113,10 +113,11 @@ impl Io for MockIo {
             AtHeight::At(height) => height,
         };
 
-        self.light_blocks
-            .get(&height)
-            .cloned()
-            .ok_or_else(|| io::rpc_error(rpc::Error::new((-32600).into(), None)))
+        self.light_blocks.get(&height).cloned().ok_or_else(|| {
+            io::rpc_error(rpc::error::response_error(
+                rpc::response_error::ResponseError::new((-32600).into(), None),
+            ))
+        })
     }
 }
 

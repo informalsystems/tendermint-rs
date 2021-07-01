@@ -441,8 +441,10 @@ mod tests {
     use tendermint::block::Height;
     use tendermint::evidence::Duration as DurationStr;
     use tendermint::trust_threshold::TrustThresholdFraction;
-    use tendermint_rpc as rpc;
-    use tendermint_rpc::error::Code;
+    use tendermint_rpc::{
+        self as rpc,
+        response_error::{Code, ResponseError},
+    };
     use tendermint_testgen::helpers::get_time;
     use tendermint_testgen::{
         Commit, Generator, Header, LightBlock as TestgenLightBlock, LightChain, ValidatorSet,
@@ -650,9 +652,12 @@ mod tests {
                 detail: error::ErrorDetail::Io(e),
                 trace: _,
             }) => match e.source {
-                io::IoErrorDetail::Rpc(e) => {
-                    assert_eq!(e.source, rpc::Error::new(Code::InvalidRequest, None))
-                }
+                io::IoErrorDetail::Rpc(e) => match e.source {
+                    rpc::error::ErrorDetail::Response(e) => {
+                        assert_eq!(e.source, ResponseError::new(Code::InvalidRequest, None))
+                    }
+                    _ => todo!(),
+                },
                 _ => panic!("expected Rpc error"),
             },
             _ => panic!("expected NoWitnesses error"),

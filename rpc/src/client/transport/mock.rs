@@ -6,7 +6,7 @@ use crate::client::transport::router::SubscriptionRouter;
 use crate::event::Event;
 use crate::query::Query;
 use crate::utils::uuid_str;
-use crate::{Client, Error, Method, Request, Response, Result, Subscription, SubscriptionClient};
+use crate::{error, Client, Method, Request, Response, Result, Subscription, SubscriptionClient};
 use async_trait::async_trait;
 use std::collections::HashMap;
 
@@ -58,9 +58,9 @@ impl<M: MockRequestMatcher> Client for MockClient<M> {
     where
         R: Request,
     {
-        self.matcher.response_for(request).ok_or_else(|| {
-            Error::client_internal_error("no matching response for incoming request")
-        })?
+        self.matcher
+            .response_for(request)
+            .ok_or_else(error::mismatch_response_error)?
     }
 }
 
@@ -199,9 +199,8 @@ pub trait MockRequestMatcher: Send + Sync {
 /// requests with specific methods to responses.
 ///
 /// [`MockRequestMatcher`]: trait.MockRequestMatcher.html
-#[derive(Debug)]
 pub struct MockRequestMethodMatcher {
-    mappings: HashMap<Method, Result<String>>,
+    mappings: HashMap<Method, Box<dyn Fn() -> Result<String> + Send + Sync>>,
 }
 
 impl MockRequestMatcher for MockRequestMethodMatcher {
@@ -209,9 +208,9 @@ impl MockRequestMatcher for MockRequestMethodMatcher {
     where
         R: Request,
     {
-        self.mappings.get(&request.method()).map(|res| match res {
+        self.mappings.get(&request.method()).map(|res| match res() {
             Ok(json) => R::Response::from_string(json),
-            Err(e) => Err(e.clone()),
+            Err(e) => Err(e),
         })
     }
 }
@@ -230,8 +229,12 @@ impl MockRequestMethodMatcher {
     ///
     /// Successful responses must be JSON-encoded.
     #[allow(dead_code)]
-    pub fn map(mut self, method: Method, response: Result<String>) -> Self {
-        self.mappings.insert(method, response);
+    pub fn map(
+        mut self,
+        method: Method,
+        response: impl Fn() -> Result<String> + Send + Sync + 'static,
+    ) -> Self {
+        self.mappings.insert(method, Box::new(response));
         self
     }
 }
@@ -260,9 +263,10 @@ mod test {
     async fn mock_client() {
         let abci_info_fixture = read_json_fixture("abci_info").await;
         let block_fixture = read_json_fixture("block").await;
+
         let matcher = MockRequestMethodMatcher::default()
-            .map(Method::AbciInfo, Ok(abci_info_fixture))
-            .map(Method::Block, Ok(block_fixture));
+            .map(Method::AbciInfo, move || Ok(abci_info_fixture.clone()))
+            .map(Method::Block, move || Ok(block_fixture.clone()));
         let (client, driver) = MockClient::new(matcher);
         let driver_hdl = tokio::spawn(async move { driver.run().await });
 

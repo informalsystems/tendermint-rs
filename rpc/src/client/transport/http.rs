@@ -1,7 +1,7 @@
 //! HTTP-based transport for Tendermint RPC Client.
 
 use crate::client::Client;
-use crate::{Error, Result, Scheme, SimpleRequest, Url};
+use crate::{error, Error, Result, Scheme, SimpleRequest, Url};
 use async_trait::async_trait;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
@@ -101,10 +101,7 @@ impl TryFrom<Url> for HttpClientUrl {
     fn try_from(value: Url) -> Result<Self> {
         match value.scheme() {
             Scheme::Http | Scheme::Https => Ok(Self(value)),
-            _ => Err(Error::invalid_params(&format!(
-                "cannot use URL {} with HTTP clients",
-                value
-            ))),
+            _ => Err(error::invalid_url_error(value)),
         }
     }
 }
@@ -136,9 +133,7 @@ impl TryFrom<net::Address> for HttpClientUrl {
                 host,
                 port,
             } => format!("http://{}:{}", host, port).parse(),
-            net::Address::Unix { .. } => Err(Error::invalid_params(
-                "only TCP-based node addresses are supported",
-            )),
+            net::Address::Unix { .. } => Err(error::invalid_network_address_error()),
         }
     }
 }
@@ -153,12 +148,16 @@ impl TryFrom<HttpClientUrl> for hyper::Uri {
     type Error = Error;
 
     fn try_from(value: HttpClientUrl) -> Result<Self> {
-        Ok(value.0.to_string().parse()?)
+        value
+            .0
+            .to_string()
+            .parse()
+            .map_err(error::invalid_uri_error)
     }
 }
 
 mod sealed {
-    use crate::{Error, Response, Result, SimpleRequest};
+    use crate::{error, Response, Result, SimpleRequest};
     use hyper::body::Buf;
     use hyper::client::connect::Connect;
     use hyper::client::HttpConnector;
@@ -189,7 +188,11 @@ mod sealed {
             R: SimpleRequest,
         {
             let request = self.build_request(request)?;
-            let response = self.inner.request(request).await?;
+            let response = self
+                .inner
+                .request(request)
+                .await
+                .map_err(error::hyper_error)?;
             let response_body = response_to_string(response).await?;
             tracing::debug!("Incoming response: {}", response_body);
             R::Response::from_string(&response_body)
@@ -207,7 +210,8 @@ mod sealed {
             let mut request = hyper::Request::builder()
                 .method("POST")
                 .uri(&self.uri)
-                .body(hyper::Body::from(request_body.into_bytes()))?;
+                .body(hyper::Body::from(request_body.into_bytes()))
+                .map_err(error::http_error)?;
 
             {
                 let headers = request.headers_mut();
@@ -251,7 +255,8 @@ mod sealed {
 
         pub fn new_http_proxy(uri: Uri, proxy_uri: Uri) -> Result<Self> {
             let proxy = Proxy::new(Intercept::All, proxy_uri);
-            let proxy_connector = ProxyConnector::from_proxy(HttpConnector::new(), proxy)?;
+            let proxy_connector =
+                ProxyConnector::from_proxy(HttpConnector::new(), proxy).map_err(error::io_error)?;
             Ok(Self::HttpProxy(HyperClient::new(
                 uri,
                 hyper::Client::builder().build(proxy_connector),
@@ -261,7 +266,9 @@ mod sealed {
         pub fn new_https_proxy(uri: Uri, proxy_uri: Uri) -> Result<Self> {
             let proxy = Proxy::new(Intercept::All, proxy_uri);
             let proxy_connector =
-                ProxyConnector::from_proxy(HttpsConnector::with_native_roots(), proxy)?;
+                ProxyConnector::from_proxy(HttpsConnector::with_native_roots(), proxy)
+                    .map_err(error::io_error)?;
+
             Ok(Self::HttpsProxy(HyperClient::new(
                 uri,
                 hyper::Client::builder().build(proxy_connector),
@@ -284,10 +291,12 @@ mod sealed {
     async fn response_to_string(response: hyper::Response<hyper::Body>) -> Result<String> {
         let mut response_body = String::new();
         hyper::body::aggregate(response.into_body())
-            .await?
+            .await
+            .map_err(error::hyper_error)?
             .reader()
             .read_to_string(&mut response_body)
-            .map_err(|_| Error::client_internal_error("failed to read response body to string"))?;
+            .map_err(error::io_error)?;
+
         Ok(response_body)
     }
 }

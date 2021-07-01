@@ -3,7 +3,6 @@ use std::{
     time::Duration,
 };
 
-use anomaly::BoxError;
 use gumdrop::Options;
 
 use tendermint::Hash;
@@ -84,7 +83,7 @@ fn make_instance(
     addr: tendermint_rpc::Url,
     db_path: impl AsRef<Path>,
     opts: &SyncOpts,
-) -> Result<Instance, BoxError> {
+) -> Result<Instance, Box<dyn std::error::Error>> {
     let light_store = SledStore::open(db_path)?;
     let rpc_client = rpc::HttpClient::new(addr).unwrap();
     let options = light_client::Options {
@@ -105,7 +104,7 @@ fn make_instance(
     Ok(builder.build())
 }
 
-fn sync_cmd(opts: SyncOpts) -> Result<(), BoxError> {
+fn sync_cmd(opts: SyncOpts) -> Result<(), Box<dyn std::error::Error>> {
     let primary: PeerId = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap();
     let witness: PeerId = "CEFEEDBADFADAD0C0CEEFACADE0ADEADBEEFC0FF".parse().unwrap();
 

@@ -1,6 +1,6 @@
 //! Provides an interface and a default implementation of the `Io` component
 
-use flex_error::{define_error, DisplayOnly, TraceClone, TraceError};
+use flex_error::{define_error, DisplayOnly, TraceError};
 use std::time::Duration;
 
 #[cfg(feature = "rpc-client")]
@@ -32,7 +32,7 @@ define_error! {
     #[derive(Debug)]
     IoError {
         Rpc
-            [ TraceClone<rpc::Error> ]
+            [ rpc::Error ]
             | _ | { "rpc error" },
 
         InvalidHeight

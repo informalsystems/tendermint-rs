@@ -14,7 +14,7 @@ pub use transport::websocket::{WebSocketClient, WebSocketClientDriver, WebSocket
 
 use crate::endpoint::validators::DEFAULT_VALIDATORS_PER_PAGE;
 use crate::endpoint::*;
-use crate::error::Error;
+use crate::error;
 use crate::paging::Paging;
 use crate::query::Query;
 use crate::{Order, Result, SimpleRequest};
@@ -241,10 +241,7 @@ pub trait Client {
 
         while self.health().await.is_err() {
             if attempts_remaining == 0 {
-                return Err(Error::client_internal_error(format!(
-                    "timed out waiting for healthy response after {}ms",
-                    timeout.as_millis()
-                )));
+                return Err(error::timeout_error(timeout));
             }
 
             attempts_remaining -= 1;
