@@ -1,12 +1,5 @@
 //! JSON-RPC error types
 
-// #[cfg(feature = "websocket-client")]
-// use async_tungstenite::tungstenite::Error as WSError;
-
-// use serde::{Deserialize, Deserializer, Serialize, Serializer};
-// use std::fmt::{self, Display};
-// use thiserror::Error;
-
 use flex_error::{define_error, DisplayError, DisplayOnly};
 use http::uri::InvalidUri;
 use http::Error as HttpError;

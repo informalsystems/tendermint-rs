@@ -33,7 +33,6 @@ rustdoc-args = ["--cfg", "docsrs"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-anomaly = "0.2"
 async-trait = "0.1"
 bytes = "1.0"
 chrono = { version = "0.4.19", features = ["serde"] }
@@ -52,7 +51,6 @@ sha2 = { version = "0.9", default-features = false }
 signature = "1.2"
 subtle = "2"
 subtle-encoding = { version = "0.5", features = ["bech32-preview"] }
-thiserror = "1"
 tendermint-proto = { version = "0.20.0", path = "../proto" }
 toml = { version = "0.5" }
 url = { version = "2.2" }

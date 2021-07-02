@@ -1,22 +1,30 @@
 //! tendermint-abci errors
 
-use thiserror::Error;
+use flex_error::define_error;
+use tendermint_proto::abci::response::Value;
 
-/// Errors that can be produced by tendermint-abci.
-#[derive(Debug, Error)]
-pub enum Error {
-    #[error("server connection terminated")]
-    ServerConnectionTerminated,
+define_error! {
+    Error {
+        ServerConnectionTerminated
+            | _ | { "server connection terminated" },
 
-    #[error("malformed server response")]
-    MalformedServerResponse,
+        MalformedServerResponse
+            | _ | { "malformed server response" },
 
-    #[error("unexpected server response type: expected {0}, but got {1:?}")]
-    UnexpectedServerResponseType(String, tendermint_proto::abci::response::Value),
+        UnexpectedServerResponseType
+            {
+                expected: String,
+                got: Value,
+            }
+            | e | {
+                format_args!("unexpected server response type: expected {0}, but got {1:?}",
+                    e.expected, e.got)
+            },
 
-    #[error("channel send error: {0}")]
-    ChannelSend(String),
+        ChannelSend
+            | _ | { "channel send error" },
 
-    #[error("channel receive error: {0}")]
-    ChannelRecv(String),
+        ChannelRecv
+            | _ | { "channel recv error" },
+    }
 }
