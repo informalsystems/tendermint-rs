@@ -679,12 +679,27 @@ mod tests {
 
         let (result, _) = run_bisection_test(peer_list, 10);
 
+        // FIXME: currently this test does not test what it is supposed to test,
+        // because MockIo returns an InvalidRequest error. This was previously
+        // treated as a NoWitnessLeft error, which was misclassified.
         match result {
             Err(ErrorReport {
-                detail: error::ErrorDetail::NoWitnessesLeft(_),
+                detail: error::ErrorDetail::Io(e),
                 trace: _,
-            }) => {}
-            _ => panic!("expected NoWitnessesLeft error"),
+            }) => match e.source {
+                crate::components::io::IoErrorDetail::Rpc(e) => match e.source {
+                    rpc::error::ErrorDetail::Response(e) => {
+                        assert_eq!(e.source.code(), rpc::Code::InvalidRequest)
+                    }
+                    _ => {
+                        panic!("expected Response error, instead got {:?}", e)
+                    }
+                },
+                _ => {
+                    panic!("expected Rpc error, instead got {:?}", e)
+                }
+            },
+            _ => panic!("expected Io error, instead got {:?}", result),
         }
     }
 
