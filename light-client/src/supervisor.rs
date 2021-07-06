@@ -622,11 +622,8 @@ mod tests {
         let (result, _) = run_bisection_test(peer_list, 10);
 
         match result {
-            Err(ErrorReport {
-                detail: error::ErrorDetail::NoWitnesses(_),
-                trace: _,
-            }) => {}
-            _ => panic!("expected NoWitnesses error"),
+            Err(ErrorReport(error::ErrorDetail::NoWitnesses(_), _)) => {}
+            _ => panic!("expected NoWitnesses error, instead got {:?}", result),
         }
     }
 
@@ -648,10 +645,7 @@ mod tests {
         let (result, _) = run_bisection_test(peer_list, 10);
 
         match result {
-            Err(ErrorReport {
-                detail: error::ErrorDetail::Io(e),
-                trace: _,
-            }) => match e.source {
+            Err(ErrorReport(error::ErrorDetail::Io(e), _)) => match e.source {
                 io::IoErrorDetail::Rpc(e) => match e.source {
                     rpc::error::ErrorDetail::Response(e) => {
                         assert_eq!(e.source, ResponseError::new(Code::InvalidRequest, None))
@@ -683,10 +677,7 @@ mod tests {
         // because MockIo returns an InvalidRequest error. This was previously
         // treated as a NoWitnessLeft error, which was misclassified.
         match result {
-            Err(ErrorReport {
-                detail: error::ErrorDetail::Io(e),
-                trace: _,
-            }) => match e.source {
+            Err(ErrorReport(error::ErrorDetail::Io(e), _)) => match e.source {
                 crate::components::io::IoErrorDetail::Rpc(e) => match e.source {
                     rpc::error::ErrorDetail::Response(e) => {
                         assert_eq!(e.source.code(), rpc::Code::InvalidRequest)
@@ -734,10 +725,7 @@ mod tests {
         let (result, _) = run_bisection_test(peer_list, 5);
 
         match result {
-            Err(ErrorReport {
-                detail: error::ErrorDetail::ForkDetected(_),
-                trace: _,
-            }) => {}
+            Err(ErrorReport(error::ErrorDetail::ForkDetected(_), _)) => {}
             _ => panic!("expected ForkDetected error"),
         }
     }

@@ -57,11 +57,8 @@ mod application;
 #[cfg(feature = "client")]
 mod client;
 mod codec;
-mod error;
+pub mod error;
 mod server;
-
-// Re-exported
-pub use eyre::Result;
 
 // Common exports
 pub use application::Application;

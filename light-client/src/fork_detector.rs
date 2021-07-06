@@ -9,6 +9,8 @@ use crate::{
     types::{LightBlock, PeerId, Status},
 };
 
+use flex_error::ErrorReport;
+
 /// Result of fork detection
 #[derive(Debug)]
 pub enum ForkDetection {
@@ -120,17 +122,17 @@ impl ForkDetector for ProdForkDetector {
                     primary: verified_block.clone(),
                     witness: witness_block,
                 }),
-                Err(e) if e.detail.has_expired() => {
+                Err(ErrorReport(e, _)) if e.has_expired() => {
                     forks.push(Fork::Forked {
                         primary: verified_block.clone(),
                         witness: witness_block,
                     });
                 }
-                Err(e) => {
-                    if e.detail.is_timeout().is_some() {
-                        forks.push(Fork::Timeout(witness_block.provider, e.detail))
+                Err(ErrorReport(e, _)) => {
+                    if e.is_timeout().is_some() {
+                        forks.push(Fork::Timeout(witness_block.provider, e))
                     } else {
-                        forks.push(Fork::Faulty(witness_block, e.detail))
+                        forks.push(Fork::Faulty(witness_block, e))
                     }
                 }
             }

@@ -312,10 +312,7 @@ fn incoming_fixtures() {
                 let res = endpoint::block::Response::from_string(&content);
 
                 match res {
-                    Err(ErrorReport {
-                        detail: ErrorDetail::Response(e),
-                        trace: _,
-                    }) => {
+                    Err(ErrorReport(ErrorDetail::Response(e), _)) => {
                         let response = e.source;
                         assert_eq!(response.code(), Code::InternalError);
                         assert_eq!(response.message(), "Internal error");
@@ -734,10 +731,7 @@ fn incoming_fixtures() {
                 let result = endpoint::subscribe::Response::from_string(content);
 
                 match result {
-                    Err(ErrorReport {
-                        detail: ErrorDetail::Response(e),
-                        trace: _,
-                    }) => {
+                    Err(ErrorReport(ErrorDetail::Response(e), _)) => {
                         let response = e.source;
 
                         assert_eq!(response.code(), Code::InternalError);
@@ -751,10 +745,7 @@ fn incoming_fixtures() {
                 let result = endpoint::subscribe::Response::from_string(content);
 
                 match result {
-                    Err(ErrorReport {
-                        detail: ErrorDetail::Response(e),
-                        trace: _,
-                    }) => {
+                    Err(ErrorReport(ErrorDetail::Response(e), _)) => {
                         let response = e.source;
                         assert_eq!(response.code(), Code::ParseError);
                         assert_eq!(response.message(), "Parse error. Invalid JSON");

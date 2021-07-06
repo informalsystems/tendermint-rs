@@ -337,10 +337,7 @@ mod tests {
         // 2. ensure header with non-monotonic bft time fails
         let result_err = vp.is_monotonic_bft_time(&header_one, &header_two);
         match result_err {
-            Err(ErrorReport {
-                detail: VerificationErrorDetail::NonMonotonicBftTime(e),
-                trace: _,
-            }) => {
+            Err(ErrorReport(VerificationErrorDetail::NonMonotonicBftTime(e), _)) => {
                 assert_eq!(e.header_bft_time, header_one.time);
                 assert_eq!(e.trusted_header_bft_time, header_two.time);
             }
@@ -364,10 +361,7 @@ mod tests {
         let result_err = vp.is_monotonic_height(&header_one, &header_two);
 
         match result_err {
-            Err(ErrorReport {
-                detail: VerificationErrorDetail::NonIncreasingHeight(e),
-                trace: _,
-            }) => {
+            Err(ErrorReport(VerificationErrorDetail::NonIncreasingHeight(e), _)) => {
                 assert_eq!(e.got, header_one.height);
                 assert_eq!(e.expected, header_two.height.increment());
             }
@@ -396,10 +390,7 @@ mod tests {
 
         let expires_at = header.time + trusting_period;
         match result_err {
-            Err(ErrorReport {
-                detail: VerificationErrorDetail::NotWithinTrustPeriod(e),
-                trace: _,
-            }) => {
+            Err(ErrorReport(VerificationErrorDetail::NotWithinTrustPeriod(e), _)) => {
                 assert_eq!(e.expires_at, expires_at);
                 assert_eq!(e.now, now);
             }
@@ -425,10 +416,7 @@ mod tests {
         let result_err = vp.is_header_from_past(&header, one_second, now);
 
         match result_err {
-            Err(ErrorReport {
-                detail: VerificationErrorDetail::HeaderFromTheFuture(e),
-                trace: _,
-            }) => {
+            Err(ErrorReport(VerificationErrorDetail::HeaderFromTheFuture(e), _)) => {
                 assert_eq!(e.header_time, header.time);
                 assert_eq!(e.now, now);
             }
@@ -465,10 +453,7 @@ mod tests {
         let val_sets_match_err = vp.validator_sets_match(&light_block, &hasher);
 
         match val_sets_match_err {
-            Err(ErrorReport {
-                detail: VerificationErrorDetail::InvalidValidatorSet(e),
-                trace: _,
-            }) => {
+            Err(ErrorReport(VerificationErrorDetail::InvalidValidatorSet(e), _)) => {
                 assert_eq!(
                     e.header_validators_hash,
                     light_block.signed_header.header.validators_hash
@@ -486,10 +471,7 @@ mod tests {
         let next_val_sets_match_err = vp.next_validators_match(&light_block, &hasher);
 
         match next_val_sets_match_err {
-            Err(ErrorReport {
-                detail: VerificationErrorDetail::InvalidNextValidatorSet(e),
-                trace: _,
-            }) => {
+            Err(ErrorReport(VerificationErrorDetail::InvalidNextValidatorSet(e), _)) => {
                 assert_eq!(
                     e.header_next_validators_hash,
                     light_block.signed_header.header.next_validators_hash
@@ -529,10 +511,7 @@ mod tests {
         let header_hash = hasher.hash_header(&signed_header.header);
 
         match result_err {
-            Err(ErrorReport {
-                detail: VerificationErrorDetail::InvalidCommitValue(e),
-                trace: _,
-            }) => {
+            Err(ErrorReport(VerificationErrorDetail::InvalidCommitValue(e), _)) => {
                 assert_eq!(e.header_hash, header_hash);
                 assert_eq!(e.commit_hash, signed_header.commit.block_id.hash);
             }
@@ -564,10 +543,7 @@ mod tests {
         let mut result_err = vp.valid_commit(&signed_header, &val_set, &commit_validator);
 
         match result_err {
-            Err(ErrorReport {
-                detail: VerificationErrorDetail::NoSignatureForCommit(_),
-                trace: _,
-            }) => {}
+            Err(ErrorReport(VerificationErrorDetail::NoSignatureForCommit(_), _)) => {}
             _ => panic!("expected ImplementationSpecific error"),
         }
 
@@ -579,10 +555,7 @@ mod tests {
         result_err = vp.valid_commit(&signed_header, &val_set, &commit_validator);
 
         match result_err {
-            Err(ErrorReport {
-                detail: VerificationErrorDetail::MismatchPreCommitLength(e),
-                trace: _,
-            }) => {
+            Err(ErrorReport(VerificationErrorDetail::MismatchPreCommitLength(e), _)) => {
                 assert_eq!(e.pre_commit_length, signed_header.commit.signatures.len());
                 assert_eq!(e.validator_length, val_set.validators().len());
             }
@@ -615,10 +588,7 @@ mod tests {
         );
 
         match result_err {
-            Err(ErrorReport {
-                detail: VerificationErrorDetail::FaultySigner(e),
-                trace: _,
-            }) => {
+            Err(ErrorReport(VerificationErrorDetail::FaultySigner(e), _)) => {
                 assert_eq!(
                     e.signer,
                     signed_header
@@ -668,10 +638,7 @@ mod tests {
         let result_err = vp.valid_next_validator_set(&light_block3, &light_block2);
 
         match result_err {
-            Err(ErrorReport {
-                detail: VerificationErrorDetail::InvalidNextValidatorSet(e),
-                trace: _,
-            }) => {
+            Err(ErrorReport(VerificationErrorDetail::InvalidNextValidatorSet(e), _)) => {
                 assert_eq!(
                     e.header_next_validators_hash,
                     light_block3.signed_header.header.validators_hash
@@ -726,10 +693,7 @@ mod tests {
         );
 
         match result_err {
-            Err(ErrorReport {
-                detail: VerificationErrorDetail::NotEnoughTrust(e),
-                trace: _,
-            }) => {
+            Err(ErrorReport(VerificationErrorDetail::NotEnoughTrust(e), _)) => {
                 assert_eq!(
                     e.tally,
                     VotingPowerTally {
@@ -773,10 +737,7 @@ mod tests {
         let trust_threshold = TrustThreshold::TWO_THIRDS;
 
         match result_err {
-            Err(ErrorReport {
-                detail: VerificationErrorDetail::InsufficientSignersOverlap(e),
-                trace: _,
-            }) => {
+            Err(ErrorReport(VerificationErrorDetail::InsufficientSignersOverlap(e), _)) => {
                 assert_eq!(
                     e.tally,
                     VotingPowerTally {

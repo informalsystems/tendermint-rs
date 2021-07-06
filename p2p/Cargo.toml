@@ -39,7 +39,7 @@ x25519-dalek = "1.1"
 zeroize = "1"
 signature = "1.3.0"
 aead = "0.4.1"
-flex-error = "0.2.1"
+flex-error = "0.3.0"
 
 # path dependencies
 tendermint = { path = "../tendermint", version = "0.20.0" }

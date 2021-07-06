@@ -4,12 +4,13 @@
 //!
 //! [tsp]: https://docs.tendermint.com/master/spec/abci/client-server.html#tsp
 
-use crate::Result;
 use bytes::{Buf, BufMut, BytesMut};
 use prost::Message;
 use std::io::{Read, Write};
 use std::marker::PhantomData;
 use tendermint_proto::abci::{Request, Response};
+
+use crate::error::{self, Error};
 
 /// The maximum number of bytes we expect in a varint. We use this to check if
 /// we're encountering a decoding error for a varint.
@@ -60,7 +61,7 @@ where
     S: Read,
     I: Message + Default,
 {
-    type Item = Result<I>;
+    type Item = Result<I, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -75,7 +76,7 @@ where
             // more
             let bytes_read = match self.stream.read(self.read_window.as_mut()) {
                 Ok(br) => br,
-                Err(e) => return Some(Err(e.into())),
+                Err(e) => return Some(Err(error::io_error(e))),
             };
             if bytes_read == 0 {
                 // The underlying stream terminated
@@ -93,31 +94,38 @@ where
     O: Message,
 {
     /// Send a message using this codec.
-    pub fn send(&mut self, message: O) -> Result<()> {
+    pub fn send(&mut self, message: O) -> Result<(), Error> {
         encode_length_delimited(message, &mut self.write_buf)?;
         while !self.write_buf.is_empty() {
-            let bytes_written = self.stream.write(self.write_buf.as_ref())?;
+            let bytes_written = self
+                .stream
+                .write(self.write_buf.as_ref())
+                .map_err(error::io_error)?;
+
             if bytes_written == 0 {
-                return Err(std::io::Error::new(
+                return Err(error::io_error(std::io::Error::new(
                     std::io::ErrorKind::WriteZero,
                     "failed to write to underlying stream",
-                )
-                .into());
+                )));
             }
             self.write_buf.advance(bytes_written);
         }
-        Ok(self.stream.flush()?)
+
+        self.stream.flush().map_err(error::io_error)?;
+
+        Ok(())
     }
 }
 
 /// Encode the given message with a length prefix.
-pub fn encode_length_delimited<M, B>(message: M, mut dst: &mut B) -> Result<()>
+pub fn encode_length_delimited<M, B>(message: M, mut dst: &mut B) -> Result<(), Error>
 where
     M: Message,
     B: BufMut,
 {
     let mut buf = BytesMut::new();
-    message.encode(&mut buf)?;
+    message.encode(&mut buf).map_err(error::encode_error)?;
+
     let buf = buf.freeze();
     encode_varint(buf.len() as u64, &mut dst);
     dst.put(buf);
@@ -125,7 +133,7 @@ where
 }
 
 /// Attempt to decode a message of type `M` from the given source buffer.
-pub fn decode_length_delimited<M>(src: &mut BytesMut) -> Result<Option<M>>
+pub fn decode_length_delimited<M>(src: &mut BytesMut) -> Result<Option<M>, Error>
 where
     M: Message + Default,
 {
@@ -148,7 +156,9 @@ where
         src.advance(delim_len + (encoded_len as usize));
 
         let mut result_bytes = BytesMut::from(tmp.split_to(encoded_len as usize).as_ref());
-        Ok(Some(M::decode(&mut result_bytes)?))
+        let res = M::decode(&mut result_bytes).map_err(error::decode_error)?;
+
+        Ok(Some(res))
     }
 }
 
@@ -158,7 +168,7 @@ pub fn encode_varint<B: BufMut>(val: u64, mut buf: &mut B) {
     prost::encoding::encode_varint(val << 1, &mut buf);
 }
 
-pub fn decode_varint<B: Buf>(mut buf: &mut B) -> Result<u64> {
-    let len = prost::encoding::decode_varint(&mut buf)?;
+pub fn decode_varint<B: Buf>(mut buf: &mut B) -> Result<u64, Error> {
+    let len = prost::encoding::decode_varint(&mut buf).map_err(error::decode_error)?;
     Ok(len >> 1)
 }

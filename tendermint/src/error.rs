@@ -4,12 +4,12 @@ use crate::account;
 use crate::vote;
 use alloc::string::String;
 use core::num::TryFromIntError;
-use flex_error::{define_error, DisplayError, DisplayOnly};
+use flex_error::{define_error, DisplayOnly};
 use std::io::Error as IoError;
 use time::OutOfRangeError;
 
 define_error! {
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     Error {
         Crypto
             |_| { format_args!("cryptographic error") },
@@ -36,11 +36,11 @@ define_error! {
 
         ParseInt
             { data: String }
-            [ DisplayError<std::num::ParseIntError>]
+            [ DisplayOnly<std::num::ParseIntError>]
             | e | { format_args!("error parsing int data: {}", e.data) },
 
         ParseUrl
-            [ DisplayError<url::ParseError> ]
+            [ DisplayOnly<url::ParseError> ]
             |_| { format_args!("error parsing url error") },
 
         Protocol
@@ -48,7 +48,7 @@ define_error! {
             |_| { format_args!("protocol error") },
 
         OutOfRange
-            [ DisplayError<OutOfRangeError> ]
+            [ DisplayOnly<OutOfRangeError> ]
             |_| { format_args!("value out of range") },
 
         SignatureInvalid
@@ -59,18 +59,18 @@ define_error! {
             |_| { format_args!("invalid message type") },
 
         NegativeHeight
-            [ DisplayError<TryFromIntError> ]
+            [ DisplayOnly<TryFromIntError> ]
             |_| { format_args!("negative height") },
 
         NegativeRound
-            [ DisplayError<TryFromIntError> ]
+            [ DisplayOnly<TryFromIntError> ]
             |_| { format_args!("negative round") },
 
         NegativePolRound
             |_| { format_args!("negative POL round") },
 
         NegativeValidatorIndex
-            [ DisplayError<TryFromIntError> ]
+            [ DisplayOnly<TryFromIntError> ]
             |_| { format_args!("negative validator index") },
 
         InvalidHashSize
@@ -86,7 +86,7 @@ define_error! {
             |_| { format_args!("invalid signature ID length") },
 
         IntegerOverflow
-            [ DisplayError<TryFromIntError> ]
+            [ DisplayOnly<TryFromIntError> ]
             |_| { format_args!("integer overflow") },
 
         NoVoteFound
@@ -145,7 +145,7 @@ define_error! {
             |_| { format_args!("invalid block id flag") },
 
         NegativePower
-            [ DisplayError<TryFromIntError> ]
+            [ DisplayOnly<TryFromIntError> ]
             |_| { format_args!("negative power") },
 
         UnsupportedKeyType
@@ -165,7 +165,7 @@ define_error! {
             |_| { format_args!("invalid version parameters") },
 
         NegativeMaxAgeNum
-            [ DisplayError<TryFromIntError> ]
+            [ DisplayOnly<TryFromIntError> ]
             |_| { format_args!("negative max_age_num_blocks") },
 
         MissingMaxAgeDuration
@@ -176,11 +176,11 @@ define_error! {
             |e| { format_args!("proposer with address '{0}' no found in validator set", e.account) },
 
         ChronoParse
-            [ DisplayError<chrono::ParseError> ]
+            [ DisplayOnly<chrono::ParseError> ]
             |_| { format_args!("chrono parse error") },
 
         SubtleEncoding
-            [ DisplayError<subtle_encoding::Error> ]
+            [ DisplayOnly<subtle_encoding::Error> ]
             |_| { format_args!("subtle encoding error") },
 
         SerdeJson
@@ -188,11 +188,11 @@ define_error! {
             |_| { format_args!("serde json error") },
 
         Toml
-            [ DisplayError<toml::de::Error> ]
+            [ DisplayOnly<toml::de::Error> ]
             |_| { format_args!("toml de error") },
 
         Signature
-            [ DisplayError<signature::Error> ]
+            [ DisplayOnly<signature::Error> ]
             |_| { format_args!("signature error") },
     }
 }

@@ -326,10 +326,7 @@ mod tests {
         );
 
         match result_err {
-            Err(ErrorReport {
-                detail: VerificationErrorDetail::InvalidSignature(_),
-                trace: _,
-            }) => {}
+            Err(ErrorReport(VerificationErrorDetail::InvalidSignature(_), _)) => {}
             _ => panic!("expected InvalidSignature error"),
         }
     }
@@ -351,10 +348,7 @@ mod tests {
         );
 
         match result_err {
-            Err(ErrorReport {
-                detail: VerificationErrorDetail::InvalidSignature(_),
-                trace: _,
-            }) => {}
+            Err(ErrorReport(VerificationErrorDetail::InvalidSignature(_), _)) => {}
             _ => panic!("expected InvalidSignature error"),
         }
     }

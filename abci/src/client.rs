@@ -1,7 +1,7 @@
 //! Blocking ABCI client.
 
 use crate::codec::ClientCodec;
-use crate::{Error, Result};
+use crate::{error, Error};
 use std::net::{TcpStream, ToSocketAddrs};
 use tendermint_proto::abci::{
     request, response, RequestApplySnapshotChunk, RequestBeginBlock, RequestCheckTx, RequestCommit,
@@ -31,8 +31,8 @@ impl ClientBuilder {
 
     /// Client constructor that attempts to connect to the given network
     /// address.
-    pub fn connect<A: ToSocketAddrs>(self, addr: A) -> Result<Client> {
-        let stream = TcpStream::connect(addr)?;
+    pub fn connect<A: ToSocketAddrs>(self, addr: A) -> Result<Client, Error> {
+        let stream = TcpStream::connect(addr).map_err(error::io_error)?;
         Ok(Client {
             codec: ClientCodec::new(stream, self.read_buf_size),
         })
@@ -56,73 +56,80 @@ macro_rules! perform {
     ($self:expr, $type:ident, $req:expr) => {
         match $self.perform(request::Value::$type($req))? {
             response::Value::$type(r) => Ok(r),
-            r => Err(Error::UnexpectedServerResponseType(stringify!($type).to_string(), r).into()),
+            r => Err(error::unexpected_server_response_type_error(
+                stringify!($type).to_string(),
+                r,
+            )
+            .into()),
         }
     };
 }
 
 impl Client {
     /// Ask the ABCI server to echo back a message.
-    pub fn echo(&mut self, req: RequestEcho) -> Result<ResponseEcho> {
+    pub fn echo(&mut self, req: RequestEcho) -> Result<ResponseEcho, Error> {
         perform!(self, Echo, req)
     }
 
     /// Request information about the ABCI application.
-    pub fn info(&mut self, req: RequestInfo) -> Result<ResponseInfo> {
+    pub fn info(&mut self, req: RequestInfo) -> Result<ResponseInfo, Error> {
         perform!(self, Info, req)
     }
 
     /// To be called once upon genesis.
-    pub fn init_chain(&mut self, req: RequestInitChain) -> Result<ResponseInitChain> {
+    pub fn init_chain(&mut self, req: RequestInitChain) -> Result<ResponseInitChain, Error> {
         perform!(self, InitChain, req)
     }
 
     /// Query the application for data at the current or past height.
-    pub fn query(&mut self, req: RequestQuery) -> Result<ResponseQuery> {
+    pub fn query(&mut self, req: RequestQuery) -> Result<ResponseQuery, Error> {
         perform!(self, Query, req)
     }
 
     /// Check the given transaction before putting it into the local mempool.
-    pub fn check_tx(&mut self, req: RequestCheckTx) -> Result<ResponseCheckTx> {
+    pub fn check_tx(&mut self, req: RequestCheckTx) -> Result<ResponseCheckTx, Error> {
         perform!(self, CheckTx, req)
     }
 
     /// Signal the beginning of a new block, prior to any `DeliverTx` calls.
-    pub fn begin_block(&mut self, req: RequestBeginBlock) -> Result<ResponseBeginBlock> {
+    pub fn begin_block(&mut self, req: RequestBeginBlock) -> Result<ResponseBeginBlock, Error> {
         perform!(self, BeginBlock, req)
     }
 
     /// Apply a transaction to the application's state.
-    pub fn deliver_tx(&mut self, req: RequestDeliverTx) -> Result<ResponseDeliverTx> {
+    pub fn deliver_tx(&mut self, req: RequestDeliverTx) -> Result<ResponseDeliverTx, Error> {
         perform!(self, DeliverTx, req)
     }
 
     /// Signal the end of a block.
-    pub fn end_block(&mut self, req: RequestEndBlock) -> Result<ResponseEndBlock> {
+    pub fn end_block(&mut self, req: RequestEndBlock) -> Result<ResponseEndBlock, Error> {
         perform!(self, EndBlock, req)
     }
 
-    pub fn flush(&mut self) -> Result<ResponseFlush> {
+    pub fn flush(&mut self) -> Result<ResponseFlush, Error> {
         perform!(self, Flush, RequestFlush {})
     }
 
     /// Commit the current state at the current height.
-    pub fn commit(&mut self) -> Result<ResponseCommit> {
+    pub fn commit(&mut self) -> Result<ResponseCommit, Error> {
         perform!(self, Commit, RequestCommit {})
     }
 
     /// Request that the application set an option to a particular value.
-    pub fn set_option(&mut self, req: RequestSetOption) -> Result<ResponseSetOption> {
+    pub fn set_option(&mut self, req: RequestSetOption) -> Result<ResponseSetOption, Error> {
         perform!(self, SetOption, req)
     }
 
     /// Used during state sync to discover available snapshots on peers.
-    pub fn list_snapshots(&mut self) -> Result<ResponseListSnapshots> {
+    pub fn list_snapshots(&mut self) -> Result<ResponseListSnapshots, Error> {
         perform!(self, ListSnapshots, RequestListSnapshots {})
     }
 
     /// Called when bootstrapping the node using state sync.
-    pub fn offer_snapshot(&mut self, req: RequestOfferSnapshot) -> Result<ResponseOfferSnapshot> {
+    pub fn offer_snapshot(
+        &mut self,
+        req: RequestOfferSnapshot,
+    ) -> Result<ResponseOfferSnapshot, Error> {
         perform!(self, OfferSnapshot, req)
     }
 
@@ -130,7 +137,7 @@ impl Client {
     pub fn load_snapshot_chunk(
         &mut self,
         req: RequestLoadSnapshotChunk,
-    ) -> Result<ResponseLoadSnapshotChunk> {
+    ) -> Result<ResponseLoadSnapshotChunk, Error> {
         perform!(self, LoadSnapshotChunk, req)
     }
 
@@ -138,19 +145,16 @@ impl Client {
     pub fn apply_snapshot_chunk(
         &mut self,
         req: RequestApplySnapshotChunk,
-    ) -> Result<ResponseApplySnapshotChunk> {
+    ) -> Result<ResponseApplySnapshotChunk, Error> {
         perform!(self, ApplySnapshotChunk, req)
     }
 
-    fn perform(&mut self, req: request::Value) -> Result<response::Value> {
+    fn perform(&mut self, req: request::Value) -> Result<response::Value, Error> {
         self.codec.send(Request { value: Some(req) })?;
         let res = self
             .codec
             .next()
-            .ok_or(Error::ServerConnectionTerminated)??;
-        match res.value {
-            Some(value) => Ok(value),
-            None => Err(Error::MalformedServerResponse.into()),
-        }
+            .ok_or_else(error::server_connection_terminated_error)??;
+        res.value.ok_or_else(error::malformed_server_response_error)
     }
 }

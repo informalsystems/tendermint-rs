@@ -2,7 +2,10 @@
 
 use crate::application::RequestDispatcher;
 use crate::codec::ServerCodec;
-use crate::{Application, Result};
+use crate::{
+    error::{self, Error},
+    Application,
+};
 use std::net::{TcpListener, TcpStream, ToSocketAddrs};
 use std::thread;
 use tracing::{error, info};
@@ -31,13 +34,13 @@ impl ServerBuilder {
     /// Binds the server to the given address. You must subsequently call the
     /// [`Server::listen`] method in order for incoming connections' requests
     /// to be routed to the specified ABCI application.
-    pub fn bind<Addr, App>(self, addr: Addr, app: App) -> Result<Server<App>>
+    pub fn bind<Addr, App>(self, addr: Addr, app: App) -> Result<Server<App>, Error>
     where
         Addr: ToSocketAddrs,
         App: Application,
     {
-        let listener = TcpListener::bind(addr)?;
-        let local_addr = listener.local_addr()?.to_string();
+        let listener = TcpListener::bind(addr).map_err(error::io_error)?;
+        let local_addr = listener.local_addr().map_err(error::io_error)?.to_string();
         info!("ABCI server running at {}", local_addr);
         Ok(Server {
             app,
@@ -71,9 +74,9 @@ pub struct Server<App> {
 
 impl<App: Application> Server<App> {
     /// Initiate a blocking listener for incoming connections.
-    pub fn listen(self) -> Result<()> {
+    pub fn listen(self) -> Result<(), Error> {
         loop {
-            let (stream, addr) = self.listener.accept()?;
+            let (stream, addr) = self.listener.accept().map_err(error::io_error)?;
             let addr = addr.to_string();
             info!("Incoming connection from: {}", addr);
             self.spawn_client_handler(stream, addr);

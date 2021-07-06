@@ -296,10 +296,7 @@ fn jsonrpc_error() {
     let result = endpoint::blockchain::Response::from_string(&read_json_fixture("error"));
 
     match result {
-        Err(ErrorReport {
-            detail: ErrorDetail::Response(e),
-            trace: _,
-        }) => {
+        Err(ErrorReport(ErrorDetail::Response(e), _)) => {
             let response = e.source;
             assert_eq!(response.code(), RpcCode::InternalError);
             assert_eq!(response.message(), "Internal error");

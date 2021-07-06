@@ -318,16 +318,16 @@ impl LightClient {
         let root = state
             .light_store
             .highest_trusted_or_verified()
-            .ok_or(ErrorKind::NoInitialTrustedState)?;
+            .ok_or_else(error::no_initial_trusted_state_error)?;
 
         assert!(root.height() >= target_height);
 
         // Check invariant [LCV-INV-TP.1]
         if !is_within_trust_period(&root, self.options.trusting_period, self.clock.now()) {
-            bail!(ErrorKind::TrustedStateOutsideTrustingPeriod {
-                trusted_state: Box::new(root),
-                options: self.options,
-            });
+            return Err(error::trusted_state_outside_trusting_period_error(
+                Box::new(root),
+                self.options,
+            ));
         }
 
         // Compute a range of `Height`s from `trusted_height - 1` to `target_height`, inclusive.
@@ -343,15 +343,15 @@ impl LightClient {
                 .signed_header
                 .header
                 .last_block_id
-                .ok_or_else(|| ErrorKind::MissingLastBlockId(latest.height()))?;
+                .ok_or_else(|| error::missing_last_block_id_error(latest.height()))?;
 
             let current_hash = self.hasher.hash_header(&current.signed_header.header);
 
             if current_hash != latest_last_block_id.hash {
-                bail!(ErrorKind::InvalidAdjacentHeaders {
-                    h1: current_hash,
-                    h2: latest_last_block_id.hash
-                });
+                return Err(error::invalid_adjacent_headers_error(
+                    current_hash,
+                    latest_last_block_id.hash,
+                ));
             }
 
             // `latest` and `current` are linked together by `last_block_id`,

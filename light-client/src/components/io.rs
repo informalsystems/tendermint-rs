@@ -59,30 +59,6 @@ define_error! {
     }
 }
 
-// /// I/O errors
-// #[derive(Clone, Debug, Error, PartialEq, Serialize, Deserialize)]
-// pub enum IoError {
-//     /// Wrapper for a `tendermint::rpc::Error`.
-//     #[error(transparent)]
-//     RpcError(#[from] rpc::Error),
-
-//     /// Given height is invalid
-//     #[error("invalid height: {0}")]
-//     InvalidHeight(String),
-
-//     /// Fetched validator set is invalid
-//     #[error("fetched validator set is invalid: {0}")]
-//     InvalidValidatorSet(String),
-
-//     /// Task timed out.
-//     #[error("task timed out after {} ms", .0.as_millis())]
-//     Timeout(Duration),
-
-//     /// Failed to initialize runtime
-//     #[error("failed to initialize runtime")]
-//     Runtime,
-// }
-
 impl IoErrorDetail {
     /// Whether this error means that a timeout occured when querying a node.
     pub fn is_timeout(&self) -> Option<Duration> {

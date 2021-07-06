@@ -8,7 +8,8 @@ use crate::event::Event;
 use crate::query::Query;
 use crate::request::Wrapper;
 use crate::{
-    response, Client, Error, Id, Request, Response, Result, Scheme, SimpleRequest, Subscription,
+    error::{self, Error},
+    response, Client, Id, Request, Response, Scheme, SimpleRequest, Subscription,
     SubscriptionClient, Url,
 };
 use async_trait::async_trait;
@@ -120,7 +121,7 @@ const PING_INTERVAL: Duration = Duration::from_secs((RECV_TIMEOUT_SECONDS * 9) /
 /// ```
 ///
 /// [tendermint-websocket-ping]: https://github.com/tendermint/tendermint/blob/309e29c245a01825fc9630103311fd04de99fa5e/rpc/jsonrpc/server/ws_handler.go#L28
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct WebSocketClient {
     inner: sealed::WebSocketClient,
 }
@@ -130,7 +131,7 @@ impl WebSocketClient {
     /// Tendermint node's RPC endpoint.
     ///
     /// Supports both `ws://` and `wss://` protocols.
-    pub async fn new<U>(url: U) -> Result<(Self, WebSocketClientDriver)>
+    pub async fn new<U>(url: U) -> Result<(Self, WebSocketClientDriver), Error>
     where
         U: TryInto<WebSocketClientUrl, Error = Error>,
     {
@@ -146,7 +147,7 @@ impl WebSocketClient {
 
 #[async_trait]
 impl Client for WebSocketClient {
-    async fn perform<R>(&self, request: R) -> Result<<R as Request>::Response>
+    async fn perform<R>(&self, request: R) -> Result<<R as Request>::Response, Error>
     where
         R: SimpleRequest,
     {
@@ -156,15 +157,15 @@ impl Client for WebSocketClient {
 
 #[async_trait]
 impl SubscriptionClient for WebSocketClient {
-    async fn subscribe(&self, query: Query) -> Result<Subscription> {
+    async fn subscribe(&self, query: Query) -> Result<Subscription, Error> {
         self.inner.subscribe(query).await
     }
 
-    async fn unsubscribe(&self, query: Query) -> Result<()> {
+    async fn unsubscribe(&self, query: Query) -> Result<(), Error> {
         self.inner.unsubscribe(query).await
     }
 
-    fn close(self) -> Result<()> {
+    fn close(self) -> Result<(), Error> {
         self.inner.close()
     }
 }
@@ -178,10 +179,10 @@ pub struct WebSocketClientUrl(Url);
 impl TryFrom<Url> for WebSocketClientUrl {
     type Error = Error;
 
-    fn try_from(value: Url) -> Result<Self> {
+    fn try_from(value: Url) -> Result<Self, Error> {
         match value.scheme() {
             Scheme::WebSocket | Scheme::SecureWebSocket => Ok(Self(value)),
-            _ => Err(Error::invalid_params(&format!(
+            _ => Err(error::invalid_params_error(format!(
                 "cannot use URL {} with WebSocket clients",
                 value
             ))),
@@ -192,7 +193,7 @@ impl TryFrom<Url> for WebSocketClientUrl {
 impl FromStr for WebSocketClientUrl {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self> {
+    fn from_str(s: &str) -> Result<Self, Error> {
         let url: Url = s.parse()?;
         url.try_into()
     }
@@ -201,7 +202,7 @@ impl FromStr for WebSocketClientUrl {
 impl TryFrom<&str> for WebSocketClientUrl {
     type Error = Error;
 
-    fn try_from(value: &str) -> Result<Self> {
+    fn try_from(value: &str) -> Result<Self, Error> {
         value.parse()
     }
 }
@@ -209,15 +210,15 @@ impl TryFrom<&str> for WebSocketClientUrl {
 impl TryFrom<net::Address> for WebSocketClientUrl {
     type Error = Error;
 
-    fn try_from(value: net::Address) -> Result<Self> {
+    fn try_from(value: net::Address) -> Result<Self, Error> {
         match value {
             net::Address::Tcp {
                 peer_id: _,
                 host,
                 port,
             } => format!("ws://{}:{}/websocket", host, port).parse(),
-            net::Address::Unix { .. } => Err(Error::invalid_params(
-                "only TCP-based node addresses are supported",
+            net::Address::Unix { .. } => Err(error::invalid_params_error(
+                "only TCP-based node addresses are supported".to_string(),
             )),
         }
     }
@@ -238,7 +239,7 @@ mod sealed {
     use crate::query::Query;
     use crate::request::Wrapper;
     use crate::utils::uuid_str;
-    use crate::{Error, Response, Result, SimpleRequest, Subscription, Url};
+    use crate::{error, Error, Response, SimpleRequest, Subscription, Url};
     use async_tungstenite::tokio::{connect_async, connect_async_with_tls_connector};
     use tracing::debug;
 
@@ -258,7 +259,7 @@ mod sealed {
     /// different variants of this type.
     ///
     /// [`async-tungstenite`]: https://crates.io/crates/async-tungstenite
-    #[derive(Debug, Clone)]
+    #[derive(Debug)]
     pub struct AsyncTungsteniteClient<C> {
         cmd_tx: ChannelTx<DriverCommand>,
         _client_type: std::marker::PhantomData<C>,
@@ -273,10 +274,10 @@ mod sealed {
         /// this driver becomes the responsibility of the client owner, and must be
         /// executed in a separate asynchronous context to the client to ensure it
         /// doesn't block the client.
-        pub async fn new(url: Url) -> Result<(Self, WebSocketClientDriver)> {
+        pub async fn new(url: Url) -> Result<(Self, WebSocketClientDriver), Error> {
             let url = url.to_string();
             debug!("Connecting to unsecure WebSocket endpoint: {}", url);
-            let (stream, _response) = connect_async(url).await?;
+            let (stream, _response) = connect_async(url).await.map_err(error::tungstenite_error)?;
             let (cmd_tx, cmd_rx) = unbounded();
             let driver = WebSocketClientDriver::new(stream, cmd_rx);
             Ok((
@@ -299,12 +300,14 @@ mod sealed {
         /// this driver becomes the responsibility of the client owner, and must be
         /// executed in a separate asynchronous context to the client to ensure it
         /// doesn't block the client.
-        pub async fn new(url: Url) -> Result<(Self, WebSocketClientDriver)> {
+        pub async fn new(url: Url) -> Result<(Self, WebSocketClientDriver), Error> {
             let url = url.to_string();
             debug!("Connecting to secure WebSocket endpoint: {}", url);
             // Not supplying a connector means async_tungstenite will create the
             // connector for us.
-            let (stream, _response) = connect_async_with_tls_connector(url, None).await?;
+            let (stream, _response) = connect_async_with_tls_connector(url, None)
+                .await
+                .map_err(error::tungstenite_error)?;
             let (cmd_tx, cmd_rx) = unbounded();
             let driver = WebSocketClientDriver::new(stream, cmd_rx);
             Ok((
@@ -318,16 +321,11 @@ mod sealed {
     }
 
     impl<C> AsyncTungsteniteClient<C> {
-        fn send_cmd(&self, cmd: DriverCommand) -> Result<()> {
-            self.cmd_tx.send(cmd).map_err(|e| {
-                Error::client_internal_error(format!(
-                    "failed to send command to client driver: {}",
-                    e
-                ))
-            })
+        fn send_cmd(&self, cmd: DriverCommand) -> Result<(), Error> {
+            self.cmd_tx.send(cmd)
         }
 
-        pub async fn perform<R>(&self, request: R) -> Result<R::Response>
+        pub async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
         where
             R: SimpleRequest,
         {
@@ -341,7 +339,7 @@ mod sealed {
                 response_tx,
             }))?;
             let response = response_rx.recv().await.ok_or_else(|| {
-                Error::client_internal_error(
+                error::client_internal_error(
                     "failed to hear back from WebSocket driver".to_string(),
                 )
             })??;
@@ -349,7 +347,7 @@ mod sealed {
             R::Response::from_string(response)
         }
 
-        pub async fn subscribe(&self, query: Query) -> Result<Subscription> {
+        pub async fn subscribe(&self, query: Query) -> Result<Subscription, Error> {
             let (subscription_tx, subscription_rx) = unbounded();
             let (response_tx, mut response_rx) = unbounded();
             // By default we use UUIDs to differentiate subscriptions
@@ -362,21 +360,21 @@ mod sealed {
             }))?;
             // Make sure our subscription request went through successfully.
             let _ = response_rx.recv().await.ok_or_else(|| {
-                Error::client_internal_error(
+                error::client_internal_error(
                     "failed to hear back from WebSocket driver".to_string(),
                 )
             })??;
             Ok(Subscription::new(id, query, subscription_rx))
         }
 
-        pub async fn unsubscribe(&self, query: Query) -> Result<()> {
+        pub async fn unsubscribe(&self, query: Query) -> Result<(), Error> {
             let (response_tx, mut response_rx) = unbounded();
             self.send_cmd(DriverCommand::Unsubscribe(UnsubscribeCommand {
                 query: query.to_string(),
                 response_tx,
             }))?;
             let _ = response_rx.recv().await.ok_or_else(|| {
-                Error::client_internal_error(
+                error::client_internal_error(
                     "failed to hear back from WebSocket driver".to_string(),
                 )
             })??;
@@ -384,31 +382,31 @@ mod sealed {
         }
 
         /// Signals to the driver that it must terminate.
-        pub fn close(self) -> Result<()> {
+        pub fn close(self) -> Result<(), Error> {
             self.send_cmd(DriverCommand::Terminate)
         }
     }
 
     /// Allows us to erase the type signatures associated with the different
     /// WebSocket client variants.
-    #[derive(Debug, Clone)]
+    #[derive(Debug)]
     pub enum WebSocketClient {
         Unsecure(AsyncTungsteniteClient<Unsecure>),
         Secure(AsyncTungsteniteClient<Secure>),
     }
 
     impl WebSocketClient {
-        pub async fn new_unsecure(url: Url) -> Result<(Self, WebSocketClientDriver)> {
+        pub async fn new_unsecure(url: Url) -> Result<(Self, WebSocketClientDriver), Error> {
             let (client, driver) = AsyncTungsteniteClient::<Unsecure>::new(url).await?;
             Ok((Self::Unsecure(client), driver))
         }
 
-        pub async fn new_secure(url: Url) -> Result<(Self, WebSocketClientDriver)> {
+        pub async fn new_secure(url: Url) -> Result<(Self, WebSocketClientDriver), Error> {
             let (client, driver) = AsyncTungsteniteClient::<Secure>::new(url).await?;
             Ok((Self::Secure(client), driver))
         }
 
-        pub async fn perform<R>(&self, request: R) -> Result<R::Response>
+        pub async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
         where
             R: SimpleRequest,
         {
@@ -418,21 +416,21 @@ mod sealed {
             }
         }
 
-        pub async fn subscribe(&self, query: Query) -> Result<Subscription> {
+        pub async fn subscribe(&self, query: Query) -> Result<Subscription, Error> {
             match self {
                 WebSocketClient::Unsecure(c) => c.subscribe(query).await,
                 WebSocketClient::Secure(c) => c.subscribe(query).await,
             }
         }
 
-        pub async fn unsubscribe(&self, query: Query) -> Result<()> {
+        pub async fn unsubscribe(&self, query: Query) -> Result<(), Error> {
             match self {
                 WebSocketClient::Unsecure(c) => c.unsubscribe(query).await,
                 WebSocketClient::Secure(c) => c.unsubscribe(query).await,
             }
         }
 
-        pub fn close(self) -> Result<()> {
+        pub fn close(self) -> Result<(), Error> {
             match self {
                 WebSocketClient::Unsecure(c) => c.close(),
                 WebSocketClient::Secure(c) => c.close(),
@@ -443,7 +441,7 @@ mod sealed {
 
 // The different types of commands that can be sent from the WebSocketClient to
 // the driver.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 enum DriverCommand {
     // Initiate a subscription request.
     Subscribe(SubscribeCommand),
@@ -454,7 +452,7 @@ enum DriverCommand {
     Terminate,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct SubscribeCommand {
     // The desired ID for the outgoing JSON-RPC request.
     id: String,
@@ -463,18 +461,18 @@ struct SubscribeCommand {
     // Where to send subscription events.
     subscription_tx: SubscriptionTx,
     // Where to send the result of the subscription request.
-    response_tx: ChannelTx<Result<()>>,
+    response_tx: ChannelTx<Result<(), Error>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct UnsubscribeCommand {
     // The query from which to unsubscribe.
     query: String,
     // Where to send the result of the unsubscribe request.
-    response_tx: ChannelTx<Result<()>>,
+    response_tx: ChannelTx<Result<(), Error>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct SimpleRequestCommand {
     // The desired ID for the outgoing JSON-RPC request. Technically we
     // could extract this from the wrapped request, but that would mean
@@ -483,7 +481,7 @@ struct SimpleRequestCommand {
     // The wrapped and serialized JSON-RPC request.
     wrapped_request: String,
     // Where to send the result of the simple request.
-    response_tx: ChannelTx<Result<String>>,
+    response_tx: ChannelTx<Result<String, Error>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -519,7 +517,7 @@ impl WebSocketClientDriver {
 
     /// Executes the WebSocket driver, which manages the underlying WebSocket
     /// transport.
-    pub async fn run(mut self) -> Result<()> {
+    pub async fn run(mut self) -> Result<(), Error> {
         let mut ping_interval =
             tokio::time::interval_at(Instant::now().add(PING_INTERVAL), PING_INTERVAL);
 
@@ -536,8 +534,9 @@ impl WebSocketClientDriver {
                         self.handle_incoming_msg(msg).await?
                     },
                     Err(e) => return Err(
-                        Error::websocket_error(
-                            format!("failed to read from WebSocket connection: {}", e),
+                        error::web_socket_error(
+                            "failed to read from WebSocket connection".to_string(),
+                            e
                         ),
                     ),
                 },
@@ -549,22 +548,19 @@ impl WebSocketClientDriver {
                 },
                 _ = ping_interval.tick() => self.ping().await?,
                 _ = &mut recv_timeout => {
-                    return Err(Error::websocket_error(format!(
-                        "reading from WebSocket connection timed out after {} seconds",
-                        RECV_TIMEOUT.as_secs()
-                    )));
+                    return Err(error::web_socket_timeout_error(RECV_TIMEOUT));
                 }
             }
         }
     }
 
-    async fn send_msg(&mut self, msg: Message) -> Result<()> {
+    async fn send_msg(&mut self, msg: Message) -> Result<(), Error> {
         self.stream.send(msg).await.map_err(|e| {
-            Error::websocket_error(format!("failed to write to WebSocket connection: {}", e))
+            error::web_socket_error("failed to write to WebSocket connection".to_string(), e)
         })
     }
 
-    async fn send_request<R>(&mut self, wrapper: Wrapper<R>) -> Result<()>
+    async fn send_request<R>(&mut self, wrapper: Wrapper<R>) -> Result<(), Error>
     where
         R: Request,
     {
@@ -574,7 +570,7 @@ impl WebSocketClientDriver {
         .await
     }
 
-    async fn subscribe(&mut self, cmd: SubscribeCommand) -> Result<()> {
+    async fn subscribe(&mut self, cmd: SubscribeCommand) -> Result<(), Error> {
         // If we already have an active subscription for the given query,
         // there's no need to initiate another one. Just add this subscription
         // to the router.
@@ -599,7 +595,7 @@ impl WebSocketClientDriver {
         Ok(())
     }
 
-    async fn unsubscribe(&mut self, cmd: UnsubscribeCommand) -> Result<()> {
+    async fn unsubscribe(&mut self, cmd: UnsubscribeCommand) -> Result<(), Error> {
         // Terminate all subscriptions for this query immediately. This
         // prioritizes acknowledgement of the caller's wishes over networking
         // problems.
@@ -623,7 +619,7 @@ impl WebSocketClientDriver {
         Ok(())
     }
 
-    async fn simple_request(&mut self, cmd: SimpleRequestCommand) -> Result<()> {
+    async fn simple_request(&mut self, cmd: SimpleRequestCommand) -> Result<(), Error> {
         if let Err(e) = self
             .send_msg(Message::Text(cmd.wrapped_request.clone()))
             .await
@@ -636,7 +632,7 @@ impl WebSocketClientDriver {
         Ok(())
     }
 
-    async fn handle_incoming_msg(&mut self, msg: Message) -> Result<()> {
+    async fn handle_incoming_msg(&mut self, msg: Message) -> Result<(), Error> {
         match msg {
             Message::Text(s) => self.handle_text_msg(s).await,
             Message::Ping(v) => self.pong(v).await,
@@ -644,7 +640,7 @@ impl WebSocketClientDriver {
         }
     }
 
-    async fn handle_text_msg(&mut self, msg: String) -> Result<()> {
+    async fn handle_text_msg(&mut self, msg: String) -> Result<(), Error> {
         if let Ok(ev) = Event::from_string(&msg) {
             self.publish_event(ev).await;
             return Ok(());
@@ -693,7 +689,7 @@ impl WebSocketClientDriver {
         &mut self,
         pending_cmd: DriverCommand,
         response: String,
-    ) -> Result<()> {
+    ) -> Result<(), Error> {
         match pending_cmd {
             DriverCommand::Subscribe(cmd) => {
                 let (id, query, subscription_tx, response_tx) =
@@ -707,15 +703,15 @@ impl WebSocketClientDriver {
         }
     }
 
-    async fn pong(&mut self, v: Vec<u8>) -> Result<()> {
+    async fn pong(&mut self, v: Vec<u8>) -> Result<(), Error> {
         self.send_msg(Message::Pong(v)).await
     }
 
-    async fn ping(&mut self) -> Result<()> {
+    async fn ping(&mut self) -> Result<(), Error> {
         self.send_msg(Message::Ping(Vec::new())).await
     }
 
-    async fn close(mut self) -> Result<()> {
+    async fn close(mut self) -> Result<(), Error> {
         self.send_msg(Message::Close(Some(CloseFrame {
             code: CloseCode::Normal,
             reason: Cow::from("client closed WebSocket connection"),
@@ -750,8 +746,8 @@ mod test {
     // Interface to a driver that manages all incoming WebSocket connections.
     struct TestServer {
         node_addr: net::Address,
-        driver_hdl: JoinHandle<Result<()>>,
-        terminate_tx: ChannelTx<Result<()>>,
+        driver_hdl: JoinHandle<Result<(), Error>>,
+        terminate_tx: ChannelTx<Result<(), Error>>,
         event_tx: ChannelTx<Event>,
     }
 
@@ -776,11 +772,11 @@ mod test {
             }
         }
 
-        fn publish_event(&mut self, ev: Event) -> Result<()> {
+        fn publish_event(&mut self, ev: Event) -> Result<(), Error> {
             self.event_tx.send(ev)
         }
 
-        async fn terminate(self) -> Result<()> {
+        async fn terminate(self) -> Result<(), Error> {
             self.terminate_tx.send(Ok(())).unwrap();
             self.driver_hdl.await.unwrap()
         }
@@ -790,7 +786,7 @@ mod test {
     struct TestServerDriver {
         listener: TcpListener,
         event_rx: ChannelRx<Event>,
-        terminate_rx: ChannelRx<Result<()>>,
+        terminate_rx: ChannelRx<Result<(), Error>>,
         handlers: Vec<TestServerHandler>,
     }
 
@@ -798,7 +794,7 @@ mod test {
         fn new(
             listener: TcpListener,
             event_rx: ChannelRx<Event>,
-            terminate_rx: ChannelRx<Result<()>>,
+            terminate_rx: ChannelRx<Result<(), Error>>,
         ) -> Self {
             Self {
                 listener,
@@ -808,7 +804,7 @@ mod test {
             }
         }
 
-        async fn run(mut self) -> Result<()> {
+        async fn run(mut self) -> Result<(), Error> {
             loop {
                 tokio::select! {
                     Some(ev) = self.event_rx.recv() => self.publish_event(ev),
@@ -850,8 +846,8 @@ mod test {
     // Interface to a driver that manages a single incoming WebSocket
     // connection.
     struct TestServerHandler {
-        driver_hdl: JoinHandle<Result<()>>,
-        terminate_tx: ChannelTx<Result<()>>,
+        driver_hdl: JoinHandle<Result<(), Error>>,
+        terminate_tx: ChannelTx<Result<(), Error>>,
         event_tx: ChannelTx<Event>,
     }
 
@@ -874,7 +870,7 @@ mod test {
             let _ = self.event_tx.send(ev);
         }
 
-        async fn terminate(self) -> Result<()> {
+        async fn terminate(self) -> Result<(), Error> {
             self.terminate_tx.send(Ok(()))?;
             self.driver_hdl.await.unwrap()
         }
@@ -884,7 +880,7 @@ mod test {
     struct TestServerHandlerDriver {
         conn: WebSocketStream<TokioAdapter<TcpStream>>,
         event_rx: ChannelRx<Event>,
-        terminate_rx: ChannelRx<Result<()>>,
+        terminate_rx: ChannelRx<Result<(), Error>>,
         // A mapping of subscription queries to subscription IDs for this
         // connection.
         subscriptions: HashMap<String, String>,
@@ -894,7 +890,7 @@ mod test {
         fn new(
             conn: WebSocketStream<TokioAdapter<TcpStream>>,
             event_rx: ChannelRx<Event>,
-            terminate_rx: ChannelRx<Result<()>>,
+            terminate_rx: ChannelRx<Result<(), Error>>,
         ) -> Self {
             Self {
                 conn,
@@ -904,7 +900,7 @@ mod test {
             }
         }
 
-        async fn run(mut self) -> Result<()> {
+        async fn run(mut self) -> Result<(), Error> {
             loop {
                 tokio::select! {
                     Some(msg) = self.conn.next() => {
@@ -929,7 +925,7 @@ mod test {
             let _ = self.send(Id::Str(subs_id), ev).await;
         }
 
-        async fn handle_incoming_msg(&mut self, msg: Message) -> Option<Result<()>> {
+        async fn handle_incoming_msg(&mut self, msg: Message) -> Option<Result<(), Error>> {
             match msg {
                 Message::Text(s) => self.handle_incoming_text_msg(s).await,
                 Message::Ping(v) => {
@@ -944,7 +940,7 @@ mod test {
             }
         }
 
-        async fn handle_incoming_text_msg(&mut self, msg: String) -> Option<Result<()>> {
+        async fn handle_incoming_text_msg(&mut self, msg: String) -> Option<Result<(), Error>> {
             match serde_json::from_str::<serde_json::Value>(&msg) {
                 Ok(json_msg) => {
                     if let Some(json_method) = json_msg.get("method") {

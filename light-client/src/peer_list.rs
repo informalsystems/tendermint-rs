@@ -239,6 +239,7 @@ impl<T> PeerListBuilder<T> {
 mod tests {
     use super::*;
     use crate::errors::ErrorDetail;
+    use flex_error::ErrorReport;
 
     trait BTreeSetExt<T> {
         fn to_vec(&self) -> Vec<T>;
@@ -308,16 +309,12 @@ mod tests {
         let _ = peer_list.replace_faulty_primary(None).unwrap();
         let new_primary = peer_list.replace_faulty_primary(None);
         match new_primary {
-            Err(e) => match e.detail {
-                ErrorDetail::NoWitnessesLeft(_) => {}
-                _ => panic!("expected NoWitnessesLeft error"),
-            },
-            _ => panic!("expected NoWitnessesLeft error"),
+            Err(ErrorReport(ErrorDetail::NoWitnessesLeft(_), _)) => {}
+            _ => panic!(
+                "expected NoWitnessesLeft error, instead got {:?}",
+                new_primary
+            ),
         }
-        // assert_eq!(
-        //     new_primary.err().map(|e| e.kind().clone()),
-        //     Some(error::no_witnesses_left_error())
-        // );
     }
 
     #[test]

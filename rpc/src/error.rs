@@ -11,6 +11,7 @@ use crate::response_error::ResponseError;
 use crate::rpc_url::Url;
 
 define_error! {
+    #[derive(Debug, Clone)]
     Error {
         Response
             [ DisplayError<ResponseError> ]
@@ -40,8 +41,18 @@ define_error! {
             {
                 message: String
             }
+            [ DisplayOnly<tungstenite::Error> ]
             | e | {
                 format_args!("web socket error: {}", e.message)
+            },
+
+        WebSocketTimeout
+            {
+                timeout: Duration
+            }
+            | e | {
+                format_args!("reading from WebSocket connection timed out after {} seconds",
+                    e.timeout.as_secs())
             },
 
         MethodNotFound
@@ -103,6 +114,10 @@ define_error! {
             [ DisplayOnly<InvalidUri> ]
             | _ | { "invalid URI" },
 
+        Tendermint
+            [ tendermint::Error ]
+            | _ | { "tendermint error" },
+
         ParseInt
             [ DisplayOnly<std::num::ParseIntError> ]
             | _ | { "error parsing integer" },
@@ -132,6 +147,14 @@ define_error! {
         ParseUrl
             [ DisplayOnly<url::ParseError> ]
             | _ | { "parse error" },
+
+        Tungstenite
+            [ DisplayOnly<tungstenite::Error> ]
+            | _ | { "tungstenite error" },
+
+        Join
+            [ DisplayOnly<tokio::task::JoinError> ]
+            | _ | { "join error" },
 
         MalformedJson
             | _ | { "server returned malformatted JSON (no 'result' or 'error')" },
