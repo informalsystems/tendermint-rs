@@ -30,6 +30,12 @@ type JoinError = flex_error::DisplayOnly<tokio::task::JoinError>;
 #[cfg(not(feature = "tokio"))]
 type JoinError = flex_error::NoSource;
 
+#[cfg(feature = "async-tungstenite")]
+type TungsteniteError = flex_error::DisplayOnly<async_tungstenite::tungstenite::Error>;
+
+#[cfg(not(feature = "async-tungstenite"))]
+type TungsteniteError = flex_error::NoSource;
+
 define_error! {
     #[derive(Debug, Clone)]
     Error {
@@ -61,7 +67,7 @@ define_error! {
             {
                 message: String
             }
-            [ DisplayOnly<tungstenite::Error> ]
+            [ TungsteniteError ]
             | e | {
                 format_args!("web socket error: {}", e.message)
             },
@@ -169,7 +175,7 @@ define_error! {
             | _ | { "parse error" },
 
         Tungstenite
-            [ DisplayOnly<tungstenite::Error> ]
+            [ TungsteniteError ]
             | _ | { "tungstenite error" },
 
         Join
