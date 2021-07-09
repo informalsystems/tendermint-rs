@@ -21,7 +21,6 @@ description = """
 test = false
 
 [features]
-default = ["amino"]
 amino = ["prost-amino", "prost-amino-derive"]
 
 [dependencies]

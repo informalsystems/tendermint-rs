@@ -1,6 +1,6 @@
 //! Provides an interface and a default implementation of the `Io` component
 
-use flex_error::{define_error, DisplayOnly, TraceError};
+use flex_error::{define_error, TraceError};
 use std::time::Duration;
 
 #[cfg(feature = "rpc-client")]
@@ -9,6 +9,12 @@ use tendermint_rpc::Client;
 use tendermint_rpc as rpc;
 
 use crate::types::{Height, LightBlock};
+
+#[cfg(feature = "tokio")]
+type TimeoutError = flex_error::DisplayOnly<tokio::time::error::Elapsed>;
+
+#[cfg(not(feature = "tokio"))]
+type TimeoutError = flex_error::NoSource;
 
 /// Type for selecting either a specific height or the latest one
 pub enum AtHeight {
@@ -46,7 +52,7 @@ define_error! {
 
         Timeout
             { duration: Duration }
-            [ DisplayOnly<tokio::time::error::Elapsed> ]
+            [ TimeoutError ]
             | e | {
                 format_args!("task timed out after {} ms",
                     e.duration.as_millis())

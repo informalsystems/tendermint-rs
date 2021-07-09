@@ -199,8 +199,9 @@ pub trait MockRequestMatcher: Send + Sync {
 /// requests with specific methods to responses.
 ///
 /// [`MockRequestMatcher`]: trait.MockRequestMatcher.html
+#[derive(Debug)]
 pub struct MockRequestMethodMatcher {
-    mappings: HashMap<Method, Box<dyn Fn() -> Result<String, Error> + Send + Sync>>,
+    mappings: HashMap<Method, Result<String, Error>>,
 }
 
 impl MockRequestMatcher for MockRequestMethodMatcher {
@@ -208,9 +209,9 @@ impl MockRequestMatcher for MockRequestMethodMatcher {
     where
         R: Request,
     {
-        self.mappings.get(&request.method()).map(|res| match res() {
+        self.mappings.get(&request.method()).map(|res| match res {
             Ok(json) => R::Response::from_string(json),
-            Err(e) => Err(e),
+            Err(e) => Err(e.clone()),
         })
     }
 }
@@ -229,12 +230,8 @@ impl MockRequestMethodMatcher {
     ///
     /// Successful responses must be JSON-encoded.
     #[allow(dead_code)]
-    pub fn map(
-        mut self,
-        method: Method,
-        response: impl Fn() -> Result<String, Error> + Send + Sync + 'static,
-    ) -> Self {
-        self.mappings.insert(method, Box::new(response));
+    pub fn map(mut self, method: Method, response: Result<String, Error>) -> Self {
+        self.mappings.insert(method, response);
         self
     }
 }
@@ -263,10 +260,9 @@ mod test {
     async fn mock_client() {
         let abci_info_fixture = read_json_fixture("abci_info").await;
         let block_fixture = read_json_fixture("block").await;
-
         let matcher = MockRequestMethodMatcher::default()
-            .map(Method::AbciInfo, move || Ok(abci_info_fixture.clone()))
-            .map(Method::Block, move || Ok(block_fixture.clone()));
+            .map(Method::AbciInfo, Ok(abci_info_fixture))
+            .map(Method::Block, Ok(block_fixture));
         let (client, driver) = MockClient::new(matcher);
         let driver_hdl = tokio::spawn(async move { driver.run().await });
 

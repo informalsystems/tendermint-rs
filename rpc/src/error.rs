@@ -1,14 +1,34 @@
 //! JSON-RPC error types
 
 use flex_error::{define_error, DisplayError, DisplayOnly};
-use http::uri::InvalidUri;
-use http::Error as HttpError;
-use hyper::Error as HyperError;
 use std::time::Duration;
-use tokio::sync::mpsc::error::SendError;
 
 use crate::response_error::ResponseError;
 use crate::rpc_url::Url;
+
+#[cfg(feature = "http")]
+type HttpError = flex_error::DisplayOnly<http::Error>;
+
+#[cfg(not(feature = "http"))]
+type HttpError = flex_error::NoSource;
+
+#[cfg(feature = "http")]
+type InvalidUriError = flex_error::DisplayOnly<http::uri::InvalidUri>;
+
+#[cfg(not(feature = "http"))]
+type InvalidUriError = flex_error::NoSource;
+
+#[cfg(feature = "hyper")]
+type HyperError = flex_error::DisplayOnly<hyper::Error>;
+
+#[cfg(not(feature = "hyper"))]
+type HyperError = flex_error::NoSource;
+
+#[cfg(feature = "tokio")]
+type JoinError = flex_error::DisplayOnly<tokio::task::JoinError>;
+
+#[cfg(not(feature = "tokio"))]
+type JoinError = flex_error::NoSource;
 
 define_error! {
     #[derive(Debug, Clone)]
@@ -22,11 +42,11 @@ define_error! {
             | _ | { "I/O error" },
 
         Http
-            [ DisplayOnly<HttpError> ]
+            [ HttpError ]
             | _ | { "HTTP error" },
 
         Hyper
-            [ DisplayOnly<HyperError> ]
+            [ HyperError ]
             | _ | { "HTTP error" },
 
         InvalidParams
@@ -111,7 +131,7 @@ define_error! {
             },
 
         InvalidUri
-            [ DisplayOnly<InvalidUri> ]
+            [ InvalidUriError ]
             | _ | { "invalid URI" },
 
         Tendermint
@@ -153,7 +173,7 @@ define_error! {
             | _ | { "tungstenite error" },
 
         Join
-            [ DisplayOnly<tokio::task::JoinError> ]
+            [ JoinError ]
             | _ | { "join error" },
 
         MalformedJson
@@ -180,6 +200,7 @@ define_error! {
     }
 }
 
-pub fn send_error<T>(_: SendError<T>) -> Error {
+#[cfg(feature = "tokio")]
+pub fn send_error<T>(_: tokio::sync::mpsc::error::SendError<T>) -> Error {
     channel_send_error()
 }

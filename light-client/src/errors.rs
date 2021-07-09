@@ -14,16 +14,18 @@ use crate::{
 };
 use flex_error::{define_error, DisplayError, TraceError};
 
+#[cfg(feature = "sled")]
+type SledError = TraceError<sled::Error>;
+
+#[cfg(not(feature = "sled"))]
+type SledError = flex_error::NoSource;
+
 define_error! {
     #[derive(Debug)]
     Error {
         Io
             [ IoError ]
             | _ | { "io error" },
-
-        Store
-            [ TraceError<sled::Error> ]
-            | _ | { "store error" },
 
         NoPrimary
             | _ | { "no primary" },
@@ -105,7 +107,7 @@ define_error! {
             | _ | { "internal channel disconnected" },
 
         Sled
-            [ TraceError<sled::Error> ]
+            [ SledError ]
             | _ | { "sled error" },
 
         SerdeCbor
