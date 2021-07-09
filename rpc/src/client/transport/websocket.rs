@@ -121,7 +121,7 @@ const PING_INTERVAL: Duration = Duration::from_secs((RECV_TIMEOUT_SECONDS * 9) /
 /// ```
 ///
 /// [tendermint-websocket-ping]: https://github.com/tendermint/tendermint/blob/309e29c245a01825fc9630103311fd04de99fa5e/rpc/jsonrpc/server/ws_handler.go#L28
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct WebSocketClient {
     inner: sealed::WebSocketClient,
 }
@@ -259,7 +259,7 @@ mod sealed {
     /// different variants of this type.
     ///
     /// [`async-tungstenite`]: https://crates.io/crates/async-tungstenite
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub struct AsyncTungsteniteClient<C> {
         cmd_tx: ChannelTx<DriverCommand>,
         _client_type: std::marker::PhantomData<C>,
@@ -389,7 +389,7 @@ mod sealed {
 
     /// Allows us to erase the type signatures associated with the different
     /// WebSocket client variants.
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub enum WebSocketClient {
         Unsecure(AsyncTungsteniteClient<Unsecure>),
         Secure(AsyncTungsteniteClient<Secure>),
@@ -441,7 +441,7 @@ mod sealed {
 
 // The different types of commands that can be sent from the WebSocketClient to
 // the driver.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum DriverCommand {
     // Initiate a subscription request.
     Subscribe(SubscribeCommand),
@@ -452,7 +452,7 @@ enum DriverCommand {
     Terminate,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct SubscribeCommand {
     // The desired ID for the outgoing JSON-RPC request.
     id: String,
@@ -464,7 +464,7 @@ struct SubscribeCommand {
     response_tx: ChannelTx<Result<(), Error>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct UnsubscribeCommand {
     // The query from which to unsubscribe.
     query: String,
@@ -472,7 +472,7 @@ struct UnsubscribeCommand {
     response_tx: ChannelTx<Result<(), Error>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct SimpleRequestCommand {
     // The desired ID for the outgoing JSON-RPC request. Technically we
     // could extract this from the wrapped request, but that would mean
