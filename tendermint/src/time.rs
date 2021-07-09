@@ -1,18 +1,20 @@
 //! Timestamps used by Tendermint blockchains
 
-use crate::error::{Error, Kind};
-
-use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
-
-use std::convert::{Infallible, TryFrom};
+use std::convert::TryFrom;
 use std::fmt;
 use std::ops::{Add, Sub};
 use std::str::FromStr;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+use chrono::{DateTime, Utc};
+use prost_types::TimestampOutOfSystemRangeError;
+use serde::{Deserialize, Serialize};
+
 use tendermint_proto::google::protobuf::Timestamp;
 use tendermint_proto::serializers::timestamp;
 use tendermint_proto::Protobuf;
+
+use crate::error::{Error, Kind};
 
 /// Tendermint timestamps
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#time>
@@ -23,7 +25,7 @@ pub struct Time(DateTime<Utc>);
 impl Protobuf<Timestamp> for Time {}
 
 impl TryFrom<Timestamp> for Time {
-    type Error = Infallible;
+    type Error = TimestampOutOfSystemRangeError;
 
     fn try_from(value: Timestamp) -> Result<Self, Self::Error> {
         // prost_types::Timestamp has a SystemTime converter but
@@ -33,7 +35,7 @@ impl TryFrom<Timestamp> for Time {
             nanos: value.nanos,
         };
 
-        Ok(SystemTime::from(prost_value).into())
+        SystemTime::try_from(prost_value).map(Into::into)
     }
 }
 

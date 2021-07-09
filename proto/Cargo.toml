@@ -17,8 +17,8 @@ description = """
 all-features = true
 
 [dependencies]
-prost = "0.7"
-prost-types = "0.7"
+prost = "0.8"
+prost-types = "0.8"
 bytes = "1.0"
 anomaly = "0.2"
 thiserror = "1.0"
