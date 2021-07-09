@@ -650,7 +650,7 @@ mod tests {
                     rpc::error::ErrorDetail::Response(e) => {
                         assert_eq!(e.source, ResponseError::new(Code::InvalidRequest, None))
                     }
-                    _ => todo!(),
+                    _ => panic!("expected Response error"),
                 },
                 _ => panic!("expected Rpc error"),
             },

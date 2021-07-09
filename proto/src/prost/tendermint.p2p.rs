@@ -43,29 +43,6 @@ pub struct DefaultNodeInfoOther {
     pub rpc_address: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PexRequest {
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PexAddrs {
-    #[prost(message, repeated, tag="1")]
-    pub addrs: ::prost::alloc::vec::Vec<NetAddress>,
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Message {
-    #[prost(oneof="message::Sum", tags="1, 2")]
-    pub sum: ::core::option::Option<message::Sum>,
-}
-/// Nested message and enum types in `Message`.
-pub mod message {
-    #[derive(Clone, PartialEq, ::prost::Oneof)]
-    pub enum Sum {
-        #[prost(message, tag="1")]
-        PexRequest(super::PexRequest),
-        #[prost(message, tag="2")]
-        PexAddrs(super::PexAddrs),
-    }
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PacketPing {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -103,4 +80,27 @@ pub struct AuthSigMessage {
     pub pub_key: ::core::option::Option<super::crypto::PublicKey>,
     #[prost(bytes="vec", tag="2")]
     pub sig: ::prost::alloc::vec::Vec<u8>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PexRequest {
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PexAddrs {
+    #[prost(message, repeated, tag="1")]
+    pub addrs: ::prost::alloc::vec::Vec<NetAddress>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Message {
+    #[prost(oneof="message::Sum", tags="1, 2")]
+    pub sum: ::core::option::Option<message::Sum>,
+}
+/// Nested message and enum types in `Message`.
+pub mod message {
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Sum {
+        #[prost(message, tag="1")]
+        PexRequest(super::PexRequest),
+        #[prost(message, tag="2")]
+        PexAddrs(super::PexAddrs),
+    }
 }
