@@ -13,9 +13,9 @@ mod no_std_time {
     use chrono::TimeZone;
     use chrono::{DateTime, Utc};
     pub use core::time::Duration;
-    use no_std_compat::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
-    use no_std_compat::convert::TryFrom;
-    use no_std_compat::ops::{Add, AddAssign, Sub, SubAssign};
+    use sp_std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
+    use sp_std::convert::TryFrom;
+    use sp_std::ops::{Add, AddAssign, Sub, SubAssign};
 
     /// define no_std time UNIX_EPOCH
     pub const UNIX_EPOCH: SystemTime = SystemTime { inner: 0.0 };

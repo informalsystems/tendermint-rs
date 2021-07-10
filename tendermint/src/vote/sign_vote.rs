@@ -7,6 +7,7 @@ use tendermint_proto::privval::SignedVoteResponse as RawSignedVoteResponse;
 use tendermint_proto::privval::{RemoteSignerError, SignVoteRequest as RawSignVoteRequest};
 use tendermint_proto::Error as ProtobufError;
 use tendermint_proto::Protobuf;
+use crate::alloc::string::ToString;
 
 /// SignVoteRequest is a request to sign a vote
 #[derive(Clone, PartialEq, Debug)]
