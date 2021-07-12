@@ -1025,14 +1025,18 @@ fn incoming_fixtures() {
                     assert!(tx_result.result.gas_wanted.is_none());
                     assert!(tx_result.result.gas_used.is_none());
                     assert_eq!(tx_result.result.events.len(), 1);
-                    assert_eq!(tx_result.result.events[0].event_type, "app");
+                    assert_eq!(tx_result.result.events[0].type_str, "app");
                     for attr in &tx_result.result.events[0].attributes {
-                        match attr.key.as_str() {
-                            "Y3JlYXRvcg==" => assert_eq!(attr.value, "Q29zbW9zaGkgTmV0b3dva28="),
-                            "a2V5" => assert_eq!(attr.value, "dHgw"),
-                            "aW5kZXhfa2V5" => assert_eq!(attr.value, "aW5kZXggaXMgd29ya2luZw=="),
-                            "bm9pbmRleF9rZXk=" => {
-                                assert_eq!(attr.value, "aW5kZXggaXMgd29ya2luZw==")
+                        match attr.key.as_ref() {
+                            "creator" => {
+                                assert_eq!(attr.value.as_ref(), "Cosmoshi Netowoko")
+                            }
+                            "key" => assert_eq!(attr.value.as_ref(), "tx0"),
+                            "index_key" => {
+                                assert_eq!(attr.value.as_ref(), "index is working")
+                            }
+                            "noindex_key" => {
+                                assert_eq!(attr.value.as_ref(), "index is working")
                             }
                             _ => panic!("unknown attribute found {}", attr.key),
                         }
@@ -1065,14 +1069,18 @@ fn incoming_fixtures() {
                     assert!(tx_result.result.gas_wanted.is_none());
                     assert!(tx_result.result.gas_used.is_none());
                     assert_eq!(tx_result.result.events.len(), 1);
-                    assert_eq!(tx_result.result.events[0].event_type, "app");
+                    assert_eq!(tx_result.result.events[0].type_str, "app");
                     for attr in &tx_result.result.events[0].attributes {
-                        match attr.key.as_str() {
-                            "Y3JlYXRvcg==" => assert_eq!(attr.value, "Q29zbW9zaGkgTmV0b3dva28="),
-                            "a2V5" => assert_eq!(attr.value, "dHgx"),
-                            "aW5kZXhfa2V5" => assert_eq!(attr.value, "aW5kZXggaXMgd29ya2luZw=="),
-                            "bm9pbmRleF9rZXk=" => {
-                                assert_eq!(attr.value, "aW5kZXggaXMgd29ya2luZw==")
+                        match attr.key.as_ref() {
+                            "creator" => {
+                                assert_eq!(attr.value.as_ref(), "Cosmoshi Netowoko")
+                            }
+                            "key" => assert_eq!(attr.value.as_ref(), "tx1"),
+                            "index_key" => {
+                                assert_eq!(attr.value.as_ref(), "index is working")
+                            }
+                            "noindex_key" => {
+                                assert_eq!(attr.value.as_ref(), "index is working")
                             }
                             _ => panic!("unknown attribute found {}", attr.key),
                         }
@@ -1105,14 +1113,18 @@ fn incoming_fixtures() {
                     assert!(tx_result.result.gas_wanted.is_none());
                     assert!(tx_result.result.gas_used.is_none());
                     assert_eq!(tx_result.result.events.len(), 1);
-                    assert_eq!(tx_result.result.events[0].event_type, "app");
+                    assert_eq!(tx_result.result.events[0].type_str, "app");
                     for attr in &tx_result.result.events[0].attributes {
-                        match attr.key.as_str() {
-                            "Y3JlYXRvcg==" => assert_eq!(attr.value, "Q29zbW9zaGkgTmV0b3dva28="),
-                            "a2V5" => assert_eq!(attr.value, "dHgy"),
-                            "aW5kZXhfa2V5" => assert_eq!(attr.value, "aW5kZXggaXMgd29ya2luZw=="),
-                            "bm9pbmRleF9rZXk=" => {
-                                assert_eq!(attr.value, "aW5kZXggaXMgd29ya2luZw==")
+                        match attr.key.as_ref() {
+                            "creator" => {
+                                assert_eq!(attr.value.as_ref(), "Cosmoshi Netowoko")
+                            }
+                            "key" => assert_eq!(attr.value.as_ref(), "tx2"),
+                            "index_key" => {
+                                assert_eq!(attr.value.as_ref(), "index is working")
+                            }
+                            "noindex_key" => {
+                                assert_eq!(attr.value.as_ref(), "index is working")
                             }
                             _ => panic!("unknown attribute found {}", attr.key),
                         }
@@ -1145,14 +1157,18 @@ fn incoming_fixtures() {
                     assert!(tx_result.result.gas_wanted.is_none());
                     assert!(tx_result.result.gas_used.is_none());
                     assert_eq!(tx_result.result.events.len(), 1);
-                    assert_eq!(tx_result.result.events[0].event_type, "app");
+                    assert_eq!(tx_result.result.events[0].type_str, "app");
                     for attr in &tx_result.result.events[0].attributes {
-                        match attr.key.as_str() {
-                            "Y3JlYXRvcg==" => assert_eq!(attr.value, "Q29zbW9zaGkgTmV0b3dva28="),
-                            "a2V5" => assert_eq!(attr.value, "dHgz"),
-                            "aW5kZXhfa2V5" => assert_eq!(attr.value, "aW5kZXggaXMgd29ya2luZw=="),
-                            "bm9pbmRleF9rZXk=" => {
-                                assert_eq!(attr.value, "aW5kZXggaXMgd29ya2luZw==")
+                        match attr.key.as_ref() {
+                            "creator" => {
+                                assert_eq!(attr.value.as_ref(), "Cosmoshi Netowoko")
+                            }
+                            "key" => assert_eq!(attr.value.as_ref(), "tx3"),
+                            "index_key" => {
+                                assert_eq!(attr.value.as_ref(), "index is working")
+                            }
+                            "noindex_key" => {
+                                assert_eq!(attr.value.as_ref(), "index is working")
                             }
                             _ => panic!("unknown attribute found {}", attr.key),
                         }
@@ -1185,14 +1201,18 @@ fn incoming_fixtures() {
                     assert!(tx_result.result.gas_wanted.is_none());
                     assert!(tx_result.result.gas_used.is_none());
                     assert_eq!(tx_result.result.events.len(), 1);
-                    assert_eq!(tx_result.result.events[0].event_type, "app");
+                    assert_eq!(tx_result.result.events[0].type_str, "app");
                     for attr in &tx_result.result.events[0].attributes {
-                        match attr.key.as_str() {
-                            "Y3JlYXRvcg==" => assert_eq!(attr.value, "Q29zbW9zaGkgTmV0b3dva28="),
-                            "a2V5" => assert_eq!(attr.value, "dHg0"),
-                            "aW5kZXhfa2V5" => assert_eq!(attr.value, "aW5kZXggaXMgd29ya2luZw=="),
-                            "bm9pbmRleF9rZXk=" => {
-                                assert_eq!(attr.value, "aW5kZXggaXMgd29ya2luZw==")
+                        match attr.key.as_ref() {
+                            "creator" => {
+                                assert_eq!(attr.value.as_ref(), "Cosmoshi Netowoko")
+                            }
+                            "key" => assert_eq!(attr.value.as_ref(), "tx4"),
+                            "index_key" => {
+                                assert_eq!(attr.value.as_ref(), "index is working")
+                            }
+                            "noindex_key" => {
+                                assert_eq!(attr.value.as_ref(), "index is working")
                             }
                             _ => panic!("unknown attribute found {}", attr.key),
                         }
