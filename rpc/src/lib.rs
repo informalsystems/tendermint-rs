@@ -8,14 +8,12 @@
 //!
 //! Several client-related features are provided at present:
 //!
-//! * `http-client` - Provides [`HttpClient`], which is a basic RPC client that
-//!   interacts with remote Tendermint nodes via **JSON-RPC over HTTP or
-//!   HTTPS**. This client does not provide [`event::Event`] subscription
-//!   functionality. See the [Tendermint RPC] for more details.
-//! * `websocket-client` - Provides [`WebSocketClient`], which provides full
-//!   client functionality, including general RPC functionality as well as
-//!   [`event::Event`] subscription functionality. Can be used over secure
-//!   (`wss://`) and unsecure (`ws://`) connections.
+//! * `http-client` - Provides [`HttpClient`], which is a basic RPC client that interacts with
+//!   remote Tendermint nodes via **JSON-RPC over HTTP or HTTPS**. This client does not provide
+//!   [`event::Event`] subscription functionality. See the [Tendermint RPC] for more details.
+//! * `websocket-client` - Provides [`WebSocketClient`], which provides full client functionality,
+//!   including general RPC functionality as well as [`event::Event`] subscription functionality.
+//!   Can be used over secure (`wss://`) and unsecure (`ws://`) connections.
 //!
 //! ### Mock Clients
 //!
@@ -50,7 +48,7 @@ mod paging;
 pub mod query;
 pub mod request;
 pub mod response;
-mod result;
+pub mod response_error;
 mod rpc_url;
 mod utils;
 mod version;
@@ -62,6 +60,6 @@ pub use order::Order;
 pub use paging::{PageNumber, Paging, PerPage};
 pub use request::{Request, SimpleRequest};
 pub use response::Response;
-pub use result::Result;
+pub use response_error::{Code, ResponseError};
 pub use rpc_url::{Scheme, Url};
 pub use version::Version;

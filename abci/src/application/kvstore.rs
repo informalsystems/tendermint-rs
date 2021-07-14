@@ -1,7 +1,7 @@
 //! In-memory key/value store ABCI application.
 
 use crate::codec::{encode_varint, MAX_VARINT_LENGTH};
-use crate::{Application, Error, Result};
+use crate::{error, Application, Error};
 use bytes::BytesMut;
 use std::collections::HashMap;
 use std::sync::mpsc::{channel, Receiver, Sender};
@@ -28,7 +28,7 @@ impl KeyValueStoreApp {
     }
 
     /// Attempt to retrieve the value associated with the given key.
-    pub fn get<K: AsRef<str>>(&self, key: K) -> Result<(i64, Option<String>)> {
+    pub fn get<K: AsRef<str>>(&self, key: K) -> Result<(i64, Option<String>), Error> {
         let (result_tx, result_rx) = channel();
         channel_send(
             &self.cmd_tx,
@@ -44,7 +44,7 @@ impl KeyValueStoreApp {
     ///
     /// Optionally returns any pre-existing value associated with the given
     /// key.
-    pub fn set<K, V>(&self, key: K, value: V) -> Result<Option<String>>
+    pub fn set<K, V>(&self, key: K, value: V) -> Result<Option<String>, Error>
     where
         K: AsRef<str>,
         V: AsRef<str>,
@@ -202,12 +202,9 @@ impl KeyValueStoreDriver {
     }
 
     /// Run the driver in the current thread (blocking).
-    pub fn run(mut self) -> Result<()> {
+    pub fn run(mut self) -> Result<(), Error> {
         loop {
-            let cmd = self
-                .cmd_rx
-                .recv()
-                .map_err(|e| Error::ChannelRecv(e.to_string()))?;
+            let cmd = self.cmd_rx.recv().map_err(error::channel_recv_error)?;
             match cmd {
                 Command::GetInfo { result_tx } => {
                     channel_send(&result_tx, (self.height, self.app_hash.clone()))?
@@ -232,7 +229,7 @@ impl KeyValueStoreDriver {
         }
     }
 
-    fn commit(&mut self, result_tx: Sender<(i64, Vec<u8>)>) -> Result<()> {
+    fn commit(&mut self, result_tx: Sender<(i64, Vec<u8>)>) -> Result<(), Error> {
         // As in the Go-based key/value store, simply encode the number of
         // items as the "app hash"
         let mut app_hash = BytesMut::with_capacity(MAX_VARINT_LENGTH);
@@ -263,12 +260,10 @@ enum Command {
     Commit { result_tx: Sender<(i64, Vec<u8>)> },
 }
 
-fn channel_send<T>(tx: &Sender<T>, value: T) -> Result<()> {
-    tx.send(value)
-        .map_err(|e| Error::ChannelSend(e.to_string()).into())
+fn channel_send<T>(tx: &Sender<T>, value: T) -> Result<(), Error> {
+    tx.send(value).map_err(error::send_error)
 }
 
-fn channel_recv<T>(rx: &Receiver<T>) -> Result<T> {
-    rx.recv()
-        .map_err(|e| Error::ChannelRecv(e.to_string()).into())
+fn channel_recv<T>(rx: &Receiver<T>) -> Result<T, Error> {
+    rx.recv().map_err(error::channel_recv_error)
 }

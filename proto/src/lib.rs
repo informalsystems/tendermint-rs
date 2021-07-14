@@ -15,17 +15,18 @@ pub mod google {
     }
 }
 
+mod error;
 #[allow(warnings)]
 mod tendermint;
+
+pub use error::Error;
 pub use tendermint::*;
 
-mod error;
-use anomaly::BoxError;
 use bytes::{Buf, BufMut};
-pub use error::{Error, Kind};
 use prost::encoding::encoded_len_varint;
 use prost::Message;
 use std::convert::{TryFrom, TryInto};
+use std::fmt::Display;
 
 pub mod serializers;
 
@@ -109,7 +110,7 @@ pub mod serializers;
 pub trait Protobuf<T: Message + From<Self> + Default>
 where
     Self: Sized + Clone + TryFrom<T>,
-    <Self as TryFrom<T>>::Error: Into<BoxError>,
+    <Self as TryFrom<T>>::Error: Display,
 {
     /// Encode into a buffer in Protobuf format.
     ///
@@ -120,7 +121,7 @@ where
     fn encode<B: BufMut>(&self, buf: &mut B) -> Result<(), Error> {
         T::from(self.clone())
             .encode(buf)
-            .map_err(|e| Kind::EncodeMessage.context(e).into())
+            .map_err(error::encode_message_error)
     }
 
     /// Encode with a length-delimiter to a buffer in Protobuf format.
@@ -134,7 +135,7 @@ where
     fn encode_length_delimited<B: BufMut>(&self, buf: &mut B) -> Result<(), Error> {
         T::from(self.clone())
             .encode_length_delimited(buf)
-            .map_err(|e| Kind::EncodeMessage.context(e).into())
+            .map_err(error::encode_message_error)
     }
 
     /// Constructor that attempts to decode an instance from a buffer.
@@ -146,10 +147,9 @@ where
     ///
     /// [`prost::Message::decode`]: https://docs.rs/prost/*/prost/trait.Message.html#method.decode
     fn decode<B: Buf>(buf: B) -> Result<Self, Error> {
-        T::decode(buf).map_or_else(
-            |e| Err(Kind::DecodeMessage.context(e).into()),
-            |t| Self::try_from(t).map_err(|e| Kind::TryFromProtobuf.context(e).into()),
-        )
+        let raw = T::decode(buf).map_err(error::decode_message_error)?;
+
+        Self::try_from(raw).map_err(error::try_from_error::<T, Self, _>)
     }
 
     /// Constructor that attempts to decode a length-delimited instance from
@@ -162,10 +162,9 @@ where
     ///
     /// [`prost::Message::decode_length_delimited`]: https://docs.rs/prost/*/prost/trait.Message.html#method.decode_length_delimited
     fn decode_length_delimited<B: Buf>(buf: B) -> Result<Self, Error> {
-        T::decode_length_delimited(buf).map_or_else(
-            |e| Err(Kind::DecodeMessage.context(e).into()),
-            |t| Self::try_from(t).map_err(|e| Kind::TryFromProtobuf.context(e).into()),
-        )
+        let raw = T::decode_length_delimited(buf).map_err(error::decode_message_error)?;
+
+        Self::try_from(raw).map_err(error::try_from_error::<T, Self, _>)
     }
 
     /// Returns the encoded length of the message without a length delimiter.
@@ -193,7 +192,7 @@ where
     /// Encode with a length-delimiter to a `Vec<u8>` Protobuf-encoded message.
     fn encode_length_delimited_vec(&self) -> Result<Vec<u8>, Error> {
         let len = self.encoded_len();
-        let lenu64 = len.try_into().map_err(|e| Kind::EncodeMessage.context(e))?;
+        let lenu64 = len.try_into().map_err(error::parse_length_error)?;
         let mut wire = Vec::with_capacity(len + encoded_len_varint(lenu64));
         self.encode_length_delimited(&mut wire).map(|_| wire)
     }

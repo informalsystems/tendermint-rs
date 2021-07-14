@@ -33,10 +33,9 @@ rustdoc-args = ["--cfg", "docsrs"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-anomaly = "0.2"
 async-trait = "0.1"
 bytes = "1.0"
-chrono = { version = "0.4", features = ["serde"] }
+chrono = { version = "0.4.19", features = ["serde"] }
 ed25519 = "1"
 ed25519-dalek = { version = "1", features = ["serde"] }
 futures = "0.3"
@@ -52,11 +51,12 @@ sha2 = { version = "0.9", default-features = false }
 signature = "1.2"
 subtle = "2"
 subtle-encoding = { version = "0.5", features = ["bech32-preview"] }
-thiserror = "1"
 tendermint-proto = { version = "0.20.0", path = "../proto" }
 toml = { version = "0.5" }
 url = { version = "2.2" }
 zeroize = { version = "1.1", features = ["zeroize_derive"] }
+flex-error = "0.3.0"
+time = "0.1.40"
 
 k256 = { version = "0.9", optional = true, features = ["ecdsa"] }
 ripemd160 = { version = "0.9", optional = true }

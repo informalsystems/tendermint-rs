@@ -7,7 +7,6 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![deny(
     warnings,
-    missing_docs,
     trivial_casts,
     trivial_numeric_casts,
     unused_import_braces,
@@ -18,6 +17,8 @@
     html_root_url = "https://docs.rs/tendermint/0.20.0",
     html_logo_url = "https://raw.githubusercontent.com/informalsystems/tendermint-rs/master/img/logo-tendermint-rs_3961x4001.png"
 )]
+
+extern crate alloc;
 
 #[macro_use]
 pub mod error;
@@ -53,7 +54,7 @@ mod test;
 
 pub use crate::{
     block::Block,
-    error::{Error, Kind},
+    error::Error,
     genesis::Genesis,
     hash::AppHash,
     hash::Hash,

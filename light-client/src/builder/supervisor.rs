@@ -95,7 +95,7 @@ impl SupervisorBuilder<HasPrimary> {
     ) -> Result<SupervisorBuilder<Done>, Error> {
         let mut iter = witnesses.into_iter().peekable();
         if iter.peek().is_none() {
-            return Err(error::Kind::EmptyWitnessList.into());
+            return Err(error::empty_witness_list_error());
         }
 
         for (peer_id, address, instance) in iter {

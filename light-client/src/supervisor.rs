@@ -4,8 +4,7 @@ use crossbeam_channel as channel;
 
 use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
 
-use crate::bail;
-use crate::errors::{Error, ErrorKind};
+use crate::errors::{self as error, Error};
 use crate::evidence::EvidenceReporter;
 use crate::fork_detector::{Fork, ForkDetection, ForkDetector};
 use crate::light_client::LightClient;
@@ -215,7 +214,7 @@ impl Supervisor {
             Ok(verified_block) => {
                 let trusted_block = primary
                     .latest_trusted()
-                    .ok_or(ErrorKind::NoTrustedState(Status::Trusted))?;
+                    .ok_or_else(|| error::no_trusted_state_error(Status::Trusted))?;
 
                 // Perform fork detection with the highest verified block and the trusted block.
                 let outcome = self.detect_forks(&verified_block, &trusted_block)?;
@@ -226,7 +225,7 @@ impl Supervisor {
                         let forked = self.process_forks(forks)?;
                         if !forked.is_empty() {
                             // Fork detected, exiting
-                            bail!(ErrorKind::ForkDetected(forked))
+                            return Err(error::fork_detected_error(forked));
                         }
 
                         // If there were no hard forks, perform verification again
@@ -297,7 +296,7 @@ impl Supervisor {
 
         self.evidence_reporter
             .report(Evidence::ConflictingHeaders(Box::new(evidence)), provider)
-            .map_err(ErrorKind::Io)?;
+            .map_err(error::io_error)?;
 
         Ok(())
     }
@@ -309,7 +308,7 @@ impl Supervisor {
         trusted_block: &LightBlock,
     ) -> Result<ForkDetection, Error> {
         if self.peers.witnesses_ids().is_empty() {
-            bail!(ErrorKind::NoWitnesses);
+            return Err(error::no_witnesses_error());
         }
 
         let witnesses = self
@@ -328,28 +327,28 @@ impl Supervisor {
     /// This method should typically be called within a new thread with `std::thread::spawn`.
     pub fn run(mut self) -> Result<(), Error> {
         loop {
-            let event = self.receiver.recv().map_err(ErrorKind::from)?;
+            let event = self.receiver.recv().map_err(error::recv_error)?;
 
             match event {
                 HandleInput::LatestTrusted(sender) => {
                     let outcome = self.latest_trusted();
-                    sender.send(outcome).map_err(ErrorKind::from)?;
+                    sender.send(outcome).map_err(error::send_error)?;
                 }
                 HandleInput::Terminate(sender) => {
-                    sender.send(()).map_err(ErrorKind::from)?;
+                    sender.send(()).map_err(error::send_error)?;
                     return Ok(());
                 }
                 HandleInput::VerifyToTarget(height, sender) => {
                     let outcome = self.verify_to_target(height);
-                    sender.send(outcome).map_err(ErrorKind::from)?;
+                    sender.send(outcome).map_err(error::send_error)?;
                 }
                 HandleInput::VerifyToHighest(sender) => {
                     let outcome = self.verify_to_highest();
-                    sender.send(outcome).map_err(ErrorKind::from)?;
+                    sender.send(outcome).map_err(error::send_error)?;
                 }
                 HandleInput::GetStatus(sender) => {
                     let outcome = self.latest_status();
-                    sender.send(outcome).map_err(ErrorKind::from)?;
+                    sender.send(outcome).map_err(error::send_error)?;
                 }
             }
         }
@@ -377,9 +376,9 @@ impl SupervisorHandle {
         let (sender, receiver) = channel::bounded::<Result<LightBlock, Error>>(1);
 
         let event = make_event(sender);
-        self.sender.send(event).map_err(ErrorKind::from)?;
+        self.sender.send(event).map_err(error::send_error)?;
 
-        receiver.recv().map_err(ErrorKind::from)?
+        receiver.recv().map_err(error::recv_error)?
     }
 }
 
@@ -389,17 +388,17 @@ impl Handle for SupervisorHandle {
 
         self.sender
             .send(HandleInput::LatestTrusted(sender))
-            .map_err(ErrorKind::from)?;
+            .map_err(error::send_error)?;
 
-        Ok(receiver.recv().map_err(ErrorKind::from)?)
+        receiver.recv().map_err(error::recv_error)
     }
 
     fn latest_status(&self) -> Result<LatestStatus, Error> {
         let (sender, receiver) = channel::bounded::<LatestStatus>(1);
         self.sender
             .send(HandleInput::GetStatus(sender))
-            .map_err(ErrorKind::from)?;
-        Ok(receiver.recv().map_err(ErrorKind::from)?)
+            .map_err(error::send_error)?;
+        receiver.recv().map_err(error::recv_error)
     }
 
     fn verify_to_highest(&self) -> Result<LightBlock, Error> {
@@ -415,21 +414,20 @@ impl Handle for SupervisorHandle {
 
         self.sender
             .send(HandleInput::Terminate(sender))
-            .map_err(ErrorKind::from)?;
+            .map_err(error::send_error)?;
 
-        Ok(receiver.recv().map_err(ErrorKind::from)?)
+        receiver.recv().map_err(error::recv_error)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::components::io::IoError;
     use crate::light_client::Options;
     use crate::operations::ProdHasher;
     use crate::{
         components::{
-            io::{AtHeight, Io},
+            io::{self, AtHeight, Io},
             scheduler,
             verifier::ProdVerifier,
         },
@@ -438,12 +436,15 @@ mod tests {
         tests::{MockClock, MockEvidenceReporter, MockIo, TrustOptions},
         types::Time,
     };
+    use flex_error::ErrorReport;
     use std::{collections::HashMap, convert::TryFrom, time::Duration};
     use tendermint::block::Height;
     use tendermint::evidence::Duration as DurationStr;
     use tendermint::trust_threshold::TrustThresholdFraction;
-    use tendermint_rpc as rpc;
-    use tendermint_rpc::error::Code;
+    use tendermint_rpc::{
+        self as rpc,
+        response_error::{Code, ResponseError},
+    };
     use tendermint_testgen::helpers::get_time;
     use tendermint_testgen::{
         Commit, Generator, Header, LightBlock as TestgenLightBlock, LightChain, ValidatorSet,
@@ -620,10 +621,10 @@ mod tests {
 
         let (result, _) = run_bisection_test(peer_list, 10);
 
-        let expected_err = ErrorKind::NoWitnesses;
-        let got_err = result.err().unwrap();
-
-        assert_eq!(&expected_err, got_err.kind());
+        match result {
+            Err(ErrorReport(error::ErrorDetail::NoWitnesses(_), _)) => {}
+            _ => panic!("expected NoWitnesses error, instead got {:?}", result),
+        }
     }
 
     #[test]
@@ -643,13 +644,18 @@ mod tests {
 
         let (result, _) = run_bisection_test(peer_list, 10);
 
-        let expected_err = ErrorKind::Io(IoError::RpcError(rpc::Error::new(
-            Code::InvalidRequest,
-            None,
-        )));
-        let got_err = result.err().unwrap();
-
-        assert_eq!(&expected_err, got_err.kind());
+        match result {
+            Err(ErrorReport(error::ErrorDetail::Io(e), _)) => match e.source {
+                io::IoErrorDetail::Rpc(e) => match e.source {
+                    rpc::error::ErrorDetail::Response(e) => {
+                        assert_eq!(e.source, ResponseError::new(Code::InvalidRequest, None))
+                    }
+                    _ => panic!("expected Response error"),
+                },
+                _ => panic!("expected Rpc error"),
+            },
+            _ => panic!("expected NoWitnesses error"),
+        }
     }
 
     #[test]
@@ -667,10 +673,25 @@ mod tests {
 
         let (result, _) = run_bisection_test(peer_list, 10);
 
-        let expected_err = ErrorKind::NoWitnessLeft;
-        let got_err = result.err().unwrap();
-
-        assert_eq!(&expected_err, got_err.kind());
+        // FIXME: currently this test does not test what it is supposed to test,
+        // because MockIo returns an InvalidRequest error. This was previously
+        // treated as a NoWitnessLeft error, which was misclassified.
+        match result {
+            Err(ErrorReport(error::ErrorDetail::Io(e), _)) => match e.source {
+                crate::components::io::IoErrorDetail::Rpc(e) => match e.source {
+                    rpc::error::ErrorDetail::Response(e) => {
+                        assert_eq!(e.source.code(), rpc::Code::InvalidRequest)
+                    }
+                    _ => {
+                        panic!("expected Response error, instead got {:?}", e)
+                    }
+                },
+                _ => {
+                    panic!("expected Rpc error, instead got {:?}", e)
+                }
+            },
+            _ => panic!("expected Io error, instead got {:?}", result),
+        }
     }
 
     #[test]
@@ -699,14 +720,14 @@ mod tests {
             None,
         );
 
-        let peer_list = make_peer_list(Some(primary), Some(vec![witness.clone()]), get_time(11));
+        let peer_list = make_peer_list(Some(primary), Some(vec![witness]), get_time(11));
 
         let (result, _) = run_bisection_test(peer_list, 5);
 
-        let expected_err = ErrorKind::ForkDetected(vec![witness[0].provider]);
-        let got_err = result.err().unwrap();
-
-        assert_eq!(&expected_err, got_err.kind());
+        match result {
+            Err(ErrorReport(error::ErrorDetail::ForkDetected(_), _)) => {}
+            _ => panic!("expected ForkDetected error"),
+        }
     }
 
     #[test]

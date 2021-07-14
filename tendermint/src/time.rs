@@ -1,11 +1,8 @@
 //! Timestamps used by Tendermint blockchains
 
-use crate::error::{Error, Kind};
-
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use std::convert::{Infallible, TryFrom};
 use std::fmt;
 use std::ops::{Add, Sub};
 use std::str::FromStr;
@@ -13,6 +10,8 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tendermint_proto::google::protobuf::Timestamp;
 use tendermint_proto::serializers::timestamp;
 use tendermint_proto::Protobuf;
+
+use crate::error::{self, Error};
 
 /// Tendermint timestamps
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#time>
@@ -22,10 +21,8 @@ pub struct Time(DateTime<Utc>);
 
 impl Protobuf<Timestamp> for Time {}
 
-impl TryFrom<Timestamp> for Time {
-    type Error = Infallible;
-
-    fn try_from(value: Timestamp) -> Result<Self, Self::Error> {
+impl From<Timestamp> for Time {
+    fn from(value: Timestamp) -> Self {
         // prost_types::Timestamp has a SystemTime converter but
         // tendermint_proto::Timestamp can be JSON-encoded
         let prost_value = prost_types::Timestamp {
@@ -33,7 +30,7 @@ impl TryFrom<Timestamp> for Time {
             nanos: value.nanos,
         };
 
-        Ok(SystemTime::from(prost_value).into())
+        SystemTime::from(prost_value).into()
     }
 }
 
@@ -66,12 +63,15 @@ impl Time {
         self.0
             .signed_duration_since(other.0)
             .to_std()
-            .map_err(|_| Kind::OutOfRange.into())
+            .map_err(error::out_of_range_error)
     }
 
     /// Parse [`Time`] from an RFC 3339 date
     pub fn parse_from_rfc3339(s: &str) -> Result<Time, Error> {
-        Ok(Time(DateTime::parse_from_rfc3339(s)?.with_timezone(&Utc)))
+        let date = DateTime::parse_from_rfc3339(s)
+            .map_err(error::chrono_parse_error)?
+            .with_timezone(&Utc);
+        Ok(Time(date))
     }
 
     /// Return an RFC 3339 and ISO 8601 date and time string with 6 subseconds digits and Z.

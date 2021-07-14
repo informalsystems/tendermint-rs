@@ -1,8 +1,8 @@
 use crate::chain;
+use crate::error::{self, Error};
 use crate::Vote;
-use crate::{Error, Kind};
 use bytes::BufMut;
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use tendermint_proto::privval::SignedVoteResponse as RawSignedVoteResponse;
 use tendermint_proto::privval::{RemoteSignerError, SignVoteRequest as RawSignVoteRequest};
 use tendermint_proto::Error as ProtobufError;
@@ -23,13 +23,14 @@ impl TryFrom<RawSignVoteRequest> for SignVoteRequest {
     type Error = Error;
 
     fn try_from(value: RawSignVoteRequest) -> Result<Self, Self::Error> {
-        if value.vote.is_none() {
-            return Err(Kind::NoVoteFound.into());
-        }
-        Ok(SignVoteRequest {
-            vote: Vote::try_from(value.vote.unwrap())?,
-            chain_id: chain::Id::try_from(value.chain_id)?,
-        })
+        let vote = value
+            .vote
+            .ok_or_else(error::no_vote_found_error)?
+            .try_into()?;
+
+        let chain_id = value.chain_id.try_into()?;
+
+        Ok(SignVoteRequest { vote, chain_id })
     }
 }
 

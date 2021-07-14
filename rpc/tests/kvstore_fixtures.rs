@@ -1,9 +1,12 @@
 //! Tendermint kvstore RPC endpoint testing.
 
+use flex_error::ErrorReport;
 use std::str::FromStr;
 use std::{fs, path::PathBuf};
 use subtle_encoding::{base64, hex};
-use tendermint_rpc::{endpoint, error::Code, request::Wrapper as RequestWrapper, Order, Response};
+use tendermint_rpc::{
+    endpoint, error::ErrorDetail, request::Wrapper as RequestWrapper, Code, Order, Response,
+};
 use walkdir::WalkDir;
 
 const CHAIN_ID: &str = "dockerchain";
@@ -306,15 +309,20 @@ fn incoming_fixtures() {
                 assert!(result.response.value.is_empty());
             }
             "block_at_height_0" => {
-                let error = endpoint::block::Response::from_string(&content)
-                    .err()
-                    .unwrap();
-                assert_eq!(error.code(), Code::InternalError);
-                assert_eq!(error.message(), "Internal error");
-                assert_eq!(
-                    error.data(),
-                    Some("height must be greater than 0, but got 0")
-                );
+                let res = endpoint::block::Response::from_string(&content);
+
+                match res {
+                    Err(ErrorReport(ErrorDetail::Response(e), _)) => {
+                        let response = e.source;
+                        assert_eq!(response.code(), Code::InternalError);
+                        assert_eq!(response.message(), "Internal error");
+                        assert_eq!(
+                            response.data(),
+                            Some("height must be greater than 0, but got 0")
+                        );
+                    }
+                    _ => panic!("expected Response error"),
+                }
             }
             "block_at_height_1" => {
                 let result = endpoint::block::Response::from_string(content).unwrap();
@@ -720,23 +728,26 @@ fn incoming_fixtures() {
                 assert_eq!(result.validator_info.power.value(), 10);
             }
             "subscribe_malformed" => {
-                let result = endpoint::subscribe::Response::from_string(content)
-                    .err()
-                    .unwrap();
-                assert_eq!(result.code(), Code::InternalError);
-                assert_eq!(result.message(), "Internal error");
-                assert_eq!(result.data().unwrap(),"failed to parse query: \nparse error near PegText (line 1 symbol 2 - line 1 symbol 11):\n\"malformed\"\n");
+                let result = endpoint::subscribe::Response::from_string(content);
+
+                match result {
+                    Err(ErrorReport(ErrorDetail::Response(e), _)) => {
+                        let response = e.source;
+
+                        assert_eq!(response.code(), Code::InternalError);
+                        assert_eq!(response.message(), "Internal error");
+                        assert_eq!(response.data().unwrap(),"failed to parse query: \nparse error near PegText (line 1 symbol 2 - line 1 symbol 11):\n\"malformed\"\n");
+                    }
+                    _ => panic!("expected Response error"),
+                }
             }
             "subscribe_newblock" => {
-                let result = endpoint::subscribe::Response::from_string(content)
-                    .err()
-                    .unwrap();
-                assert_eq!(result.code(), Code::ParseError);
-                assert_eq!(result.message(), "Parse error. Invalid JSON");
-                assert_eq!(
-                    result.data().unwrap(),
-                    "missing field `jsonrpc` at line 1 column 2"
-                );
+                let result = endpoint::subscribe::Response::from_string(content);
+
+                match result {
+                    Err(ErrorReport(ErrorDetail::Serde(_), _)) => {}
+                    _ => panic!("expected Serde parse error, instead got {:?}", result),
+                }
             }
             "subscribe_newblock_0" => {
                 let result = tendermint_rpc::event::Event::from_string(content).unwrap();

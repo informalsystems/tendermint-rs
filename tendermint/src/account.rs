@@ -1,7 +1,7 @@
 //! Tendermint accounts
 
 use crate::{
-    error::{Error, Kind},
+    error::{self, Error},
     public_key::Ed25519,
 };
 
@@ -36,7 +36,7 @@ impl TryFrom<Vec<u8>> for Id {
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         if value.len() != LENGTH {
-            return Err(Kind::InvalidAccountIdLength.into());
+            return Err(error::invalid_account_id_length_error());
         }
         let mut slice: [u8; LENGTH] = [0; LENGTH];
         slice.copy_from_slice(&value[..]);
@@ -118,7 +118,7 @@ impl FromStr for Id {
         // Accept either upper or lower case hex
         let bytes = hex::decode_upper(s)
             .or_else(|_| hex::decode(s))
-            .map_err(|_| Kind::Parse.context("account id decode"))?;
+            .map_err(error::subtle_encoding_error)?;
 
         bytes.try_into()
     }

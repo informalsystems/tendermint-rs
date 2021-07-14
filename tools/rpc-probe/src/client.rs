@@ -132,7 +132,6 @@ enum DriverCommand {
     Terminate,
 }
 
-#[derive(Debug)]
 pub struct ClientDriver {
     stream: WebSocketStream<ConnectStream>,
     cmd_rx: DriverCommandRx,

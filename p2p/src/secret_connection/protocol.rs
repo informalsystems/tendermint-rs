@@ -3,7 +3,6 @@
 use std::convert::TryInto;
 
 use ed25519_dalek as ed25519;
-use eyre::{Report, Result, WrapErr};
 use prost::Message as _;
 
 #[cfg(feature = "amino")]
@@ -16,7 +15,7 @@ use tendermint_proto as proto;
 #[cfg(feature = "amino")]
 use super::amino_types;
 
-use crate::error::Error;
+use crate::error::{self, Error};
 
 /// Size of an X25519 or Ed25519 public key
 const PUBLIC_KEY_SIZE: usize = 32;
@@ -81,14 +80,13 @@ impl Version {
     /// # Errors
     ///
     /// * if the message is malformed
-    pub fn decode_initial_handshake(self, bytes: &[u8]) -> Result<EphemeralPublic> {
+    pub fn decode_initial_handshake(self, bytes: &[u8]) -> Result<EphemeralPublic, Error> {
         let eph_pubkey = if self.is_protobuf() {
             // Equivalent Go implementation:
             // https://github.com/tendermint/tendermint/blob/9e98c74/p2p/conn/secret_connection.go#L315-L323
             // TODO(tarcieri): proper protobuf framing
             if bytes.len() != 34 || bytes[..2] != [0x0a, 0x20] {
-                return Err(Error::Protocol)
-                    .wrap_err("malformed handshake message (protocol version mismatch?)");
+                return Err(error::malformed_handshake_error());
             }
 
             let eph_pubkey_bytes: [u8; 32] = bytes[2..].try_into().expect("framing failed");
@@ -99,8 +97,7 @@ impl Version {
             //
             // Check that the length matches what we expect and the length prefix is correct
             if bytes.len() != 33 || bytes[0] != 32 {
-                return Err(Error::Protocol)
-                    .wrap_err("malformed handshake message (protocol version mismatch?)");
+                return Err(error::malformed_handshake_error());
             }
 
             let eph_pubkey_bytes: [u8; 32] = bytes[1..].try_into().expect("framing failed");
@@ -109,7 +106,7 @@ impl Version {
 
         // Reject the key if it is of low order
         if is_low_order_point(&eph_pubkey) {
-            return Err(Error::InvalidKey).wrap_err("low order key");
+            return Err(error::low_order_key_error());
         }
 
         Ok(eph_pubkey)
@@ -161,16 +158,10 @@ impl Version {
     /// # Errors
     ///
     /// * if the decoding of the bytes fails
-    pub fn decode_auth_signature(self, bytes: &[u8]) -> Result<proto::p2p::AuthSigMessage> {
+    pub fn decode_auth_signature(self, bytes: &[u8]) -> Result<proto::p2p::AuthSigMessage, Error> {
         if self.is_protobuf() {
             // Parse Protobuf-encoded `AuthSigMessage`
-            proto::p2p::AuthSigMessage::decode_length_delimited(bytes).map_err(|e| {
-                let message = format!(
-                    "malformed handshake message (protocol version mismatch?): {}",
-                    e
-                );
-                Report::new(Error::Protocol).wrap_err(message)
-            })
+            proto::p2p::AuthSigMessage::decode_length_delimited(bytes).map_err(error::decode_error)
         } else {
             self.decode_auth_signature_amino(bytes)
         }
@@ -207,9 +198,13 @@ impl Version {
 
     #[allow(clippy::unused_self)]
     #[cfg(feature = "amino")]
-    fn decode_auth_signature_amino(self, bytes: &[u8]) -> Result<proto::p2p::AuthSigMessage> {
+    fn decode_auth_signature_amino(
+        self,
+        bytes: &[u8],
+    ) -> Result<proto::p2p::AuthSigMessage, Error> {
         // Legacy Amino encoded `AuthSigMessage`
-        let amino_msg = amino_types::AuthSigMessage::decode_length_delimited(bytes)?;
+        let amino_msg = amino_types::AuthSigMessage::decode_length_delimited(bytes)
+            .map_err(error::amino_decode_error)?;
         let pub_key = proto::crypto::PublicKey {
             sum: Some(proto::crypto::public_key::Sum::Ed25519(amino_msg.pub_key)),
         };
@@ -222,7 +217,7 @@ impl Version {
 
     #[allow(clippy::unused_self)]
     #[cfg(not(feature = "amino"))]
-    fn decode_auth_signature_amino(self, _: &[u8]) -> Result<proto::p2p::AuthSigMessage> {
+    fn decode_auth_signature_amino(self, _: &[u8]) -> Result<proto::p2p::AuthSigMessage, Error> {
         panic!("attempted to decode auth signature using amino, but 'amino' feature is not present")
     }
 }

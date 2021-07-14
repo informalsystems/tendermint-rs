@@ -14,10 +14,10 @@ pub use transport::websocket::{WebSocketClient, WebSocketClientDriver, WebSocket
 
 use crate::endpoint::validators::DEFAULT_VALIDATORS_PER_PAGE;
 use crate::endpoint::*;
-use crate::error::Error;
+use crate::error;
 use crate::paging::Paging;
 use crate::query::Query;
-use crate::{Order, Result, SimpleRequest};
+use crate::{Error, Order, SimpleRequest};
 use async_trait::async_trait;
 use std::time::Duration;
 use tendermint::abci::{self, Transaction};
@@ -36,7 +36,7 @@ use tokio::time;
 #[async_trait]
 pub trait Client {
     /// `/abci_info`: get information about the ABCI application.
-    async fn abci_info(&self) -> Result<abci_info::AbciInfo> {
+    async fn abci_info(&self) -> Result<abci_info::AbciInfo, Error> {
         Ok(self.perform(abci_info::Request).await?.response)
     }
 
@@ -47,7 +47,7 @@ pub trait Client {
         data: V,
         height: Option<Height>,
         prove: bool,
-    ) -> Result<abci_query::AbciQuery>
+    ) -> Result<abci_query::AbciQuery, Error>
     where
         V: Into<Vec<u8>> + Send,
     {
@@ -58,7 +58,7 @@ pub trait Client {
     }
 
     /// `/block`: get block at a given height.
-    async fn block<H>(&self, height: H) -> Result<block::Response>
+    async fn block<H>(&self, height: H) -> Result<block::Response, Error>
     where
         H: Into<Height> + Send,
     {
@@ -66,12 +66,12 @@ pub trait Client {
     }
 
     /// `/block`: get the latest block.
-    async fn latest_block(&self) -> Result<block::Response> {
+    async fn latest_block(&self) -> Result<block::Response, Error> {
         self.perform(block::Request::default()).await
     }
 
     /// `/block_results`: get ABCI results for a block at a particular height.
-    async fn block_results<H>(&self, height: H) -> Result<block_results::Response>
+    async fn block_results<H>(&self, height: H) -> Result<block_results::Response, Error>
     where
         H: Into<Height> + Send,
     {
@@ -80,7 +80,7 @@ pub trait Client {
     }
 
     /// `/block_results`: get ABCI results for the latest block.
-    async fn latest_block_results(&self) -> Result<block_results::Response> {
+    async fn latest_block_results(&self) -> Result<block_results::Response, Error> {
         self.perform(block_results::Request::default()).await
     }
 
@@ -89,7 +89,7 @@ pub trait Client {
     /// Block headers are returned in descending order (highest first).
     ///
     /// Returns at most 20 items.
-    async fn blockchain<H>(&self, min: H, max: H) -> Result<blockchain::Response>
+    async fn blockchain<H>(&self, min: H, max: H) -> Result<blockchain::Response, Error>
     where
         H: Into<Height> + Send,
     {
@@ -99,24 +99,33 @@ pub trait Client {
     }
 
     /// `/broadcast_tx_async`: broadcast a transaction, returning immediately.
-    async fn broadcast_tx_async(&self, tx: Transaction) -> Result<broadcast::tx_async::Response> {
+    async fn broadcast_tx_async(
+        &self,
+        tx: Transaction,
+    ) -> Result<broadcast::tx_async::Response, Error> {
         self.perform(broadcast::tx_async::Request::new(tx)).await
     }
 
     /// `/broadcast_tx_sync`: broadcast a transaction, returning the response
     /// from `CheckTx`.
-    async fn broadcast_tx_sync(&self, tx: Transaction) -> Result<broadcast::tx_sync::Response> {
+    async fn broadcast_tx_sync(
+        &self,
+        tx: Transaction,
+    ) -> Result<broadcast::tx_sync::Response, Error> {
         self.perform(broadcast::tx_sync::Request::new(tx)).await
     }
 
     /// `/broadcast_tx_commit`: broadcast a transaction, returning the response
     /// from `DeliverTx`.
-    async fn broadcast_tx_commit(&self, tx: Transaction) -> Result<broadcast::tx_commit::Response> {
+    async fn broadcast_tx_commit(
+        &self,
+        tx: Transaction,
+    ) -> Result<broadcast::tx_commit::Response, Error> {
         self.perform(broadcast::tx_commit::Request::new(tx)).await
     }
 
     /// `/commit`: get block commit at a given height.
-    async fn commit<H>(&self, height: H) -> Result<commit::Response>
+    async fn commit<H>(&self, height: H) -> Result<commit::Response, Error>
     where
         H: Into<Height> + Send,
     {
@@ -124,13 +133,13 @@ pub trait Client {
     }
 
     /// `/consensus_state`: get current consensus state
-    async fn consensus_state(&self) -> Result<consensus_state::Response> {
+    async fn consensus_state(&self) -> Result<consensus_state::Response, Error> {
         self.perform(consensus_state::Request::new()).await
     }
 
     // TODO(thane): Simplify once validators endpoint removes pagination.
     /// `/validators`: get validators a given height.
-    async fn validators<H>(&self, height: H, paging: Paging) -> Result<validators::Response>
+    async fn validators<H>(&self, height: H, paging: Paging) -> Result<validators::Response, Error>
     where
         H: Into<Height> + Send,
     {
@@ -178,41 +187,41 @@ pub trait Client {
     }
 
     /// `/commit`: get the latest block commit
-    async fn latest_commit(&self) -> Result<commit::Response> {
+    async fn latest_commit(&self) -> Result<commit::Response, Error> {
         self.perform(commit::Request::default()).await
     }
 
     /// `/health`: get node health.
     ///
     /// Returns empty result (200 OK) on success, no response in case of an error.
-    async fn health(&self) -> Result<()> {
+    async fn health(&self) -> Result<(), Error> {
         self.perform(health::Request).await?;
         Ok(())
     }
 
     /// `/genesis`: get genesis file.
-    async fn genesis(&self) -> Result<Genesis> {
+    async fn genesis(&self) -> Result<Genesis, Error> {
         Ok(self.perform(genesis::Request).await?.genesis)
     }
 
     /// `/net_info`: obtain information about P2P and other network connections.
-    async fn net_info(&self) -> Result<net_info::Response> {
+    async fn net_info(&self) -> Result<net_info::Response, Error> {
         self.perform(net_info::Request).await
     }
 
     /// `/status`: get Tendermint status including node info, pubkey, latest
     /// block hash, app hash, block height and time.
-    async fn status(&self) -> Result<status::Response> {
+    async fn status(&self) -> Result<status::Response, Error> {
         self.perform(status::Request).await
     }
 
     /// `/broadcast_evidence`: broadcast an evidence.
-    async fn broadcast_evidence(&self, e: Evidence) -> Result<evidence::Response> {
+    async fn broadcast_evidence(&self, e: Evidence) -> Result<evidence::Response, Error> {
         self.perform(evidence::Request::new(e)).await
     }
 
     /// `/tx`: find transaction by hash.
-    async fn tx(&self, hash: abci::transaction::Hash, prove: bool) -> Result<tx::Response> {
+    async fn tx(&self, hash: abci::transaction::Hash, prove: bool) -> Result<tx::Response, Error> {
         self.perform(tx::Request::new(hash, prove)).await
     }
 
@@ -224,14 +233,14 @@ pub trait Client {
         page: u32,
         per_page: u8,
         order: Order,
-    ) -> Result<tx_search::Response> {
+    ) -> Result<tx_search::Response, Error> {
         self.perform(tx_search::Request::new(query, prove, page, per_page, order))
             .await
     }
 
     /// Poll the `/health` endpoint until it returns a successful result or
     /// the given `timeout` has elapsed.
-    async fn wait_until_healthy<T>(&self, timeout: T) -> Result<()>
+    async fn wait_until_healthy<T>(&self, timeout: T) -> Result<(), Error>
     where
         T: Into<Duration> + Send,
     {
@@ -241,10 +250,7 @@ pub trait Client {
 
         while self.health().await.is_err() {
             if attempts_remaining == 0 {
-                return Err(Error::client_internal_error(format!(
-                    "timed out waiting for healthy response after {}ms",
-                    timeout.as_millis()
-                )));
+                return Err(error::timeout_error(timeout));
             }
 
             attempts_remaining -= 1;
@@ -255,7 +261,7 @@ pub trait Client {
     }
 
     /// Perform a request against the RPC endpoint
-    async fn perform<R>(&self, request: R) -> Result<R::Response>
+    async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
     where
         R: SimpleRequest;
 }

@@ -1,5 +1,6 @@
 //! Provides an interface and default implementation of the `Verifier` component
 
+use crate::operations::voting_power::VotingPowerTally;
 use crate::predicates as preds;
 use crate::{
     errors::ErrorExt,
@@ -10,7 +11,11 @@ use crate::{
     },
     types::{LightBlock, Time},
 };
-use preds::{errors::VerificationError, ProdPredicates, VerificationPredicates};
+use flex_error::ErrorReport;
+use preds::{
+    errors::{VerificationError, VerificationErrorDetail},
+    ProdPredicates, VerificationPredicates,
+};
 use serde::{Deserialize, Serialize};
 
 /// Represents the result of the verification performed by the
@@ -21,17 +26,19 @@ pub enum Verdict {
     Success,
     /// The minimum voting power threshold is not reached,
     /// the block cannot be trusted yet.
-    NotEnoughTrust(VerificationError),
+    NotEnoughTrust(VotingPowerTally),
     /// Verification failed, the block is invalid.
-    Invalid(VerificationError),
+    Invalid(VerificationErrorDetail),
 }
 
 impl From<Result<(), VerificationError>> for Verdict {
     fn from(result: Result<(), VerificationError>) -> Self {
         match result {
             Ok(()) => Self::Success,
-            Err(e) if e.not_enough_trust() => Self::NotEnoughTrust(e),
-            Err(e) => Self::Invalid(e),
+            Err(ErrorReport(e, _)) => match e.not_enough_trust() {
+                Some(tally) => Self::NotEnoughTrust(tally),
+                _ => Self::Invalid(e),
+            },
         }
     }
 }

@@ -6,7 +6,7 @@ use crate::client::transport::router::SubscriptionRouter;
 use crate::event::Event;
 use crate::query::Query;
 use crate::utils::uuid_str;
-use crate::{Client, Error, Method, Request, Response, Result, Subscription, SubscriptionClient};
+use crate::{error, Client, Error, Method, Request, Response, Subscription, SubscriptionClient};
 use async_trait::async_trait;
 use std::collections::HashMap;
 
@@ -54,13 +54,13 @@ pub struct MockClient<M: MockRequestMatcher> {
 
 #[async_trait]
 impl<M: MockRequestMatcher> Client for MockClient<M> {
-    async fn perform<R>(&self, request: R) -> Result<R::Response>
+    async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
     where
         R: Request,
     {
-        self.matcher.response_for(request).ok_or_else(|| {
-            Error::client_internal_error("no matching response for incoming request")
-        })?
+        self.matcher
+            .response_for(request)
+            .ok_or_else(error::mismatch_response_error)?
     }
 }
 
@@ -90,7 +90,7 @@ impl<M: MockRequestMatcher> MockClient<M> {
 
 #[async_trait]
 impl<M: MockRequestMatcher> SubscriptionClient for MockClient<M> {
-    async fn subscribe(&self, query: Query) -> Result<Subscription> {
+    async fn subscribe(&self, query: Query) -> Result<Subscription, Error> {
         let id = uuid_str();
         let (subs_tx, subs_rx) = unbounded();
         let (result_tx, mut result_rx) = unbounded();
@@ -104,14 +104,14 @@ impl<M: MockRequestMatcher> SubscriptionClient for MockClient<M> {
         Ok(Subscription::new(id, query, subs_rx))
     }
 
-    async fn unsubscribe(&self, query: Query) -> Result<()> {
+    async fn unsubscribe(&self, query: Query) -> Result<(), Error> {
         let (result_tx, mut result_rx) = unbounded();
         self.driver_tx
             .send(DriverCommand::Unsubscribe { query, result_tx })?;
         result_rx.recv().await.unwrap()
     }
 
-    fn close(self) -> Result<()> {
+    fn close(self) -> Result<(), Error> {
         Ok(())
     }
 }
@@ -122,11 +122,11 @@ pub enum DriverCommand {
         id: String,
         query: Query,
         subscription_tx: SubscriptionTx,
-        result_tx: ChannelTx<Result<()>>,
+        result_tx: ChannelTx<Result<(), Error>>,
     },
     Unsubscribe {
         query: Query,
-        result_tx: ChannelTx<Result<()>>,
+        result_tx: ChannelTx<Result<(), Error>>,
     },
     Publish(Box<Event>),
     Terminate,
@@ -146,7 +146,7 @@ impl MockClientDriver {
         }
     }
 
-    pub async fn run(mut self) -> Result<()> {
+    pub async fn run(mut self) -> Result<(), Error> {
         loop {
             tokio::select! {
             Some(cmd) = self.rx.recv() => match cmd {
@@ -168,13 +168,13 @@ impl MockClientDriver {
         id: String,
         query: Query,
         subscription_tx: SubscriptionTx,
-        result_tx: ChannelTx<Result<()>>,
+        result_tx: ChannelTx<Result<(), Error>>,
     ) {
         self.router.add(id, query, subscription_tx);
         result_tx.send(Ok(())).unwrap();
     }
 
-    fn unsubscribe(&mut self, query: Query, result_tx: ChannelTx<Result<()>>) {
+    fn unsubscribe(&mut self, query: Query, result_tx: ChannelTx<Result<(), Error>>) {
         self.router.remove_by_query(query);
         result_tx.send(Ok(())).unwrap();
     }
@@ -190,7 +190,7 @@ impl MockClientDriver {
 /// [`MockClient`]: struct.MockClient.html
 pub trait MockRequestMatcher: Send + Sync {
     /// Provide the corresponding response for the given request (if any).
-    fn response_for<R>(&self, request: R) -> Option<Result<R::Response>>
+    fn response_for<R>(&self, request: R) -> Option<Result<R::Response, Error>>
     where
         R: Request;
 }
@@ -201,11 +201,11 @@ pub trait MockRequestMatcher: Send + Sync {
 /// [`MockRequestMatcher`]: trait.MockRequestMatcher.html
 #[derive(Debug)]
 pub struct MockRequestMethodMatcher {
-    mappings: HashMap<Method, Result<String>>,
+    mappings: HashMap<Method, Result<String, Error>>,
 }
 
 impl MockRequestMatcher for MockRequestMethodMatcher {
-    fn response_for<R>(&self, request: R) -> Option<Result<R::Response>>
+    fn response_for<R>(&self, request: R) -> Option<Result<R::Response, Error>>
     where
         R: Request,
     {
@@ -230,7 +230,7 @@ impl MockRequestMethodMatcher {
     ///
     /// Successful responses must be JSON-encoded.
     #[allow(dead_code)]
-    pub fn map(mut self, method: Method, response: Result<String>) -> Self {
+    pub fn map(mut self, method: Method, response: Result<String, Error>) -> Self {
         self.mappings.insert(method, response);
         self
     }
@@ -301,8 +301,8 @@ mod test {
         }
 
         // Here each subscription's channel is drained.
-        let subs1_events = subs1_events.collect::<Vec<Result<Event>>>().await;
-        let subs2_events = subs2_events.collect::<Vec<Result<Event>>>().await;
+        let subs1_events = subs1_events.collect::<Vec<Result<Event, Error>>>().await;
+        let subs2_events = subs2_events.collect::<Vec<Result<Event, Error>>>().await;
 
         assert_eq!(3, subs1_events.len());
         assert_eq!(3, subs2_events.len());

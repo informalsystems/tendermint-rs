@@ -11,7 +11,6 @@
 //!     cargo make
 //!
 //! (Make sure you install cargo-make using `cargo install cargo-make` first.)
-//!
 
 use tendermint_light_client::{
     builder::{LightClientBuilder, SupervisorBuilder},

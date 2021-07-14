@@ -1,7 +1,7 @@
 //! Remote addresses (`tcp://` or `unix://`)
 
 use crate::{
-    error::{Error, Kind},
+    error::{self, Error},
     node,
 };
 
@@ -82,7 +82,7 @@ impl FromStr for Address {
             // If the address has no scheme, assume it's TCP
             format!("{}{}", TCP_PREFIX, addr)
         };
-        let url = Url::parse(&prefixed_addr).map_err(|e| Kind::Parse.context(e))?;
+        let url = Url::parse(&prefixed_addr).map_err(error::parse_url_error)?;
         match url.scheme() {
             "tcp" => Ok(Self::Tcp {
                 peer_id: if !url.username().is_empty() {
@@ -93,19 +93,20 @@ impl FromStr for Address {
                 host: url
                     .host_str()
                     .ok_or_else(|| {
-                        Kind::Parse.context(format!("invalid TCP address (missing host): {}", addr))
+                        error::parse_error(format!("invalid TCP address (missing host): {}", addr))
                     })?
                     .to_owned(),
                 port: url.port().ok_or_else(|| {
-                    Kind::Parse.context(format!("invalid TCP address (missing port): {}", addr))
+                    error::parse_error(format!("invalid TCP address (missing port): {}", addr))
                 })?,
             }),
             "unix" => Ok(Self::Unix {
                 path: PathBuf::from(url.path()),
             }),
-            _ => Err(Kind::Parse
-                .context(format!("invalid address scheme: {:?}", addr))
-                .into()),
+            _ => Err(error::parse_error(format!(
+                "invalid address scheme: {:?}",
+                addr
+            ))),
         }
     }
 }

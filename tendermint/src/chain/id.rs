@@ -1,6 +1,6 @@
 //! Tendermint blockchain identifiers
 
-use crate::error::{Error, Kind};
+use crate::error::{self, Error};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::TryFrom;
 use std::{
@@ -27,13 +27,13 @@ impl TryFrom<String> for Id {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         if value.is_empty() || value.len() > MAX_LENGTH {
-            return Err(Kind::Length.into());
+            return Err(error::length_error());
         }
 
         for byte in value.as_bytes() {
             match byte {
                 b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_' | b'.' => (),
-                _ => return Err(Kind::Parse.context("chain id charset").into()),
+                _ => return Err(error::parse_error("chain id charset".to_string())),
             }
         }
 
@@ -151,18 +151,18 @@ mod tests {
 
     #[test]
     fn rejects_empty_chain_ids() {
-        assert_eq!(
-            *"".parse::<Id>().unwrap_err().to_string(),
-            Kind::Length.to_string()
-        );
+        match "".parse::<Id>().unwrap_err().detail() {
+            error::ErrorDetail::Length(_) => {}
+            _ => panic!("expected length error"),
+        }
     }
 
     #[test]
     fn rejects_overlength_chain_ids() {
         let overlong_id = String::from_utf8(vec![b'x'; MAX_LENGTH + 1]).unwrap();
-        assert_eq!(
-            *overlong_id.parse::<Id>().unwrap_err().to_string(),
-            Kind::Length.to_string()
-        );
+        match overlong_id.parse::<Id>().unwrap_err().detail() {
+            error::ErrorDetail::Length(_) => {}
+            _ => panic!("expected length error"),
+        }
     }
 }

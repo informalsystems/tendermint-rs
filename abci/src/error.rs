@@ -1,22 +1,47 @@
 //! tendermint-abci errors
 
-use thiserror::Error;
+use flex_error::{define_error, DisplayError};
+use tendermint_proto::abci::response::Value;
 
-/// Errors that can be produced by tendermint-abci.
-#[derive(Debug, Error)]
-pub enum Error {
-    #[error("server connection terminated")]
-    ServerConnectionTerminated,
+define_error! {
+    Error {
+        Io
+            [ DisplayError<std::io::Error> ]
+            | _ | { "I/O error" },
 
-    #[error("malformed server response")]
-    MalformedServerResponse,
+        Encode
+            [ DisplayError<prost::EncodeError> ]
+            | _ | { "error encoding protocol buffer" },
 
-    #[error("unexpected server response type: expected {0}, but got {1:?}")]
-    UnexpectedServerResponseType(String, tendermint_proto::abci::response::Value),
+        Decode
+            [ DisplayError<prost::DecodeError> ]
+            | _ | { "error encoding protocol buffer" },
 
-    #[error("channel send error: {0}")]
-    ChannelSend(String),
+        ServerConnectionTerminated
+            | _ | { "server connection terminated" },
 
-    #[error("channel receive error: {0}")]
-    ChannelRecv(String),
+        MalformedServerResponse
+            | _ | { "malformed server response" },
+
+        UnexpectedServerResponseType
+            {
+                expected: String,
+                got: Value,
+            }
+            | e | {
+                format_args!("unexpected server response type: expected {0}, but got {1:?}",
+                    e.expected, e.got)
+            },
+
+        ChannelSend
+            | _ | { "channel send error" },
+
+        ChannelRecv
+            [ DisplayError<std::sync::mpsc::RecvError> ]
+            | _ | { "channel recv error" },
+    }
+}
+
+pub fn send_error<T>(_e: std::sync::mpsc::SendError<T>) -> Error {
+    channel_send_error()
 }

@@ -2,7 +2,6 @@
 
 use tendermint::{block::Height, Hash};
 
-use crate::bail;
 use crate::builder::error::{self, Error};
 use crate::components::clock::Clock;
 use crate::components::io::{AtHeight, Io};
@@ -134,7 +133,7 @@ impl LightClientBuilder<NoTrustedState> {
         let trusted_state = self
             .light_store
             .highest_trusted_or_verified()
-            .ok_or(error::Kind::NoTrustedStateInStore)?;
+            .ok_or_else(error::no_trusted_state_in_store_error)?;
 
         self.trust_light_block(trusted_state)
     }
@@ -148,22 +147,19 @@ impl LightClientBuilder<NoTrustedState> {
         let trusted_state = self
             .io
             .fetch_light_block(AtHeight::At(trusted_height))
-            .map_err(error::Kind::Io)?;
+            .map_err(error::io_error)?;
 
         if trusted_state.height() != trusted_height {
-            bail!(error::Kind::HeightMismatch {
-                given: trusted_height,
-                found: trusted_state.height(),
-            });
+            return Err(error::height_mismatch_error(
+                trusted_height,
+                trusted_state.height(),
+            ));
         }
 
         let header_hash = self.hasher.hash_header(&trusted_state.signed_header.header);
 
         if header_hash != trusted_hash {
-            bail!(error::Kind::HashMismatch {
-                given: trusted_hash,
-                found: header_hash,
-            });
+            return Err(error::hash_mismatch_error(trusted_hash, header_hash));
         }
 
         self.trust_light_block(trusted_state)
@@ -175,19 +171,19 @@ impl LightClientBuilder<NoTrustedState> {
 
         self.predicates
             .is_within_trust_period(header, self.options.trusting_period, now)
-            .map_err(|e| error::Kind::InvalidLightBlock.context(e))?;
+            .map_err(error::invalid_light_block_error)?;
 
         self.predicates
             .is_header_from_past(header, self.options.clock_drift, now)
-            .map_err(|e| error::Kind::InvalidLightBlock.context(e))?;
+            .map_err(error::invalid_light_block_error)?;
 
         self.predicates
             .validator_sets_match(light_block, &*self.hasher)
-            .map_err(|e| error::Kind::InvalidLightBlock.context(e))?;
+            .map_err(error::invalid_light_block_error)?;
 
         self.predicates
             .next_validators_match(light_block, &*self.hasher)
-            .map_err(|e| error::Kind::InvalidLightBlock.context(e))?;
+            .map_err(error::invalid_light_block_error)?;
 
         Ok(())
     }

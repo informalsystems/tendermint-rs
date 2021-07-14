@@ -1,6 +1,6 @@
 //! JSON-RPC request methods
 
-use super::Error;
+use crate::{error, Error};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     fmt::{self, Display},
@@ -126,7 +126,7 @@ impl FromStr for Method {
             "tx_search" => Method::TxSearch,
             "unsubscribe" => Method::Unsubscribe,
             "validators" => Method::Validators,
-            other => return Err(Error::method_not_found(other)),
+            other => return Err(error::method_not_found_error(other.to_string())),
         })
     }
 }

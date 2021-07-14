@@ -1,7 +1,7 @@
 //! HTTP-based transport for Tendermint RPC Client.
 
 use crate::client::Client;
-use crate::{Error, Result, Scheme, SimpleRequest, Url};
+use crate::{error, Error, Scheme, SimpleRequest, Url};
 use async_trait::async_trait;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
@@ -41,7 +41,7 @@ pub struct HttpClient {
 impl HttpClient {
     /// Construct a new Tendermint RPC HTTP/S client connecting to the given
     /// URL.
-    pub fn new<U>(url: U) -> Result<Self>
+    pub fn new<U>(url: U) -> Result<Self, Error>
     where
         U: TryInto<HttpClientUrl, Error = Error>,
     {
@@ -62,7 +62,7 @@ impl HttpClient {
     /// attempt to connect using the [HTTP CONNECT] method.
     ///
     /// [HTTP CONNECT]: https://en.wikipedia.org/wiki/HTTP_tunnel
-    pub fn new_with_proxy<U, P>(url: U, proxy_url: P) -> Result<Self>
+    pub fn new_with_proxy<U, P>(url: U, proxy_url: P) -> Result<Self, Error>
     where
         U: TryInto<HttpClientUrl, Error = Error>,
         P: TryInto<HttpClientUrl, Error = Error>,
@@ -81,7 +81,7 @@ impl HttpClient {
 
 #[async_trait]
 impl Client for HttpClient {
-    async fn perform<R>(&self, request: R) -> Result<R::Response>
+    async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
     where
         R: SimpleRequest,
     {
@@ -98,13 +98,10 @@ pub struct HttpClientUrl(Url);
 impl TryFrom<Url> for HttpClientUrl {
     type Error = Error;
 
-    fn try_from(value: Url) -> Result<Self> {
+    fn try_from(value: Url) -> Result<Self, Error> {
         match value.scheme() {
             Scheme::Http | Scheme::Https => Ok(Self(value)),
-            _ => Err(Error::invalid_params(&format!(
-                "cannot use URL {} with HTTP clients",
-                value
-            ))),
+            _ => Err(error::invalid_url_error(value)),
         }
     }
 }
@@ -112,7 +109,7 @@ impl TryFrom<Url> for HttpClientUrl {
 impl FromStr for HttpClientUrl {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self> {
+    fn from_str(s: &str) -> Result<Self, Error> {
         let url: Url = s.parse()?;
         url.try_into()
     }
@@ -121,7 +118,7 @@ impl FromStr for HttpClientUrl {
 impl TryFrom<&str> for HttpClientUrl {
     type Error = Error;
 
-    fn try_from(value: &str) -> Result<Self> {
+    fn try_from(value: &str) -> Result<Self, Error> {
         value.parse()
     }
 }
@@ -129,16 +126,14 @@ impl TryFrom<&str> for HttpClientUrl {
 impl TryFrom<net::Address> for HttpClientUrl {
     type Error = Error;
 
-    fn try_from(value: net::Address) -> Result<Self> {
+    fn try_from(value: net::Address) -> Result<Self, Error> {
         match value {
             net::Address::Tcp {
                 peer_id: _,
                 host,
                 port,
             } => format!("http://{}:{}", host, port).parse(),
-            net::Address::Unix { .. } => Err(Error::invalid_params(
-                "only TCP-based node addresses are supported",
-            )),
+            net::Address::Unix { .. } => Err(error::invalid_network_address_error()),
         }
     }
 }
@@ -152,13 +147,17 @@ impl From<HttpClientUrl> for Url {
 impl TryFrom<HttpClientUrl> for hyper::Uri {
     type Error = Error;
 
-    fn try_from(value: HttpClientUrl) -> Result<Self> {
-        Ok(value.0.to_string().parse()?)
+    fn try_from(value: HttpClientUrl) -> Result<Self, Error> {
+        value
+            .0
+            .to_string()
+            .parse()
+            .map_err(error::invalid_uri_error)
     }
 }
 
 mod sealed {
-    use crate::{Error, Response, Result, SimpleRequest};
+    use crate::{error, Error, Response, SimpleRequest};
     use hyper::body::Buf;
     use hyper::client::connect::Connect;
     use hyper::client::HttpConnector;
@@ -184,12 +183,16 @@ mod sealed {
     where
         C: Connect + Clone + Send + Sync + 'static,
     {
-        pub async fn perform<R>(&self, request: R) -> Result<R::Response>
+        pub async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
         where
             R: SimpleRequest,
         {
             let request = self.build_request(request)?;
-            let response = self.inner.request(request).await?;
+            let response = self
+                .inner
+                .request(request)
+                .await
+                .map_err(error::hyper_error)?;
             let response_body = response_to_string(response).await?;
             tracing::debug!("Incoming response: {}", response_body);
             R::Response::from_string(&response_body)
@@ -201,13 +204,14 @@ mod sealed {
         pub fn build_request<R: SimpleRequest>(
             &self,
             request: R,
-        ) -> Result<hyper::Request<hyper::Body>> {
+        ) -> Result<hyper::Request<hyper::Body>, Error> {
             let request_body = request.into_json();
 
             let mut request = hyper::Request::builder()
                 .method("POST")
                 .uri(&self.uri)
-                .body(hyper::Body::from(request_body.into_bytes()))?;
+                .body(hyper::Body::from(request_body.into_bytes()))
+                .map_err(error::http_error)?;
 
             {
                 let headers = request.headers_mut();
@@ -249,26 +253,29 @@ mod sealed {
             ))
         }
 
-        pub fn new_http_proxy(uri: Uri, proxy_uri: Uri) -> Result<Self> {
+        pub fn new_http_proxy(uri: Uri, proxy_uri: Uri) -> Result<Self, Error> {
             let proxy = Proxy::new(Intercept::All, proxy_uri);
-            let proxy_connector = ProxyConnector::from_proxy(HttpConnector::new(), proxy)?;
+            let proxy_connector =
+                ProxyConnector::from_proxy(HttpConnector::new(), proxy).map_err(error::io_error)?;
             Ok(Self::HttpProxy(HyperClient::new(
                 uri,
                 hyper::Client::builder().build(proxy_connector),
             )))
         }
 
-        pub fn new_https_proxy(uri: Uri, proxy_uri: Uri) -> Result<Self> {
+        pub fn new_https_proxy(uri: Uri, proxy_uri: Uri) -> Result<Self, Error> {
             let proxy = Proxy::new(Intercept::All, proxy_uri);
             let proxy_connector =
-                ProxyConnector::from_proxy(HttpsConnector::with_native_roots(), proxy)?;
+                ProxyConnector::from_proxy(HttpsConnector::with_native_roots(), proxy)
+                    .map_err(error::io_error)?;
+
             Ok(Self::HttpsProxy(HyperClient::new(
                 uri,
                 hyper::Client::builder().build(proxy_connector),
             )))
         }
 
-        pub async fn perform<R>(&self, request: R) -> Result<R::Response>
+        pub async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
         where
             R: SimpleRequest,
         {
@@ -281,13 +288,15 @@ mod sealed {
         }
     }
 
-    async fn response_to_string(response: hyper::Response<hyper::Body>) -> Result<String> {
+    async fn response_to_string(response: hyper::Response<hyper::Body>) -> Result<String, Error> {
         let mut response_body = String::new();
         hyper::body::aggregate(response.into_body())
-            .await?
+            .await
+            .map_err(error::hyper_error)?
             .reader()
             .read_to_string(&mut response_body)
-            .map_err(|_| Error::client_internal_error("failed to read response body to string"))?;
+            .map_err(error::io_error)?;
+
         Ok(response_body)
     }
 }

@@ -3,10 +3,11 @@
 use std::{fs, path::PathBuf};
 use tendermint::abci::Code;
 
+use flex_error::ErrorReport;
 use std::str::FromStr;
 use tendermint::vote;
 use tendermint_rpc::endpoint::consensus_state::RoundVote;
-use tendermint_rpc::{self as rpc, endpoint, Response};
+use tendermint_rpc::{endpoint, error::ErrorDetail, Code as RpcCode, Response};
 
 const EXAMPLE_APP: &str = "GaiaApp";
 const EXAMPLE_CHAIN: &str = "cosmoshub-2";
@@ -294,15 +295,17 @@ fn validators() {
 fn jsonrpc_error() {
     let result = endpoint::blockchain::Response::from_string(&read_json_fixture("error"));
 
-    if let Err(err) = result {
-        assert_eq!(err.code(), rpc::error::Code::InternalError);
-        assert_eq!(err.message(), "Internal error");
-        assert_eq!(
-            err.data().unwrap(),
-            "min height 321 can't be greater than max height 123"
-        );
-    } else {
-        panic!("expected error, got {:?}", result)
+    match result {
+        Err(ErrorReport(ErrorDetail::Response(e), _)) => {
+            let response = e.source;
+            assert_eq!(response.code(), RpcCode::InternalError);
+            assert_eq!(response.message(), "Internal error");
+            assert_eq!(
+                response.data().unwrap(),
+                "min height 321 can't be greater than max height 123"
+            );
+        }
+        _ => panic!("expected Response error"),
     }
 }
 

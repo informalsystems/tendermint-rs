@@ -5,11 +5,10 @@
 //!     cargo test
 //! This will execute all integration tests against the RPC endpoint.
 //!
-//! Option 2: the docker daemon is installed and accessible on the machine where the test will happen
-//!           for example: on a developer machine
+//! Option 2: the docker daemon is installed and accessible on the machine where the test will
+//! happen           for example: on a developer machine
 //! Run:
 //!     cargo make
 //! This will start a docker container with Tendermint and attach port 26657 to the host machine.
 //! Then it will run all tests against the freshly created endpoint.
 //! Make sure you installed cargo-make by running `cargo install cargo-make` first.
-//!

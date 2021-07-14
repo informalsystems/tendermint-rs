@@ -3,8 +3,8 @@
 use super::Type;
 use crate::block::{Height, Id as BlockId, Round};
 use crate::chain::Id as ChainId;
+use crate::error::{self, Error};
 use crate::Time;
-use crate::{Error, Kind};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::CanonicalProposal as RawCanonicalProposal;
 use tendermint_proto::Protobuf;
@@ -35,15 +35,14 @@ impl TryFrom<RawCanonicalProposal> for CanonicalProposal {
 
     fn try_from(value: RawCanonicalProposal) -> Result<Self, Self::Error> {
         if value.pol_round < -1 {
-            return Err(Kind::NegativePolRound.into());
+            return Err(error::negative_pol_round_error());
         }
-        let round = Round::try_from(
-            i32::try_from(value.round).map_err(|e| Kind::IntegerOverflow.context(e))?,
-        )?;
+        let round =
+            Round::try_from(i32::try_from(value.round).map_err(error::integer_overflow_error)?)?;
         let pol_round = match value.pol_round {
             -1 => None,
             n => Some(Round::try_from(
-                i32::try_from(n).map_err(|e| Kind::IntegerOverflow.context(e))?,
+                i32::try_from(n).map_err(error::integer_overflow_error)?,
             )?),
         };
         // If the Hash is empty in BlockId, the BlockId should be empty.
@@ -55,7 +54,7 @@ impl TryFrom<RawCanonicalProposal> for CanonicalProposal {
             round,
             pol_round,
             block_id: block_id.map(TryInto::try_into).transpose()?,
-            timestamp: value.timestamp.map(TryInto::try_into).transpose()?,
+            timestamp: value.timestamp.map(|t| t.into()),
             chain_id: ChainId::try_from(value.chain_id).unwrap(),
         })
     }

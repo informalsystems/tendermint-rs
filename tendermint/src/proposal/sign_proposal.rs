@@ -1,6 +1,6 @@
 use super::Proposal;
 use crate::chain::Id as ChainId;
-use crate::{Error, Kind};
+use crate::error::{self, Error};
 use bytes::BufMut;
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::privval::RemoteSignerError;
@@ -26,7 +26,7 @@ impl TryFrom<RawSignProposalRequest> for SignProposalRequest {
 
     fn try_from(value: RawSignProposalRequest) -> Result<Self, Self::Error> {
         if value.proposal.is_none() {
-            return Err(Kind::NoProposalFound.into());
+            return Err(error::no_proposal_found_error());
         }
         Ok(SignProposalRequest {
             proposal: Proposal::try_from(value.proposal.unwrap())?,

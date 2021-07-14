@@ -13,7 +13,6 @@
 ///     cargo make
 ///
 /// (Make sure you install cargo-make using `cargo install cargo-make` first.)
-///
 mod rpc {
     use std::cmp::min;
 

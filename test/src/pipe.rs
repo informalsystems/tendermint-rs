@@ -61,7 +61,8 @@ pub fn async_pipe_buffered() -> (Reader, BufWriter) {
     )
 }
 
-/// Creates a pair of pipes for bidirectional communication using buffered writer, a bit like UNIX's `socketpair(2)`.
+/// Creates a pair of pipes for bidirectional communication using buffered writer, a bit like UNIX's
+/// `socketpair(2)`.
 pub fn async_bipipe_buffered() -> (
     readwrite::ReadWrite<Reader, BufWriter>,
     readwrite::ReadWrite<Reader, BufWriter>,

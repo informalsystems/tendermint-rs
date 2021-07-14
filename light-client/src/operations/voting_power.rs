@@ -1,8 +1,7 @@
 //! Provides an interface and default implementation for the `VotingPower` operation
 
 use crate::{
-    bail,
-    predicates::errors::VerificationError,
+    predicates::errors::{self as error, VerificationError},
     types::{Commit, SignedHeader, TrustThreshold, ValidatorSet},
 };
 
@@ -62,7 +61,7 @@ pub trait VotingPowerCalculator: Send + Sync {
         if trust_threshold.is_enough_power(voting_power.tallied, voting_power.total) {
             Ok(())
         } else {
-            Err(VerificationError::NotEnoughTrust(voting_power))
+            Err(error::not_enough_trust_error(voting_power))
         }
     }
 
@@ -80,7 +79,7 @@ pub trait VotingPowerCalculator: Send + Sync {
         if trust_threshold.is_enough_power(voting_power.tallied, voting_power.total) {
             Ok(())
         } else {
-            Err(VerificationError::InsufficientSignersOverlap(voting_power))
+            Err(error::insufficient_signers_overlap_error(voting_power))
         }
     }
 
@@ -125,9 +124,7 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
         for (signature, vote) in non_absent_votes {
             // Ensure we only count a validator's power once
             if seen_validators.contains(&vote.validator_address) {
-                bail!(VerificationError::DuplicateValidator(
-                    vote.validator_address
-                ));
+                return Err(error::duplicate_validator_error(vote.validator_address));
             } else {
                 seen_validators.insert(vote.validator_address);
             }
@@ -150,11 +147,11 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
                 .verify_signature(&sign_bytes, signed_vote.signature())
                 .is_err()
             {
-                bail!(VerificationError::InvalidSignature {
-                    signature: signed_vote.signature().to_bytes(),
-                    validator: Box::new(validator),
+                return Err(error::invalid_signature_error(
+                    signed_vote.signature().to_bytes(),
+                    Box::new(validator),
                     sign_bytes,
-                });
+                ));
             }
 
             // If the vote is neither absent nor nil, tally its power
@@ -222,7 +219,9 @@ fn non_absent_vote(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::predicates::errors::VerificationErrorDetail;
     use crate::types::LightBlock;
+    use flex_error::ErrorReport;
     use tendermint::trust_threshold::TrustThresholdFraction;
     use tendermint_testgen::light_block::generate_signed_header;
     use tendermint_testgen::{
@@ -326,10 +325,9 @@ mod tests {
             trust_threshold,
         );
 
-        let err = result_err.err().unwrap();
-        match err {
-            VerificationError::InvalidSignature { .. } => {}
-            _ => panic!("unexpected error: {:?}", err),
+        match result_err {
+            Err(ErrorReport(VerificationErrorDetail::InvalidSignature(_), _)) => {}
+            _ => panic!("expected InvalidSignature error"),
         }
     }
 
@@ -349,10 +347,9 @@ mod tests {
             trust_threshold,
         );
 
-        let err = result_err.err().unwrap();
-        match err {
-            VerificationError::InvalidSignature { .. } => {}
-            _ => panic!("unexpected error: {:?}", err),
+        match result_err {
+            Err(ErrorReport(VerificationErrorDetail::InvalidSignature(_), _)) => {}
+            _ => panic!("expected InvalidSignature error"),
         }
     }
 

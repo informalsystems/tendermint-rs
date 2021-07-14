@@ -24,7 +24,7 @@ impl PublicKey {
     pub fn from_raw_ed25519(bytes: &[u8]) -> Result<Self, Error> {
         ed25519::PublicKey::from_bytes(bytes)
             .map(Self::Ed25519)
-            .map_err(|_| error::Kind::Crypto.into())
+            .map_err(error::signature_error)
     }
 
     /// Get Ed25519 public key

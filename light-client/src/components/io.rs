@@ -1,8 +1,7 @@
 //! Provides an interface and a default implementation of the `Io` component
 
-use serde::{Deserialize, Serialize};
+use flex_error::{define_error, TraceError};
 use std::time::Duration;
-use thiserror::Error;
 
 #[cfg(feature = "rpc-client")]
 use tendermint_rpc::Client;
@@ -10,6 +9,12 @@ use tendermint_rpc::Client;
 use tendermint_rpc as rpc;
 
 use crate::types::{Height, LightBlock};
+
+#[cfg(feature = "tokio")]
+type TimeoutError = flex_error::DisplayOnly<tokio::time::error::Elapsed>;
+
+#[cfg(not(feature = "tokio"))]
+type TimeoutError = flex_error::NoSource;
 
 /// Type for selecting either a specific height or the latest one
 pub enum AtHeight {
@@ -29,34 +34,44 @@ impl From<Height> for AtHeight {
     }
 }
 
-/// I/O errors
-#[derive(Clone, Debug, Error, PartialEq, Serialize, Deserialize)]
-pub enum IoError {
-    /// Wrapper for a `tendermint::rpc::Error`.
-    #[error(transparent)]
-    RpcError(#[from] rpc::Error),
+define_error! {
+    #[derive(Debug)]
+    IoError {
+        Rpc
+            [ rpc::Error ]
+            | _ | { "rpc error" },
 
-    /// Given height is invalid
-    #[error("invalid height: {0}")]
-    InvalidHeight(String),
+        InvalidHeight
+            | _ | {
+                "invalid height: given height must be greater than 0"
+            },
 
-    /// Fetched validator set is invalid
-    #[error("fetched validator set is invalid: {0}")]
-    InvalidValidatorSet(String),
+        InvalidValidatorSet
+            [ tendermint::Error ]
+            | _ | { "fetched validator set is invalid" },
 
-    /// Task timed out.
-    #[error("task timed out after {} ms", .0.as_millis())]
-    Timeout(Duration),
+        Timeout
+            { duration: Duration }
+            [ TimeoutError ]
+            | e | {
+                format_args!("task timed out after {} ms",
+                    e.duration.as_millis())
+            },
 
-    /// Failed to initialize runtime
-    #[error("failed to initialize runtime")]
-    Runtime,
+        Runtime
+            [ TraceError<std::io::Error> ]
+            | _ | { "failed to initialize runtime" },
+
+    }
 }
 
-impl IoError {
+impl IoErrorDetail {
     /// Whether this error means that a timeout occured when querying a node.
-    pub fn is_timeout(&self) -> bool {
-        matches!(self, Self::Timeout(_))
+    pub fn is_timeout(&self) -> Option<Duration> {
+        match self {
+            Self::Timeout(e) => Some(e.duration),
+            _ => None,
+        }
     }
 }
 
@@ -84,7 +99,6 @@ mod prod {
 
     use std::time::Duration;
 
-    use crate::bail;
     use crate::types::PeerId;
     use crate::utils::block_on;
 
@@ -150,7 +164,7 @@ mod prod {
 
             match res {
                 Ok(response) => Ok(response.signed_header),
-                Err(err) => Err(IoError::RpcError(err)),
+                Err(err) => Err(rpc_error(err)),
             }
         }
 
@@ -160,9 +174,9 @@ mod prod {
             proposer_address: Option<TMAccountId>,
         ) -> Result<TMValidatorSet, IoError> {
             let height = match height {
-                AtHeight::Highest => bail!(IoError::InvalidHeight(
-                    "given height must be greater than 0".to_string()
-                )),
+                AtHeight::Highest => {
+                    return Err(invalid_height_error());
+                }
                 AtHeight::At(height) => height,
             };
 
@@ -170,12 +184,12 @@ mod prod {
             let response = block_on(self.timeout, async move {
                 client.validators(height, Paging::All).await
             })?
-            .map_err(IoError::RpcError)?;
+            .map_err(rpc_error)?;
 
             let validator_set = match proposer_address {
                 Some(proposer_address) => {
                     TMValidatorSet::with_proposer(response.validators, proposer_address)
-                        .map_err(|e| IoError::InvalidValidatorSet(e.to_string()))?
+                        .map_err(invalid_validator_set_error)?
                 }
                 None => TMValidatorSet::without_proposer(response.validators),
             };

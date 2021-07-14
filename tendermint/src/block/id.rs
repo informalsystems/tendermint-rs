@@ -1,6 +1,6 @@
 use crate::{
     block::parts::Header as PartSetHeader,
-    error::{Error, Kind},
+    error::{self, Error},
     hash::{Algorithm, Hash},
 };
 use serde::{Deserialize, Serialize};
@@ -64,9 +64,9 @@ impl TryFrom<RawBlockId> for Id {
 
     fn try_from(value: RawBlockId) -> Result<Self, Self::Error> {
         if value.part_set_header.is_none() {
-            return Err(Kind::InvalidPartSetHeader
-                .context("part_set_header is None")
-                .into());
+            return Err(error::invalid_part_set_header_error(
+                "part_set_header is None".to_string(),
+            ));
         }
         Ok(Self {
             hash: value.hash.try_into()?,
@@ -103,9 +103,9 @@ impl TryFrom<RawCanonicalBlockId> for Id {
 
     fn try_from(value: RawCanonicalBlockId) -> Result<Self, Self::Error> {
         if value.part_set_header.is_none() {
-            return Err(Kind::InvalidPartSetHeader
-                .context("part_set_header is None")
-                .into());
+            return Err(error::invalid_part_set_header_error(
+                "part_set_header is None".to_string(),
+            ));
         }
         Ok(Self {
             hash: value.hash.try_into()?,

@@ -1,13 +1,12 @@
 //! Predicates for light block validation and verification.
 
 use crate::{
-    ensure,
     light_client::Options,
     operations::{CommitValidator, Hasher, VotingPowerCalculator},
     types::{Header, LightBlock, SignedHeader, Time, TrustThreshold, ValidatorSet},
 };
 
-use errors::VerificationError;
+use errors::{self as error, VerificationError};
 use std::time::Duration;
 
 pub mod errors;
@@ -34,15 +33,14 @@ pub trait VerificationPredicates: Send + Sync {
     ) -> Result<(), VerificationError> {
         let validators_hash = hasher.hash_validator_set(&light_block.validators);
 
-        ensure!(
-            light_block.signed_header.header.validators_hash == validators_hash,
-            VerificationError::InvalidValidatorSet {
-                header_validators_hash: light_block.signed_header.header.validators_hash,
+        if light_block.signed_header.header.validators_hash == validators_hash {
+            Ok(())
+        } else {
+            Err(error::invalid_validator_set_error(
+                light_block.signed_header.header.validators_hash,
                 validators_hash,
-            }
-        );
-
-        Ok(())
+            ))
+        }
     }
 
     /// Check that the hash of the next validator set in the header match the actual one.
@@ -53,15 +51,14 @@ pub trait VerificationPredicates: Send + Sync {
     ) -> Result<(), VerificationError> {
         let next_validators_hash = hasher.hash_validator_set(&light_block.next_validators);
 
-        ensure!(
-            light_block.signed_header.header.next_validators_hash == next_validators_hash,
-            VerificationError::InvalidNextValidatorSet {
-                header_next_validators_hash: light_block.signed_header.header.next_validators_hash,
+        if light_block.signed_header.header.next_validators_hash == next_validators_hash {
+            Ok(())
+        } else {
+            Err(error::invalid_next_validator_set_error(
+                light_block.signed_header.header.next_validators_hash,
                 next_validators_hash,
-            }
-        );
-
-        Ok(())
+            ))
+        }
     }
 
     /// Check that the hash of the header in the commit matches the actual one.
@@ -72,15 +69,14 @@ pub trait VerificationPredicates: Send + Sync {
     ) -> Result<(), VerificationError> {
         let header_hash = hasher.hash_header(&signed_header.header);
 
-        ensure!(
-            header_hash == signed_header.commit.block_id.hash,
-            VerificationError::InvalidCommitValue {
+        if header_hash == signed_header.commit.block_id.hash {
+            Ok(())
+        } else {
+            Err(error::invalid_commit_value_error(
                 header_hash,
-                commit_hash: signed_header.commit.block_id.hash,
-            }
-        );
-
-        Ok(())
+                signed_header.commit.block_id.hash,
+            ))
+        }
     }
 
     /// Validate the commit using the given commit validator.
@@ -104,12 +100,12 @@ pub trait VerificationPredicates: Send + Sync {
         now: Time,
     ) -> Result<(), VerificationError> {
         let expires_at = trusted_header.time + trusting_period;
-        ensure!(
-            expires_at > now,
-            VerificationError::NotWithinTrustPeriod { expires_at, now }
-        );
 
-        Ok(())
+        if expires_at > now {
+            Ok(())
+        } else {
+            Err(error::not_within_trust_period_error(expires_at, now))
+        }
     }
 
     /// Check that the untrusted header is from past.
@@ -119,15 +115,14 @@ pub trait VerificationPredicates: Send + Sync {
         clock_drift: Duration,
         now: Time,
     ) -> Result<(), VerificationError> {
-        ensure!(
-            untrusted_header.time < now + clock_drift,
-            VerificationError::HeaderFromTheFuture {
-                header_time: untrusted_header.time,
-                now
-            }
-        );
-
-        Ok(())
+        if untrusted_header.time < now + clock_drift {
+            Ok(())
+        } else {
+            Err(error::header_from_the_future_error(
+                untrusted_header.time,
+                now,
+            ))
+        }
     }
 
     /// Check that time passed monotonically between the trusted header and the untrusted one.
@@ -136,15 +131,14 @@ pub trait VerificationPredicates: Send + Sync {
         untrusted_header: &Header,
         trusted_header: &Header,
     ) -> Result<(), VerificationError> {
-        ensure!(
-            untrusted_header.time > trusted_header.time,
-            VerificationError::NonMonotonicBftTime {
-                header_bft_time: untrusted_header.time,
-                trusted_header_bft_time: trusted_header.time,
-            }
-        );
-
-        Ok(())
+        if untrusted_header.time > trusted_header.time {
+            Ok(())
+        } else {
+            Err(error::non_monotonic_bft_time_error(
+                untrusted_header.time,
+                trusted_header.time,
+            ))
+        }
     }
 
     /// Check that the height increased between the trusted header and the untrusted one.
@@ -155,15 +149,14 @@ pub trait VerificationPredicates: Send + Sync {
     ) -> Result<(), VerificationError> {
         let trusted_height = trusted_header.height;
 
-        ensure!(
-            untrusted_header.height > trusted_header.height,
-            VerificationError::NonIncreasingHeight {
-                got: untrusted_header.height,
-                expected: trusted_height.increment(),
-            }
-        );
-
-        Ok(())
+        if untrusted_header.height > trusted_header.height {
+            Ok(())
+        } else {
+            Err(error::non_increasing_height_error(
+                untrusted_header.height,
+                trusted_height.increment(),
+            ))
+        }
     }
 
     /// Check that there is enough validators overlap between the trusted validator set
@@ -198,16 +191,16 @@ pub trait VerificationPredicates: Send + Sync {
         light_block: &LightBlock,
         trusted_state: &LightBlock,
     ) -> Result<(), VerificationError> {
-        ensure!(
-            light_block.signed_header.header.validators_hash
-                == trusted_state.signed_header.header.next_validators_hash,
-            VerificationError::InvalidNextValidatorSet {
-                header_next_validators_hash: light_block.signed_header.header.validators_hash,
-                next_validators_hash: trusted_state.signed_header.header.next_validators_hash,
-            }
-        );
-
-        Ok(())
+        if light_block.signed_header.header.validators_hash
+            == trusted_state.signed_header.header.next_validators_hash
+        {
+            Ok(())
+        } else {
+            Err(error::invalid_next_validator_set_error(
+                light_block.signed_header.header.validators_hash,
+                trusted_state.signed_header.header.next_validators_hash,
+            ))
+        }
     }
 }
 
@@ -297,6 +290,7 @@ pub fn verify(
 
 #[cfg(test)]
 mod tests {
+    use flex_error::ErrorReport;
     use std::ops::Sub;
     use std::time::Duration;
     use tendermint::Time;
@@ -306,7 +300,9 @@ mod tests {
         Commit, Generator, Header, Validator, ValidatorSet,
     };
 
-    use crate::predicates::{errors::VerificationError, ProdPredicates, VerificationPredicates};
+    use crate::predicates::{
+        errors::VerificationErrorDetail, ProdPredicates, VerificationPredicates,
+    };
 
     use crate::operations::{
         Hasher, ProdCommitValidator, ProdHasher, ProdVotingPowerCalculator, VotingPowerTally,
@@ -340,14 +336,13 @@ mod tests {
 
         // 2. ensure header with non-monotonic bft time fails
         let result_err = vp.is_monotonic_bft_time(&header_one, &header_two);
-        assert!(result_err.is_err());
-
-        // 3. expect to error with: VerificationError::NonMonotonicBftTime
-        let error = VerificationError::NonMonotonicBftTime {
-            header_bft_time: header_one.time,
-            trusted_header_bft_time: header_two.time,
-        };
-        assert_eq!(result_err.err().unwrap(), error);
+        match result_err {
+            Err(ErrorReport(VerificationErrorDetail::NonMonotonicBftTime(e), _)) => {
+                assert_eq!(e.header_bft_time, header_one.time);
+                assert_eq!(e.trusted_header_bft_time, header_two.time);
+            }
+            _ => panic!("expected NonMonotonicBftTime error"),
+        }
     }
 
     #[test]
@@ -364,14 +359,14 @@ mod tests {
 
         // 2. ensure header with non-monotonic height fails
         let result_err = vp.is_monotonic_height(&header_one, &header_two);
-        assert!(result_err.is_err());
 
-        // 3. expect to error with: VerificationError::NonMonotonicBftTime
-        let error = VerificationError::NonIncreasingHeight {
-            got: header_one.height,
-            expected: header_two.height.increment(),
-        };
-        assert_eq!(result_err.err().unwrap(), error);
+        match result_err {
+            Err(ErrorReport(VerificationErrorDetail::NonIncreasingHeight(e), _)) => {
+                assert_eq!(e.got, header_one.height);
+                assert_eq!(e.expected, header_two.height.increment());
+            }
+            _ => panic!("expected NonIncreasingHeight error"),
+        }
     }
 
     #[test]
@@ -392,12 +387,15 @@ mod tests {
         trusting_period = Duration::new(0, 1);
 
         let result_err = vp.is_within_trust_period(&header, trusting_period, now);
-        assert!(result_err.is_err());
 
-        // 3. ensure it fails with: VerificationError::NotWithinTrustPeriod
         let expires_at = header.time + trusting_period;
-        let error = VerificationError::NotWithinTrustPeriod { expires_at, now };
-        assert_eq!(result_err.err().unwrap(), error);
+        match result_err {
+            Err(ErrorReport(VerificationErrorDetail::NotWithinTrustPeriod(e), _)) => {
+                assert_eq!(e.expires_at, expires_at);
+                assert_eq!(e.now, now);
+            }
+            _ => panic!("expected NotWithinTrustPeriod error"),
+        }
     }
 
     #[test]
@@ -417,15 +415,13 @@ mod tests {
         let now = Time::now().sub(one_second * 15);
         let result_err = vp.is_header_from_past(&header, one_second, now);
 
-        assert!(result_err.is_err());
-
-        // 3. ensure it fails with: VerificationError::HeaderFromTheFuture
-        let error = VerificationError::HeaderFromTheFuture {
-            header_time: header.time,
-            now,
-        };
-
-        assert_eq!(result_err.err().unwrap(), error);
+        match result_err {
+            Err(ErrorReport(VerificationErrorDetail::HeaderFromTheFuture(e), _)) => {
+                assert_eq!(e.header_time, header.time);
+                assert_eq!(e.now, now);
+            }
+            _ => panic!("expected HeaderFromTheFuture error"),
+        }
     }
 
     #[test]
@@ -456,31 +452,37 @@ mod tests {
 
         let val_sets_match_err = vp.validator_sets_match(&light_block, &hasher);
 
-        // ensure it fails
-        assert!(val_sets_match_err.is_err());
-
-        let val_set_error = VerificationError::InvalidValidatorSet {
-            header_validators_hash: light_block.signed_header.header.validators_hash,
-            validators_hash: hasher.hash_validator_set(&light_block.validators),
-        };
-
-        // ensure it fails with VerificationError::InvalidValidatorSet
-        assert_eq!(val_sets_match_err.err().unwrap(), val_set_error);
+        match val_sets_match_err {
+            Err(ErrorReport(VerificationErrorDetail::InvalidValidatorSet(e), _)) => {
+                assert_eq!(
+                    e.header_validators_hash,
+                    light_block.signed_header.header.validators_hash
+                );
+                assert_eq!(
+                    e.validators_hash,
+                    hasher.hash_validator_set(&light_block.validators)
+                );
+            }
+            _ => panic!("expected InvalidValidatorSet error"),
+        }
 
         // 2. For predicate: next_validator_sets_match
         light_block.next_validators = bad_validator_set;
         let next_val_sets_match_err = vp.next_validators_match(&light_block, &hasher);
 
-        // ensure it fails
-        assert!(next_val_sets_match_err.is_err());
-
-        let next_val_set_error = VerificationError::InvalidNextValidatorSet {
-            header_next_validators_hash: light_block.signed_header.header.next_validators_hash,
-            next_validators_hash: hasher.hash_validator_set(&light_block.next_validators),
-        };
-
-        // ensure it fails with VerificationError::InvalidNextValidatorSet
-        assert_eq!(next_val_sets_match_err.err().unwrap(), next_val_set_error);
+        match next_val_sets_match_err {
+            Err(ErrorReport(VerificationErrorDetail::InvalidNextValidatorSet(e), _)) => {
+                assert_eq!(
+                    e.header_next_validators_hash,
+                    light_block.signed_header.header.next_validators_hash
+                );
+                assert_eq!(
+                    e.next_validators_hash,
+                    hasher.hash_validator_set(&light_block.next_validators)
+                );
+            }
+            _ => panic!("expected InvalidNextValidatorSet error"),
+        }
     }
 
     #[test]
@@ -505,16 +507,16 @@ mod tests {
                 .unwrap();
         let result_err = vp.header_matches_commit(&signed_header, &hasher);
 
-        assert!(result_err.is_err());
-
         // 3. ensure it fails with: VerificationError::InvalidCommitValue
         let header_hash = hasher.hash_header(&signed_header.header);
-        let error = VerificationError::InvalidCommitValue {
-            header_hash,
-            commit_hash: signed_header.commit.block_id.hash,
-        };
 
-        assert_eq!(result_err.err().unwrap(), error);
+        match result_err {
+            Err(ErrorReport(VerificationErrorDetail::InvalidCommitValue(e), _)) => {
+                assert_eq!(e.header_hash, header_hash);
+                assert_eq!(e.commit_hash, signed_header.commit.block_id.hash);
+            }
+            _ => panic!("expected InvalidCommitValue error"),
+        }
     }
 
     #[test]
@@ -539,14 +541,11 @@ mod tests {
         signed_header.commit.signatures = vec![];
 
         let mut result_err = vp.valid_commit(&signed_header, &val_set, &commit_validator);
-        assert!(result_err.is_err());
 
-        let mut error =
-            VerificationError::ImplementationSpecific("no signatures for commit".to_string());
-
-        // ensure it fails with:
-        // VerificationError::ImplementationSpecific("no signatures for commit")
-        assert_eq!(result_err.err().unwrap(), error);
+        match result_err {
+            Err(ErrorReport(VerificationErrorDetail::NoSignatureForCommit(_), _)) => {}
+            _ => panic!("expected ImplementationSpecific error"),
+        }
 
         // 3. commit.signatures.len() != validator_set.validators().len()
         // must return error
@@ -554,16 +553,14 @@ mod tests {
         signed_header.commit.signatures = bad_sigs.clone();
 
         result_err = vp.valid_commit(&signed_header, &val_set, &commit_validator);
-        assert!(result_err.is_err());
 
-        error = VerificationError::ImplementationSpecific(format!(
-            "pre-commit length: {} doesn't match validator length: {}",
-            signed_header.commit.signatures.len(),
-            val_set.validators().len()
-        ));
-
-        // ensure it fails with the expected error (as above)
-        assert_eq!(result_err.err().unwrap(), error);
+        match result_err {
+            Err(ErrorReport(VerificationErrorDetail::MismatchPreCommitLength(e), _)) => {
+                assert_eq!(e.pre_commit_length, signed_header.commit.signatures.len());
+                assert_eq!(e.validator_length, val_set.validators().len());
+            }
+            _ => panic!("expected ImplementationSpecific error"),
+        }
 
         // 4. commit.BlockIdFlagAbsent - should be "Ok"
         bad_sigs.push(CommitSig::BlockIdFlagAbsent);
@@ -589,23 +586,28 @@ mod tests {
             &val_set_with_faulty_signer,
             &commit_validator,
         );
-        assert!(result_err.is_err());
 
-        error = VerificationError::ImplementationSpecific(format!(
-            "Found a faulty signer ({}) not present in the validator set ({})",
-            signed_header
-                .commit
-                .signatures
-                .iter()
-                .last()
-                .unwrap()
-                .validator_address()
-                .unwrap(),
-            hasher.hash_validator_set(&val_set_with_faulty_signer)
-        ));
+        match result_err {
+            Err(ErrorReport(VerificationErrorDetail::FaultySigner(e), _)) => {
+                assert_eq!(
+                    e.signer,
+                    signed_header
+                        .commit
+                        .signatures
+                        .iter()
+                        .last()
+                        .unwrap()
+                        .validator_address()
+                        .unwrap()
+                );
 
-        // ensure it fails with the expected error (as above)
-        assert_eq!(result_err.err().unwrap(), error);
+                assert_eq!(
+                    e.validator_set,
+                    hasher.hash_validator_set(&val_set_with_faulty_signer)
+                );
+            }
+            _ => panic!("expected ImplementationSpecific error"),
+        }
     }
 
     #[test]
@@ -635,15 +637,19 @@ mod tests {
 
         let result_err = vp.valid_next_validator_set(&light_block3, &light_block2);
 
-        assert!(result_err.is_err());
-
-        let error = VerificationError::InvalidNextValidatorSet {
-            header_next_validators_hash: light_block3.signed_header.header.validators_hash,
-            next_validators_hash: light_block2.signed_header.header.next_validators_hash,
-        };
-
-        // ensure it fails with the expected error (as above)
-        assert_eq!(result_err.err().unwrap(), error);
+        match result_err {
+            Err(ErrorReport(VerificationErrorDetail::InvalidNextValidatorSet(e), _)) => {
+                assert_eq!(
+                    e.header_next_validators_hash,
+                    light_block3.signed_header.header.validators_hash
+                );
+                assert_eq!(
+                    e.next_validators_hash,
+                    light_block2.signed_header.header.next_validators_hash
+                );
+            }
+            _ => panic!("expected InvalidNextValidatorSet error"),
+        }
     }
 
     #[test]
@@ -686,16 +692,19 @@ mod tests {
             &voting_power_calculator,
         );
 
-        assert!(result_err.is_err());
-
-        let error = VerificationError::NotEnoughTrust(VotingPowerTally {
-            total: 200,
-            tallied: 100,
-            trust_threshold,
-        });
-
-        // ensure it fails with the expected error (as above)
-        assert_eq!(result_err.err().unwrap(), error);
+        match result_err {
+            Err(ErrorReport(VerificationErrorDetail::NotEnoughTrust(e), _)) => {
+                assert_eq!(
+                    e.tally,
+                    VotingPowerTally {
+                        total: 200,
+                        tallied: 100,
+                        trust_threshold,
+                    }
+                );
+            }
+            _ => panic!("expected NotEnoughTrust error"),
+        }
     }
 
     #[test]
@@ -725,16 +734,20 @@ mod tests {
             &voting_power_calculator,
         );
 
-        assert!(result_err.is_err());
-
         let trust_threshold = TrustThreshold::TWO_THIRDS;
-        let error = VerificationError::InsufficientSignersOverlap(VotingPowerTally {
-            total: 100,
-            tallied: 50,
-            trust_threshold,
-        });
 
-        // ensure it fails with the expected error (as above)
-        assert_eq!(result_err.err().unwrap(), error);
+        match result_err {
+            Err(ErrorReport(VerificationErrorDetail::InsufficientSignersOverlap(e), _)) => {
+                assert_eq!(
+                    e.tally,
+                    VotingPowerTally {
+                        total: 100,
+                        tallied: 50,
+                        trust_threshold,
+                    }
+                );
+            }
+            _ => panic!("expected InsufficientSignersOverlap error"),
+        }
     }
 }
