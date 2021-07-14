@@ -118,8 +118,7 @@ impl TryFrom<RawHeader> for Header {
             time: value
                 .time
                 .ok_or_else(error::missing_timestamp_error)?
-                .try_into()
-                .map_err(error::timestamp_overflow_error)?,
+                .into(),
             last_block_id,
             last_commit_hash,
             data_hash: if value.data_hash.is_empty() {

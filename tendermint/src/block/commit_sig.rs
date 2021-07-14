@@ -95,13 +95,14 @@ impl TryFrom<RawCommitSig> for CommitSig {
             if value.validator_address.is_empty() {
                 return Err(error::invalid_validator_address_error());
             }
+            let timestamp = value
+                .timestamp
+                .ok_or_else(error::missing_timestamp_error)?
+                .into();
+
             return Ok(CommitSig::BlockIdFlagCommit {
                 validator_address: value.validator_address.try_into()?,
-                timestamp: value
-                    .timestamp
-                    .ok_or_else(error::missing_timestamp_error)?
-                    .try_into()
-                    .map_err(error::timestamp_overflow_error)?,
+                timestamp,
                 signature: value.signature.try_into()?,
             });
         }
@@ -119,8 +120,7 @@ impl TryFrom<RawCommitSig> for CommitSig {
                 timestamp: value
                     .timestamp
                     .ok_or_else(error::missing_timestamp_error)?
-                    .try_into()
-                    .map_err(error::timestamp_overflow_error)?,
+                    .into(),
                 signature: value.signature.try_into()?,
             });
         }

@@ -5,7 +5,6 @@ use crate::vote;
 use alloc::string::String;
 use core::num::TryFromIntError;
 use flex_error::{define_error, DisplayOnly};
-use prost_types::TimestampOutOfSystemRangeError;
 use std::io::Error as IoError;
 use time::OutOfRangeError;
 
@@ -89,10 +88,6 @@ define_error! {
         IntegerOverflow
             [ DisplayOnly<TryFromIntError> ]
             |_| { format_args!("integer overflow") },
-
-        TimestampOverflow
-            [ DisplayOnly<TimestampOutOfSystemRangeError> ]
-            |_| { format_args!("timestamp overflow") },
 
         NoVoteFound
             |_| { format_args!("no vote found") },
