@@ -3,6 +3,7 @@
 use crate::error::Error;
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
+use alloc::string::String;
 use tendermint_proto::serializers::bytes::base64string;
 
 /// Tags
@@ -34,7 +35,7 @@ impl AsRef<str> for Key {
 impl FromStr for Key {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Error> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Key(s.into()))
     }
 }
@@ -64,7 +65,7 @@ impl AsRef<str> for Value {
 impl FromStr for Value {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Error> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Value(s.into()))
     }
 }

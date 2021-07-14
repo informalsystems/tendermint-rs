@@ -5,12 +5,14 @@
 //!
 //! <https://tendermint.com/docs/spec/abci/apps.html#gas>
 
-use crate::{Error, Kind};
+use crate::error::{self, Error};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     fmt::{self, Display},
     str::FromStr,
 };
+use alloc::format;
+use alloc::string::{String, ToString};
 
 /// Gas: representation of transaction processing resource costs
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
@@ -44,8 +46,10 @@ impl Display for Gas {
 impl FromStr for Gas {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Error> {
-        Ok(Self::from(s.parse::<u64>().map_err(|_| Kind::Parse)?))
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self::from(s.parse::<u64>().map_err(|e| {
+            error::parse_int_error("Gas decode error".into(), e)
+        })?))
     }
 }
 

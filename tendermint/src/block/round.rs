@@ -1,12 +1,12 @@
-use crate::error::{Error, Kind};
+use crate::error::{self, Error};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use std::convert::TryInto;
 use std::{
-    convert::TryFrom,
+    convert::{TryFrom, TryInto},
     fmt::{self, Debug, Display},
     str::FromStr,
 };
-
+use alloc::format;
+use alloc::string::{String, ToString};
 /// Block round for a particular chain
 #[derive(Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub struct Round(u32);
@@ -15,7 +15,11 @@ impl TryFrom<i32> for Round {
     type Error = Error;
 
     fn try_from(value: i32) -> Result<Self, Self::Error> {
-        Ok(Round(value.try_into().map_err(|_| Kind::NegativeRound)?))
+        Ok(Round(
+            value
+                .try_into()
+                .map_err(|_| error::negative_round_error())?,
+        ))
     }
 }
 
@@ -30,7 +34,7 @@ impl TryFrom<u32> for Round {
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
         if value > i32::MAX as u32 {
-            return Err(Kind::IntegerOverflow.into());
+            return Err(error::integer_overflow_error());
         }
         Ok(Round(value))
     }
@@ -87,10 +91,10 @@ impl Display for Round {
 impl FromStr for Round {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Error> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         Round::try_from(
             s.parse::<u32>()
-                .map_err(|_| Kind::Parse.context("round decode"))?,
+                .map_err(|e| error::parse_int_error("round decode error".into(), e))?,
         )
     }
 }

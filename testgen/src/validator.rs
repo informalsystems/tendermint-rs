@@ -3,8 +3,8 @@ use ed25519_dalek::SecretKey as Ed25519SecretKey;
 use gumdrop::Options;
 use serde::{Deserialize, Serialize};
 use simple_error::*;
+use std::cmp::Ordering;
 use std::convert::TryFrom;
-use tendermint::consensus::state::Ordering;
 use tendermint::{account, private_key, public_key, public_key::PublicKey, validator, vote};
 
 #[derive(Debug, Options, Serialize, Deserialize, Clone)]

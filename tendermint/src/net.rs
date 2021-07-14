@@ -1,16 +1,15 @@
 //! Remote addresses (`tcp://` or `unix://`)
 
-use crate::{
-    error::{Error, Kind},
-    node,
-};
-
+use crate::error::{self, Error};
+use crate::node;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     fmt::{self, Display},
-    path::PathBuf,
     str::{self, FromStr},
 };
+use _std::path::PathBuf;
+use alloc::format;
+use alloc::string::{String, ToString};
 use url::Url;
 
 /// URI prefix for TCP connections
@@ -75,14 +74,14 @@ impl Display for Address {
 impl FromStr for Address {
     type Err = Error;
 
-    fn from_str(addr: &str) -> Result<Self, Error> {
+    fn from_str(addr: &str) -> Result<Self, Self::Err> {
         let prefixed_addr = if addr.contains("://") {
             addr.to_owned()
         } else {
             // If the address has no scheme, assume it's TCP
             format!("{}{}", TCP_PREFIX, addr)
         };
-        let url = Url::parse(&prefixed_addr).map_err(|e| Kind::Parse.context(e))?;
+        let url = Url::parse(&prefixed_addr).map_err(error::parse_url_error)?;
         match url.scheme() {
             "tcp" => Ok(Self::Tcp {
                 peer_id: if !url.username().is_empty() {
@@ -93,19 +92,20 @@ impl FromStr for Address {
                 host: url
                     .host_str()
                     .ok_or_else(|| {
-                        Kind::Parse.context(format!("invalid TCP address (missing host): {}", addr))
+                        error::parse_error(format!("invalid TCP address (missing host): {}", addr))
                     })?
                     .to_owned(),
                 port: url.port().ok_or_else(|| {
-                    Kind::Parse.context(format!("invalid TCP address (missing port): {}", addr))
+                    error::parse_error(format!("invalid TCP address (missing port): {}", addr))
                 })?,
             }),
             "unix" => Ok(Self::Unix {
                 path: PathBuf::from(url.path()),
             }),
-            _ => Err(Kind::Parse
-                .context(format!("invalid address scheme: {:?}", addr))
-                .into()),
+            _ => Err(error::parse_error(format!(
+                "invalid address scheme: {:?}",
+                addr
+            ))),
         }
     }
 }

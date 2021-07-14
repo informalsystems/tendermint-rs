@@ -1,14 +1,16 @@
+use crate::error::{self, Error};
 use crate::{
     block::parts::Header as PartSetHeader,
-    error::{Error, Kind},
     hash::{Algorithm, Hash},
 };
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
 use std::{
+    convert::{TryFrom, TryInto},
     fmt::{self, Display},
+    prelude::*,
     str::{self, FromStr},
 };
+use alloc::string::{String, ToString};
 use tendermint_proto::types::{
     BlockId as RawBlockId, CanonicalBlockId as RawCanonicalBlockId,
     PartSetHeader as RawPartSetHeader,
@@ -64,9 +66,9 @@ impl TryFrom<RawBlockId> for Id {
 
     fn try_from(value: RawBlockId) -> Result<Self, Self::Error> {
         if value.part_set_header.is_none() {
-            return Err(Kind::InvalidPartSetHeader
-                .context("part_set_header is None")
-                .into());
+            return Err(error::invalid_part_set_header_error(
+                "part_set_header is None".into(),
+            ));
         }
         Ok(Self {
             hash: value.hash.try_into()?,
@@ -103,9 +105,9 @@ impl TryFrom<RawCanonicalBlockId> for Id {
 
     fn try_from(value: RawCanonicalBlockId) -> Result<Self, Self::Error> {
         if value.part_set_header.is_none() {
-            return Err(Kind::InvalidPartSetHeader
-                .context("part_set_header is None")
-                .into());
+            return Err(error::invalid_part_set_header_error(
+                "part_set_header is None".into(),
+            ));
         }
         Ok(Self {
             hash: value.hash.try_into()?,
@@ -143,7 +145,7 @@ impl Display for Id {
 impl FromStr for Id {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Error> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self {
             hash: Hash::from_hex_upper(Algorithm::Sha256, s)?,
             part_set_header: PartSetHeader::default(),

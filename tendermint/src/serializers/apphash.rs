@@ -2,6 +2,7 @@
 
 use crate::AppHash;
 use serde::{Deserialize, Deserializer, Serializer};
+use alloc::string::String;
 use subtle_encoding::hex;
 
 /// Deserialize hexstring into AppHash

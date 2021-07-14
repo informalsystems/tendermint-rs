@@ -1,13 +1,16 @@
 //! Hash functions and their outputs
 
-use crate::error::{Error, Kind};
+use crate::error::{self, Error};
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::convert::TryFrom;
 use std::{
+    convert::TryFrom,
     fmt::{self, Debug, Display},
+    prelude::*,
     str::FromStr,
 };
+use alloc::format;
+use alloc::string::{String, ToString};
 use subtle_encoding::{Encoding, Hex};
 use tendermint_proto::Protobuf;
 
@@ -66,9 +69,10 @@ impl Hash {
                     h.copy_from_slice(bytes);
                     Ok(Hash::Sha256(h))
                 } else {
-                    Err(Kind::Parse
-                        .context(format!("hash invalid length: {}", bytes.len()))
-                        .into())
+                    Err(error::parse_error(format!(
+                        "hash invalid length: {}",
+                        bytes.len()
+                    )))
                 }
             }
         }
@@ -82,7 +86,9 @@ impl Hash {
         match alg {
             Algorithm::Sha256 => {
                 let mut h = [0u8; SHA256_HASH_SIZE];
-                Hex::upper_case().decode_to_slice(s.as_bytes(), &mut h)?;
+                Hex::upper_case()
+                    .decode_to_slice(s.as_bytes(), &mut h)
+                    .map_err(error::subtle_encoding_error)?;
                 Ok(Hash::Sha256(h))
             }
         }
@@ -139,7 +145,7 @@ impl Display for Hash {
 impl FromStr for Hash {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Error> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::from_hex_upper(Algorithm::Sha256, s)
     }
 }
@@ -214,10 +220,12 @@ impl AppHash {
     /// Decode a `Hash` from upper-case hexadecimal
     pub fn from_hex_upper(s: &str) -> Result<Self, Error> {
         if s.len() % 2 != 0 {
-            return Err(Kind::InvalidAppHashLength.into());
+            return Err(error::invalid_app_hash_length_error());
         }
         let mut h = vec![0; s.len() / 2];
-        Hex::upper_case().decode_to_slice(s.as_bytes(), &mut h)?;
+        Hex::upper_case()
+            .decode_to_slice(s.as_bytes(), &mut h)
+            .map_err(error::subtle_encoding_error)?;
         Ok(AppHash(h))
     }
 }
@@ -253,7 +261,7 @@ impl PartialEq for AppHash {
 impl FromStr for AppHash {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Error> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::from_hex_upper(s)
     }
 }

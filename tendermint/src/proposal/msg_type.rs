@@ -1,7 +1,8 @@
-use crate::{Error, Kind};
+use crate::error::{self, Error};
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::TryFrom;
+use alloc::format;
 use tendermint_proto::Protobuf;
 
 /// Types of proposals
@@ -20,7 +21,7 @@ impl TryFrom<i32> for Type {
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
             32 => Ok(Type::Proposal),
-            _ => Err(Kind::InvalidMessageType.into()),
+            _ => Err(error::invalid_message_type_error()),
         }
     }
 }

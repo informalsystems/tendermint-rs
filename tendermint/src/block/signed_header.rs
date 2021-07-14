@@ -1,9 +1,10 @@
 //! SignedHeader contains commit and and block header.
 //! It is what the rpc endpoint /commit returns and hence can be used by a
 //! light client.
-use crate::{block, Error, Kind};
+use crate::block;
+use crate::error::{self, Error};
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
+use std::convert::{From, TryFrom, TryInto};
 use tendermint_proto::types::SignedHeader as RawSignedHeader;
 
 /// Signed block headers
@@ -21,8 +22,14 @@ impl TryFrom<RawSignedHeader> for SignedHeader {
     type Error = Error;
 
     fn try_from(value: RawSignedHeader) -> Result<Self, Self::Error> {
-        let header = value.header.ok_or(Kind::InvalidSignedHeader)?.try_into()?;
-        let commit = value.commit.ok_or(Kind::InvalidSignedHeader)?.try_into()?;
+        let header = value
+            .header
+            .ok_or_else(error::invalid_signed_header_error)?
+            .try_into()?;
+        let commit = value
+            .commit
+            .ok_or_else(error::invalid_signed_header_error)?
+            .try_into()?;
         Self::new(header, commit) // Additional checks
     }
 }
@@ -40,7 +47,7 @@ impl SignedHeader {
     /// Constructor.
     pub fn new(header: block::Header, commit: block::Commit) -> Result<Self, Error> {
         if header.height != commit.height {
-            return Err(Kind::InvalidSignedHeader.into());
+            return Err(error::invalid_signed_header_error());
         }
         Ok(Self { header, commit })
     }

@@ -1,11 +1,14 @@
 //! Evidence of malfeasance by validators (i.e. signing conflicting votes).
 
-use crate::{
-    block::signed_header::SignedHeader, serializers, vote::Power, Error, Kind, Time, Vote,
-};
+use crate::error::{self, Error};
+use crate::{block::signed_header::SignedHeader, serializers, vote::Power, Time, Vote};
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
-use std::slice;
+use std::{
+    boxed::Box,
+    convert::{TryFrom, TryInto},
+    slice,
+    vec::Vec,
+};
 use tendermint_proto::google::protobuf::Duration as RawDuration;
 use tendermint_proto::types::evidence::Sum as RawSum;
 use tendermint_proto::types::evidence::Sum;
@@ -40,7 +43,7 @@ impl TryFrom<RawEvidence> for Evidence {
     type Error = Error;
 
     fn try_from(value: RawEvidence) -> Result<Self, Self::Error> {
-        match value.sum.ok_or(Kind::InvalidEvidence)? {
+        match value.sum.ok_or_else(error::invalid_evidence_error)? {
             Sum::DuplicateVoteEvidence(ev) => Ok(Evidence::DuplicateVote(ev.try_into()?)),
             Sum::LightClientAttackEvidence(_ev) => Ok(Evidence::LightClientAttackEvidence),
         }
@@ -74,11 +77,20 @@ impl TryFrom<RawDuplicateVoteEvidence> for DuplicateVoteEvidence {
 
     fn try_from(value: RawDuplicateVoteEvidence) -> Result<Self, Self::Error> {
         Ok(Self {
-            vote_a: value.vote_a.ok_or(Kind::MissingEvidence)?.try_into()?,
-            vote_b: value.vote_b.ok_or(Kind::MissingEvidence)?.try_into()?,
+            vote_a: value
+                .vote_a
+                .ok_or_else(error::missing_evidence_error)?
+                .try_into()?,
+            vote_b: value
+                .vote_b
+                .ok_or_else(error::missing_evidence_error)?
+                .try_into()?,
             total_voting_power: value.total_voting_power.try_into()?,
             validator_power: value.validator_power.try_into()?,
-            timestamp: value.timestamp.ok_or(Kind::MissingTimestamp)?.try_into()?,
+            timestamp: value
+                .timestamp
+                .ok_or_else(error::missing_timestamp_error)?
+                .into(),
         })
     }
 }
@@ -99,7 +111,7 @@ impl DuplicateVoteEvidence {
     /// constructor
     pub fn new(vote_a: Vote, vote_b: Vote) -> Result<Self, Error> {
         if vote_a.height != vote_b.height {
-            return Err(Kind::InvalidEvidence.into());
+            return Err(error::invalid_evidence_error());
         }
         // Todo: make more assumptions about what is considered a valid evidence for duplicate vote
         Ok(Self {
@@ -224,10 +236,10 @@ impl TryFrom<RawEvidenceParams> for Params {
             max_age_num_blocks: value
                 .max_age_num_blocks
                 .try_into()
-                .map_err(|_| Self::Error::from(Kind::NegativeMaxAgeNum))?,
+                .map_err(|_| error::negative_max_age_num_error())?,
             max_age_duration: value
                 .max_age_duration
-                .ok_or(Kind::MissingMaxAgeDuration)?
+                .ok_or_else(error::missing_max_age_duration_error)?
                 .try_into()?,
             max_bytes: value.max_bytes,
         })
@@ -251,10 +263,10 @@ impl From<Params> for RawEvidenceParams {
 /// Todo: harmonize google::protobuf::Duration, std::time::Duration and this. Too many structs.
 /// <https://github.com/informalsystems/tendermint-rs/issues/741>
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
-pub struct Duration(#[serde(with = "serializers::time_duration")] pub std::time::Duration);
+pub struct Duration(#[serde(with = "serializers::time_duration")] pub core::time::Duration);
 
-impl From<Duration> for std::time::Duration {
-    fn from(d: Duration) -> std::time::Duration {
+impl From<Duration> for core::time::Duration {
+    fn from(d: Duration) -> core::time::Duration {
         d.0
     }
 }
@@ -265,15 +277,15 @@ impl TryFrom<RawDuration> for Duration {
     type Error = Error;
 
     fn try_from(value: RawDuration) -> Result<Self, Self::Error> {
-        Ok(Self(std::time::Duration::new(
+        Ok(Self(core::time::Duration::new(
             value
                 .seconds
                 .try_into()
-                .map_err(|_| Self::Error::from(Kind::IntegerOverflow))?,
+                .map_err(|_| error::integer_overflow_error())?,
             value
                 .nanos
                 .try_into()
-                .map_err(|_| Self::Error::from(Kind::IntegerOverflow))?,
+                .map_err(|_| error::integer_overflow_error())?,
         )))
     }
 }

@@ -3,9 +3,11 @@
 use crate::error::Error;
 use serde::{Deserialize, Serialize};
 use std::{
+    borrow::ToOwned,
     fmt::{self, Display},
     str::FromStr,
 };
+use alloc::string::String;
 
 /// Path to ABCI data
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
@@ -20,7 +22,7 @@ impl Display for Path {
 impl FromStr for Path {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Error> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Path(s.to_owned()))
     }
 }

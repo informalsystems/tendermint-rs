@@ -4,6 +4,7 @@ pub use ed25519_dalek::{Keypair as Ed25519, EXPANDED_SECRET_KEY_LENGTH as ED2551
 
 use crate::public_key::PublicKey;
 use serde::{de, ser, Deserialize, Serialize};
+use alloc::string::String;
 use subtle_encoding::{Base64, Encoding};
 use zeroize::Zeroizing;
 

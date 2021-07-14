@@ -1,9 +1,13 @@
 //! Block headers
 
+use crate::error::{self, Error};
 use crate::merkle::simple_hash_from_byte_vectors;
-use crate::{account, block, chain, AppHash, Error, Hash, Kind, Time};
+use crate::{account, block, chain, AppHash, Hash, Time};
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
+use std::{
+    convert::{TryFrom, TryInto},
+    prelude::*,
+};
 use tendermint_proto::types::Header as RawHeader;
 use tendermint_proto::version::Consensus as RawConsensusVersion;
 use tendermint_proto::Protobuf;
@@ -89,9 +93,7 @@ impl TryFrom<RawHeader> for Header {
         // height").into());
         //}
         if last_block_id.is_some() && height.value() == 1 {
-            return Err(Kind::InvalidFirstHeader
-                .context("last_block_id is not null on first height")
-                .into());
+            return Err(error::invalid_first_header_error());
         }
         //if last_commit_hash.is_none() && height.value() != 1 {
         //    return Err(Kind::InvalidHeader.context("last_commit_hash is null on non-first
@@ -111,10 +113,13 @@ impl TryFrom<RawHeader> for Header {
         // height").into());
         //}
         Ok(Header {
-            version: value.version.ok_or(Kind::MissingVersion)?.try_into()?,
+            version: value
+                .version
+                .ok_or_else(error::missing_version_error)?
+                .try_into()?,
             chain_id: value.chain_id.try_into()?,
             height,
-            time: value.time.ok_or(Kind::NoTimestamp)?.try_into()?,
+            time: value.time.ok_or_else(error::no_timestamp_error)?.into(),
             last_block_id,
             last_commit_hash,
             data_hash: if value.data_hash.is_empty() {
@@ -188,7 +193,6 @@ impl Header {
             self.evidence_hash.unwrap_or_default().encode_vec().unwrap(),
             self.proposer_address.encode_vec().unwrap(),
         ];
-
         Hash::Sha256(simple_hash_from_byte_vectors(fields_bytes))
     }
 }
@@ -209,7 +213,7 @@ pub struct Version {
 impl Protobuf<RawConsensusVersion> for Version {}
 
 impl TryFrom<RawConsensusVersion> for Version {
-    type Error = anomaly::BoxError;
+    type Error = Error;
 
     fn try_from(value: RawConsensusVersion) -> Result<Self, Self::Error> {
         Ok(Version {

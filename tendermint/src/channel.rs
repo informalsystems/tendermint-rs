@@ -5,7 +5,10 @@ mod id;
 pub use self::id::Id;
 use crate::serializers;
 pub use serde::{Deserialize, Serialize};
-use std::fmt::{self, Display};
+use std::{
+    fmt::{self, Display},
+};
+use alloc::string::String;
 
 /// Channels
 #[derive(Clone, Debug, Deserialize, Serialize)]

@@ -1,6 +1,7 @@
 use crate::chain::Id as ChainId;
-use crate::Error;
+use crate::error::Error;
 use std::convert::TryFrom;
+use alloc::string::ToString;
 use tendermint_proto::privval::PubKeyRequest as RawPubKeyRequest;
 use tendermint_proto::Protobuf;
 

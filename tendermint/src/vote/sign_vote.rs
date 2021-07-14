@@ -1,12 +1,13 @@
 use crate::chain;
+use crate::error::{self, Error};
 use crate::Vote;
-use crate::{Error, Kind};
 use bytes::BufMut;
-use std::convert::TryFrom;
+use std::{convert::TryFrom, vec::Vec};
 use tendermint_proto::privval::SignedVoteResponse as RawSignedVoteResponse;
 use tendermint_proto::privval::{RemoteSignerError, SignVoteRequest as RawSignVoteRequest};
 use tendermint_proto::Error as ProtobufError;
 use tendermint_proto::Protobuf;
+use crate::alloc::string::ToString;
 
 /// SignVoteRequest is a request to sign a vote
 #[derive(Clone, PartialEq, Debug)]
@@ -24,7 +25,7 @@ impl TryFrom<RawSignVoteRequest> for SignVoteRequest {
 
     fn try_from(value: RawSignVoteRequest) -> Result<Self, Self::Error> {
         if value.vote.is_none() {
-            return Err(Kind::NoVoteFound.into());
+            return Err(error::no_vote_found_error());
         }
         Ok(SignVoteRequest {
             vote: Vote::try_from(value.vote.unwrap())?,

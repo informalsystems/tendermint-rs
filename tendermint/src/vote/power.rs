@@ -1,11 +1,12 @@
 //! Voting power
-
-use std::convert::{TryFrom, TryInto};
-use std::fmt;
-
+use crate::error::{self, Error};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-
-use crate::{Error, Kind};
+use std::{
+    convert::{TryFrom, TryInto},
+    fmt,
+};
+use alloc::format;
+use alloc::string::{String, ToString};
 
 /// Voting power
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Default)]
@@ -21,7 +22,11 @@ impl TryFrom<i64> for Power {
     type Error = Error;
 
     fn try_from(value: i64) -> Result<Self, Self::Error> {
-        Ok(Power(value.try_into().map_err(|_| Kind::NegativePower)?))
+        Ok(Power(
+            value
+                .try_into()
+                .map_err(|_| error::negative_power_error())?,
+        ))
     }
 }
 
@@ -36,7 +41,7 @@ impl TryFrom<u64> for Power {
 
     fn try_from(value: u64) -> Result<Self, Self::Error> {
         if value > i64::MAX as u64 {
-            return Err(Kind::IntegerOverflow.into());
+            return Err(error::integer_overflow_error());
         }
         Ok(Power(value))
     }

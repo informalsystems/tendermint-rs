@@ -70,7 +70,7 @@ mod prod {
         #[pre(self.peer_map.contains_key(&peer))]
         fn rpc_client_for(&self, peer: PeerId) -> Result<rpc::HttpClient, IoError> {
             let peer_addr = self.peer_map.get(&peer).unwrap().to_owned();
-            Ok(rpc::HttpClient::new(peer_addr).map_err(IoError::from)?)
+            rpc::HttpClient::new(peer_addr).map_err(IoError::from)
         }
     }
 }

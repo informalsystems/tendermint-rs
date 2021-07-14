@@ -240,10 +240,10 @@ pub fn verify(
     vp.is_header_from_past(&untrusted.signed_header.header, options.clock_drift, now)?;
 
     // Ensure the header validator hashes match the given validators
-    vp.validator_sets_match(&untrusted, &*hasher)?;
+    vp.validator_sets_match(untrusted, &*hasher)?;
 
     // Ensure the header next validator hashes match the given next validators
-    vp.next_validators_match(&untrusted, &*hasher)?;
+    vp.next_validators_match(untrusted, &*hasher)?;
 
     // Ensure the header matches the commit
     vp.header_matches_commit(&untrusted.signed_header, hasher)?;
@@ -266,7 +266,7 @@ pub fn verify(
     if untrusted.height() == trusted_next_height {
         // If the untrusted block is the very next block after the trusted block,
         // check that their (next) validator sets hashes match.
-        vp.valid_next_validator_set(&untrusted, trusted)?;
+        vp.valid_next_validator_set(untrusted, trusted)?;
     } else {
         // Otherwise, ensure that the untrusted block has a greater height than
         // the trusted block.

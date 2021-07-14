@@ -1,210 +1,182 @@
 //! Error types
 
-use anomaly::{BoxError, Context};
-use thiserror::Error;
-
 use crate::account;
 use crate::vote;
+use flex_error::{define_error, DisplayError};
+use alloc::string::String;
 
-/// Error type
-pub type Error = BoxError;
+define_error! {
+    #[derive(Debug)]
+    Error {
+        Crypto
+            |_| { format_args!("cryptographic error") },
 
-/// Kinds of errors
-#[derive(Clone, Eq, PartialEq, Debug, Error)]
-pub enum Kind {
-    /// Cryptographic operation failed
-    #[error("cryptographic error")]
-    Crypto,
+        InvalidKey
+            { detail: String }
+            |_| { format_args!("invalid key") },
 
-    /// Malformatted or otherwise invalid cryptographic key
-    #[error("invalid key")]
-    InvalidKey,
+        Io
+            { detail: String }
+            |_| { format_args!("I/O error") },
 
-    /// Unsupported public key type.
-    #[error("unsupported key type")]
-    UnsupportedKeyType,
+        Length
+            |_| { format_args!("length error") },
 
-    /// Input/output error
-    #[error("I/O error")]
-    Io,
+        Parse
+            { data: String }
+            | e | { format_args!("error parsing data {}", e.data) },
 
-    /// Length incorrect or too long
-    #[error("length error")]
-    Length,
+        ParseInt
+            { data: String }
+            [ DisplayError<std::num::ParseIntError>]
+            | e | { format_args!("error parsing int data: {}", e.data) },
 
-    /// Parse error
-    #[error("parse error")]
-    Parse,
+        ParseUrl
+            [ DisplayError<url::ParseError> ]
+            |_| { format_args!("error parsing url error") },
 
-    /// Network protocol-related errors
-    #[error("protocol error")]
-    Protocol,
+        Protocol
+            { detail: String }
+            |_| { format_args!("protocol error") },
 
-    /// Value out-of-range
-    #[error("value out of range")]
-    OutOfRange,
+        OutOfRange
+            |_| { format_args!("value out of range") },
 
-    /// Signature invalid
-    #[error("bad signature")]
-    SignatureInvalid,
+        SignatureInvalid
+            { detail: String }
+            |_| { format_args!("bad signature") },
 
-    /// invalid message type
-    #[error("invalid message type")]
-    InvalidMessageType,
+        InvalidMessageType
+            |_| { format_args!("invalid message type") },
 
-    /// Negative block height
-    #[error("negative height")]
-    NegativeHeight,
+        NegativeHeight
+            |_| { format_args!("negative height") },
 
-    /// Negative voting round
-    #[error("negative round")]
-    NegativeRound,
+        NegativeRound
+            |_| { format_args!("negative round") },
 
-    /// Negative POL round
-    #[error("negative POL round")]
-    NegativePolRound,
+        NegativePolRound
+            |_| { format_args!("negative POL round") },
 
-    /// Negative validator index in vote
-    #[error("negative validator index")]
-    NegativeValidatorIndex,
+        NegativeValidatorIndex
+            |_| { format_args!("negative validator index") },
 
-    /// Invalid hash size in part_set_header
-    #[error("invalid hash: expected hash size to be 32 bytes")]
-    InvalidHashSize,
+        InvalidHashSize
+            |_| { format_args!("invalid hash: expected hash size to be 32 bytes") },
 
-    /// No timestamp in vote or block header
-    #[error("no timestamp")]
-    NoTimestamp,
+        NoTimestamp
+            |_| { format_args!("no timestamp") },
 
-    /// Invalid timestamp
-    #[error("invalid timestamp")]
-    InvalidTimestamp,
+        NonZeroTimestamp
+            | _ | { "absent commitsig has non-zero timestamp" },
 
-    /// Invalid account ID length
-    #[error("invalid account ID length")]
-    InvalidAccountIdLength,
+        InvalidAccountIdLength
+            |_| { format_args!("invalid account ID length") },
 
-    /// Invalid signature ID length
-    #[error("invalid signature ID length")]
-    InvalidSignatureIdLength,
+        InvalidSignatureIdLength
+            |_| { format_args!("invalid signature ID length") },
 
-    /// Overflow during conversion
-    #[error("integer overflow")]
-    IntegerOverflow,
+        IntegerOverflow
+            |_| { format_args!("integer overflow") },
 
-    /// No Vote found during conversion
-    #[error("no vote found")]
-    NoVoteFound,
+        NoVoteFound
+            |_| { format_args!("no vote found") },
 
-    /// No Proposal found during conversion
-    #[error("no proposal found")]
-    NoProposalFound,
+        NoProposalFound
+            |_| { format_args!("no proposal found") },
 
-    /// Invalid AppHash length found during conversion
-    #[error("invalid app hash Length")]
-    InvalidAppHashLength,
+        InvalidAppHashLength
+            |_| { format_args!("invalid app hash length") },
 
-    /// Invalid PartSetHeader
-    #[error("invalid part set header")]
-    InvalidPartSetHeader,
+        InvalidPartSetHeader
+            { detail : String }
+            |_| { format_args!("invalid part set header") },
 
-    /// Missing Header in Block
-    #[error("missing header field")]
-    MissingHeader,
+        MissingHeader
+            |_| { format_args!("missing header field") },
 
-    /// Missing Data in Block
-    #[error("missing data field")]
-    MissingData,
+        MissingData
+            |_| { format_args!("missing data field") },
 
-    /// Missing Evidence in Block
-    #[error("missing evidence field")]
-    MissingEvidence,
+        MissingEvidence
+            |_| { format_args!("missing evidence field") },
 
-    /// Missing Timestamp in Block
-    #[error("missing timestamp field")]
-    MissingTimestamp,
+        MissingTimestamp
+            |_| { format_args!("missing timestamp field") },
 
-    /// Invalid Block
-    #[error("invalid block")]
-    InvalidBlock,
+        InvalidBlock
+            { reason: String }
+            | e | { format_args!("invalid block reason {}", e.reason) },
 
-    /// Invalid first Block
-    #[error("invalid first block")]
-    InvalidFirstBlock,
+        MissingVersion
+            |_| { format_args!("missing version") },
 
-    /// Missing Version field
-    #[error("missing version")]
-    MissingVersion,
+        InvalidFirstHeader
+            |_| { format_args!("last_block_id is not null on first height") },
 
-    /// Invalid Header
-    #[error("invalid header")]
-    InvalidHeader,
+        InvalidSignature
+            { reason: String }
+            | e | { format_args!("invalid signature reason: {}", e.reason) },
 
-    /// Invalid first Header
-    #[error("invalid first header")]
-    InvalidFirstHeader,
+        InvalidValidatorAddress
+            |_| { format_args!("invalid validator address") },
 
-    /// Invalid signature in CommitSig
-    #[error("invalid signature")]
-    InvalidSignature,
+        InvalidSignedHeader
+            |_| { format_args!("invalid signed header") },
 
-    /// Invalid validator address in CommitSig
-    #[error("invalid validator address")]
-    InvalidValidatorAddress,
+        InvalidEvidence
+            |_| { format_args!("invalid evidence") },
 
-    /// Invalid Signed Header
-    #[error("invalid signed header")]
-    InvalidSignedHeader,
+        BlockIdFlag
+            |_| { format_args!("invalid block id flag") },
 
-    /// Invalid Evidence
-    #[error("invalid evidence")]
-    InvalidEvidence,
+        NegativePower
+            |_| { format_args!("negative power") },
 
-    /// Invalid BlockIdFlag
-    #[error("invalid block id flag")]
-    BlockIdFlag,
+        UnsupportedKeyType
+            |_| { format_args!("unsupported key type" ) },
 
-    /// Negative voting power
-    #[error("negative power")]
-    NegativePower,
+        RawVotingPowerMismatch
+            { raw: vote::Power, computed: vote::Power }
+            |e| { format_args!("mismatch between raw voting ({0:?}) and computed one ({1:?})", e.raw, e.computed) },
 
-    /// Mismatch between raw voting power and computed one in validator set
-    #[error("mismatch between raw voting power ({raw}) and computed one ({computed})")]
-    RawVotingPowerMismatch {
-        /// raw voting power
-        raw: vote::Power,
-        /// computed voting power
-        computed: vote::Power,
-    },
+        MissingPublicKey
+            |_| { format_args!("missing public key") },
 
-    /// Missing Public Key
-    #[error("missing public key")]
-    MissingPublicKey,
+        InvalidValidatorParams
+            |_| { format_args!("invalid validator parameters") },
 
-    /// Invalid validator parameters
-    #[error("invalid validator parameters")]
-    InvalidValidatorParams,
+        InvalidVersionParams
+            |_| { format_args!("invalid version parameters") },
 
-    /// Invalid version parameters
-    #[error("invalid version parameters")]
-    InvalidVersionParams,
+        NegativeMaxAgeNum
+            |_| { format_args!("negative max_age_num_blocks") },
 
-    /// Negative max_age_num_blocks in Evidence parameters
-    #[error("negative max_age_num_blocks")]
-    NegativeMaxAgeNum,
+        MissingMaxAgeDuration
+            |_| { format_args!("missing max_age_duration") },
 
-    /// Missing max_age_duration in evidence parameters
-    #[error("missing max_age_duration")]
-    MissingMaxAgeDuration,
+        ProposerNotFound
+            { account: account::Id }
+            |e| { format_args!("proposer with address '{0}' no found in validator set", e.account) },
 
-    /// Proposer not found in validator set
-    #[error("proposer with address '{}' not found in validator set", _0)]
-    ProposerNotFound(account::Id),
-}
+        InFallible
+            [ DisplayError<std::convert::Infallible> ]
+            |_| { format_args!("infallible") },
 
-impl Kind {
-    /// Add additional context.
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Kind> {
-        Context::new(self, Some(source.into()))
+        ChronoParse
+            [ DisplayError<chrono::ParseError> ]
+            |_| { format_args!("chrono parse error") },
+
+        SubtleEncoding
+            [ DisplayError<subtle_encoding::Error> ]
+            |_| { format_args!("subtle encoding error") },
+
+        SerdeJson
+            [ DisplayError<serde_json::Error> ]
+            |_| { format_args!("serde json error") },
+
+        Toml
+            [ DisplayError<toml::de::Error> ]
+            |_| { format_args!("toml de error") },
     }
 }

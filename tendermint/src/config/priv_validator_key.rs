@@ -1,15 +1,10 @@
 //! Validator private keys
 
+use crate::error::{self, Error};
 use crate::public_key::TendermintKey;
-use crate::{
-    account,
-    error::{Error, Kind},
-    private_key::PrivateKey,
-    public_key::PublicKey,
-};
-use anomaly::format_err;
+use crate::{account, private_key::PrivateKey, public_key::PublicKey};
 use serde::{Deserialize, Serialize};
-use std::{fs, path::Path};
+use _std::{fs, path::Path};
 
 /// Validator private key
 #[derive(Serialize, Deserialize)] // JSON custom serialization for priv_validator_key.json
@@ -27,7 +22,8 @@ pub struct PrivValidatorKey {
 impl PrivValidatorKey {
     /// Parse `priv_validator_key.json`
     pub fn parse_json<T: AsRef<str>>(json_string: T) -> Result<Self, Error> {
-        let result = serde_json::from_str::<Self>(json_string.as_ref())?;
+        let result =
+            serde_json::from_str::<Self>(json_string.as_ref()).map_err(error::serde_json_error)?;
 
         // Validate that the parsed key type is usable as a consensus key
         TendermintKey::new_consensus_key(result.priv_key.public_key())?;
@@ -41,12 +37,8 @@ impl PrivValidatorKey {
         P: AsRef<Path>,
     {
         let json_string = fs::read_to_string(path).map_err(|e| {
-            format_err!(
-                Kind::Parse,
-                "couldn't open {}: {}",
-                path.as_ref().display(),
-                e
-            )
+            let context = format!("couldn't open {}: {}", path.as_ref().display(), e);
+            error::parse_error(context)
         })?;
 
         Self::parse_json(json_string)

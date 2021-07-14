@@ -3,7 +3,11 @@
 use super::{code::Code, data::Data, gas::Gas, info::Info, log::Log, tag::Tag};
 use crate::{consensus, serializers, validator};
 use serde::{Deserialize, Deserializer, Serialize};
-use std::fmt::{self, Display};
+use std::{
+    fmt::{self, Display},
+    vec::Vec,
+};
+use alloc::string::String;
 
 /// Responses for ABCI calls which occur during block processing.
 ///

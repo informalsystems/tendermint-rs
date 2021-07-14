@@ -4,10 +4,11 @@ mod hash;
 
 pub use self::hash::Hash;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use std::{fmt, slice};
+use std::{fmt, prelude::*, slice};
 use subtle_encoding::base64;
 use tendermint_proto::types::Data as RawData;
-
+use alloc::format;
+use alloc::string::String;
 /// Transactions are arbitrary byte arrays whose contents are validated by the
 /// underlying Tendermint application.
 #[derive(Clone, Debug, Eq, PartialEq)] // Custom serde serialization used by RPC /broadcast_tx_async endpoint

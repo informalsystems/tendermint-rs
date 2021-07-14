@@ -1,14 +1,9 @@
 //! Node keys
 
-use crate::{
-    error::{Error, Kind},
-    node,
-    private_key::PrivateKey,
-    public_key::PublicKey,
-};
-use anomaly::format_err;
+use crate::error::{self, Error};
+use crate::{node, private_key::PrivateKey, public_key::PublicKey};
 use serde::{Deserialize, Serialize};
-use std::{fs, path::Path};
+use _std::{fs, path::Path};
 
 /// P2P node private keys
 #[derive(Serialize, Deserialize)]
@@ -20,7 +15,7 @@ pub struct NodeKey {
 impl NodeKey {
     /// Parse `node_key.json`
     pub fn parse_json<T: AsRef<str>>(json_string: T) -> Result<Self, Error> {
-        Ok(serde_json::from_str(json_string.as_ref())?)
+        serde_json::from_str(json_string.as_ref()).map_err(error::serde_json_error)
     }
 
     /// Load `node_key.json` from a file
@@ -29,12 +24,8 @@ impl NodeKey {
         P: AsRef<Path>,
     {
         let json_string = fs::read_to_string(path).map_err(|e| {
-            format_err!(
-                Kind::Parse,
-                "couldn't open {}: {}",
-                path.as_ref().display(),
-                e
-            )
+            let context = format!("couldn't open {}: {}", path.as_ref().display(), e);
+            error::parse_error(context)
         })?;
 
         Self::parse_json(json_string)
