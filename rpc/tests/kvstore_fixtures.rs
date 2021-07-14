@@ -745,16 +745,8 @@ fn incoming_fixtures() {
                 let result = endpoint::subscribe::Response::from_string(content);
 
                 match result {
-                    Err(ErrorReport(ErrorDetail::Response(e), _)) => {
-                        let response = e.source;
-                        assert_eq!(response.code(), Code::ParseError);
-                        assert_eq!(response.message(), "Parse error. Invalid JSON");
-                        assert_eq!(
-                            response.data().unwrap(),
-                            "missing field `jsonrpc` at line 1 column 2"
-                        );
-                    }
-                    _ => panic!("expected Response error"),
+                    Err(ErrorReport(ErrorDetail::Serde(_), _)) => {}
+                    _ => panic!("expected Serde parse error, instead got {:?}", result),
                 }
             }
             "subscribe_newblock_0" => {

@@ -168,7 +168,7 @@ define_error! {
 
         Serde
             [ DisplayOnly<serde_json::Error> ]
-            | _ | { "parse error" },
+            | _ | { "serde parse error" },
 
         ParseUrl
             [ DisplayOnly<url::ParseError> ]
