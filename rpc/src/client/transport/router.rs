@@ -1,10 +1,12 @@
 //! Event routing for subscriptions.
 
-use crate::client::subscription::SubscriptionTx;
-use crate::event::Event;
-use std::borrow::BorrowMut;
 use std::collections::{HashMap, HashSet};
+
 use tracing::debug;
+
+use crate::client::subscription::SubscriptionTx;
+use crate::error::Error;
+use crate::event::Event;
 
 /// Provides a mechanism for tracking [`Subscription`]s and routing [`Event`]s
 /// to those subscriptions.
@@ -17,36 +19,54 @@ pub struct SubscriptionRouter {
     // their result channels. Used for publishing events relating to a specific
     // query.
     subscriptions: HashMap<String, HashMap<String, SubscriptionTx>>,
+
+    // A map of subscription ids to their queries
+    sub_to_query: HashMap<String, String>,
 }
 
 impl SubscriptionRouter {
+    pub fn publish_error(&mut self, id: &String, err: Error) -> PublishResult {
+        if let Some(query) = self.sub_to_query.get(id) {
+            let query = query.clone();
+            self.publish(query, Err(err))
+        } else {
+            PublishResult::NoSubscribers
+        }
+    }
+
+    pub fn publish_event(&mut self, ev: Event) -> PublishResult {
+        self.publish(ev.query.clone(), Ok(ev))
+    }
+
     /// Publishes the given event to all of the subscriptions to which the
-    /// event is relevant. At present, it matches purely based on the query
-    /// associated with the event, and only queries that exactly match that of
-    /// the event's.
-    pub fn publish(&mut self, ev: &Event) -> PublishResult {
-        let subs_for_query = match self.subscriptions.get_mut(&ev.query) {
+    /// event is relevant, based on the given query.
+    pub fn publish(&mut self, query: String, ev: Result<Event, Error>) -> PublishResult {
+        let subs_for_query = match self.subscriptions.get_mut(&query) {
             Some(s) => s,
             None => return PublishResult::NoSubscribers,
         };
+
         // We assume here that any failure to publish an event is an indication
         // that the receiver end of the channel has been dropped, which allows
         // us to safely stop tracking the subscription.
         let mut disconnected = HashSet::new();
-        for (id, event_tx) in subs_for_query.borrow_mut() {
-            if let Err(e) = event_tx.send(Ok(ev.clone())) {
+        for (id, event_tx) in subs_for_query.iter_mut() {
+            if let Err(e) = event_tx.send(ev.clone()) {
                 disconnected.insert(id.clone());
                 debug!(
                     "Automatically disconnecting subscription with ID {} for query \"{}\" due to failure to publish to it: {}",
-                    id, ev.query, e
+                    id, query, e
                 );
             }
         }
+
         for id in disconnected {
             subs_for_query.remove(&id);
+            self.sub_to_query.remove(&id);
         }
+
         if subs_for_query.is_empty() {
-            PublishResult::AllDisconnected
+            PublishResult::AllDisconnected(query)
         } else {
             PublishResult::Success
         }
@@ -63,7 +83,11 @@ impl SubscriptionRouter {
                 self.subscriptions.get_mut(&query).unwrap()
             }
         };
-        subs_for_query.insert(id.to_string(), tx);
+
+        let id = id.to_string();
+
+        subs_for_query.insert(id.clone(), tx);
+        self.sub_to_query.insert(id, query);
     }
 
     /// Removes all the subscriptions relating to the given query.
@@ -90,6 +114,7 @@ impl Default for SubscriptionRouter {
     fn default() -> Self {
         Self {
             subscriptions: HashMap::new(),
+            sub_to_query: HashMap::new(),
         }
     }
 }
@@ -98,7 +123,7 @@ impl Default for SubscriptionRouter {
 pub enum PublishResult {
     Success,
     NoSubscribers,
-    AllDisconnected,
+    AllDisconnected(String),
 }
 
 #[cfg(test)]
@@ -160,7 +185,7 @@ mod test {
 
         let mut ev = read_event("event_new_block_1").await;
         ev.query = "query1".into();
-        router.publish(&ev);
+        router.publish_event(ev.clone());
 
         let subs1_ev = must_recv(&mut subs1_event_rx, 500).await.unwrap();
         let subs2_ev = must_recv(&mut subs2_event_rx, 500).await.unwrap();
@@ -169,7 +194,7 @@ mod test {
         assert_eq!(ev, subs2_ev);
 
         ev.query = "query2".into();
-        router.publish(&ev);
+        router.publish_event(ev.clone());
 
         must_not_recv(&mut subs1_event_rx, 50).await;
         must_not_recv(&mut subs2_event_rx, 50).await;
