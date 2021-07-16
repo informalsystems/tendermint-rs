@@ -26,7 +26,8 @@ pub struct Size {
 }
 
 impl Size {
-    fn default_time_iota_ms() -> i64 {
+    /// The default value for the `time_iota_ms` parameter.
+    pub fn default_time_iota_ms() -> i64 {
         1000
     }
 }
