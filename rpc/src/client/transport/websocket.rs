@@ -645,6 +645,7 @@ impl WebSocketClientDriver {
     }
 
     async fn handle_text_msg(&mut self, msg: String) -> Result<()> {
+        dbg!(&msg, Event::from_string(&msg));
         if let Ok(ev) = Event::from_string(&msg) {
             self.publish_event(ev).await;
             return Ok(());
