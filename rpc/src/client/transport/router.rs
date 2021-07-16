@@ -25,7 +25,7 @@ pub struct SubscriptionRouter {
 }
 
 impl SubscriptionRouter {
-    pub fn publish_error(&mut self, id: &String, err: Error) -> PublishResult {
+    pub fn publish_error(&mut self, id: &str, err: Error) -> PublishResult {
         if let Some(query) = self.sub_to_query.get(id) {
             let query = query.clone();
             self.publish(query, Err(err))

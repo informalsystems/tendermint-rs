@@ -684,7 +684,7 @@ impl WebSocketClientDriver {
         Ok(())
     }
 
-    async fn publish_error(&mut self, id: &String, err: Error) {
+    async fn publish_error(&mut self, id: &str, err: Error) {
         if let PublishResult::AllDisconnected(query) = self.router.publish_error(id, err) {
             debug!(
                 "All subscribers for query \"{}\" have disconnected. Unsubscribing from query...",
