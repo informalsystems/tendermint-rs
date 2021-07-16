@@ -670,6 +670,7 @@ fn incoming_fixtures() {
                 assert_eq!(result.genesis.validators[0].power(), 10);
                 assert!(result.genesis.validators[0].pub_key.ed25519().is_some());
                 assert_eq!(result.genesis.validators[0].proposer_priority.value(), 0);
+                assert_eq!(result.genesis.consensus_params.block.time_iota_ms, 500);
             }
             "net_info" => {
                 let result = endpoint::net_info::Response::from_string(content).unwrap();
@@ -703,7 +704,7 @@ fn incoming_fixtures() {
                         app: 1
                     }
                 );
-                assert_eq!(result.node_info.version.to_string(), "v0.34.0");
+                assert_eq!(result.node_info.version.to_string(), "v0.34.9");
                 assert!(!result.sync_info.catching_up);
                 assert_eq!(result.sync_info.latest_app_hash.value(), [0; 8]);
                 assert!(!result.sync_info.latest_block_hash.is_empty());
