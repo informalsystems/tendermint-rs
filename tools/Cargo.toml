@@ -4,5 +4,6 @@ members = [
     "abci-test",
     "kvstore-test",
     "proto-compiler",
-    "rpc-probe"
+    "rpc-probe",
+    "ws-inspect"
 ]
