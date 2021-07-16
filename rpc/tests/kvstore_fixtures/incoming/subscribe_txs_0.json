@@ -1,12 +1,12 @@
 {
-  "id": "4ce9362f-4166-4557-a8dd-4b6b5a5ace50",
+  "id": "5cc8e426-b6d1-49f1-845c-d93415a93f93",
   "jsonrpc": "2.0",
   "result": {
     "data": {
       "type": "tendermint/event/Tx",
       "value": {
         "TxResult": {
-          "height": "23",
+          "height": "41",
           "result": {
             "events": [
               {
@@ -60,7 +60,7 @@
         "FCB86F71C4EFF43E13C51FA12791F6DD1DDB8600A51131BE2289614D6882F6BE"
       ],
       "tx.height": [
-        "23"
+        "41"
       ]
     },
     "query": "tm.event = 'Tx'"
