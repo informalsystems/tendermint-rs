@@ -123,6 +123,7 @@ impl Default for SubscriptionRouter {
 pub enum PublishResult {
     Success,
     NoSubscribers,
+    // All subscriptions for the given query have disconnected.
     AllDisconnected(String),
 }
 
