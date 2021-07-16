@@ -670,7 +670,10 @@ fn incoming_fixtures() {
                 assert_eq!(result.genesis.validators[0].power(), 10);
                 assert!(result.genesis.validators[0].pub_key.ed25519().is_some());
                 assert_eq!(result.genesis.validators[0].proposer_priority.value(), 0);
-                assert_eq!(result.genesis.consensus_params.block.time_iota_ms, 500);
+                assert_eq!(
+                    result.genesis.consensus_params.block.time_iota_ms,
+                    tendermint::block::Size::default_time_iota_ms(),
+                );
             }
             "net_info" => {
                 let result = endpoint::net_info::Response::from_string(content).unwrap();
