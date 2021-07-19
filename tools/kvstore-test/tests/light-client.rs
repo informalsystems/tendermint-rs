@@ -82,12 +82,10 @@ fn make_supervisor() -> Supervisor {
     let primary_instance = make_instance(primary, options, node_address.clone());
     let witness_instance = make_instance(witness, options, node_address.clone());
 
-    let supervisor = SupervisorBuilder::new()
+    SupervisorBuilder::new()
         .primary(primary, node_address.clone(), primary_instance)
         .witness(witness, node_address, witness_instance)
-        .build_prod();
-
-    supervisor
+        .build_prod()
 }
 
 #[test]
