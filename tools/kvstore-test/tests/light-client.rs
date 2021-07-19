@@ -74,10 +74,7 @@ fn make_supervisor() -> Supervisor {
     let node_address: rpc::Url = "http://127.0.0.1:26657".parse().unwrap();
 
     let options = light_client::Options {
-        trust_threshold: TrustThreshold {
-            numerator: 1,
-            denominator: 3,
-        },
+        trust_threshold: TrustThreshold::new(1, 3).unwrap(),
         trusting_period: Duration::from_secs(60 * 60), // 60 minutes
         clock_drift: Duration::from_secs(5 * 60),      // 5 minutes
     };
