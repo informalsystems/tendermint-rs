@@ -28,6 +28,8 @@ use tendermint::net;
 use tokio::time::{Duration, Instant};
 use tracing::{debug, error};
 
+use super::router::{SubscriptionId, SubscriptionIdRef};
+
 // WebSocket connection times out if we haven't heard anything at all from the
 // server in this long.
 //
@@ -490,10 +492,6 @@ struct SimpleRequestCommand {
 struct GenericJsonResponse(serde_json::Value);
 
 impl Response for GenericJsonResponse {}
-
-pub type SubscriptionId = String;
-pub type SubscriptionIdRef<'a> = &'a str;
-pub type SubscriptionQuery = String;
 
 /// Drives the WebSocket connection for a `WebSocketClient` instance.
 ///

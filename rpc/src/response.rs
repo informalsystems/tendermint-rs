@@ -52,7 +52,6 @@ where
     }
 
     /// Convert this wrapper into the underlying error, if any
-    #[allow(dead_code)]
     pub fn into_error(self) -> Option<Error> {
         self.error
     }

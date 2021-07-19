@@ -8,7 +8,11 @@ use crate::client::subscription::SubscriptionTx;
 use crate::error::Error;
 use crate::event::Event;
 
-use super::websocket::{SubscriptionId, SubscriptionIdRef, SubscriptionQuery};
+pub type SubscriptionQuery = String;
+pub type SubscriptionId = String;
+
+#[cfg_attr(not(feature = "websocket"), allow(dead_code))]
+pub type SubscriptionIdRef<'a> = &'a str;
 
 /// Provides a mechanism for tracking [`Subscription`]s and routing [`Event`]s
 /// to those subscriptions.
@@ -17,15 +21,16 @@ use super::websocket::{SubscriptionId, SubscriptionIdRef, SubscriptionQuery};
 /// [`Event`]: ./event/struct.Event.html
 #[derive(Debug)]
 pub struct SubscriptionRouter {
-    // A map of subscription queries to collections of subscription IDs and
-    // their result channels. Used for publishing events relating to a specific
-    // query.
+    /// A map of subscription queries to collections of subscription IDs and
+    /// their result channels. Used for publishing events relating to a specific
+    /// query.
     subscriptions: HashMap<SubscriptionQuery, HashMap<SubscriptionId, SubscriptionTx>>,
 }
 
 impl SubscriptionRouter {
     /// Publishes the given error to all of the subscriptions to which the
     /// error is relevant, based on the given subscription id query.
+    #[cfg_attr(not(feature = "websocket"), allow(dead_code))]
     pub fn publish_error(&mut self, id: SubscriptionIdRef<'_>, err: Error) -> PublishResult {
         if let Some(query) = self.subscription_query(id).cloned() {
             self.publish(query, Err(err))
@@ -34,7 +39,9 @@ impl SubscriptionRouter {
         }
     }
 
-    fn subscription_query(&self, id: SubscriptionIdRef<'_>) -> Option<&String> {
+    /// Get the query associated with the given subscription.
+    #[cfg_attr(not(feature = "websocket"), allow(dead_code))]
+    fn subscription_query(&self, id: SubscriptionIdRef<'_>) -> Option<&SubscriptionQuery> {
         for (query, subs) in &self.subscriptions {
             if subs.contains_key(id) {
                 return Some(query);
@@ -46,6 +53,7 @@ impl SubscriptionRouter {
 
     /// Publishes the given event to all of the subscriptions to which the
     /// event is relevant, based on the associated query.
+    #[cfg_attr(not(feature = "websocket"), allow(dead_code))]
     pub fn publish_event(&mut self, ev: Event) -> PublishResult {
         self.publish(ev.query.clone(), Ok(ev))
     }
