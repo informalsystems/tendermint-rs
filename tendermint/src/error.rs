@@ -200,6 +200,18 @@ pub enum Kind {
     /// Proposer not found in validator set
     #[error("proposer with address '{}' not found in validator set", _0)]
     ProposerNotFound(account::Id),
+
+    /// Trust threshold fraction too large.
+    #[error("trust threshold is too large (must be <= 1)")]
+    TrustThresholdTooLarge,
+
+    /// Undefined trust threshold.
+    #[error("undefined trust threshold (denominator cannot be 0)")]
+    UndefinedTrustThreshold,
+
+    /// Trust threshold fraction is too small (must be >= 1/3).
+    #[error("trust threshold too small (must be >= 1/3)")]
+    TrustThresholdTooSmall,
 }
 
 impl Kind {
