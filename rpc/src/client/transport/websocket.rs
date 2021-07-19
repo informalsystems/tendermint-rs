@@ -491,7 +491,9 @@ struct GenericJsonResponse(serde_json::Value);
 
 impl Response for GenericJsonResponse {}
 
-type SubscriptionId = String;
+pub type SubscriptionId = String;
+pub type SubscriptionIdRef<'a> = &'a str;
+pub type SubscriptionQuery = String;
 
 /// Drives the WebSocket connection for a `WebSocketClient` instance.
 ///
@@ -684,7 +686,7 @@ impl WebSocketClientDriver {
         Ok(())
     }
 
-    async fn publish_error(&mut self, id: &str, err: Error) {
+    async fn publish_error(&mut self, id: SubscriptionIdRef<'_>, err: Error) {
         if let PublishResult::AllDisconnected(query) = self.router.publish_error(id, err) {
             debug!(
                 "All subscribers for query \"{}\" have disconnected. Unsubscribing from query...",

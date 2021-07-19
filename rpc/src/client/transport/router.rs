@@ -8,6 +8,8 @@ use crate::client::subscription::SubscriptionTx;
 use crate::error::Error;
 use crate::event::Event;
 
+use super::websocket::{SubscriptionId, SubscriptionIdRef, SubscriptionQuery};
+
 /// Provides a mechanism for tracking [`Subscription`]s and routing [`Event`]s
 /// to those subscriptions.
 ///
@@ -18,13 +20,13 @@ pub struct SubscriptionRouter {
     // A map of subscription queries to collections of subscription IDs and
     // their result channels. Used for publishing events relating to a specific
     // query.
-    subscriptions: HashMap<String, HashMap<String, SubscriptionTx>>,
+    subscriptions: HashMap<SubscriptionQuery, HashMap<SubscriptionId, SubscriptionTx>>,
 }
 
 impl SubscriptionRouter {
     /// Publishes the given error to all of the subscriptions to which the
     /// error is relevant, based on the given subscription id query.
-    pub fn publish_error(&mut self, id: &str, err: Error) -> PublishResult {
+    pub fn publish_error(&mut self, id: SubscriptionIdRef<'_>, err: Error) -> PublishResult {
         if let Some(query) = self.subscription_query(id).cloned() {
             self.publish(query, Err(err))
         } else {
@@ -32,7 +34,7 @@ impl SubscriptionRouter {
         }
     }
 
-    fn subscription_query(&self, id: &str) -> Option<&String> {
+    fn subscription_query(&self, id: SubscriptionIdRef<'_>) -> Option<&String> {
         for (query, subs) in &self.subscriptions {
             if subs.contains_key(id) {
                 return Some(query);
@@ -50,7 +52,7 @@ impl SubscriptionRouter {
 
     /// Publishes the given event/error to all of the subscriptions to which the
     /// event/error is relevant, based on the given query.
-    pub fn publish(&mut self, query: String, ev: Result<Event, Error>) -> PublishResult {
+    pub fn publish(&mut self, query: SubscriptionQuery, ev: Result<Event, Error>) -> PublishResult {
         let subs_for_query = match self.subscriptions.get_mut(&query) {
             Some(s) => s,
             None => return PublishResult::NoSubscribers,
