@@ -123,3 +123,64 @@ pub struct RawTrustThresholdFraction {
     #[serde(with = "serializers::from_str")]
     denominator: u64,
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use proptest::prelude::*;
+
+    fn to_json(num: u64, denom: u64) -> String {
+        format!(
+            "{{\"numerator\": \"{}\", \"denominator\": \"{}\"}}",
+            num, denom
+        )
+    }
+
+    fn from_json(num: u64, denom: u64) -> Result<TrustThresholdFraction, serde_json::Error> {
+        let json = to_json(num, denom);
+        serde_json::from_str::<TrustThresholdFraction>(&json)
+    }
+
+    prop_compose! {
+        fn arb_correct_frac(num: u64)(denom in num..=(3*num)) -> (u64, u64) {
+            (num, denom)
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn too_large(num in 2..1000u64) {
+            // Just smaller than the numerator
+            let denom = num - 1;
+            assert!(TrustThresholdFraction::new(num, denom).is_err());
+            assert!(from_json(num, denom).is_err());
+        }
+
+        #[test]
+        fn undefined(num in 1..1000u64) {
+            // Numerator should be irrelevant
+            let denom = 0u64;
+            assert!(TrustThresholdFraction::new(num, denom).is_err());
+            assert!(from_json(num, denom).is_err());
+        }
+
+        #[test]
+        fn too_small(num in 1..1000u64) {
+            // Just larger than 3 times the numerator
+            let denom = (num * 3) + 1;
+            assert!(TrustThresholdFraction::new(num, denom).is_err());
+            assert!(from_json(num, denom).is_err());
+        }
+
+        #[test]
+        fn just_right((num, denom) in arb_correct_frac(1000)) {
+            let frac = TrustThresholdFraction::new(num, denom).unwrap();
+            assert_eq!(frac.numerator(), num);
+            assert_eq!(frac.denominator(), denom);
+
+            let frac = from_json(num, denom).unwrap();
+            assert_eq!(frac.numerator(), num);
+            assert_eq!(frac.denominator(), denom);
+        }
+    }
+}
