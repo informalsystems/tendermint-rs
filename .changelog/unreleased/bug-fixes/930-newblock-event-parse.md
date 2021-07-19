@@ -1,2 +1,1 @@
-- Fix bug where `NewBlock` events emitted by Tendermint could not be parsed because of a missing field ([#930](https://github.com/informalsystems/tendermint-rs/issues/930))
-
+- `[tendermint-rpc]` Fix bug where `NewBlock` events emitted by Tendermint could not be parsed because of a missing field ([#930](https://github.com/informalsystems/tendermint-rs/issues/930))
