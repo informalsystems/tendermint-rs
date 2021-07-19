@@ -19,27 +19,37 @@ pub struct SubscriptionRouter {
     // their result channels. Used for publishing events relating to a specific
     // query.
     subscriptions: HashMap<String, HashMap<String, SubscriptionTx>>,
-
-    // A map of subscription ids to their queries
-    sub_to_query: HashMap<String, String>,
 }
 
 impl SubscriptionRouter {
+    /// Publishes the given error to all of the subscriptions to which the
+    /// error is relevant, based on the given subscription id query.
     pub fn publish_error(&mut self, id: &str, err: Error) -> PublishResult {
-        if let Some(query) = self.sub_to_query.get(id) {
-            let query = query.clone();
+        if let Some(query) = self.subscription_query(id).cloned() {
             self.publish(query, Err(err))
         } else {
             PublishResult::NoSubscribers
         }
     }
 
+    fn subscription_query(&self, id: &str) -> Option<&String> {
+        for (query, subs) in &self.subscriptions {
+            if subs.contains_key(id) {
+                return Some(query);
+            }
+        }
+
+        None
+    }
+
+    /// Publishes the given event to all of the subscriptions to which the
+    /// event is relevant, based on the associated query.
     pub fn publish_event(&mut self, ev: Event) -> PublishResult {
         self.publish(ev.query.clone(), Ok(ev))
     }
 
-    /// Publishes the given event to all of the subscriptions to which the
-    /// event is relevant, based on the given query.
+    /// Publishes the given event/error to all of the subscriptions to which the
+    /// event/error is relevant, based on the given query.
     pub fn publish(&mut self, query: String, ev: Result<Event, Error>) -> PublishResult {
         let subs_for_query = match self.subscriptions.get_mut(&query) {
             Some(s) => s,
@@ -62,7 +72,6 @@ impl SubscriptionRouter {
 
         for id in disconnected {
             subs_for_query.remove(&id);
-            self.sub_to_query.remove(&id);
         }
 
         if subs_for_query.is_empty() {
@@ -84,10 +93,7 @@ impl SubscriptionRouter {
             }
         };
 
-        let id = id.to_string();
-
-        subs_for_query.insert(id.clone(), tx);
-        self.sub_to_query.insert(id, query);
+        subs_for_query.insert(id.to_string(), tx);
     }
 
     /// Removes all the subscriptions relating to the given query.
@@ -114,7 +120,6 @@ impl Default for SubscriptionRouter {
     fn default() -> Self {
         Self {
             subscriptions: HashMap::new(),
-            sub_to_query: HashMap::new(),
         }
     }
 }
