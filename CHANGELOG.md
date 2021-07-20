@@ -4,10 +4,10 @@
 
 *Jul 20, 2021*
 
-This release introduces several minor breaking changes (see below) that
-clean up a few RPC-related data structures and ensure better correctness of
-the `TrustThresholdFraction` data structure when constructing and deserializing
-it.
+This release introduces several minor breaking changes (see below), among other
+improvements, that clean up a few RPC-related data structures and ensure better
+correctness of the `TrustThresholdFraction` data structure when constructing
+and deserializing it.
 
 A [security issue](https://github.com/informalsystems/tendermint-rs/issues/925)
 was reported in `prost` v0.7, and we attempted to upgrade to v0.8, but we are
