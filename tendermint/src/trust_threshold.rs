@@ -49,10 +49,10 @@ impl TrustThresholdFraction {
     /// Instantiate a TrustThresholdFraction if the given denominator and
     /// numerator are valid.
     ///
-    /// The parameters are valid iff `1/3 <= numerator/denominator <= 1`.
+    /// The parameters are valid iff `1/3 <= numerator/denominator < 1`.
     /// In any other case we return an error.
     pub fn new(numerator: u64, denominator: u64) -> Result<Self, Error> {
-        if numerator > denominator {
+        if numerator >= denominator {
             return Err(Kind::TrustThresholdTooLarge.into());
         }
         if denominator == 0 {
@@ -141,7 +141,8 @@ mod test {
     }
 
     prop_compose! {
-        fn arb_correct_frac(num: u64)(denom in num..=(3*num)) -> (u64, u64) {
+        // num < denom <= 3*num
+        fn arb_correct_frac(num: u64)(denom in (num+1)..=(3*num)) -> (u64, u64) {
             (num, denom)
         }
     }
@@ -153,6 +154,12 @@ mod test {
             let denom = num - 1;
             assert!(TrustThresholdFraction::new(num, denom).is_err());
             assert!(from_json(num, denom).is_err());
+        }
+
+        #[test]
+        fn cannot_be_one(num in 1..1000u64) {
+            assert!(TrustThresholdFraction::new(num, num).is_err());
+            assert!(from_json(num, num).is_err());
         }
 
         #[test]
