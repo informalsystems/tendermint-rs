@@ -156,7 +156,7 @@ impl MockClientDriver {
                     DriverCommand::Unsubscribe { query, result_tx } => {
                         self.unsubscribe(query, result_tx);
                     }
-                    DriverCommand::Publish(event) => self.publish(event.as_ref()),
+                    DriverCommand::Publish(event) => self.publish(*event),
                     DriverCommand::Terminate => return Ok(()),
                 }
             }
@@ -179,8 +179,8 @@ impl MockClientDriver {
         result_tx.send(Ok(())).unwrap();
     }
 
-    fn publish(&mut self, event: &Event) {
-        self.router.publish(event);
+    fn publish(&mut self, event: Event) {
+        self.router.publish_event(event);
     }
 }
 
