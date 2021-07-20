@@ -9,10 +9,8 @@ readme     = "README.md"
 keywords   = ["blockchain", "cosmos", "tendermint"]
 categories = ["cryptography::cryptocurrencies", "network-programming"]
 authors    = [
-  "Sean Braithwaite <sean@informal.systems>",
-  "Ethan Buchman <ethan@coinculture.info>",
+  "Informal Systems <hello@informal.systems>",
   "Ismail Khoffi <Ismail.Khoffi@gmail.com>",
-  "Romain Ruetschi <romain@informal.systems>",
   "Alexander Simmerl <a.simmerl@gmail.com>",
 ]
 

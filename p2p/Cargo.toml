@@ -9,8 +9,10 @@ readme      = "README.md"
 keywords    = ["p2p", "tendermint", "cosmos"]
 categories  = ["cryptography::cryptocurrencies", "network-programming"]
 authors     = [
+  "Informal Systems <hello@informal.systems>",
+  "Alexander Simmerl <a.simmerl@gmail.com>",
   "Tony Arcieri <tony@iqlusion.io>",
-  "Ismail Khoffi <Ismail.Khoffi@gmail.com>"
+  "Ismail Khoffi <Ismail.Khoffi@gmail.com>",
 ]
 
 description = """
