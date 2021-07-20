@@ -233,10 +233,7 @@ mod tests {
     const EXPECTED_RESULT: VotingPowerTally = VotingPowerTally {
         total: 100,
         tallied: 0,
-        trust_threshold: TrustThresholdFraction {
-            numerator: 1,
-            denominator: 3,
-        },
+        trust_threshold: TrustThresholdFraction::ONE_THIRD,
     };
 
     #[test]
