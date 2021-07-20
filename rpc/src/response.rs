@@ -54,7 +54,7 @@ where
 
     /// Convert this wrapper into the underlying error, if any
     pub fn into_error(self) -> Option<Error> {
-        self.error
+        self.error.map(error::response_error)
     }
 
     /// Convert this wrapper into a result type
