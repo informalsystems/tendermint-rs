@@ -1,5 +1,47 @@
 # CHANGELOG
 
+## v0.21.0
+
+*Jul 20, 2021*
+
+This release introduces several minor breaking changes (see below), among other
+improvements, that clean up a few RPC-related data structures and ensure better
+correctness of the `TrustThresholdFraction` data structure when constructing
+and deserializing it.
+
+A [security issue](https://github.com/informalsystems/tendermint-rs/issues/925)
+was reported in `prost` v0.7, and we attempted to upgrade to v0.8, but we are
+still awaiting one [bug fix](https://github.com/tokio-rs/prost/issues/502) in
+v0.8 before we can upgrade. The moment that is fixed in `prost`, we will upgrade
+to v0.8 and provide another `tendermint-rs` release.
+
+### BREAKING CHANGES
+
+- `[tendermint-rpc]` Remove the `TmEvent` and `Attribute` structs and replace
+  them with their equivalent domain types from the `tendermint` crate
+  ([#918](https://github.com/informalsystems/tendermint-rs/issues/918))
+- `[tendermint]` The `TrustThresholdFraction` struct can now only be constructed
+  by way of its `new` constructor. Deserialization also now makes use of this
+  constructor, facilitating better validation. The `numerator` and `denominator`
+  fields can be accessed (read-only) via their respective methods, since the
+  fields are now private.
+  ([#924](https://github.com/informalsystems/tendermint-rs/issues/924))
+
+### BUG FIXES
+
+- `[tendermint]` Update Genesis for Tendermint v.0.34.x ([#917](https://github.com/informalsystems/tendermint-rs/pull/917))
+- `[tendermint-rpc]` Fix bug where `NewBlock` events emitted by Tendermint could not be parsed because of a missing field ([#930](https://github.com/informalsystems/tendermint-rs/issues/930))
+
+### IMPROVEMENTS
+
+- `[tendermint-proto]` Regenerate the Rust equivalents of the Tendermint
+  Protobuf structures for Tendermint v0.34.9
+  ([#871](https://github.com/informalsystems/tendermint-rs/issues/871))
+- `[tendermint-rpc]` Add `PartialEq`, `Eq`, `PartialOrd`, `Ord` and `Hash` trait
+  bounds to the RPC URL types
+  ([#919](https://github.com/informalsystems/tendermint-rs/issues/919))
+- `[tendermint-rpc]` Propagate JSON-RPC errors through the Rust subscription ([#932](https://github.com/informalsystems/tendermint-rs/issues/932))
+
 ## v0.20.0
 
 *Jun 22, 2021*

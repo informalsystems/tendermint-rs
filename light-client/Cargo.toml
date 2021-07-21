@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint-light-client"
-version    = "0.20.0"
+version    = "0.21.0"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -8,10 +8,8 @@ keywords   = ["blockchain", "bft", "consensus", "cosmos", "tendermint"]
 categories = ["cryptography::cryptocurrencies", "network-programming"]
 repository = "https://github.com/informalsystems/tendermint-rs"
 authors    = [
-  "Sean Braithwaite <sean@informal.systems>",
-  "Ethan Buchman <ethan@coinculture.info>",
+  "Informal Systems <hello@informal.systems>",
   "Ismail Khoffi <Ismail.Khoffi@gmail.com>",
-  "Romain Ruetschi <romain@informal.systems>",
   "Alexander Simmerl <a.simmerl@gmail.com>",
 ]
 
@@ -37,8 +35,8 @@ lightstore-sled = ["sled"]
 unstable = []
 
 [dependencies]
-tendermint = { version = "0.20.0", path = "../tendermint" }
-tendermint-rpc = { version = "0.20.0", path = "../rpc", default-features = false }
+tendermint = { version = "0.21.0", path = "../tendermint" }
+tendermint-rpc = { version = "0.21.0", path = "../rpc", default-features = false }
 
 anomaly = { version = "0.2.0", features = ["serializer"] }
 contracts = "0.4.0"
