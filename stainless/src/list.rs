@@ -33,20 +33,16 @@ impl ListSet<u128> {
     }
 
     #[post(
-      !ret.contains(&t)
-      && ret.list.contents().is_subset(&self.list.contents())
+      !self.contains(&t)
+      && self.list.contents().is_subset(&old(&self).list.contents())
     )]
-    pub fn remove(self, t: &u128) -> Self {
-        Self {
-            list: self.list.remove(t),
-        }
+    pub fn remove(&mut self, t: &u128) {
+        self.list = self.list.clone().remove(t);
     }
 
-    #[post(ret.contains(&t))]
-    pub fn insert(self, t: u128) -> Self {
-        Self {
-            list: self.list.insert(t),
-        }
+    #[post(self.contains(&t))]
+    pub fn insert(&mut self, t: u128) {
+        self.list = self.list.clone().insert(t);
     }
 
     pub fn first(&self) -> Option<u128> {

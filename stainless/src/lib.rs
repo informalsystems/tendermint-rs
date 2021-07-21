@@ -6,23 +6,12 @@ use stainless::*;
 mod list;
 use list::*;
 
-// Copied imports from the `light-client` crate:
-macro_rules! bail {
-    ($kind:expr) => {
-        return Err(Box::new($kind));
-    };
-}
-
 /// Node IDs
 // PeerId was replaced by a simple u128 to make hashing easier.
 
 pub enum ErrorKind {
     NoWitnessLeft { context: Option<Box<ErrorKind>> },
 }
-
-pub struct Tuple<T, S>(T, S);
-
-// Copied imports end.
 
 /// A generic container mapping `u128`s to some type `T`,
 /// which keeps track of the primary peer, witnesses, full nodes,
@@ -121,32 +110,23 @@ impl<T> PeerList<T> {
         && self.witnesses.contains(&faulty_witness)
     )]
     #[post(
-        Self::invariant(&ret.0)
-        && !ret.0.witnesses.contains(&faulty_witness)
-        && ret.0.faulty_nodes.contains(&faulty_witness)
+        Self::invariant(&self)
+        && !self.witnesses.contains(&faulty_witness)
+        && self.faulty_nodes.contains(&faulty_witness)
     )]
-    pub fn replace_faulty_witness(self, faulty_witness: u128) -> Tuple<Self, Option<u128>> {
+    pub fn replace_faulty_witness(&mut self, faulty_witness: u128) -> Option<u128> {
         let mut result = None;
 
-        let mut new_full = self.full_nodes;
-        let mut new_witnesses = self.witnesses.remove(&faulty_witness);
+        self.witnesses.remove(&faulty_witness);
 
-        if let Some(new_witness) = new_full.first() {
-            new_witnesses = new_witnesses.insert(new_witness);
-            new_full = new_full.remove(&new_witness);
+        if let Some(new_witness) = self.full_nodes.first() {
+            self.witnesses.insert(new_witness);
+            self.full_nodes.remove(&new_witness);
             result = Some(new_witness);
         }
 
-        let new_faulty = self.faulty_nodes.insert(faulty_witness);
-        Tuple(
-            Self {
-                full_nodes: new_full,
-                witnesses: new_witnesses,
-                faulty_nodes: new_faulty,
-                ..self
-            },
-            result,
-        )
+        self.faulty_nodes.insert(faulty_witness);
+        result
     }
 
     /// Mark the primary as faulty and swap it for the next available witness, if any.
@@ -156,34 +136,25 @@ impl<T> PeerList<T> {
     /// - If there are no witness left, returns `ErrorKind::NoWitnessLeft`.
     #[pre(Self::invariant(&self))]
     #[post((matches!(ret, Ok(_))).implies(
-               match ret {
-                   Ok(Tuple(new_list, _)) => Self::invariant(&new_list)
-                       && self.primary != new_list.primary
-                       && new_list.faulty_nodes.contains(&self.primary)
-                       && self.witnesses.contains(&new_list.primary),
-                   _ => false,
-               }
-           ))]
+        Self::invariant(&self)
+            && old(&self).primary != self.primary
+            && self.faulty_nodes.contains(&old(&self).primary)
+            && old(&self).witnesses.contains(&self.primary)
+    ))]
     pub fn replace_faulty_primary(
-        self,
+        &mut self,
         primary_error: Option<Box<ErrorKind>>,
-    ) -> Result<Tuple<Self, u128>, Box<ErrorKind>> {
-        let new_faulty = self.faulty_nodes.insert(self.primary);
+    ) -> Result<u128, Box<ErrorKind>> {
+        self.faulty_nodes.insert(self.primary);
 
         if let Some(new_primary) = self.witnesses.first() {
-            let new_witnesses = self.witnesses.remove(&new_primary);
-
-            let ret = Self {
-                primary: new_primary,
-                faulty_nodes: new_faulty,
-                witnesses: new_witnesses,
-                ..self
-            };
-            Ok(Tuple(ret, new_primary))
+            self.primary = new_primary;
+            self.witnesses.remove(&new_primary);
+            Ok(new_primary)
         } else if let Some(err) = primary_error {
-            bail!(ErrorKind::NoWitnessLeft { context: Some(err) })
+            Err(Box::new(ErrorKind::NoWitnessLeft { context: Some(err) }))
         } else {
-            bail!(ErrorKind::NoWitnessLeft { context: None })
+            Err(Box::new(ErrorKind::NoWitnessLeft { context: None }))
         }
     }
 
