@@ -37,12 +37,12 @@ impl ListSet<u128> {
       && self.list.contents().is_subset(&old(&self).list.contents())
     )]
     pub fn remove(&mut self, t: &u128) {
-        self.list = self.list.clone().remove(t);
+        self.list.remove(t);
     }
 
     #[post(self.contains(&t))]
     pub fn insert(&mut self, t: u128) {
-        self.list = self.list.clone().insert(t);
+        self.list.insert(t);
     }
 
     pub fn first(&self) -> Option<u128> {
@@ -84,22 +84,28 @@ impl List<u128> {
     }
 
     #[post(
-        !ret.contents().contains(&t)
-        && ret.contents().is_subset(&self.contents())
+        !self.contents().contains(&t)
+        && self.contents().is_subset(&old(&self).contents())
     )]
-    pub fn remove(self, t: &u128) -> Self {
-        match self {
+    fn remove(&mut self, t: &u128) {
+        let list = std::mem::replace(self, List::Nil);
+        let result = match list {
             List::Nil => List::Nil,
-            List::Cons(head, tail) if head == *t => tail.remove(t),
-            List::Cons(head, tail) => List::Cons(head, Box::new(tail.remove(t))),
-        }
+            List::Cons(head, mut tail) => {
+                tail.remove(t);
+                if head == *t {
+                    *tail
+                } else {
+                    List::Cons(head, tail)
+                }
+            }
+        };
+        *self = result;
     }
 
-    pub fn insert(self, t: u128) -> Self {
-        match self {
-            List::Nil => List::Cons(t, Box::new(List::Nil)),
-            _ => List::Cons(t, Box::new(self)),
-        }
+    pub fn insert(&mut self, t: u128) {
+        let list = std::mem::replace(self, List::Nil);
+        *self = List::Cons(t, Box::new(list));
     }
 }
 
