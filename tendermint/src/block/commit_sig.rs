@@ -1,6 +1,6 @@
 //! CommitSig within Commit
 
-use crate::error::{self, Error};
+use crate::error::Error;
 use crate::{account, Signature, Time};
 use num_traits::ToPrimitive;
 use std::convert::{TryFrom, TryInto};
@@ -74,31 +74,26 @@ impl TryFrom<RawCommitSig> for CommitSig {
                 let timestamp = value.timestamp.unwrap();
                 // 0001-01-01T00:00:00.000Z translates to EPOCH-62135596800 seconds
                 if timestamp.nanos != 0 || timestamp.seconds != -62135596800 {
-                    return Err(error::invalid_timestamp_error(
+                    return Err(Error::invalid_timestamp(
                         "absent commitsig has non-zero timestamp".to_string(),
                     ));
                 }
             }
             if !value.signature.is_empty() {
-                return Err(error::invalid_signature_error(
-                    "empty signature".to_string(),
-                ));
+                return Err(Error::invalid_signature("empty signature".to_string()));
             }
             return Ok(CommitSig::BlockIdFlagAbsent);
         }
         if value.block_id_flag == BlockIdFlag::Commit.to_i32().unwrap() {
             if value.signature.is_empty() {
-                return Err(error::invalid_signature_error(
+                return Err(Error::invalid_signature(
                     "regular commitsig has no signature".to_string(),
                 ));
             }
             if value.validator_address.is_empty() {
-                return Err(error::invalid_validator_address_error());
+                return Err(Error::invalid_validator_address());
             }
-            let timestamp = value
-                .timestamp
-                .ok_or_else(error::missing_timestamp_error)?
-                .into();
+            let timestamp = value.timestamp.ok_or_else(Error::missing_timestamp)?.into();
 
             return Ok(CommitSig::BlockIdFlagCommit {
                 validator_address: value.validator_address.try_into()?,
@@ -108,23 +103,20 @@ impl TryFrom<RawCommitSig> for CommitSig {
         }
         if value.block_id_flag == BlockIdFlag::Nil.to_i32().unwrap() {
             if value.signature.is_empty() {
-                return Err(error::invalid_signature_error(
+                return Err(Error::invalid_signature(
                     "nil commitsig has no signature".to_string(),
                 ));
             }
             if value.validator_address.is_empty() {
-                return Err(error::invalid_validator_address_error());
+                return Err(Error::invalid_validator_address());
             }
             return Ok(CommitSig::BlockIdFlagNil {
                 validator_address: value.validator_address.try_into()?,
-                timestamp: value
-                    .timestamp
-                    .ok_or_else(error::missing_timestamp_error)?
-                    .into(),
+                timestamp: value.timestamp.ok_or_else(Error::missing_timestamp)?.into(),
                 signature: value.signature.try_into()?,
             });
         }
-        Err(error::block_id_flag_error())
+        Err(Error::block_id_flag())
     }
 }
 

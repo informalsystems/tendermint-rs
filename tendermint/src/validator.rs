@@ -3,7 +3,7 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use subtle_encoding::base64;
 
-use crate::{account, error, hash::Hash, merkle, vote, Error, PublicKey, Signature};
+use crate::{account, hash::Hash, merkle, vote, Error, PublicKey, Signature};
 
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::SimpleValidator as RawSimpleValidator;
@@ -37,7 +37,7 @@ impl TryFrom<RawValidatorSet> for Set {
         // Ensure that the raw voting power matches the computed one
         let raw_voting_power = value.total_voting_power.try_into()?;
         if raw_voting_power != validator_set.total_voting_power() {
-            return Err(error::raw_voting_power_mismatch_error(
+            return Err(Error::raw_voting_power_mismatch(
                 raw_voting_power,
                 validator_set.total_voting_power(),
             ));
@@ -92,7 +92,7 @@ impl Set {
             .iter()
             .find(|v| v.address == proposer_address)
             .cloned()
-            .ok_or_else(|| error::proposer_not_found_error(proposer_address))?;
+            .ok_or_else(|| Error::proposer_not_found(proposer_address))?;
 
         // Create the validator set with the given proposer.
         // This is required by IBC on-chain validation.
@@ -171,7 +171,7 @@ impl TryFrom<RawValidator> for Info {
             address: value.address.try_into()?,
             pub_key: value
                 .pub_key
-                .ok_or_else(error::missing_public_key_error)?
+                .ok_or_else(Error::missing_public_key)?
                 .try_into()?,
             power: value.voting_power.try_into()?,
             name: None,

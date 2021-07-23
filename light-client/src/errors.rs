@@ -159,10 +159,12 @@ impl ErrorExt for ErrorDetail {
     }
 }
 
-pub fn send_error<T>(_e: crossbeam::SendError<T>) -> Error {
-    channel_disconnected_error()
-}
+impl Error {
+    pub fn send<T>(_e: crossbeam::SendError<T>) -> Error {
+        Error::channel_disconnected()
+    }
 
-pub fn recv_error(_e: crossbeam::RecvError) -> Error {
-    channel_disconnected_error()
+    pub fn recv(_e: crossbeam::RecvError) -> Error {
+        Error::channel_disconnected()
+    }
 }

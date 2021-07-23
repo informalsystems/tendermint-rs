@@ -42,6 +42,8 @@ define_error! {
     }
 }
 
-pub fn send_error<T>(_e: std::sync::mpsc::SendError<T>) -> Error {
-    channel_send_error()
+impl Error {
+    pub fn send<T>(_e: std::sync::mpsc::SendError<T>) -> Error {
+        Error::channel_send()
+    }
 }

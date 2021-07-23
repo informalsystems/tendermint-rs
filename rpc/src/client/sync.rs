@@ -11,7 +11,7 @@ use futures::Stream;
 use pin_project::pin_project;
 use tokio::sync::mpsc;
 
-use crate::{error, Error};
+use crate::Error;
 
 /// Constructor for an unbounded channel.
 pub fn unbounded<T>() -> (ChannelTx<T>, ChannelRx<T>) {
@@ -28,7 +28,7 @@ pub struct ChannelTx<T>(mpsc::UnboundedSender<T>);
 
 impl<T> ChannelTx<T> {
     pub fn send(&self, value: T) -> Result<(), Error> {
-        self.0.send(value).map_err(error::send_error)
+        self.0.send(value).map_err(Error::send)
     }
 }
 

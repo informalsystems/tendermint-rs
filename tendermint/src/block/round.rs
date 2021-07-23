@@ -1,4 +1,4 @@
-use crate::error::{self, Error};
+use crate::error::Error;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::TryInto;
 use std::{
@@ -15,9 +15,7 @@ impl TryFrom<i32> for Round {
     type Error = Error;
 
     fn try_from(value: i32) -> Result<Self, Self::Error> {
-        Ok(Round(
-            value.try_into().map_err(error::negative_round_error)?,
-        ))
+        Ok(Round(value.try_into().map_err(Error::negative_round)?))
     }
 }
 
@@ -31,7 +29,7 @@ impl TryFrom<u32> for Round {
     type Error = Error;
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
-        let _val: i32 = value.try_into().map_err(error::integer_overflow_error)?;
+        let _val: i32 = value.try_into().map_err(Error::integer_overflow)?;
 
         Ok(Round(value))
     }
@@ -91,7 +89,7 @@ impl FromStr for Round {
     fn from_str(s: &str) -> Result<Self, Error> {
         Round::try_from(
             s.parse::<u32>()
-                .map_err(|e| error::parse_int_error(s.to_string(), e))?,
+                .map_err(|e| Error::parse_int(s.to_string(), e))?,
         )
     }
 }

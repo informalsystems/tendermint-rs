@@ -1,6 +1,6 @@
 //! JSON-RPC error types
 
-use flex_error::{define_error, DisplayError, DisplayOnly};
+use flex_error::{define_error, DefaultTracer, DisplayError, DisplayOnly, ErrorMessageTracer};
 use std::time::Duration;
 
 use crate::response_error::ResponseError;
@@ -206,7 +206,18 @@ define_error! {
     }
 }
 
+impl Clone for Error {
+    fn clone(&self) -> Self {
+        Error(
+            self.detail().clone(),
+            DefaultTracer::new_message(self.trace()),
+        )
+    }
+}
+
 #[cfg(feature = "tokio")]
-pub fn send_error<T>(_: tokio::sync::mpsc::error::SendError<T>) -> Error {
-    channel_send_error()
+impl Error {
+    pub fn send<T>(_: tokio::sync::mpsc::error::SendError<T>) -> Error {
+        Error::channel_send()
+    }
 }

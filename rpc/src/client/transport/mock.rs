@@ -6,7 +6,7 @@ use crate::client::transport::router::SubscriptionRouter;
 use crate::event::Event;
 use crate::query::Query;
 use crate::utils::uuid_str;
-use crate::{error, Client, Error, Method, Request, Response, Subscription, SubscriptionClient};
+use crate::{Client, Error, Method, Request, Response, Subscription, SubscriptionClient};
 use async_trait::async_trait;
 use std::collections::HashMap;
 
@@ -60,7 +60,7 @@ impl<M: MockRequestMatcher> Client for MockClient<M> {
     {
         self.matcher
             .response_for(request)
-            .ok_or_else(error::mismatch_response_error)?
+            .ok_or_else(Error::mismatch_response)?
     }
 }
 

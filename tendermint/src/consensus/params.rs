@@ -1,6 +1,6 @@
 //! Tendermint consensus parameters
 
-use crate::error::{self, Error};
+use crate::error::Error;
 use crate::{block, evidence, public_key};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
@@ -35,15 +35,15 @@ impl TryFrom<RawParams> for Params {
         Ok(Self {
             block: value
                 .block
-                .ok_or_else(|| error::invalid_block_error("missing block".to_string()))?
+                .ok_or_else(|| Error::invalid_block("missing block".to_string()))?
                 .try_into()?,
             evidence: value
                 .evidence
-                .ok_or_else(error::invalid_evidence_error)?
+                .ok_or_else(Error::invalid_evidence)?
                 .try_into()?,
             validator: value
                 .validator
-                .ok_or_else(error::invalid_validator_params_error)?
+                .ok_or_else(Error::invalid_validator_params)?
                 .try_into()?,
             version: value.version.map(TryFrom::try_from).transpose()?,
         })

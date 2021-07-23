@@ -1,6 +1,6 @@
 //! Block parts
 
-use crate::error::{self, Error};
+use crate::error::Error;
 use crate::hash::Algorithm;
 use crate::hash::SHA256_HASH_SIZE;
 use crate::Hash;
@@ -32,7 +32,7 @@ impl TryFrom<RawPartSetHeader> for Header {
 
     fn try_from(value: RawPartSetHeader) -> Result<Self, Self::Error> {
         if !value.hash.is_empty() && value.hash.len() != SHA256_HASH_SIZE {
-            return Err(error::invalid_hash_size_error());
+            return Err(Error::invalid_hash_size());
         }
         Ok(Self {
             total: value.total,
@@ -55,7 +55,7 @@ impl TryFrom<RawCanonicalPartSetHeader> for Header {
 
     fn try_from(value: RawCanonicalPartSetHeader) -> Result<Self, Self::Error> {
         if !value.hash.is_empty() && value.hash.len() != SHA256_HASH_SIZE {
-            return Err(error::invalid_hash_size_error());
+            return Err(Error::invalid_hash_size());
         }
         Ok(Self {
             total: value.total,
@@ -77,12 +77,12 @@ impl Header {
     /// constructor
     pub fn new(total: u32, hash: Hash) -> Result<Self, Error> {
         if total == 0 && hash != Hash::None {
-            return Err(error::invalid_part_set_header_error(
+            return Err(Error::invalid_part_set_header(
                 "zero total with existing hash".to_string(),
             ));
         }
         if total != 0 && hash == Hash::None {
-            return Err(error::invalid_part_set_header_error(
+            return Err(Error::invalid_part_set_header(
                 "non-zero total with empty hash".to_string(),
             ));
         }

@@ -1,6 +1,6 @@
 //! JSON-RPC versions
 
-use super::error::{self, Error};
+use super::error::Error;
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{self, Display},
@@ -31,7 +31,7 @@ impl Version {
         if self.is_supported() {
             Ok(())
         } else {
-            Err(error::unsupported_rpc_version_error(
+            Err(Error::unsupported_rpc_version(
                 self.0.to_string(),
                 SUPPORTED_VERSION.to_string(),
             ))

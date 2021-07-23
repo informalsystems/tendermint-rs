@@ -29,10 +29,12 @@ define_error! {
     }
 }
 
-pub fn try_from_error<Raw, T, E>(e: E) -> Error
-where
-    E: Display,
-    T: TryFrom<Raw, Error = E>,
-{
-    try_from_protobuf_error(format!("{}", e))
+impl Error {
+    pub fn try_from<Raw, T, E>(e: E) -> Error
+    where
+        E: Display,
+        T: TryFrom<Raw, Error = E>,
+    {
+        Error::try_from_protobuf(format!("{}", e))
+    }
 }

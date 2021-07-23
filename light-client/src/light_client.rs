@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     components::{clock::Clock, io::*, scheduler::*, verifier::*},
     contracts::*,
-    errors::{self as error, Error},
+    errors::Error,
     operations::Hasher,
     state::State,
     types::{Height, LightBlock, PeerId, Status, TrustThreshold},
@@ -122,7 +122,7 @@ impl LightClient {
         let target_block = self
             .io
             .fetch_light_block(AtHeight::Highest)
-            .map_err(error::io_error)?;
+            .map_err(Error::io)?;
 
         self.verify_to_target(target_block.height(), state)
     }
@@ -178,7 +178,7 @@ impl LightClient {
         let highest = state
             .light_store
             .highest_trusted_or_verified()
-            .ok_or_else(error::no_initial_trusted_state_error)?;
+            .ok_or_else(Error::no_initial_trusted_state)?;
 
         if target_height >= highest.height() {
             // Perform forward verification with bisection
@@ -204,10 +204,10 @@ impl LightClient {
             let trusted_state = state
                 .light_store
                 .highest_trusted_or_verified()
-                .ok_or_else(error::no_initial_trusted_state_error)?;
+                .ok_or_else(Error::no_initial_trusted_state)?;
 
             if target_height < trusted_state.height() {
-                return Err(error::target_lower_than_trusted_state_error(
+                return Err(Error::target_lower_than_trusted_state(
                     target_height,
                     trusted_state.height(),
                 ));
@@ -215,7 +215,7 @@ impl LightClient {
 
             // Check invariant [LCV-INV-TP.1]
             if !is_within_trust_period(&trusted_state, self.options.trusting_period, now) {
-                return Err(error::trusted_state_outside_trusting_period_error(
+                return Err(Error::trusted_state_outside_trusting_period(
                     Box::new(trusted_state),
                     self.options,
                 ));
@@ -251,7 +251,7 @@ impl LightClient {
                     // and abort.
                     state.light_store.update(&current_block, Status::Failed);
 
-                    return Err(error::invalid_light_block_error(e));
+                    return Err(Error::invalid_light_block(e));
                 }
                 Verdict::NotEnoughTrust(_) => {
                     // The current block cannot be trusted because of a missing overlap in the
@@ -281,9 +281,9 @@ impl LightClient {
         let trusted_state = state
             .light_store
             .highest_trusted_or_verified()
-            .ok_or_else(error::no_initial_trusted_state_error)?;
+            .ok_or_else(Error::no_initial_trusted_state)?;
 
-        Err(error::target_lower_than_trusted_state_error(
+        Err(Error::target_lower_than_trusted_state(
             target_height,
             trusted_state.height(),
         ))
@@ -318,13 +318,13 @@ impl LightClient {
         let root = state
             .light_store
             .highest_trusted_or_verified()
-            .ok_or_else(error::no_initial_trusted_state_error)?;
+            .ok_or_else(Error::no_initial_trusted_state)?;
 
         assert!(root.height() >= target_height);
 
         // Check invariant [LCV-INV-TP.1]
         if !is_within_trust_period(&root, self.options.trusting_period, self.clock.now()) {
-            return Err(error::trusted_state_outside_trusting_period_error(
+            return Err(Error::trusted_state_outside_trusting_period(
                 Box::new(root),
                 self.options,
             ));
@@ -343,12 +343,12 @@ impl LightClient {
                 .signed_header
                 .header
                 .last_block_id
-                .ok_or_else(|| error::missing_last_block_id_error(latest.height()))?;
+                .ok_or_else(|| Error::missing_last_block_id(latest.height()))?;
 
             let current_hash = self.hasher.hash_header(&current.signed_header.header);
 
             if current_hash != latest_last_block_id.hash {
-                return Err(error::invalid_adjacent_headers_error(
+                return Err(Error::invalid_adjacent_headers(
                     current_hash,
                     latest_last_block_id.hash,
                 ));
@@ -394,7 +394,7 @@ impl LightClient {
         let block = self
             .io
             .fetch_light_block(AtHeight::At(height))
-            .map_err(error::io_error)?;
+            .map_err(Error::io)?;
 
         state.light_store.insert(block.clone(), Status::Unverified);
 

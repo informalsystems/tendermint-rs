@@ -1,4 +1,4 @@
-use crate::error::{self, Error};
+use crate::error::Error;
 
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
 use std::{fmt, ops::Deref, str::FromStr, time::Duration};
@@ -33,20 +33,20 @@ impl FromStr for Timeout {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // Timeouts are either 'ms' or 's', and should always end with 's'
         if s.len() < 2 || !s.ends_with('s') {
-            return Err(error::parse_error("invalid units".to_string()));
+            return Err(Error::parse("invalid units".to_string()));
         }
 
         let units = match s.chars().nth(s.len() - 2) {
             Some('m') => "ms",
             Some('0'..='9') => "s",
-            _ => return Err(error::parse_error("invalid units".to_string())),
+            _ => return Err(Error::parse("invalid units".to_string())),
         };
 
         let numeric_part = s.chars().take(s.len() - units.len()).collect::<String>();
 
         let numeric_value = numeric_part
             .parse::<u64>()
-            .map_err(|e| error::parse_int_error(numeric_part, e))?;
+            .map_err(|e| Error::parse_int(numeric_part, e))?;
 
         let duration = match units {
             "s" => Duration::from_secs(numeric_value),

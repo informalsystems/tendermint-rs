@@ -1,6 +1,6 @@
 //! Pagination-related data structures for the Tendermint RPC.
 
-use crate::{error, Error};
+use crate::Error;
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
 use std::str::FromStr;
@@ -29,8 +29,8 @@ impl FromStr for PageNumber {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let raw = i64::from_str(s).map_err(error::parse_int_error)?;
-        let raw_usize: usize = raw.try_into().map_err(error::out_of_range_error)?;
+        let raw = i64::from_str(s).map_err(Error::parse_int)?;
+        let raw_usize: usize = raw.try_into().map_err(Error::out_of_range)?;
         Ok(raw_usize.into())
     }
 }
@@ -55,8 +55,8 @@ impl FromStr for PerPage {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let raw = i64::from_str(s).map_err(error::parse_int_error)?;
-        let raw_u8: u8 = raw.try_into().map_err(error::out_of_range_error)?;
+        let raw = i64::from_str(s).map_err(Error::parse_int)?;
+        let raw_u8: u8 = raw.try_into().map_err(Error::out_of_range)?;
         Ok(raw_u8.into())
     }
 }

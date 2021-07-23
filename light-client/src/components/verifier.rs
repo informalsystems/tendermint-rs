@@ -11,7 +11,6 @@ use crate::{
     },
     types::{LightBlock, Time},
 };
-use flex_error::ErrorReport;
 use preds::{
     errors::{VerificationError, VerificationErrorDetail},
     ProdPredicates, VerificationPredicates,
@@ -35,7 +34,7 @@ impl From<Result<(), VerificationError>> for Verdict {
     fn from(result: Result<(), VerificationError>) -> Self {
         match result {
             Ok(()) => Self::Success,
-            Err(ErrorReport(e, _)) => match e.not_enough_trust() {
+            Err(VerificationError(e, _)) => match e.not_enough_trust() {
                 Some(tally) => Self::NotEnoughTrust(tally),
                 _ => Self::Invalid(e),
             },

@@ -8,8 +8,7 @@ use crate::event::Event;
 use crate::query::Query;
 use crate::request::Wrapper;
 use crate::{
-    error::{self, Error},
-    response, Client, Id, Request, Response, Scheme, SimpleRequest, Subscription,
+    error::Error, response, Client, Id, Request, Response, Scheme, SimpleRequest, Subscription,
     SubscriptionClient, Url,
 };
 use async_trait::async_trait;
@@ -184,7 +183,7 @@ impl TryFrom<Url> for WebSocketClientUrl {
     fn try_from(value: Url) -> Result<Self, Error> {
         match value.scheme() {
             Scheme::WebSocket | Scheme::SecureWebSocket => Ok(Self(value)),
-            _ => Err(error::invalid_params_error(format!(
+            _ => Err(Error::invalid_params(format!(
                 "cannot use URL {} with WebSocket clients",
                 value
             ))),
@@ -219,7 +218,7 @@ impl TryFrom<net::Address> for WebSocketClientUrl {
                 host,
                 port,
             } => format!("ws://{}:{}/websocket", host, port).parse(),
-            net::Address::Unix { .. } => Err(error::invalid_params_error(
+            net::Address::Unix { .. } => Err(Error::invalid_params(
                 "only TCP-based node addresses are supported".to_string(),
             )),
         }
@@ -241,7 +240,7 @@ mod sealed {
     use crate::query::Query;
     use crate::request::Wrapper;
     use crate::utils::uuid_str;
-    use crate::{error, Error, Response, SimpleRequest, Subscription, Url};
+    use crate::{Error, Response, SimpleRequest, Subscription, Url};
     use async_tungstenite::tokio::{connect_async, connect_async_with_tls_connector};
     use tracing::debug;
 
@@ -279,7 +278,7 @@ mod sealed {
         pub async fn new(url: Url) -> Result<(Self, WebSocketClientDriver), Error> {
             let url = url.to_string();
             debug!("Connecting to unsecure WebSocket endpoint: {}", url);
-            let (stream, _response) = connect_async(url).await.map_err(error::tungstenite_error)?;
+            let (stream, _response) = connect_async(url).await.map_err(Error::tungstenite)?;
             let (cmd_tx, cmd_rx) = unbounded();
             let driver = WebSocketClientDriver::new(stream, cmd_rx);
             Ok((
@@ -309,7 +308,7 @@ mod sealed {
             // connector for us.
             let (stream, _response) = connect_async_with_tls_connector(url, None)
                 .await
-                .map_err(error::tungstenite_error)?;
+                .map_err(Error::tungstenite)?;
             let (cmd_tx, cmd_rx) = unbounded();
             let driver = WebSocketClientDriver::new(stream, cmd_rx);
             Ok((
@@ -341,9 +340,7 @@ mod sealed {
                 response_tx,
             }))?;
             let response = response_rx.recv().await.ok_or_else(|| {
-                error::client_internal_error(
-                    "failed to hear back from WebSocket driver".to_string(),
-                )
+                Error::client_internal("failed to hear back from WebSocket driver".to_string())
             })??;
             tracing::debug!("Incoming response: {}", response);
             R::Response::from_string(response)
@@ -362,9 +359,7 @@ mod sealed {
             }))?;
             // Make sure our subscription request went through successfully.
             let _ = response_rx.recv().await.ok_or_else(|| {
-                error::client_internal_error(
-                    "failed to hear back from WebSocket driver".to_string(),
-                )
+                Error::client_internal("failed to hear back from WebSocket driver".to_string())
             })??;
             Ok(Subscription::new(id, query, subscription_rx))
         }
@@ -376,9 +371,7 @@ mod sealed {
                 response_tx,
             }))?;
             let _ = response_rx.recv().await.ok_or_else(|| {
-                error::client_internal_error(
-                    "failed to hear back from WebSocket driver".to_string(),
-                )
+                Error::client_internal("failed to hear back from WebSocket driver".to_string())
             })??;
             Ok(())
         }
@@ -536,7 +529,7 @@ impl WebSocketClientDriver {
                         self.handle_incoming_msg(msg).await?
                     },
                     Err(e) => return Err(
-                        error::web_socket_error(
+                        Error::web_socket(
                             "failed to read from WebSocket connection".to_string(),
                             e
                         ),
@@ -550,7 +543,7 @@ impl WebSocketClientDriver {
                 },
                 _ = ping_interval.tick() => self.ping().await?,
                 _ = &mut recv_timeout => {
-                    return Err(error::web_socket_timeout_error(RECV_TIMEOUT));
+                    return Err(Error::web_socket_timeout(RECV_TIMEOUT));
                 }
             }
         }
@@ -558,7 +551,7 @@ impl WebSocketClientDriver {
 
     async fn send_msg(&mut self, msg: Message) -> Result<(), Error> {
         self.stream.send(msg).await.map_err(|e| {
-            error::web_socket_error("failed to write to WebSocket connection".to_string(), e)
+            Error::web_socket("failed to write to WebSocket connection".to_string(), e)
         })
     }
 

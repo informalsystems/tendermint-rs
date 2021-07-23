@@ -16,3 +16,6 @@ members = [
 exclude = [
     "proto-compiler"
 ]
+
+[patch.crates-io]
+flex-error = { git = "https://github.com/informalsystems/flex-error", rev = "97cc1ce7fa798c9c30813bae718c52f4140cd003" }

@@ -3,11 +3,14 @@
 use std::{fs, path::PathBuf};
 use tendermint::abci::Code;
 
-use flex_error::ErrorReport;
 use std::str::FromStr;
 use tendermint::vote;
 use tendermint_rpc::endpoint::consensus_state::RoundVote;
-use tendermint_rpc::{endpoint, error::ErrorDetail, Code as RpcCode, Response};
+use tendermint_rpc::{
+    endpoint,
+    error::{Error, ErrorDetail},
+    Code as RpcCode, Response,
+};
 
 const EXAMPLE_APP: &str = "GaiaApp";
 const EXAMPLE_CHAIN: &str = "cosmoshub-2";
@@ -296,7 +299,7 @@ fn jsonrpc_error() {
     let result = endpoint::blockchain::Response::from_string(&read_json_fixture("error"));
 
     match result {
-        Err(ErrorReport(ErrorDetail::Response(e), _)) => {
+        Err(Error(ErrorDetail::Response(e), _)) => {
             let response = e.source;
             assert_eq!(response.code(), RpcCode::InternalError);
             assert_eq!(response.message(), "Internal error");

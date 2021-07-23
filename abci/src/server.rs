@@ -2,10 +2,7 @@
 
 use crate::application::RequestDispatcher;
 use crate::codec::ServerCodec;
-use crate::{
-    error::{self, Error},
-    Application,
-};
+use crate::{error::Error, Application};
 use std::net::{TcpListener, TcpStream, ToSocketAddrs};
 use std::thread;
 use tracing::{error, info};
@@ -39,8 +36,8 @@ impl ServerBuilder {
         Addr: ToSocketAddrs,
         App: Application,
     {
-        let listener = TcpListener::bind(addr).map_err(error::io_error)?;
-        let local_addr = listener.local_addr().map_err(error::io_error)?.to_string();
+        let listener = TcpListener::bind(addr).map_err(Error::io)?;
+        let local_addr = listener.local_addr().map_err(Error::io)?.to_string();
         info!("ABCI server running at {}", local_addr);
         Ok(Server {
             app,
@@ -76,7 +73,7 @@ impl<App: Application> Server<App> {
     /// Initiate a blocking listener for incoming connections.
     pub fn listen(self) -> Result<(), Error> {
         loop {
-            let (stream, addr) = self.listener.accept().map_err(error::io_error)?;
+            let (stream, addr) = self.listener.accept().map_err(Error::io)?;
             let addr = addr.to_string();
             info!("Incoming connection from: {}", addr);
             self.spawn_client_handler(stream, addr);

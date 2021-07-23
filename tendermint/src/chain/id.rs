@@ -1,6 +1,6 @@
 //! Tendermint blockchain identifiers
 
-use crate::error::{self, Error};
+use crate::error::Error;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::TryFrom;
 use std::{
@@ -27,13 +27,13 @@ impl TryFrom<String> for Id {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         if value.is_empty() || value.len() > MAX_LENGTH {
-            return Err(error::length_error());
+            return Err(Error::length());
         }
 
         for byte in value.as_bytes() {
             match byte {
                 b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_' | b'.' => (),
-                _ => return Err(error::parse_error("chain id charset".to_string())),
+                _ => return Err(Error::parse("chain id charset".to_string())),
             }
         }
 
@@ -135,6 +135,7 @@ impl<'de> Deserialize<'de> for Id {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::error::ErrorDetail;
 
     const EXAMPLE_CHAIN_ID: &str = "gaia-9000";
 
@@ -152,7 +153,7 @@ mod tests {
     #[test]
     fn rejects_empty_chain_ids() {
         match "".parse::<Id>().unwrap_err().detail() {
-            error::ErrorDetail::Length(_) => {}
+            ErrorDetail::Length(_) => {}
             _ => panic!("expected length error"),
         }
     }
@@ -161,7 +162,7 @@ mod tests {
     fn rejects_overlength_chain_ids() {
         let overlong_id = String::from_utf8(vec![b'x'; MAX_LENGTH + 1]).unwrap();
         match overlong_id.parse::<Id>().unwrap_err().detail() {
-            error::ErrorDetail::Length(_) => {}
+            ErrorDetail::Length(_) => {}
             _ => panic!("expected length error"),
         }
     }

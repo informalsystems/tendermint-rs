@@ -1,7 +1,7 @@
 //! Blocking ABCI client.
 
 use crate::codec::ClientCodec;
-use crate::{error, Error};
+use crate::Error;
 use std::net::{TcpStream, ToSocketAddrs};
 use tendermint_proto::abci::{
     request, response, RequestApplySnapshotChunk, RequestBeginBlock, RequestCheckTx, RequestCommit,
@@ -32,7 +32,7 @@ impl ClientBuilder {
     /// Client constructor that attempts to connect to the given network
     /// address.
     pub fn connect<A: ToSocketAddrs>(self, addr: A) -> Result<Client, Error> {
-        let stream = TcpStream::connect(addr).map_err(error::io_error)?;
+        let stream = TcpStream::connect(addr).map_err(Error::io)?;
         Ok(Client {
             codec: ClientCodec::new(stream, self.read_buf_size),
         })
@@ -56,11 +56,9 @@ macro_rules! perform {
     ($self:expr, $type:ident, $req:expr) => {
         match $self.perform(request::Value::$type($req))? {
             response::Value::$type(r) => Ok(r),
-            r => Err(error::unexpected_server_response_type_error(
-                stringify!($type).to_string(),
-                r,
-            )
-            .into()),
+            r => {
+                Err(Error::unexpected_server_response_type(stringify!($type).to_string(), r).into())
+            }
         }
     };
 }
@@ -154,7 +152,7 @@ impl Client {
         let res = self
             .codec
             .next()
-            .ok_or_else(error::server_connection_terminated_error)??;
-        res.value.ok_or_else(error::malformed_server_response_error)
+            .ok_or_else(Error::server_connection_terminated)??;
+        res.value.ok_or_else(Error::malformed_server_response)
     }
 }

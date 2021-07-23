@@ -5,7 +5,7 @@ use std::fmt;
 
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::error::{self, Error};
+use crate::error::Error;
 
 /// Voting power
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Default)]
@@ -21,9 +21,7 @@ impl TryFrom<i64> for Power {
     type Error = Error;
 
     fn try_from(value: i64) -> Result<Self, Self::Error> {
-        Ok(Power(
-            value.try_into().map_err(error::negative_power_error)?,
-        ))
+        Ok(Power(value.try_into().map_err(Error::negative_power)?))
     }
 }
 
@@ -37,7 +35,7 @@ impl TryFrom<u64> for Power {
     type Error = Error;
 
     fn try_from(value: u64) -> Result<Self, Self::Error> {
-        let _val: i64 = value.try_into().map_err(error::integer_overflow_error)?;
+        let _val: i64 = value.try_into().map_err(Error::integer_overflow)?;
 
         Ok(Power(value))
     }

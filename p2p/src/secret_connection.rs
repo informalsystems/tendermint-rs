@@ -8,7 +8,7 @@ use std::{
     slice,
 };
 
-use crate::error::{self, Error};
+use crate::error::Error;
 use chacha20poly1305::{
     aead::{generic_array::GenericArray, AeadInPlace, NewAead},
     ChaCha20Poly1305,
@@ -107,7 +107,7 @@ impl Handshake<AwaitingEphKey> {
     ) -> Result<Handshake<AwaitingAuthSig>, Error> {
         let local_eph_privkey = match self.state.local_eph_privkey.take() {
             Some(key) => key,
-            None => return Err(error::missing_secret_error()),
+            None => return Err(Error::missing_secret()),
         };
         let local_eph_pubkey = EphemeralPublic::from(&local_eph_privkey);
 
@@ -124,7 +124,7 @@ impl Handshake<AwaitingEphKey> {
         // - https://github.com/tendermint/kms/issues/142
         // - https://eprint.iacr.org/2019/526.pdf
         if shared_secret.as_bytes().ct_eq(&[0x00; 32]).unwrap_u8() == 1 {
-            return Err(error::low_order_key_error());
+            return Err(Error::low_order_key());
         }
 
         // Sort by lexical order.
@@ -178,26 +178,26 @@ impl Handshake<AwaitingAuthSig> {
         let pk_sum = auth_sig_msg
             .pub_key
             .and_then(|key| key.sum)
-            .ok_or_else(error::missing_key_error)?;
+            .ok_or_else(Error::missing_key)?;
 
         let remote_pubkey = match pk_sum {
             proto::crypto::public_key::Sum::Ed25519(ref bytes) => {
-                ed25519::PublicKey::from_bytes(bytes).map_err(error::signature_error)
+                ed25519::PublicKey::from_bytes(bytes).map_err(Error::signature)
             }
-            proto::crypto::public_key::Sum::Secp256k1(_) => Err(error::unsupported_key_error()),
+            proto::crypto::public_key::Sum::Secp256k1(_) => Err(Error::unsupported_key()),
         }?;
 
-        let remote_sig = ed25519::Signature::try_from(auth_sig_msg.sig.as_slice())
-            .map_err(error::signature_error)?;
+        let remote_sig =
+            ed25519::Signature::try_from(auth_sig_msg.sig.as_slice()).map_err(Error::signature)?;
 
         if self.protocol_version.has_transcript() {
             remote_pubkey
                 .verify(&self.state.sc_mac, &remote_sig)
-                .map_err(error::signature_error)?;
+                .map_err(Error::signature)?;
         } else {
             remote_pubkey
                 .verify(&self.state.kdf.challenge, &remote_sig)
-                .map_err(error::signature_error)?;
+                .map_err(Error::signature)?;
         }
 
         // We've authorized.
@@ -297,7 +297,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
                 b"",
                 &mut sealed_frame[..TOTAL_FRAME_SIZE],
             )
-            .map_err(error::aead_error)?;
+            .map_err(Error::aead)?;
 
         sealed_frame[TOTAL_FRAME_SIZE..].copy_from_slice(tag.as_slice());
 
@@ -307,14 +307,14 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
     /// Decrypt AEAD authenticated data
     fn decrypt(&self, ciphertext: &[u8], out: &mut [u8]) -> Result<usize, Error> {
         if ciphertext.len() < TAG_SIZE {
-            return Err(error::short_ciphertext_error(TAG_SIZE));
+            return Err(Error::short_ciphertext(TAG_SIZE));
         }
 
         // Split ChaCha20 ciphertext from the Poly1305 tag
         let (ct, tag) = ciphertext.split_at(ciphertext.len() - TAG_SIZE);
 
         if out.len() < ct.len() {
-            return Err(error::small_output_buffer_error());
+            return Err(Error::small_output_buffer());
         }
 
         let in_out = &mut out[..ct.len()];
@@ -327,7 +327,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
                 in_out,
                 tag.into(),
             )
-            .map_err(error::aead_error)?;
+            .map_err(Error::aead)?;
 
         Ok(in_out.len())
     }
@@ -446,15 +446,15 @@ fn share_eph_pubkey<IoHandler: Read + Write + Send + Sync>(
     // Should still work though.
     handler
         .write_all(&protocol_version.encode_initial_handshake(local_eph_pubkey))
-        .map_err(error::io_error)?;
+        .map_err(Error::io)?;
 
     let mut response_len = 0_u8;
     handler
         .read_exact(slice::from_mut(&mut response_len))
-        .map_err(error::io_error)?;
+        .map_err(Error::io)?;
 
     let mut buf = vec![0; response_len as usize];
-    handler.read_exact(&mut buf).map_err(error::io_error)?;
+    handler.read_exact(&mut buf).map_err(Error::io)?;
     protocol_version.decode_initial_handshake(&buf)
 }
 
@@ -463,9 +463,7 @@ fn sign_challenge(
     challenge: &[u8; 32],
     local_privkey: &dyn Signer<ed25519::Signature>,
 ) -> Result<ed25519::Signature, Error> {
-    local_privkey
-        .try_sign(challenge)
-        .map_err(error::signature_error)
+    local_privkey.try_sign(challenge).map_err(Error::signature)
 }
 
 // TODO(ismail): change from DecodeError to something more generic
@@ -479,10 +477,10 @@ fn share_auth_signature<IoHandler: Read + Write + Send + Sync>(
         .protocol_version
         .encode_auth_signature(pubkey, local_signature);
 
-    sc.write_all(&buf).map_err(error::io_error)?;
+    sc.write_all(&buf).map_err(Error::io)?;
 
     let mut buf = vec![0; sc.protocol_version.auth_sig_msg_response_len()];
-    sc.read_exact(&mut buf).map_err(error::io_error)?;
+    sc.read_exact(&mut buf).map_err(Error::io)?;
 
     sc.protocol_version.decode_auth_signature(&buf)
 }

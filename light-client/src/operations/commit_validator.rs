@@ -2,7 +2,7 @@
 
 use crate::{
     operations::{Hasher, ProdHasher},
-    predicates::errors::{self as error, VerificationError},
+    predicates::errors::VerificationError,
     types::{SignedHeader, ValidatorSet},
 };
 
@@ -58,12 +58,12 @@ impl CommitValidator for ProdCommitValidator {
         // See https://github.com/informalsystems/tendermint-rs/issues/650
         let has_present_signatures = signatures.iter().any(|cs| !cs.is_absent());
         if !has_present_signatures {
-            return Err(error::no_signature_for_commit_error());
+            return Err(VerificationError::no_signature_for_commit());
         }
 
         // Check that that the number of signatures matches the number of validators.
         if signatures.len() != validator_set.validators().len() {
-            return Err(error::mismatch_pre_commit_length_error(
+            return Err(VerificationError::mismatch_pre_commit_length(
                 signatures.len(),
                 validator_set.validators().len(),
             ));
@@ -95,7 +95,7 @@ impl CommitValidator for ProdCommitValidator {
             };
 
             if validator_set.validator(*validator_address) == None {
-                return Err(error::faulty_signer_error(
+                return Err(VerificationError::faulty_signer(
                     *validator_address,
                     self.hasher.hash_validator_set(validator_set),
                 ));

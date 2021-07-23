@@ -1,4 +1,4 @@
-use crate::error::{self, Error};
+use crate::error::Error;
 use std::convert::TryInto;
 use std::{
     convert::TryFrom,
@@ -15,9 +15,7 @@ impl TryFrom<i32> for ValidatorIndex {
 
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         Ok(ValidatorIndex(
-            value
-                .try_into()
-                .map_err(error::negative_validator_index_error)?,
+            value.try_into().map_err(Error::negative_validator_index)?,
         ))
     }
 }
@@ -32,7 +30,7 @@ impl TryFrom<u32> for ValidatorIndex {
     type Error = Error;
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
-        let _val: i32 = value.try_into().map_err(error::integer_overflow_error)?;
+        let _val: i32 = value.try_into().map_err(Error::integer_overflow)?;
         Ok(ValidatorIndex(value))
     }
 }
@@ -48,7 +46,7 @@ impl TryFrom<usize> for ValidatorIndex {
 
     fn try_from(value: usize) -> Result<Self, Self::Error> {
         Ok(ValidatorIndex(
-            value.try_into().map_err(error::integer_overflow_error)?,
+            value.try_into().map_err(Error::integer_overflow)?,
         ))
     }
 }
@@ -87,7 +85,7 @@ impl FromStr for ValidatorIndex {
     fn from_str(s: &str) -> Result<Self, Error> {
         ValidatorIndex::try_from(
             s.parse::<u32>()
-                .map_err(|e| error::parse_int_error("validator index decode".to_string(), e))?,
+                .map_err(|e| Error::parse_int("validator index decode".to_string(), e))?,
         )
     }
 }

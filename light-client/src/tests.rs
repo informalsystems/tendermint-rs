@@ -7,7 +7,7 @@ use tendermint::abci::transaction::Hash;
 use tendermint_rpc as rpc;
 
 use crate::components::clock::Clock;
-use crate::components::io::{self, AtHeight, Io, IoError};
+use crate::components::io::{AtHeight, Io, IoError};
 use crate::components::verifier::{ProdVerifier, Verdict, Verifier};
 use crate::errors::Error;
 use crate::evidence::EvidenceReporter;
@@ -114,7 +114,7 @@ impl Io for MockIo {
         };
 
         self.light_blocks.get(&height).cloned().ok_or_else(|| {
-            io::rpc_error(rpc::error::response_error(
+            IoError::rpc(rpc::Error::response(
                 rpc::response_error::ResponseError::new((-32600).into(), None),
             ))
         })

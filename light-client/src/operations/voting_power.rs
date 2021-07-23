@@ -1,7 +1,7 @@
 //! Provides an interface and default implementation for the `VotingPower` operation
 
 use crate::{
-    predicates::errors::{self as error, VerificationError},
+    predicates::errors::VerificationError,
     types::{Commit, SignedHeader, TrustThreshold, ValidatorSet},
 };
 
@@ -61,7 +61,7 @@ pub trait VotingPowerCalculator: Send + Sync {
         if trust_threshold.is_enough_power(voting_power.tallied, voting_power.total) {
             Ok(())
         } else {
-            Err(error::not_enough_trust_error(voting_power))
+            Err(VerificationError::not_enough_trust(voting_power))
         }
     }
 
@@ -79,7 +79,9 @@ pub trait VotingPowerCalculator: Send + Sync {
         if trust_threshold.is_enough_power(voting_power.tallied, voting_power.total) {
             Ok(())
         } else {
-            Err(error::insufficient_signers_overlap_error(voting_power))
+            Err(VerificationError::insufficient_signers_overlap(
+                voting_power,
+            ))
         }
     }
 
@@ -124,7 +126,9 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
         for (signature, vote) in non_absent_votes {
             // Ensure we only count a validator's power once
             if seen_validators.contains(&vote.validator_address) {
-                return Err(error::duplicate_validator_error(vote.validator_address));
+                return Err(VerificationError::duplicate_validator(
+                    vote.validator_address,
+                ));
             } else {
                 seen_validators.insert(vote.validator_address);
             }
@@ -147,7 +151,7 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
                 .verify_signature(&sign_bytes, signed_vote.signature())
                 .is_err()
             {
-                return Err(error::invalid_signature_error(
+                return Err(VerificationError::invalid_signature(
                     signed_vote.signature().to_bytes(),
                     Box::new(validator),
                     sign_bytes,
@@ -221,7 +225,6 @@ mod tests {
     use super::*;
     use crate::predicates::errors::VerificationErrorDetail;
     use crate::types::LightBlock;
-    use flex_error::ErrorReport;
     use tendermint::trust_threshold::TrustThresholdFraction;
     use tendermint_testgen::light_block::generate_signed_header;
     use tendermint_testgen::{
@@ -326,7 +329,7 @@ mod tests {
         );
 
         match result_err {
-            Err(ErrorReport(VerificationErrorDetail::InvalidSignature(_), _)) => {}
+            Err(VerificationError(VerificationErrorDetail::InvalidSignature(_), _)) => {}
             _ => panic!("expected InvalidSignature error"),
         }
     }
@@ -348,7 +351,7 @@ mod tests {
         );
 
         match result_err {
-            Err(ErrorReport(VerificationErrorDetail::InvalidSignature(_), _)) => {}
+            Err(VerificationError(VerificationErrorDetail::InvalidSignature(_), _)) => {}
             _ => panic!("expected InvalidSignature error"),
         }
     }

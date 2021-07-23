@@ -4,7 +4,7 @@ use std::str::FromStr;
 use structopt::StructOpt;
 use tendermint::abci::{Path, Transaction};
 use tendermint_rpc::{
-    error, Client, Error, HttpClient, Paging, Scheme, SubscriptionClient, Url, WebSocketClient,
+    Client, Error, HttpClient, Paging, Scheme, SubscriptionClient, Url, WebSocketClient,
 };
 use tracing::level_filters::LevelFilter;
 use tracing::{error, info, warn};
@@ -153,7 +153,7 @@ async fn main() {
     let result = match opt.url.scheme() {
         Scheme::Http | Scheme::Https => http_request(opt.url, proxy_url, opt.req).await,
         Scheme::WebSocket | Scheme::SecureWebSocket => match opt.proxy_url {
-            Some(_) => Err(error::invalid_params_error(
+            Some(_) => Err(Error::invalid_params(
                 "proxies are only supported for use with HTTP clients at present".to_string(),
             )),
             None => websocket_request(opt.url, opt.req).await,
@@ -221,7 +221,7 @@ async fn websocket_request(url: Url, req: Request) -> Result<(), Error> {
     };
 
     client.close()?;
-    driver_hdl.await.map_err(error::join_error)??;
+    driver_hdl.await.map_err(Error::join)??;
     result
 }
 
@@ -231,7 +231,7 @@ where
 {
     let result = match req {
         ClientRequest::AbciInfo => {
-            serde_json::to_string_pretty(&client.abci_info().await?).map_err(error::serde_error)?
+            serde_json::to_string_pretty(&client.abci_info().await?).map_err(Error::serde)?
         }
         ClientRequest::AbciQuery {
             path,
@@ -243,71 +243,70 @@ where
                 .abci_query(
                     path.map(|s| Path::from_str(&s))
                         .transpose()
-                        .map_err(error::tendermint_error)?,
+                        .map_err(Error::tendermint)?,
                     data,
                     height.map(Into::into),
                     prove,
                 )
                 .await?,
         )
-        .map_err(error::serde_error)?,
+        .map_err(Error::serde)?,
         ClientRequest::Block { height } => {
-            serde_json::to_string_pretty(&client.block(height).await?)
-                .map_err(error::serde_error)?
+            serde_json::to_string_pretty(&client.block(height).await?).map_err(Error::serde)?
         }
         ClientRequest::Blockchain { min, max } => {
             serde_json::to_string_pretty(&client.blockchain(min, max).await?)
-                .map_err(error::serde_error)?
+                .map_err(Error::serde)?
         }
         ClientRequest::BlockResults { height } => {
             serde_json::to_string_pretty(&client.block_results(height).await?)
-                .map_err(error::serde_error)?
+                .map_err(Error::serde)?
         }
         ClientRequest::BroadcastTxAsync { tx } => serde_json::to_string_pretty(
             &client
                 .broadcast_tx_async(Transaction::from(tx.into_bytes()))
                 .await?,
         )
-        .map_err(error::serde_error)?,
+        .map_err(Error::serde)?,
         ClientRequest::BroadcastTxCommit { tx } => serde_json::to_string_pretty(
             &client
                 .broadcast_tx_commit(Transaction::from(tx.into_bytes()))
                 .await?,
         )
-        .map_err(error::serde_error)?,
+        .map_err(Error::serde)?,
         ClientRequest::BroadcastTxSync { tx } => serde_json::to_string_pretty(
             &client
                 .broadcast_tx_sync(Transaction::from(tx.into_bytes()))
                 .await?,
         )
-        .map_err(error::serde_error)?,
+        .map_err(Error::serde)?,
         ClientRequest::Commit { height } => {
-            serde_json::to_string_pretty(&client.commit(height).await?)
-                .map_err(error::serde_error)?
+            serde_json::to_string_pretty(&client.commit(height).await?).map_err(Error::serde)?
         }
-        ClientRequest::LatestBlock => serde_json::to_string_pretty(&client.latest_block().await?)
-            .map_err(error::serde_error)?,
+        ClientRequest::LatestBlock => {
+            serde_json::to_string_pretty(&client.latest_block().await?).map_err(Error::serde)?
+        }
         ClientRequest::LatestBlockResults => {
             serde_json::to_string_pretty(&client.latest_block_results().await?)
-                .map_err(error::serde_error)?
+                .map_err(Error::serde)?
         }
-        ClientRequest::LatestCommit => serde_json::to_string_pretty(&client.latest_commit().await?)
-            .map_err(error::serde_error)?,
+        ClientRequest::LatestCommit => {
+            serde_json::to_string_pretty(&client.latest_commit().await?).map_err(Error::serde)?
+        }
         ClientRequest::ConsensusState => {
-            serde_json::to_string_pretty(&client.consensus_state().await?)
-                .map_err(error::serde_error)?
+            serde_json::to_string_pretty(&client.consensus_state().await?).map_err(Error::serde)?
         }
         ClientRequest::Genesis => {
-            serde_json::to_string_pretty(&client.genesis().await?).map_err(error::serde_error)?
+            serde_json::to_string_pretty(&client.genesis().await?).map_err(Error::serde)?
         }
         ClientRequest::Health => {
-            serde_json::to_string_pretty(&client.health().await?).map_err(error::serde_error)?
+            serde_json::to_string_pretty(&client.health().await?).map_err(Error::serde)?
         }
         ClientRequest::NetInfo => {
-            serde_json::to_string_pretty(&client.net_info().await?).map_err(error::serde_error)?
+            serde_json::to_string_pretty(&client.net_info().await?).map_err(Error::serde)?
         }
         ClientRequest::Status => {
-            serde_json::to_string_pretty(&client.status().await?).map_err(error::serde_error)?
+            serde_json::to_string_pretty(&client.status().await?).map_err(Error::serde)?
         }
         ClientRequest::Validators {
             height,
@@ -327,7 +326,7 @@ where
                 }
             };
             serde_json::to_string_pretty(&client.validators(height, paging).await?)
-                .map_err(error::serde_error)?
+                .map_err(Error::serde)?
         }
     };
 

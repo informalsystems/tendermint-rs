@@ -32,7 +32,7 @@ eyre = "0.6"
 prost = "0.7"
 tendermint-proto = { version = "0.20.0", path = "../proto" }
 tracing = "0.1"
-flex-error = "0.3.0"
+flex-error = "0.4.0"
 
 structopt = { version = "0.3", optional = true }
 tracing-subscriber = { version = "0.2", optional = true }

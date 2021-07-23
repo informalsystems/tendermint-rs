@@ -1,6 +1,6 @@
 //! Ordering of paginated RPC responses.
 
-use crate::{error, Error};
+use crate::Error;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -23,7 +23,7 @@ impl FromStr for Order {
         match s {
             "asc" => Ok(Self::Ascending),
             "desc" => Ok(Self::Descending),
-            _ => Err(error::invalid_params_error(format!(
+            _ => Err(Error::invalid_params(format!(
                 "invalid order type: {} (must be \"asc\" or \"desc\")",
                 s
             ))),

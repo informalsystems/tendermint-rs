@@ -3,7 +3,7 @@
 use super::Type;
 use crate::block::{Height, Id as BlockId, Round};
 use crate::chain::Id as ChainId;
-use crate::error::{self, Error};
+use crate::error::Error;
 use crate::Time;
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::CanonicalProposal as RawCanonicalProposal;
@@ -35,14 +35,13 @@ impl TryFrom<RawCanonicalProposal> for CanonicalProposal {
 
     fn try_from(value: RawCanonicalProposal) -> Result<Self, Self::Error> {
         if value.pol_round < -1 {
-            return Err(error::negative_pol_round_error());
+            return Err(Error::negative_pol_round());
         }
-        let round =
-            Round::try_from(i32::try_from(value.round).map_err(error::integer_overflow_error)?)?;
+        let round = Round::try_from(i32::try_from(value.round).map_err(Error::integer_overflow)?)?;
         let pol_round = match value.pol_round {
             -1 => None,
             n => Some(Round::try_from(
-                i32::try_from(n).map_err(error::integer_overflow_error)?,
+                i32::try_from(n).map_err(Error::integer_overflow)?,
             )?),
         };
         // If the Hash is empty in BlockId, the BlockId should be empty.

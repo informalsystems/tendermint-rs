@@ -11,7 +11,7 @@ pub use self::sign_vote::*;
 pub use self::validator_index::ValidatorIndex;
 use crate::chain::Id as ChainId;
 use crate::consensus::State;
-use crate::error::{self, Error};
+use crate::error::Error;
 use crate::hash;
 use crate::{account, block, Signature, Time};
 use bytes::BufMut;
@@ -65,7 +65,7 @@ impl TryFrom<RawVote> for Vote {
 
     fn try_from(value: RawVote) -> Result<Self, Self::Error> {
         if value.timestamp.is_none() {
-            return Err(error::missing_timestamp_error());
+            return Err(Error::missing_timestamp());
         }
         Ok(Vote {
             vote_type: value.r#type.try_into()?,
@@ -231,7 +231,7 @@ impl TryFrom<i32> for Type {
         match value {
             1 => Ok(Type::Prevote),
             2 => Ok(Type::Precommit),
-            _ => Err(error::invalid_message_type_error()),
+            _ => Err(Error::invalid_message_type()),
         }
     }
 }
@@ -259,7 +259,7 @@ impl FromStr for Type {
         match s {
             "Prevote" => Ok(Self::Prevote),
             "Precommit" => Ok(Self::Precommit),
-            _ => Err(error::invalid_message_type_error()),
+            _ => Err(Error::invalid_message_type()),
         }
     }
 }

@@ -11,7 +11,7 @@ pub use sign_proposal::{SignProposalRequest, SignedProposalResponse};
 use crate::block::{Height, Id as BlockId, Round};
 use crate::chain::Id as ChainId;
 use crate::consensus::State;
-use crate::error::{self, Error};
+use crate::error::Error;
 use crate::Signature;
 use crate::Time;
 use bytes::BufMut;
@@ -45,7 +45,7 @@ impl TryFrom<RawProposal> for Proposal {
 
     fn try_from(value: RawProposal) -> Result<Self, Self::Error> {
         if value.pol_round < -1 {
-            return Err(error::negative_pol_round_error());
+            return Err(Error::negative_pol_round());
         }
         let pol_round = match value.pol_round {
             -1 => None,

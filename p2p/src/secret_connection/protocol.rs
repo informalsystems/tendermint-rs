@@ -15,7 +15,7 @@ use tendermint_proto as proto;
 #[cfg(feature = "amino")]
 use super::amino_types;
 
-use crate::error::{self, Error};
+use crate::error::Error;
 
 /// Size of an X25519 or Ed25519 public key
 const PUBLIC_KEY_SIZE: usize = 32;
@@ -86,7 +86,7 @@ impl Version {
             // https://github.com/tendermint/tendermint/blob/9e98c74/p2p/conn/secret_connection.go#L315-L323
             // TODO(tarcieri): proper protobuf framing
             if bytes.len() != 34 || bytes[..2] != [0x0a, 0x20] {
-                return Err(error::malformed_handshake_error());
+                return Err(Error::malformed_handshake());
             }
 
             let eph_pubkey_bytes: [u8; 32] = bytes[2..].try_into().expect("framing failed");
@@ -97,7 +97,7 @@ impl Version {
             //
             // Check that the length matches what we expect and the length prefix is correct
             if bytes.len() != 33 || bytes[0] != 32 {
-                return Err(error::malformed_handshake_error());
+                return Err(Error::malformed_handshake());
             }
 
             let eph_pubkey_bytes: [u8; 32] = bytes[1..].try_into().expect("framing failed");
@@ -106,7 +106,7 @@ impl Version {
 
         // Reject the key if it is of low order
         if is_low_order_point(&eph_pubkey) {
-            return Err(error::low_order_key_error());
+            return Err(Error::low_order_key());
         }
 
         Ok(eph_pubkey)
@@ -161,7 +161,7 @@ impl Version {
     pub fn decode_auth_signature(self, bytes: &[u8]) -> Result<proto::p2p::AuthSigMessage, Error> {
         if self.is_protobuf() {
             // Parse Protobuf-encoded `AuthSigMessage`
-            proto::p2p::AuthSigMessage::decode_length_delimited(bytes).map_err(error::decode_error)
+            proto::p2p::AuthSigMessage::decode_length_delimited(bytes).map_err(Error::decode)
         } else {
             self.decode_auth_signature_amino(bytes)
         }
@@ -204,7 +204,7 @@ impl Version {
     ) -> Result<proto::p2p::AuthSigMessage, Error> {
         // Legacy Amino encoded `AuthSigMessage`
         let amino_msg = amino_types::AuthSigMessage::decode_length_delimited(bytes)
-            .map_err(error::amino_decode_error)?;
+            .map_err(Error::amino_decode)?;
         let pub_key = proto::crypto::PublicKey {
             sum: Some(proto::crypto::public_key::Sum::Ed25519(amino_msg.pub_key)),
         };

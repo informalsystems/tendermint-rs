@@ -1,7 +1,7 @@
 //! URL representation for RPC clients.
 
-use crate::error;
-use serde::de::Error;
+use crate::error::Error;
+use serde::de::Error as SerdeError;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::TryFrom;
 use std::fmt;
@@ -36,7 +36,7 @@ impl FromStr for Scheme {
             "https" => Scheme::Https,
             "ws" => Scheme::WebSocket,
             "wss" => Scheme::SecureWebSocket,
-            _ => return Err(error::unsupported_scheme_error(s.to_string())),
+            _ => return Err(Error::unsupported_scheme(s.to_string())),
         })
     }
 }
@@ -55,20 +55,20 @@ pub struct Url {
 }
 
 impl FromStr for Url {
-    type Err = error::Error;
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let inner: url::Url = s.parse().map_err(error::parse_url_error)?;
+        let inner: url::Url = s.parse().map_err(Error::parse_url)?;
 
         let scheme: Scheme = inner.scheme().parse()?;
 
         let host = inner
             .host_str()
-            .ok_or_else(|| error::invalid_params_error(format!("URL is missing its host: {}", s)))?
+            .ok_or_else(|| Error::invalid_params(format!("URL is missing its host: {}", s)))?
             .to_owned();
 
         let port = inner.port_or_known_default().ok_or_else(|| {
-            error::invalid_params_error(format!("cannot determine appropriate port for URL: {}", s))
+            Error::invalid_params(format!("cannot determine appropriate port for URL: {}", s))
         })?;
         Ok(Self {
             inner,

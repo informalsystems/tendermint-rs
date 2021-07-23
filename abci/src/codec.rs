@@ -10,7 +10,7 @@ use std::io::{Read, Write};
 use std::marker::PhantomData;
 use tendermint_proto::abci::{Request, Response};
 
-use crate::error::{self, Error};
+use crate::error::Error;
 
 /// The maximum number of bytes we expect in a varint. We use this to check if
 /// we're encountering a decoding error for a varint.
@@ -76,7 +76,7 @@ where
             // more
             let bytes_read = match self.stream.read(self.read_window.as_mut()) {
                 Ok(br) => br,
-                Err(e) => return Some(Err(error::io_error(e))),
+                Err(e) => return Some(Err(Error::io(e))),
             };
             if bytes_read == 0 {
                 // The underlying stream terminated
@@ -100,10 +100,10 @@ where
             let bytes_written = self
                 .stream
                 .write(self.write_buf.as_ref())
-                .map_err(error::io_error)?;
+                .map_err(Error::io)?;
 
             if bytes_written == 0 {
-                return Err(error::io_error(std::io::Error::new(
+                return Err(Error::io(std::io::Error::new(
                     std::io::ErrorKind::WriteZero,
                     "failed to write to underlying stream",
                 )));
@@ -111,7 +111,7 @@ where
             self.write_buf.advance(bytes_written);
         }
 
-        self.stream.flush().map_err(error::io_error)?;
+        self.stream.flush().map_err(Error::io)?;
 
         Ok(())
     }
@@ -124,7 +124,7 @@ where
     B: BufMut,
 {
     let mut buf = BytesMut::new();
-    message.encode(&mut buf).map_err(error::encode_error)?;
+    message.encode(&mut buf).map_err(Error::encode)?;
 
     let buf = buf.freeze();
     encode_varint(buf.len() as u64, &mut dst);
@@ -156,7 +156,7 @@ where
         src.advance(delim_len + (encoded_len as usize));
 
         let mut result_bytes = BytesMut::from(tmp.split_to(encoded_len as usize).as_ref());
-        let res = M::decode(&mut result_bytes).map_err(error::decode_error)?;
+        let res = M::decode(&mut result_bytes).map_err(Error::decode)?;
 
         Ok(Some(res))
     }
@@ -169,6 +169,6 @@ pub fn encode_varint<B: BufMut>(val: u64, mut buf: &mut B) {
 }
 
 pub fn decode_varint<B: Buf>(mut buf: &mut B) -> Result<u64, Error> {
-    let len = prost::encoding::decode_varint(&mut buf).map_err(error::decode_error)?;
+    let len = prost::encoding::decode_varint(&mut buf).map_err(Error::decode)?;
     Ok(len >> 1)
 }

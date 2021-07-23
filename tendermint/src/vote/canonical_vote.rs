@@ -1,5 +1,5 @@
 use crate::chain::Id as ChainId;
-use crate::error::{self, Error};
+use crate::error::Error;
 use crate::{block, Time};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
@@ -37,12 +37,9 @@ impl TryFrom<RawCanonicalVote> for CanonicalVote {
 
     fn try_from(value: RawCanonicalVote) -> Result<Self, Self::Error> {
         if value.timestamp.is_none() {
-            return Err(error::missing_timestamp_error());
+            return Err(Error::missing_timestamp());
         }
-        let _val: i32 = value
-            .round
-            .try_into()
-            .map_err(error::integer_overflow_error)?;
+        let _val: i32 = value.round.try_into().map_err(Error::integer_overflow)?;
 
         // If the Hash is empty in BlockId, the BlockId should be empty.
         // See: https://github.com/informalsystems/tendermint-rs/issues/663

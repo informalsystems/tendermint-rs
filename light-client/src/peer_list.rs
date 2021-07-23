@@ -1,9 +1,6 @@
 //! Provides a peer list for use within the `Supervisor`
 
-use crate::{
-    errors::{self as error, Error},
-    types::PeerId,
-};
+use crate::{errors::Error, types::PeerId};
 
 use contracts::{post, pre};
 use std::collections::{BTreeSet, HashMap};
@@ -150,7 +147,7 @@ impl<T> PeerList<T> {
         } else if let Some(err) = primary_error {
             Err(err)
         } else {
-            Err(error::no_witnesses_left_error())
+            Err(Error::no_witnesses_left())
         }
     }
 
@@ -239,7 +236,6 @@ impl<T> PeerListBuilder<T> {
 mod tests {
     use super::*;
     use crate::errors::ErrorDetail;
-    use flex_error::ErrorReport;
 
     trait BTreeSetExt<T> {
         fn to_vec(&self) -> Vec<T>;
@@ -309,7 +305,7 @@ mod tests {
         let _ = peer_list.replace_faulty_primary(None).unwrap();
         let new_primary = peer_list.replace_faulty_primary(None);
         match new_primary {
-            Err(ErrorReport(ErrorDetail::NoWitnessesLeft(_), _)) => {}
+            Err(Error(ErrorDetail::NoWitnessesLeft(_), _)) => {}
             _ => panic!(
                 "expected NoWitnessesLeft error, instead got {:?}",
                 new_primary

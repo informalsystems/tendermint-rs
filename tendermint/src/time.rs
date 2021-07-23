@@ -11,7 +11,7 @@ use tendermint_proto::google::protobuf::Timestamp;
 use tendermint_proto::serializers::timestamp;
 use tendermint_proto::Protobuf;
 
-use crate::error::{self, Error};
+use crate::error::Error;
 
 /// Tendermint timestamps
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#time>
@@ -63,13 +63,13 @@ impl Time {
         self.0
             .signed_duration_since(other.0)
             .to_std()
-            .map_err(error::out_of_range_error)
+            .map_err(Error::out_of_range)
     }
 
     /// Parse [`Time`] from an RFC 3339 date
     pub fn parse_from_rfc3339(s: &str) -> Result<Time, Error> {
         let date = DateTime::parse_from_rfc3339(s)
-            .map_err(error::chrono_parse_error)?
+            .map_err(Error::chrono_parse)?
             .with_timezone(&Utc);
         Ok(Time(date))
     }

@@ -2,7 +2,7 @@
 
 use crate::block::commit_sig::CommitSig;
 use crate::block::{Height, Id, Round};
-use crate::error::{self, Error};
+use crate::error::Error;
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Commit as RawCommit;
@@ -42,7 +42,7 @@ impl TryFrom<RawCommit> for Commit {
             round: value.round.try_into()?,
             block_id: value
                 .block_id
-                .ok_or_else(|| error::invalid_block_error("missing block id".to_string()))?
+                .ok_or_else(|| Error::invalid_block("missing block id".to_string()))?
                 .try_into()?, /* gogoproto.nullable = false */
             signatures: signatures?,
         })

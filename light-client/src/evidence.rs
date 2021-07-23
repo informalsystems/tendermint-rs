@@ -48,7 +48,7 @@ mod prod {
                 self.timeout,
                 async move { client.broadcast_evidence(e).await },
             )?
-            .map_err(crate::components::io::rpc_error)?;
+            .map_err(IoError::rpc)?;
 
             Ok(response.hash)
         }
@@ -68,7 +68,7 @@ mod prod {
         #[pre(self.peer_map.contains_key(&peer))]
         fn rpc_client_for(&self, peer: PeerId) -> Result<rpc::HttpClient, IoError> {
             let peer_addr = self.peer_map.get(&peer).unwrap().to_owned();
-            rpc::HttpClient::new(peer_addr).map_err(crate::components::io::rpc_error)
+            rpc::HttpClient::new(peer_addr).map_err(IoError::rpc)
         }
     }
 }

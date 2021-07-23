@@ -1,11 +1,13 @@
 //! Tendermint kvstore RPC endpoint testing.
 
-use flex_error::ErrorReport;
 use std::str::FromStr;
 use std::{fs, path::PathBuf};
 use subtle_encoding::{base64, hex};
 use tendermint_rpc::{
-    endpoint, error::ErrorDetail, request::Wrapper as RequestWrapper, Code, Order, Response,
+    endpoint,
+    error::{Error, ErrorDetail},
+    request::Wrapper as RequestWrapper,
+    Code, Order, Response,
 };
 use walkdir::WalkDir;
 
@@ -312,7 +314,7 @@ fn incoming_fixtures() {
                 let res = endpoint::block::Response::from_string(&content);
 
                 match res {
-                    Err(ErrorReport(ErrorDetail::Response(e), _)) => {
+                    Err(Error(ErrorDetail::Response(e), _)) => {
                         let response = e.source;
                         assert_eq!(response.code(), Code::InternalError);
                         assert_eq!(response.message(), "Internal error");
@@ -735,7 +737,7 @@ fn incoming_fixtures() {
                 let result = endpoint::subscribe::Response::from_string(content);
 
                 match result {
-                    Err(ErrorReport(ErrorDetail::Response(e), _)) => {
+                    Err(Error(ErrorDetail::Response(e), _)) => {
                         let response = e.source;
 
                         assert_eq!(response.code(), Code::InternalError);
@@ -749,7 +751,7 @@ fn incoming_fixtures() {
                 let result = endpoint::subscribe::Response::from_string(content);
 
                 match result {
-                    Err(ErrorReport(ErrorDetail::Serde(_), _)) => {}
+                    Err(Error(ErrorDetail::Serde(_), _)) => {}
                     _ => panic!("expected Serde parse error, instead got {:?}", result),
                 }
             }

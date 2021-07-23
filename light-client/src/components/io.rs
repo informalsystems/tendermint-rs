@@ -164,7 +164,7 @@ mod prod {
 
             match res {
                 Ok(response) => Ok(response.signed_header),
-                Err(err) => Err(rpc_error(err)),
+                Err(err) => Err(IoError::rpc(err)),
             }
         }
 
@@ -175,7 +175,7 @@ mod prod {
         ) -> Result<TMValidatorSet, IoError> {
             let height = match height {
                 AtHeight::Highest => {
-                    return Err(invalid_height_error());
+                    return Err(IoError::invalid_height());
                 }
                 AtHeight::At(height) => height,
             };
@@ -184,12 +184,12 @@ mod prod {
             let response = block_on(self.timeout, async move {
                 client.validators(height, Paging::All).await
             })?
-            .map_err(rpc_error)?;
+            .map_err(IoError::rpc)?;
 
             let validator_set = match proposer_address {
                 Some(proposer_address) => {
                     TMValidatorSet::with_proposer(response.validators, proposer_address)
-                        .map_err(invalid_validator_set_error)?
+                        .map_err(IoError::invalid_validator_set)?
                 }
                 None => TMValidatorSet::without_proposer(response.validators),
             };

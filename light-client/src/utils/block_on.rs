@@ -1,6 +1,6 @@
 use std::{future::Future, time::Duration};
 
-use crate::components::io::{self, IoError};
+use crate::components::io::IoError;
 
 /// Run a future to completion on a new thread, with the given timeout.
 ///
@@ -14,11 +14,11 @@ where
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
-            .map_err(io::runtime_error)?;
+            .map_err(IoError::runtime)?;
 
         if let Some(timeout) = timeout {
             let task = async { tokio::time::timeout(timeout, f).await };
-            rt.block_on(task).map_err(|e| io::timeout_error(timeout, e))
+            rt.block_on(task).map_err(|e| IoError::timeout(timeout, e))
         } else {
             Ok(rt.block_on(f))
         }

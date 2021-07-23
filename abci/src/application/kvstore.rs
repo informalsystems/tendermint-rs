@@ -1,7 +1,7 @@
 //! In-memory key/value store ABCI application.
 
 use crate::codec::{encode_varint, MAX_VARINT_LENGTH};
-use crate::{error, Application, Error};
+use crate::{Application, Error};
 use bytes::BytesMut;
 use std::collections::HashMap;
 use std::sync::mpsc::{channel, Receiver, Sender};
@@ -204,7 +204,7 @@ impl KeyValueStoreDriver {
     /// Run the driver in the current thread (blocking).
     pub fn run(mut self) -> Result<(), Error> {
         loop {
-            let cmd = self.cmd_rx.recv().map_err(error::channel_recv_error)?;
+            let cmd = self.cmd_rx.recv().map_err(Error::channel_recv)?;
             match cmd {
                 Command::GetInfo { result_tx } => {
                     channel_send(&result_tx, (self.height, self.app_hash.clone()))?
@@ -261,9 +261,9 @@ enum Command {
 }
 
 fn channel_send<T>(tx: &Sender<T>, value: T) -> Result<(), Error> {
-    tx.send(value).map_err(error::send_error)
+    tx.send(value).map_err(Error::send)
 }
 
 fn channel_recv<T>(rx: &Receiver<T>) -> Result<T, Error> {
-    rx.recv().map_err(error::channel_recv_error)
+    rx.recv().map_err(Error::channel_recv)
 }

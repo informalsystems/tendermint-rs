@@ -1,7 +1,7 @@
 //! Block headers
 
 use crate::merkle::simple_hash_from_byte_vectors;
-use crate::{account, block, chain, error, AppHash, Error, Hash, Time};
+use crate::{account, block, chain, AppHash, Error, Hash, Time};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Header as RawHeader;
@@ -89,7 +89,7 @@ impl TryFrom<RawHeader> for Header {
         // height").into());
         //}
         if last_block_id.is_some() && height.value() == 1 {
-            return Err(error::invalid_first_header_error());
+            return Err(Error::invalid_first_header());
         }
         //if last_commit_hash.is_none() && height.value() != 1 {
         //    return Err(Kind::InvalidHeader.context("last_commit_hash is null on non-first
@@ -109,16 +109,10 @@ impl TryFrom<RawHeader> for Header {
         // height").into());
         //}
         Ok(Header {
-            version: value
-                .version
-                .ok_or_else(error::missing_version_error)?
-                .into(),
+            version: value.version.ok_or_else(Error::missing_version)?.into(),
             chain_id: value.chain_id.try_into()?,
             height,
-            time: value
-                .time
-                .ok_or_else(error::missing_timestamp_error)?
-                .into(),
+            time: value.time.ok_or_else(Error::missing_timestamp)?.into(),
             last_block_id,
             last_commit_hash,
             data_hash: if value.data_hash.is_empty() {

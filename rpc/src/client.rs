@@ -14,7 +14,6 @@ pub use transport::websocket::{WebSocketClient, WebSocketClientDriver, WebSocket
 
 use crate::endpoint::validators::DEFAULT_VALIDATORS_PER_PAGE;
 use crate::endpoint::*;
-use crate::error;
 use crate::paging::Paging;
 use crate::query::Query;
 use crate::{Error, Order, SimpleRequest};
@@ -250,7 +249,7 @@ pub trait Client {
 
         while self.health().await.is_err() {
             if attempts_remaining == 0 {
-                return Err(error::timeout_error(timeout));
+                return Err(Error::timeout(timeout));
             }
 
             attempts_remaining -= 1;
