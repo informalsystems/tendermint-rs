@@ -3,6 +3,7 @@ use std::io::Write as _;
 use std::thread;
 
 use ed25519_dalek::{self as ed25519};
+use eyre::Result;
 use rand_core::OsRng;
 use x25519_dalek::PublicKey as EphemeralPublic;
 
@@ -19,16 +20,12 @@ fn test_handshake() {
     let (pipe1, pipe2) = pipe::async_bipipe_buffered();
 
     let peer1 = thread::spawn(|| {
-        let mut csprng = OsRng {};
-        let privkey1: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-        let conn1 = SecretConnection::new(pipe2, privkey1, Version::V0_34);
+        let conn1 = new_peer_conn(pipe2);
         assert!(conn1.is_ok());
     });
 
     let peer2 = thread::spawn(|| {
-        let mut csprng = OsRng {};
-        let privkey2: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-        let conn2 = SecretConnection::new(pipe1, privkey2, Version::V0_34);
+        let conn2 = new_peer_conn(pipe1);
         assert!(conn2.is_ok());
     });
 
@@ -43,10 +40,7 @@ fn test_read_write_single_message() {
     let (pipe1, pipe2) = pipe::async_bipipe_buffered();
 
     let sender = thread::spawn(move || {
-        let mut csprng = OsRng {};
-        let privkey1: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-        let mut conn1 =
-            SecretConnection::new(pipe2, privkey1, Version::V0_34).expect("handshake to succeed");
+        let mut conn1 = new_peer_conn(pipe2).expect("handshake to succeed");
 
         conn1
             .write_all(MESSAGE.as_bytes())
@@ -54,10 +48,7 @@ fn test_read_write_single_message() {
     });
 
     let receiver = thread::spawn(move || {
-        let mut csprng = OsRng {};
-        let privkey2: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-        let mut conn2 =
-            SecretConnection::new(pipe1, privkey2, Version::V0_34).expect("handshake to succeed");
+        let mut conn2 = new_peer_conn(pipe1).expect("handshake to succeed");
 
         let mut buf = [0; MESSAGE.len()];
         conn2
@@ -110,4 +101,13 @@ fn test_sort() {
     let (ref t3, ref t4) = sort32(t1, t2);
     assert_eq!(t1, *t3);
     assert_eq!(t2, *t4);
+}
+
+fn new_peer_conn<IoHandler>(io_handler: IoHandler) -> Result<SecretConnection<IoHandler>>
+where
+    IoHandler: std::io::Read + std::io::Write + Send + Sync,
+{
+    let mut csprng = OsRng {};
+    let privkey1: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
+    SecretConnection::new(io_handler, privkey1, Version::V0_34)
 }
