@@ -1,7 +1,7 @@
 //! Abstractions that describe types which support the physical transport - i.e. connection
 //! management - used in the p2p stack.
 
-use std::net::{SocketAddr, ToSocketAddrs};
+use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
 
 use eyre::Result;
 
@@ -16,7 +16,7 @@ where
     /// List of addresses to be communicated as publicly reachable to other nodes, which in turn
     /// can use that to share with third parties.
     ///
-    /// TODO(xla): Dependning on where this information is going to be disseminated it might be
+    /// TODO(xla): Depending on where this information is going to be disseminated it might be
     /// better placed in a higher-level protocol. What stands in opposition to that is the fact
     /// that advertised addresses will be helpful for hole punching and other involved network
     /// traversals.
@@ -140,6 +140,32 @@ where
     ///
     /// # Errors
     ///
-    /// * If resource allocation fails for lack of priviliges or being not available.
+    /// * If resource allocation fails for lack of privileges or being not available.
     fn bind(self, bind_info: BindInfo<A>) -> Result<(Self::Endpoint, Self::Incoming)>;
+}
+
+/// Types that can be cloned where success is not guaranteed can implement this
+/// trait.
+pub trait TryClone: Sized {
+    /// The type of error that can be returned when an attempted clone
+    /// operation fails.
+    type Error;
+
+    /// Attempt to clone this instance.
+    ///
+    /// # Errors
+    /// Can fail if the underlying instance cannot be cloned (e.g. the OS could
+    /// be out of file descriptors, or some low-level OS-specific error could
+    /// be produced).
+    fn try_clone(&self) -> Result<Self, Self::Error>;
+}
+
+impl TryClone for TcpStream {
+    type Error = std::io::Error;
+
+    fn try_clone(&self) -> Result<Self, Self::Error> {
+        // Uses the TcpStream struct's method. See
+        // https://doc.rust-lang.org/stable/book/ch19-03-advanced-traits.html#fully-qualified-syntax-for-disambiguation-calling-methods-with-the-same-name
+        self.try_clone()
+    }
 }

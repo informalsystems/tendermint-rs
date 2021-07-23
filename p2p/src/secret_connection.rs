@@ -28,6 +28,8 @@ pub use self::{
     protocol::Version,
     public_key::PublicKey,
 };
+use crate::transport::TryClone;
+use std::sync::{Arc, Mutex};
 
 #[cfg(feature = "amino")]
 mod amino_types;
@@ -218,16 +220,45 @@ impl Handshake<AwaitingAuthSig> {
     }
 }
 
+struct SecretConnectionSendState {
+    send_nonce: Nonce,
+}
+
+impl Default for SecretConnectionSendState {
+    fn default() -> Self {
+        Self {
+            send_nonce: Nonce::default(),
+        }
+    }
+}
+
+struct SecretConnectionRecvState {
+    recv_nonce: Nonce,
+    recv_buffer: Vec<u8>,
+}
+
+impl Default for SecretConnectionRecvState {
+    fn default() -> Self {
+        Self {
+            recv_nonce: Nonce::default(),
+            recv_buffer: vec![],
+        }
+    }
+}
+
 /// Encrypted connection between peers in a Tendermint network.
-pub struct SecretConnection<IoHandler: Read + Write + Send + Sync> {
+///
+/// Can be safely shared between multiple threads.
+pub struct SecretConnection<IoHandler> {
     io_handler: IoHandler,
     protocol_version: Version,
-    recv_nonce: Nonce,
-    send_nonce: Nonce,
     recv_cipher: ChaCha20Poly1305,
     send_cipher: ChaCha20Poly1305,
     remote_pubkey: Option<PublicKey>,
-    recv_buffer: Vec<u8>,
+    // The portion of the connection state that is mutated when sending.
+    send_state: Arc<Mutex<SecretConnectionSendState>>,
+    // The portion of the connection state that is mutated when receiving.
+    recv_state: Arc<Mutex<SecretConnectionRecvState>>,
 }
 
 impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
@@ -262,12 +293,11 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         let mut sc = Self {
             io_handler,
             protocol_version,
-            recv_buffer: vec![],
-            recv_nonce: Nonce::default(),
-            send_nonce: Nonce::default(),
             recv_cipher: h.state.recv_cipher.clone(),
             send_cipher: h.state.send_cipher.clone(),
             remote_pubkey: None,
+            send_state: Arc::new(Mutex::new(SecretConnectionSendState::default())),
+            recv_state: Arc::new(Mutex::new(SecretConnectionRecvState::default())),
         };
 
         // Share each other's pubkey & challenge signature.
@@ -291,6 +321,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
     fn encrypt(
         &self,
         chunk: &[u8],
+        send_nonce: &Nonce,
         sealed_frame: &mut [u8; TAG_SIZE + TOTAL_FRAME_SIZE],
     ) -> Result<()> {
         debug_assert!(!chunk.is_empty(), "chunk is empty");
@@ -306,7 +337,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         let tag = self
             .send_cipher
             .encrypt_in_place_detached(
-                GenericArray::from_slice(self.send_nonce.to_bytes()),
+                GenericArray::from_slice(send_nonce.to_bytes()),
                 b"",
                 &mut sealed_frame[..TOTAL_FRAME_SIZE],
             )
@@ -318,7 +349,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
     }
 
     /// Decrypt AEAD authenticated data
-    fn decrypt(&self, ciphertext: &[u8], out: &mut [u8]) -> Result<usize> {
+    fn decrypt(&self, ciphertext: &[u8], recv_nonce: &Nonce, out: &mut [u8]) -> Result<usize> {
         if ciphertext.len() < TAG_SIZE {
             return Err(Error::Crypto).wrap_err_with(|| {
                 format!(
@@ -340,7 +371,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
 
         self.recv_cipher
             .decrypt_in_place_detached(
-                GenericArray::from_slice(self.recv_nonce.to_bytes()),
+                GenericArray::from_slice(recv_nonce.to_bytes()),
                 b"",
                 in_out,
                 tag.into(),
@@ -357,18 +388,23 @@ where
 {
     // CONTRACT: data smaller than DATA_MAX_SIZE is read atomically.
     fn read(&mut self, data: &mut [u8]) -> io::Result<usize> {
-        if !self.recv_buffer.is_empty() {
-            let n = cmp::min(data.len(), self.recv_buffer.len());
-            data.copy_from_slice(&self.recv_buffer[..n]);
+        let mut recv_state = self
+            .recv_state
+            .lock()
+            .expect("failed to obtain lock on secret connection recv state");
+        if !recv_state.recv_buffer.is_empty() {
+            let n = cmp::min(data.len(), recv_state.recv_buffer.len());
+            data.copy_from_slice(&recv_state.recv_buffer[..n]);
             let mut leftover_portion = vec![
                 0;
-                self.recv_buffer
+                recv_state
+                    .recv_buffer
                     .len()
                     .checked_sub(n)
                     .expect("leftover calculation failed")
             ];
-            leftover_portion.clone_from_slice(&self.recv_buffer[n..]);
-            self.recv_buffer = leftover_portion;
+            leftover_portion.clone_from_slice(&recv_state.recv_buffer[n..]);
+            recv_state.recv_buffer = leftover_portion;
 
             return Ok(n);
         }
@@ -378,13 +414,13 @@ where
 
         // decrypt the frame
         let mut frame = [0_u8; TOTAL_FRAME_SIZE];
-        let res = self.decrypt(&sealed_frame, &mut frame);
+        let res = self.decrypt(&sealed_frame, &recv_state.recv_nonce, &mut frame);
 
         if let Err(err) = res {
             return Err(io::Error::new(io::ErrorKind::Other, err.to_string()));
         }
 
-        self.recv_nonce.increment();
+        recv_state.recv_nonce.increment();
         // end decryption
 
         let chunk_length = u32::from_le_bytes(frame[..4].try_into().expect("chunk framing failed"));
@@ -406,7 +442,7 @@ where
 
         let n = cmp::min(data.len(), chunk.len());
         data[..n].copy_from_slice(&chunk[..n]);
-        self.recv_buffer.copy_from_slice(&chunk[n..]);
+        recv_state.recv_buffer.copy_from_slice(&chunk[n..]);
 
         Ok(n)
     }
@@ -419,6 +455,10 @@ where
     // Writes encrypted frames of `TAG_SIZE` + `TOTAL_FRAME_SIZE`
     // CONTRACT: data smaller than DATA_MAX_SIZE is read atomically.
     fn write(&mut self, data: &[u8]) -> io::Result<usize> {
+        let mut send_state = self
+            .send_state
+            .lock()
+            .expect("failed to obtain lock on secret connection write state");
         let mut n = 0_usize;
         let mut data_copy = data;
         while !data_copy.is_empty() {
@@ -431,11 +471,11 @@ where
                 data_copy = &[0_u8; 0];
             }
             let sealed_frame = &mut [0_u8; TAG_SIZE + TOTAL_FRAME_SIZE];
-            let res = self.encrypt(chunk, sealed_frame);
+            let res = self.encrypt(chunk, &send_state.send_nonce, sealed_frame);
             if let Err(err) = res {
                 return Err(io::Error::new(io::ErrorKind::Other, err.to_string()));
             }
-            self.send_nonce.increment();
+            send_state.send_nonce.increment();
             // end encryption
 
             self.io_handler.write_all(&sealed_frame[..])?;
@@ -449,6 +489,23 @@ where
 
     fn flush(&mut self) -> io::Result<()> {
         self.io_handler.flush()
+    }
+}
+
+impl<IoHandler: TryClone> TryClone for SecretConnection<IoHandler> {
+    type Error = IoHandler::Error;
+
+    fn try_clone(&self) -> Result<Self, Self::Error> {
+        let io_handler_clone = self.io_handler.try_clone()?;
+        Ok(Self {
+            io_handler: io_handler_clone,
+            protocol_version: self.protocol_version,
+            recv_cipher: self.recv_cipher.clone(),
+            send_cipher: self.send_cipher.clone(),
+            remote_pubkey: self.remote_pubkey,
+            send_state: self.send_state.clone(),
+            recv_state: self.recv_state.clone(),
+        })
     }
 }
 
