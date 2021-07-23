@@ -107,8 +107,8 @@ fn test_sort() {
 
 #[test]
 fn test_cloned_secret_connection() {
-    const MESSAGES_1_TO_2: &[&str] = &["one", "three"];
-    const MESSAGES_2_TO_1: &[&str] = &["two", "four"];
+    const MESSAGES_1_TO_2: &[&str] = &["one", "three", "five", "seven"];
+    const MESSAGES_2_TO_1: &[&str] = &["two", "four", "six", "eight"];
     let peer1_listener = TcpListener::bind("127.0.0.1:0").expect("to be able to bind to 127.0.0.1");
     let peer1_addr = peer1_listener.local_addr().unwrap();
     println!("peer1 bound to {:?}", peer1_addr);
