@@ -1,7 +1,7 @@
 [package]
 name        = "tendermint-test"
 description = "Tendermint workspace tests and common utilities for testing."
-version     = "0.20.0"
+version     = "0.21.0"
 edition     = "2018"
 license     = "Apache-2.0"
 categories  = ["development", "test", "tools"]

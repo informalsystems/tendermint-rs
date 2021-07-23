@@ -194,5 +194,14 @@ define_error! {
         Signature
             [ DisplayOnly<signature::Error> ]
             |_| { format_args!("signature error") },
+
+        TrustThresholdTooLarge
+            |_| { "trust threshold is too large (must be <= 1)" },
+
+        UndefinedTrustThreshold
+            |_| { "undefined trust threshold (denominator cannot be 0)" },
+
+        TrustThresholdTooSmall
+            |_| { "trust threshold too small (must be >= 1/3)" },
     }
 }
