@@ -248,7 +248,11 @@ impl Default for SecretConnectionRecvState {
 
 /// Encrypted connection between peers in a Tendermint network.
 ///
-/// Can be safely shared between multiple threads.
+/// Can be safely shared between multiple threads, however only one thread can
+/// read from and one other thread can write to the secret connection
+/// simultaneously. This is intended to allow for use from two threads
+/// simultaneously: one thread for reading from the connection, and one thread
+/// for simultaneously writing to it.
 pub struct SecretConnection<IoHandler> {
     io_handler: IoHandler,
     protocol_version: Version,
