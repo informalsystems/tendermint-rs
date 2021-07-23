@@ -149,6 +149,7 @@ fn test_cloned_secret_connection() {
     let (write_tx, write_rx) = std::sync::mpsc::channel::<String>();
 
     // We spawn a standalone thread that makes use of peer2's secret connection
+    // purely to write outgoing messages.
     let peer2_writer = thread::spawn(move || {
         for _ in 0..MESSAGES_2_TO_1.len() {
             let msg = write_rx
