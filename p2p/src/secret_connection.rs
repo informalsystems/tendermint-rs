@@ -221,11 +221,15 @@ impl Handshake<AwaitingAuthSig> {
 
 /// Encrypted connection between peers in a Tendermint network.
 ///
-/// Can be safely shared between multiple threads, however only one thread can
-/// read from and one other thread can write to the secret connection
-/// simultaneously. This is intended to allow for use from two threads
-/// simultaneously: one thread for reading from the connection, and one thread
-/// for simultaneously writing to it.
+/// By default, a `SecretConnection` facilitates half-duplex operations (i.e.
+/// one can either read from the connection or write to it at a given time, but
+/// not both simultaneously).
+///
+/// If, however, the underlying I/O handler class implements
+/// [`crate::transport::TryClone`], then you can use
+/// [`SecretConnection::try_split`] to split the `SecretConnection` into its
+/// sending and receiving halves. Each of these halves can then be used in a
+/// separate thread to facilitate full-duplex communication.
 pub struct SecretConnection<IoHandler> {
     io_handler: IoHandler,
     protocol_version: Version,
