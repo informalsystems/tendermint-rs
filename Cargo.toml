@@ -22,4 +22,4 @@ exclude = [
 opt-level = "s"
 
 [patch.crates-io]
-flex-error = { git = "https://github.com/informalsystems/flex-error", rev = "97cc1ce7fa798c9c30813bae718c52f4140cd003" }
+flex-error = { git = "https://github.com/informalsystems/flex-error", rev = "ae7a190911bad1a9a3a9dff77560f8594437e822" }

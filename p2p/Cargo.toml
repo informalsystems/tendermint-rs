@@ -23,7 +23,11 @@ description = """
 test = false
 
 [features]
+default = ["std"]
 amino = ["prost-amino", "prost-amino-derive"]
+std = [
+    "flex-error/std"
+]
 
 [dependencies]
 chacha20poly1305 = "0.8"
@@ -40,7 +44,7 @@ x25519-dalek = "1.1"
 zeroize = "1"
 signature = "1.3.0"
 aead = "0.4.1"
-flex-error = "0.4.0"
+flex-error = { version = "0.4.1", default-features = false }
 
 # path dependencies
 tendermint = { path = "../tendermint", version = "0.21.0" }

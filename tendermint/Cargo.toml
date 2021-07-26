@@ -55,14 +55,18 @@ tendermint-proto = { version = "0.21.0", path = "../proto" }
 toml = { version = "0.5" }
 url = { version = "2.2" }
 zeroize = { version = "1.1", features = ["zeroize_derive"] }
-flex-error = "0.4.0"
+flex-error = { version = "0.4.1", default-features = false }
 time = "0.1.40"
 
 k256 = { version = "0.9", optional = true, features = ["ecdsa"] }
 ripemd160 = { version = "0.9", optional = true }
 
 [features]
+default = ["std"]
 secp256k1 = ["k256", "ripemd160"]
+std = [
+    "flex-error/std"
+]
 
 [dev-dependencies]
 pretty_assertions = "0.7.2"

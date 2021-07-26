@@ -29,11 +29,13 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 default = ["std", "rpc-client", "lightstore-sled"]
-std = []
 rpc-client = ["tokio", "tendermint-rpc/http-client"]
 secp256k1 = ["tendermint/secp256k1", "tendermint-rpc/secp256k1"]
 lightstore-sled = ["sled"]
 unstable = []
+std = [
+    "flex-error/std"
+]
 
 [dependencies]
 tendermint = { version = "0.21.0", path = "../tendermint" }
@@ -49,7 +51,7 @@ serde_derive = "1.0.106"
 sled = { version = "0.34.3", optional = true }
 static_assertions = "1.1.0"
 tokio = { version = "1.0", features = ["rt"], optional = true }
-flex-error = "0.4.0"
+flex-error = { version = "0.4.1", default-features = false }
 
 [dev-dependencies]
 tendermint-testgen = { path = "../testgen" }
