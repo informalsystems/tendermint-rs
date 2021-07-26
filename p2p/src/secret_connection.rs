@@ -295,104 +295,14 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
 }
 
 impl<IoHandler: Read> Read for SecretConnection<IoHandler> {
-    // CONTRACT: data smaller than DATA_MAX_SIZE is read atomically.
     fn read(&mut self, data: &mut [u8]) -> io::Result<usize> {
-        if !self.recv_state.recv_buffer.is_empty() {
-            let n = cmp::min(data.len(), self.recv_state.recv_buffer.len());
-            data.copy_from_slice(&self.recv_state.recv_buffer[..n]);
-            let mut leftover_portion = vec![
-                0;
-                self.recv_state
-                    .recv_buffer
-                    .len()
-                    .checked_sub(n)
-                    .expect("leftover calculation failed")
-            ];
-            leftover_portion.clone_from_slice(&self.recv_state.recv_buffer[n..]);
-            self.recv_state.recv_buffer = leftover_portion;
-
-            return Ok(n);
-        }
-
-        let mut sealed_frame = [0_u8; TAG_SIZE + TOTAL_FRAME_SIZE];
-        self.io_handler.read_exact(&mut sealed_frame)?;
-
-        // decrypt the frame
-        let mut frame = [0_u8; TOTAL_FRAME_SIZE];
-        let res = decrypt(
-            &sealed_frame,
-            &self.recv_state.recv_cipher,
-            &self.recv_state.recv_nonce,
-            &mut frame,
-        );
-
-        if let Err(err) = res {
-            return Err(io::Error::new(io::ErrorKind::Other, err.to_string()));
-        }
-
-        self.recv_state.recv_nonce.increment();
-        // end decryption
-
-        let chunk_length = u32::from_le_bytes(frame[..4].try_into().expect("chunk framing failed"));
-
-        if chunk_length as usize > DATA_MAX_SIZE {
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                format!("chunk is too big: {}! max: {}", chunk_length, DATA_MAX_SIZE),
-            ));
-        }
-
-        let mut chunk = vec![0; chunk_length as usize];
-        chunk.clone_from_slice(
-            &frame[DATA_LEN_SIZE
-                ..(DATA_LEN_SIZE
-                    .checked_add(chunk_length as usize)
-                    .expect("chunk size addition overflow"))],
-        );
-
-        let n = cmp::min(data.len(), chunk.len());
-        data[..n].copy_from_slice(&chunk[..n]);
-        self.recv_state.recv_buffer.copy_from_slice(&chunk[n..]);
-
-        Ok(n)
+        read_and_decrypt(&mut self.io_handler, &mut self.recv_state, data)
     }
 }
 
 impl<IoHandler: Write> Write for SecretConnection<IoHandler> {
-    // Writes encrypted frames of `TAG_SIZE` + `TOTAL_FRAME_SIZE`
-    // CONTRACT: data smaller than DATA_MAX_SIZE is read atomically.
     fn write(&mut self, data: &[u8]) -> io::Result<usize> {
-        let mut n = 0_usize;
-        let mut data_copy = data;
-        while !data_copy.is_empty() {
-            let chunk: &[u8];
-            if DATA_MAX_SIZE < data.len() {
-                chunk = &data[..DATA_MAX_SIZE];
-                data_copy = &data_copy[DATA_MAX_SIZE..];
-            } else {
-                chunk = data_copy;
-                data_copy = &[0_u8; 0];
-            }
-            let sealed_frame = &mut [0_u8; TAG_SIZE + TOTAL_FRAME_SIZE];
-            let res = encrypt(
-                chunk,
-                &self.send_state.send_cipher,
-                &self.send_state.send_nonce,
-                sealed_frame,
-            );
-            if let Err(err) = res {
-                return Err(io::Error::new(io::ErrorKind::Other, err.to_string()));
-            }
-            self.send_state.send_nonce.increment();
-            // end encryption
-
-            self.io_handler.write_all(&sealed_frame[..])?;
-            n = n
-                .checked_add(chunk.len())
-                .expect("overflow when adding chunk lenghts");
-        }
-
-        Ok(n)
+        encrypt_and_write(&mut self.io_handler, &mut self.send_state, data)
     }
 
     fn flush(&mut self) -> io::Result<()> {
@@ -502,6 +412,46 @@ fn encrypt(
     Ok(())
 }
 
+// Writes encrypted frames of `TAG_SIZE` + `TOTAL_FRAME_SIZE`
+// CONTRACT: data smaller than DATA_MAX_SIZE is read atomically.
+fn encrypt_and_write<IoHandler: Write>(
+    io_handler: &mut IoHandler,
+    send_state: &mut SendState,
+    data: &[u8],
+) -> io::Result<usize> {
+    let mut n = 0_usize;
+    let mut data_copy = data;
+    while !data_copy.is_empty() {
+        let chunk: &[u8];
+        if DATA_MAX_SIZE < data.len() {
+            chunk = &data[..DATA_MAX_SIZE];
+            data_copy = &data_copy[DATA_MAX_SIZE..];
+        } else {
+            chunk = data_copy;
+            data_copy = &[0_u8; 0];
+        }
+        let sealed_frame = &mut [0_u8; TAG_SIZE + TOTAL_FRAME_SIZE];
+        let res = encrypt(
+            chunk,
+            &send_state.send_cipher,
+            &send_state.send_nonce,
+            sealed_frame,
+        );
+        if let Err(err) = res {
+            return Err(io::Error::new(io::ErrorKind::Other, err.to_string()));
+        }
+        send_state.send_nonce.increment();
+        // end encryption
+
+        io_handler.write_all(&sealed_frame[..])?;
+        n = n
+            .checked_add(chunk.len())
+            .expect("overflow when adding chunk lengths");
+    }
+
+    Ok(n)
+}
+
 /// Decrypt AEAD authenticated data
 fn decrypt(
     ciphertext: &[u8],
@@ -538,4 +488,70 @@ fn decrypt(
         .map_err(|_| Error::Crypto)?;
 
     Ok(in_out.len())
+}
+
+// CONTRACT: data smaller than DATA_MAX_SIZE is read atomically.
+fn read_and_decrypt<IoHandler: Read>(
+    io_handler: &mut IoHandler,
+    recv_state: &mut ReceiveState,
+    data: &mut [u8],
+) -> io::Result<usize> {
+    if !recv_state.recv_buffer.is_empty() {
+        let n = cmp::min(data.len(), recv_state.recv_buffer.len());
+        data.copy_from_slice(&recv_state.recv_buffer[..n]);
+        let mut leftover_portion = vec![
+            0;
+            recv_state
+                .recv_buffer
+                .len()
+                .checked_sub(n)
+                .expect("leftover calculation failed")
+        ];
+        leftover_portion.clone_from_slice(&recv_state.recv_buffer[n..]);
+        recv_state.recv_buffer = leftover_portion;
+
+        return Ok(n);
+    }
+
+    let mut sealed_frame = [0_u8; TAG_SIZE + TOTAL_FRAME_SIZE];
+    io_handler.read_exact(&mut sealed_frame)?;
+
+    // decrypt the frame
+    let mut frame = [0_u8; TOTAL_FRAME_SIZE];
+    let res = decrypt(
+        &sealed_frame,
+        &recv_state.recv_cipher,
+        &recv_state.recv_nonce,
+        &mut frame,
+    );
+
+    if let Err(err) = res {
+        return Err(io::Error::new(io::ErrorKind::Other, err.to_string()));
+    }
+
+    recv_state.recv_nonce.increment();
+    // end decryption
+
+    let chunk_length = u32::from_le_bytes(frame[..4].try_into().expect("chunk framing failed"));
+
+    if chunk_length as usize > DATA_MAX_SIZE {
+        return Err(io::Error::new(
+            io::ErrorKind::Other,
+            format!("chunk is too big: {}! max: {}", chunk_length, DATA_MAX_SIZE),
+        ));
+    }
+
+    let mut chunk = vec![0; chunk_length as usize];
+    chunk.clone_from_slice(
+        &frame[DATA_LEN_SIZE
+            ..(DATA_LEN_SIZE
+                .checked_add(chunk_length as usize)
+                .expect("chunk size addition overflow"))],
+    );
+
+    let n = cmp::min(data.len(), chunk.len());
+    data[..n].copy_from_slice(&chunk[..n]);
+    recv_state.recv_buffer.copy_from_slice(&chunk[n..]);
+
+    Ok(n)
 }
