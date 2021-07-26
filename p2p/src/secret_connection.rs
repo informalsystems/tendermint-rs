@@ -511,15 +511,13 @@ fn encrypt_and_write<IoHandler: Write>(
             data_copy = &[0_u8; 0];
         }
         let sealed_frame = &mut [0_u8; TAG_SIZE + TOTAL_FRAME_SIZE];
-        let res = encrypt(
+        encrypt(
             chunk,
             &send_state.send_cipher,
             &send_state.send_nonce,
             sealed_frame,
-        );
-        if let Err(err) = res {
-            return Err(io::Error::new(io::ErrorKind::Other, err.to_string()));
-        }
+        )
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
         send_state.send_nonce.increment();
         // end encryption
 
