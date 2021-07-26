@@ -293,10 +293,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
     }
 }
 
-impl<IoHandler> Read for SecretConnection<IoHandler>
-where
-    IoHandler: Read + Write + Send + Sync,
-{
+impl<IoHandler: Read> Read for SecretConnection<IoHandler> {
     // CONTRACT: data smaller than DATA_MAX_SIZE is read atomically.
     fn read(&mut self, data: &mut [u8]) -> io::Result<usize> {
         if !self.recv_buffer.is_empty() {
@@ -359,10 +356,7 @@ where
     }
 }
 
-impl<IoHandler> Write for SecretConnection<IoHandler>
-where
-    IoHandler: Read + Write + Send + Sync,
-{
+impl<IoHandler: Write> Write for SecretConnection<IoHandler> {
     // Writes encrypted frames of `TAG_SIZE` + `TOTAL_FRAME_SIZE`
     // CONTRACT: data smaller than DATA_MAX_SIZE is read atomically.
     fn write(&mut self, data: &[u8]) -> io::Result<usize> {
