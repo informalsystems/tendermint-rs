@@ -228,12 +228,9 @@ impl Handshake<AwaitingAuthSig> {
 pub struct SecretConnection<IoHandler> {
     io_handler: IoHandler,
     protocol_version: Version,
-    recv_cipher: ChaCha20Poly1305,
-    send_cipher: ChaCha20Poly1305,
     remote_pubkey: Option<PublicKey>,
-    send_nonce: Nonce,
-    recv_nonce: Nonce,
-    recv_buffer: Vec<u8>,
+    send_state: SendState,
+    recv_state: ReceiveState,
 }
 
 impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
@@ -268,12 +265,16 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         let mut sc = Self {
             io_handler,
             protocol_version,
-            recv_cipher: h.state.recv_cipher.clone(),
-            send_cipher: h.state.send_cipher.clone(),
             remote_pubkey: None,
-            send_nonce: Nonce::default(),
-            recv_nonce: Nonce::default(),
-            recv_buffer: vec![],
+            send_state: SendState {
+                send_cipher: h.state.send_cipher.clone(),
+                send_nonce: Nonce::default(),
+            },
+            recv_state: ReceiveState {
+                recv_cipher: h.state.recv_cipher.clone(),
+                recv_nonce: Nonce::default(),
+                recv_buffer: vec![],
+            },
         };
 
         // Share each other's pubkey & challenge signature.
@@ -296,18 +297,19 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
 impl<IoHandler: Read> Read for SecretConnection<IoHandler> {
     // CONTRACT: data smaller than DATA_MAX_SIZE is read atomically.
     fn read(&mut self, data: &mut [u8]) -> io::Result<usize> {
-        if !self.recv_buffer.is_empty() {
-            let n = cmp::min(data.len(), self.recv_buffer.len());
-            data.copy_from_slice(&self.recv_buffer[..n]);
+        if !self.recv_state.recv_buffer.is_empty() {
+            let n = cmp::min(data.len(), self.recv_state.recv_buffer.len());
+            data.copy_from_slice(&self.recv_state.recv_buffer[..n]);
             let mut leftover_portion = vec![
                 0;
-                self.recv_buffer
+                self.recv_state
+                    .recv_buffer
                     .len()
                     .checked_sub(n)
                     .expect("leftover calculation failed")
             ];
-            leftover_portion.clone_from_slice(&self.recv_buffer[n..]);
-            self.recv_buffer = leftover_portion;
+            leftover_portion.clone_from_slice(&self.recv_state.recv_buffer[n..]);
+            self.recv_state.recv_buffer = leftover_portion;
 
             return Ok(n);
         }
@@ -319,8 +321,8 @@ impl<IoHandler: Read> Read for SecretConnection<IoHandler> {
         let mut frame = [0_u8; TOTAL_FRAME_SIZE];
         let res = decrypt(
             &sealed_frame,
-            &self.recv_cipher,
-            &self.recv_nonce,
+            &self.recv_state.recv_cipher,
+            &self.recv_state.recv_nonce,
             &mut frame,
         );
 
@@ -328,7 +330,7 @@ impl<IoHandler: Read> Read for SecretConnection<IoHandler> {
             return Err(io::Error::new(io::ErrorKind::Other, err.to_string()));
         }
 
-        self.recv_nonce.increment();
+        self.recv_state.recv_nonce.increment();
         // end decryption
 
         let chunk_length = u32::from_le_bytes(frame[..4].try_into().expect("chunk framing failed"));
@@ -350,7 +352,7 @@ impl<IoHandler: Read> Read for SecretConnection<IoHandler> {
 
         let n = cmp::min(data.len(), chunk.len());
         data[..n].copy_from_slice(&chunk[..n]);
-        self.recv_buffer.copy_from_slice(&chunk[n..]);
+        self.recv_state.recv_buffer.copy_from_slice(&chunk[n..]);
 
         Ok(n)
     }
@@ -372,11 +374,16 @@ impl<IoHandler: Write> Write for SecretConnection<IoHandler> {
                 data_copy = &[0_u8; 0];
             }
             let sealed_frame = &mut [0_u8; TAG_SIZE + TOTAL_FRAME_SIZE];
-            let res = encrypt(chunk, &self.send_cipher, &self.send_nonce, sealed_frame);
+            let res = encrypt(
+                chunk,
+                &self.send_state.send_cipher,
+                &self.send_state.send_nonce,
+                sealed_frame,
+            );
             if let Err(err) = res {
                 return Err(io::Error::new(io::ErrorKind::Other, err.to_string()));
             }
-            self.send_nonce.increment();
+            self.send_state.send_nonce.increment();
             // end encryption
 
             self.io_handler.write_all(&sealed_frame[..])?;
@@ -391,6 +398,19 @@ impl<IoHandler: Write> Write for SecretConnection<IoHandler> {
     fn flush(&mut self) -> io::Result<()> {
         self.io_handler.flush()
     }
+}
+
+// Sending state for a `SecretConnection`.
+struct SendState {
+    send_cipher: ChaCha20Poly1305,
+    send_nonce: Nonce,
+}
+
+// Receiving state for a `SecretConnection`.
+struct ReceiveState {
+    recv_cipher: ChaCha20Poly1305,
+    recv_nonce: Nonce,
+    recv_buffer: Vec<u8>,
 }
 
 /// Returns `remote_eph_pubkey`
