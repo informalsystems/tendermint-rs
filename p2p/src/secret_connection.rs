@@ -28,6 +28,7 @@ pub use self::{
     protocol::Version,
     public_key::PublicKey,
 };
+use crate::transport::TryClone;
 
 #[cfg(feature = "amino")]
 mod amino_types;
@@ -294,6 +295,37 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
     }
 }
 
+impl<IoHandler> SecretConnection<IoHandler>
+where
+    IoHandler: TryClone,
+    <IoHandler as TryClone>::Error: 'static + std::error::Error + Send + Sync,
+{
+    /// For secret connections whose underlying I/O layer implements
+    /// [`crate::transport::TryClone`], this attempts to split such a
+    /// connection into its sending and receiving halves.
+    ///
+    /// This facilitates full-duplex communications when each half is used in
+    /// a separate thread.
+    ///
+    /// ## Errors
+    /// Fails when the `try_clone` operation for the underlying I/O handler
+    /// fails.
+    pub fn try_split(self) -> Result<(Sender<IoHandler>, Receiver<IoHandler>)> {
+        Ok((
+            Sender {
+                io_handler: self.io_handler.try_clone()?,
+                remote_pubkey: self.remote_pubkey,
+                send_state: self.send_state,
+            },
+            Receiver {
+                io_handler: self.io_handler,
+                remote_pubkey: self.remote_pubkey,
+                recv_state: self.recv_state,
+            },
+        ))
+    }
+}
+
 impl<IoHandler: Read> Read for SecretConnection<IoHandler> {
     fn read(&mut self, data: &mut [u8]) -> io::Result<usize> {
         read_and_decrypt(&mut self.io_handler, &mut self.recv_state, data)
@@ -321,6 +353,50 @@ struct ReceiveState {
     recv_cipher: ChaCha20Poly1305,
     recv_nonce: Nonce,
     recv_buffer: Vec<u8>,
+}
+
+/// The sending end of a [`SecretConnection`].
+pub struct Sender<IoHandler> {
+    io_handler: IoHandler,
+    remote_pubkey: Option<PublicKey>,
+    send_state: SendState,
+}
+
+impl<IoHandler> Sender<IoHandler> {
+    /// Returns the remote pubkey. Panics if there's no key.
+    pub fn remote_pubkey(&self) -> PublicKey {
+        self.remote_pubkey.expect("remote_pubkey uninitialized")
+    }
+}
+
+impl<IoHandler: Write> Write for Sender<IoHandler> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        encrypt_and_write(&mut self.io_handler, &mut self.send_state, buf)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.io_handler.flush()
+    }
+}
+
+/// The receiving end of a [`SecretConnection`].
+pub struct Receiver<IoHandler> {
+    io_handler: IoHandler,
+    remote_pubkey: Option<PublicKey>,
+    recv_state: ReceiveState,
+}
+
+impl<IoHandler> Receiver<IoHandler> {
+    /// Returns the remote pubkey. Panics if there's no key.
+    pub fn remote_pubkey(&self) -> PublicKey {
+        self.remote_pubkey.expect("remote_pubkey uninitialized")
+    }
+}
+
+impl<IoHandler: Read> Read for Receiver<IoHandler> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        read_and_decrypt(&mut self.io_handler, &mut self.recv_state, buf)
+    }
 }
 
 /// Returns `remote_eph_pubkey`
