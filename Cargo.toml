@@ -20,6 +20,3 @@ exclude = [
 [profile.release.package.tendermint-light-client-js]
 # Tell `rustc` to optimize for small code size.
 opt-level = "s"
-
-[patch.crates-io]
-flex-error = { git = "https://github.com/informalsystems/flex-error", rev = "ae7a190911bad1a9a3a9dff77560f8594437e822" }
