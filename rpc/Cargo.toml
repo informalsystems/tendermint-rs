@@ -29,7 +29,8 @@ path = "src/client/bin/main.rs"
 required-features = [ "cli" ]
 
 [features]
-default = ["std"]
+default = ["std", "eyre_tracer"]
+eyre_tracer = ["flex-error/eyre_tracer"]
 cli = [
   "http-client",
   "structopt",

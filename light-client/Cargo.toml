@@ -28,7 +28,8 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["std", "rpc-client", "lightstore-sled"]
+default = ["std", "eyre_tracer", "rpc-client", "lightstore-sled"]
+eyre_tracer = ["flex-error/eyre_tracer"]
 rpc-client = ["tokio", "tendermint-rpc/http-client"]
 secp256k1 = ["tendermint/secp256k1", "tendermint-rpc/secp256k1"]
 lightstore-sled = ["sled"]

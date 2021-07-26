@@ -23,7 +23,8 @@ description = """
 test = false
 
 [features]
-default = ["std"]
+default = ["std", "eyre_tracer"]
+eyre_tracer = ["flex-error/eyre_tracer"]
 amino = ["prost-amino", "prost-amino-derive"]
 std = [
     "flex-error/std"
