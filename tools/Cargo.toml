@@ -6,3 +6,6 @@ members = [
     "proto-compiler",
     "rpc-probe"
 ]
+
+[patch.crates-io]
+flex-error = { git = "https://github.com/informalsystems/flex-error", rev = "ae7a190911bad1a9a3a9dff77560f8594437e822" }
