@@ -291,71 +291,6 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         sc.remote_pubkey = Some(remote_pubkey);
         Ok(sc)
     }
-
-    /// Encrypt AEAD authenticated data
-    #[allow(clippy::cast_possible_truncation)]
-    fn encrypt(
-        &self,
-        chunk: &[u8],
-        send_nonce: &Nonce,
-        sealed_frame: &mut [u8; TAG_SIZE + TOTAL_FRAME_SIZE],
-    ) -> Result<()> {
-        debug_assert!(!chunk.is_empty(), "chunk is empty");
-        debug_assert!(
-            chunk.len() <= TOTAL_FRAME_SIZE - DATA_LEN_SIZE,
-            "chunk is too big: {}! max: {}",
-            chunk.len(),
-            DATA_MAX_SIZE,
-        );
-        sealed_frame[..DATA_LEN_SIZE].copy_from_slice(&(chunk.len() as u32).to_le_bytes());
-        sealed_frame[DATA_LEN_SIZE..DATA_LEN_SIZE + chunk.len()].copy_from_slice(chunk);
-
-        let tag = self
-            .send_cipher
-            .encrypt_in_place_detached(
-                GenericArray::from_slice(send_nonce.to_bytes()),
-                b"",
-                &mut sealed_frame[..TOTAL_FRAME_SIZE],
-            )
-            .map_err(|_| Error::Crypto)?;
-
-        sealed_frame[TOTAL_FRAME_SIZE..].copy_from_slice(tag.as_slice());
-
-        Ok(())
-    }
-
-    /// Decrypt AEAD authenticated data
-    fn decrypt(&self, ciphertext: &[u8], recv_nonce: &Nonce, out: &mut [u8]) -> Result<usize> {
-        if ciphertext.len() < TAG_SIZE {
-            return Err(Error::Crypto).wrap_err_with(|| {
-                format!(
-                    "ciphertext must be at least as long as a MAC tag {}",
-                    TAG_SIZE
-                )
-            });
-        }
-
-        // Split ChaCha20 ciphertext from the Poly1305 tag
-        let (ct, tag) = ciphertext.split_at(ciphertext.len() - TAG_SIZE);
-
-        if out.len() < ct.len() {
-            return Err(Error::Crypto).wrap_err("output buffer is too small");
-        }
-
-        let in_out = &mut out[..ct.len()];
-        in_out.copy_from_slice(ct);
-
-        self.recv_cipher
-            .decrypt_in_place_detached(
-                GenericArray::from_slice(recv_nonce.to_bytes()),
-                b"",
-                in_out,
-                tag.into(),
-            )
-            .map_err(|_| Error::Crypto)?;
-
-        Ok(in_out.len())
-    }
 }
 
 impl<IoHandler> Read for SecretConnection<IoHandler>
@@ -385,7 +320,12 @@ where
 
         // decrypt the frame
         let mut frame = [0_u8; TOTAL_FRAME_SIZE];
-        let res = self.decrypt(&sealed_frame, &self.recv_nonce, &mut frame);
+        let res = decrypt(
+            &sealed_frame,
+            &self.recv_cipher,
+            &self.recv_nonce,
+            &mut frame,
+        );
 
         if let Err(err) = res {
             return Err(io::Error::new(io::ErrorKind::Other, err.to_string()));
@@ -438,7 +378,7 @@ where
                 data_copy = &[0_u8; 0];
             }
             let sealed_frame = &mut [0_u8; TAG_SIZE + TOTAL_FRAME_SIZE];
-            let res = self.encrypt(chunk, &self.send_nonce, sealed_frame);
+            let res = encrypt(chunk, &self.send_cipher, &self.send_nonce, sealed_frame);
             if let Err(err) = res {
                 return Err(io::Error::new(io::ErrorKind::Other, err.to_string()));
             }
@@ -515,4 +455,73 @@ pub fn sort32(first: [u8; 32], second: [u8; 32]) -> ([u8; 32], [u8; 32]) {
     } else {
         (second, first)
     }
+}
+
+/// Encrypt AEAD authenticated data
+#[allow(clippy::cast_possible_truncation)]
+fn encrypt(
+    chunk: &[u8],
+    send_cipher: &ChaCha20Poly1305,
+    send_nonce: &Nonce,
+    sealed_frame: &mut [u8; TAG_SIZE + TOTAL_FRAME_SIZE],
+) -> Result<()> {
+    debug_assert!(!chunk.is_empty(), "chunk is empty");
+    debug_assert!(
+        chunk.len() <= TOTAL_FRAME_SIZE - DATA_LEN_SIZE,
+        "chunk is too big: {}! max: {}",
+        chunk.len(),
+        DATA_MAX_SIZE,
+    );
+    sealed_frame[..DATA_LEN_SIZE].copy_from_slice(&(chunk.len() as u32).to_le_bytes());
+    sealed_frame[DATA_LEN_SIZE..DATA_LEN_SIZE + chunk.len()].copy_from_slice(chunk);
+
+    let tag = send_cipher
+        .encrypt_in_place_detached(
+            GenericArray::from_slice(send_nonce.to_bytes()),
+            b"",
+            &mut sealed_frame[..TOTAL_FRAME_SIZE],
+        )
+        .map_err(|_| Error::Crypto)?;
+
+    sealed_frame[TOTAL_FRAME_SIZE..].copy_from_slice(tag.as_slice());
+
+    Ok(())
+}
+
+/// Decrypt AEAD authenticated data
+fn decrypt(
+    ciphertext: &[u8],
+    recv_cipher: &ChaCha20Poly1305,
+    recv_nonce: &Nonce,
+    out: &mut [u8],
+) -> Result<usize> {
+    if ciphertext.len() < TAG_SIZE {
+        return Err(Error::Crypto).wrap_err_with(|| {
+            format!(
+                "ciphertext must be at least as long as a MAC tag {}",
+                TAG_SIZE
+            )
+        });
+    }
+
+    // Split ChaCha20 ciphertext from the Poly1305 tag
+    let (ct, tag) = ciphertext.split_at(ciphertext.len() - TAG_SIZE);
+
+    if out.len() < ct.len() {
+        return Err(Error::Crypto).wrap_err("output buffer is too small");
+    }
+
+    let in_out = &mut out[..ct.len()];
+    in_out.copy_from_slice(ct);
+
+    recv_cipher
+        .decrypt_in_place_detached(
+            GenericArray::from_slice(recv_nonce.to_bytes()),
+            b"",
+            in_out,
+            tag.into(),
+        )
+        .map_err(|_| Error::Crypto)?;
+
+    Ok(in_out.len())
 }
