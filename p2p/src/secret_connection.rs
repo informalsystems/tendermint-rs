@@ -221,6 +221,7 @@ impl Handshake<AwaitingAuthSig> {
 
 /// Encrypted connection between peers in a Tendermint network.
 ///
+/// ## Half- and full-duplex connections
 /// By default, a `SecretConnection` facilitates half-duplex operations (i.e.
 /// one can either read from the connection or write to it at a given time, but
 /// not both simultaneously).
@@ -230,6 +231,10 @@ impl Handshake<AwaitingAuthSig> {
 /// [`SecretConnection::try_split`] to split the `SecretConnection` into its
 /// sending and receiving halves. Each of these halves can then be used in a
 /// separate thread to facilitate full-duplex communication.
+///
+/// ## Contract
+///
+/// When reading data, data smaller than [`DATA_MAX_SIZE`] is read atomically.
 pub struct SecretConnection<IoHandler> {
     io_handler: IoHandler,
     protocol_version: Version,
@@ -494,7 +499,6 @@ fn encrypt(
 }
 
 // Writes encrypted frames of `TAG_SIZE` + `TOTAL_FRAME_SIZE`
-// CONTRACT: data smaller than DATA_MAX_SIZE is read atomically.
 fn encrypt_and_write<IoHandler: Write>(
     io_handler: &mut IoHandler,
     send_state: &mut SendState,
@@ -569,7 +573,6 @@ fn decrypt(
     Ok(in_out.len())
 }
 
-// CONTRACT: data smaller than DATA_MAX_SIZE is read atomically.
 fn read_and_decrypt<IoHandler: Read>(
     io_handler: &mut IoHandler,
     recv_state: &mut ReceiveState,
