@@ -469,8 +469,8 @@ fn encrypt(
     send_nonce: &Nonce,
     sealed_frame: &mut [u8; TAG_SIZE + TOTAL_FRAME_SIZE],
 ) -> Result<()> {
-    debug_assert!(!chunk.is_empty(), "chunk is empty");
-    debug_assert!(
+    assert!(!chunk.is_empty(), "chunk is empty");
+    assert!(
         chunk.len() <= TOTAL_FRAME_SIZE - DATA_LEN_SIZE,
         "chunk is too big: {}! max: {}",
         chunk.len(),
