@@ -1,12 +1,12 @@
 //! `SecretConnection`: Transport layer encryption for Tendermint P2P connections.
 
-use std::{
-    cmp,
-    convert::{TryFrom, TryInto},
-    io::{self, Read, Write},
-    marker::{Send, Sync},
-    slice,
-};
+use std::cmp;
+use std::convert::{TryFrom, TryInto};
+use std::io::{self, Read, Write};
+use std::marker::{Send, Sync};
+use std::slice;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 use chacha20poly1305::{
     aead::{generic_array::GenericArray, AeadInPlace, NewAead},
@@ -219,6 +219,28 @@ impl Handshake<AwaitingAuthSig> {
     }
 }
 
+// Macro usage allows us to avoid unnecessarily cloning the Arc<AtomicBool>
+// that indicates whether we need to terminate the connection.
+//
+// Limitation: this only checks once prior to the execution of an I/O operation
+// whether we need to terminate. This should be sufficient for our purposes
+// though.
+macro_rules! checked_io {
+    ($term:expr, $f:expr) => {{
+        if $term.load(Ordering::SeqCst) {
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                "secret connection was terminated elsewhere by previous error",
+            ));
+        }
+        let result = { $f };
+        if result.is_err() {
+            $term.store(true, Ordering::SeqCst);
+        }
+        result
+    }};
+}
+
 /// Encrypted connection between peers in a Tendermint network.
 ///
 /// ## Connection integrity and failures
@@ -249,6 +271,7 @@ pub struct SecretConnection<IoHandler> {
     remote_pubkey: Option<PublicKey>,
     send_state: SendState,
     recv_state: ReceiveState,
+    terminate: Arc<AtomicBool>,
 }
 
 impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
@@ -293,6 +316,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
                 recv_nonce: Nonce::default(),
                 recv_buffer: vec![],
             },
+            terminate: Arc::new(AtomicBool::new(false)),
         };
 
         // Share each other's pubkey & challenge signature.
@@ -334,11 +358,13 @@ where
                 io_handler: self.io_handler.try_clone()?,
                 remote_pubkey,
                 send_state: self.send_state,
+                terminate: self.terminate.clone(),
             },
             Receiver {
                 io_handler: self.io_handler,
                 remote_pubkey,
                 recv_state: self.recv_state,
+                terminate: self.terminate,
             },
         ))
     }
@@ -346,17 +372,23 @@ where
 
 impl<IoHandler: Read> Read for SecretConnection<IoHandler> {
     fn read(&mut self, data: &mut [u8]) -> io::Result<usize> {
-        read_and_decrypt(&mut self.io_handler, &mut self.recv_state, data)
+        checked_io!(
+            self.terminate,
+            read_and_decrypt(&mut self.io_handler, &mut self.recv_state, data)
+        )
     }
 }
 
 impl<IoHandler: Write> Write for SecretConnection<IoHandler> {
     fn write(&mut self, data: &[u8]) -> io::Result<usize> {
-        encrypt_and_write(&mut self.io_handler, &mut self.send_state, data)
+        checked_io!(
+            self.terminate,
+            encrypt_and_write(&mut self.io_handler, &mut self.send_state, data)
+        )
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        self.io_handler.flush()
+        checked_io!(self.terminate, self.io_handler.flush())
     }
 }
 
@@ -378,6 +410,7 @@ pub struct Sender<IoHandler> {
     io_handler: IoHandler,
     remote_pubkey: PublicKey,
     send_state: SendState,
+    terminate: Arc<AtomicBool>,
 }
 
 impl<IoHandler> Sender<IoHandler> {
@@ -389,11 +422,14 @@ impl<IoHandler> Sender<IoHandler> {
 
 impl<IoHandler: Write> Write for Sender<IoHandler> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        encrypt_and_write(&mut self.io_handler, &mut self.send_state, buf)
+        checked_io!(
+            self.terminate,
+            encrypt_and_write(&mut self.io_handler, &mut self.send_state, buf)
+        )
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        self.io_handler.flush()
+        checked_io!(self.terminate, self.io_handler.flush())
     }
 }
 
@@ -402,6 +438,7 @@ pub struct Receiver<IoHandler> {
     io_handler: IoHandler,
     remote_pubkey: PublicKey,
     recv_state: ReceiveState,
+    terminate: Arc<AtomicBool>,
 }
 
 impl<IoHandler> Receiver<IoHandler> {
@@ -413,7 +450,10 @@ impl<IoHandler> Receiver<IoHandler> {
 
 impl<IoHandler: Read> Read for Receiver<IoHandler> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        read_and_decrypt(&mut self.io_handler, &mut self.recv_state, buf)
+        checked_io!(
+            self.terminate,
+            read_and_decrypt(&mut self.io_handler, &mut self.recv_state, buf)
+        )
     }
 }
 
