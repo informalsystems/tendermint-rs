@@ -315,15 +315,16 @@ where
     /// Fails when the `try_clone` operation for the underlying I/O handler
     /// fails.
     pub fn try_split(self) -> Result<(Sender<IoHandler>, Receiver<IoHandler>)> {
+        let remote_pubkey = self.remote_pubkey.expect("remote_pubkey to be initialized");
         Ok((
             Sender {
                 io_handler: self.io_handler.try_clone()?,
-                remote_pubkey: self.remote_pubkey,
+                remote_pubkey,
                 send_state: self.send_state,
             },
             Receiver {
                 io_handler: self.io_handler,
-                remote_pubkey: self.remote_pubkey,
+                remote_pubkey,
                 recv_state: self.recv_state,
             },
         ))
@@ -362,14 +363,14 @@ struct ReceiveState {
 /// The sending end of a [`SecretConnection`].
 pub struct Sender<IoHandler> {
     io_handler: IoHandler,
-    remote_pubkey: Option<PublicKey>,
+    remote_pubkey: PublicKey,
     send_state: SendState,
 }
 
 impl<IoHandler> Sender<IoHandler> {
     /// Returns the remote pubkey. Panics if there's no key.
-    pub fn remote_pubkey(&self) -> PublicKey {
-        self.remote_pubkey.expect("remote_pubkey uninitialized")
+    pub const fn remote_pubkey(&self) -> PublicKey {
+        self.remote_pubkey
     }
 }
 
@@ -386,14 +387,14 @@ impl<IoHandler: Write> Write for Sender<IoHandler> {
 /// The receiving end of a [`SecretConnection`].
 pub struct Receiver<IoHandler> {
     io_handler: IoHandler,
-    remote_pubkey: Option<PublicKey>,
+    remote_pubkey: PublicKey,
     recv_state: ReceiveState,
 }
 
 impl<IoHandler> Receiver<IoHandler> {
     /// Returns the remote pubkey. Panics if there's no key.
-    pub fn remote_pubkey(&self) -> PublicKey {
-        self.remote_pubkey.expect("remote_pubkey uninitialized")
+    pub const fn remote_pubkey(&self) -> PublicKey {
+        self.remote_pubkey
     }
 }
 
