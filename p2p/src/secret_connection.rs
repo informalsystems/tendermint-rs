@@ -227,7 +227,7 @@ impl Handshake<AwaitingAuthSig> {
 /// not both simultaneously).
 ///
 /// If, however, the underlying I/O handler class implements
-/// [`crate::transport::TryClone`], then you can use
+/// [`tendermint_std_ext::TryClone`], then you can use
 /// [`SecretConnection::try_split`] to split the `SecretConnection` into its
 /// sending and receiving halves. Each of these halves can then be used in a
 /// separate thread to facilitate full-duplex communication.
