@@ -1,11 +1,11 @@
 use std::io::Read as _;
 use std::io::Write as _;
+use std::net::{TcpListener, TcpStream};
 use std::thread;
 
 use ed25519_dalek::{self as ed25519};
 use eyre::Result;
 use rand_core::OsRng;
-use std::net::{TcpListener, TcpStream};
 use x25519_dalek::PublicKey as EphemeralPublic;
 
 use tendermint_p2p::secret_connection::{sort32, Handshake, SecretConnection, Version};
