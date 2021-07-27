@@ -21,6 +21,7 @@ use thiserror::Error;
 use x25519_dalek::{EphemeralSecret, PublicKey as EphemeralPublic};
 
 use tendermint_proto as proto;
+use tendermint_std_ext::TryClone;
 
 pub use self::{
     kdf::Kdf,
@@ -28,7 +29,6 @@ pub use self::{
     protocol::Version,
     public_key::PublicKey,
 };
-use crate::transport::TryClone;
 
 #[cfg(feature = "amino")]
 mod amino_types;
