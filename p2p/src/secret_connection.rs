@@ -221,6 +221,12 @@ impl Handshake<AwaitingAuthSig> {
 
 /// Encrypted connection between peers in a Tendermint network.
 ///
+/// ## Connection integrity and failures
+///
+/// Due to the underlying encryption mechanism (currently [RFC 8439]), when a
+/// read or write failure occurs, it is necessary to disconnect from the remote
+/// peer and attempt to reconnect.
+///
 /// ## Half- and full-duplex connections
 /// By default, a `SecretConnection` facilitates half-duplex operations (i.e.
 /// one can either read from the connection or write to it at a given time, but
@@ -232,9 +238,11 @@ impl Handshake<AwaitingAuthSig> {
 /// sending and receiving halves. Each of these halves can then be used in a
 /// separate thread to facilitate full-duplex communication.
 ///
-/// ## Contract
+/// ## Contracts
 ///
 /// When reading data, data smaller than [`DATA_MAX_SIZE`] is read atomically.
+///
+/// [RFC 8439]: https://www.rfc-editor.org/rfc/rfc8439.html
 pub struct SecretConnection<IoHandler> {
     io_handler: IoHandler,
     protocol_version: Version,
