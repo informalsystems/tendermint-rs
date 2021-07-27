@@ -310,7 +310,7 @@ where
     <IoHandler as TryClone>::Error: 'static + std::error::Error + Send + Sync,
 {
     /// For secret connections whose underlying I/O layer implements
-    /// [`crate::transport::TryClone`], this attempts to split such a
+    /// [`tendermint_std_ext::TryClone`], this attempts to split such a
     /// connection into its sending and receiving halves.
     ///
     /// This facilitates full-duplex communications when each half is used in
