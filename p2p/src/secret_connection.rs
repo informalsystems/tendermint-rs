@@ -256,7 +256,7 @@ macro_rules! checked_io {
 ///
 /// If, however, the underlying I/O handler class implements
 /// [`tendermint_std_ext::TryClone`], then you can use
-/// [`SecretConnection::try_split`] to split the `SecretConnection` into its
+/// [`SecretConnection::split`] to split the `SecretConnection` into its
 /// sending and receiving halves. Each of these halves can then be used in a
 /// separate thread to facilitate full-duplex communication.
 ///
