@@ -308,13 +308,13 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
             protocol_version,
             remote_pubkey: None,
             send_state: SendState {
-                send_cipher: h.state.send_cipher.clone(),
-                send_nonce: Nonce::default(),
+                cipher: h.state.send_cipher.clone(),
+                nonce: Nonce::default(),
             },
             recv_state: ReceiveState {
-                recv_cipher: h.state.recv_cipher.clone(),
-                recv_nonce: Nonce::default(),
-                recv_buffer: vec![],
+                cipher: h.state.recv_cipher.clone(),
+                nonce: Nonce::default(),
+                buffer: vec![],
             },
             terminate: Arc::new(AtomicBool::new(false)),
         };
@@ -357,13 +357,13 @@ where
             Sender {
                 io_handler: self.io_handler.try_clone()?,
                 remote_pubkey,
-                send_state: self.send_state,
+                state: self.send_state,
                 terminate: self.terminate.clone(),
             },
             Receiver {
                 io_handler: self.io_handler,
                 remote_pubkey,
-                recv_state: self.recv_state,
+                state: self.recv_state,
                 terminate: self.terminate,
             },
         ))
@@ -394,22 +394,22 @@ impl<IoHandler: Write> Write for SecretConnection<IoHandler> {
 
 // Sending state for a `SecretConnection`.
 struct SendState {
-    send_cipher: ChaCha20Poly1305,
-    send_nonce: Nonce,
+    cipher: ChaCha20Poly1305,
+    nonce: Nonce,
 }
 
 // Receiving state for a `SecretConnection`.
 struct ReceiveState {
-    recv_cipher: ChaCha20Poly1305,
-    recv_nonce: Nonce,
-    recv_buffer: Vec<u8>,
+    cipher: ChaCha20Poly1305,
+    nonce: Nonce,
+    buffer: Vec<u8>,
 }
 
 /// The sending end of a [`SecretConnection`].
 pub struct Sender<IoHandler> {
     io_handler: IoHandler,
     remote_pubkey: PublicKey,
-    send_state: SendState,
+    state: SendState,
     terminate: Arc<AtomicBool>,
 }
 
@@ -424,7 +424,7 @@ impl<IoHandler: Write> Write for Sender<IoHandler> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         checked_io!(
             self.terminate,
-            encrypt_and_write(&mut self.io_handler, &mut self.send_state, buf)
+            encrypt_and_write(&mut self.io_handler, &mut self.state, buf)
         )
     }
 
@@ -437,7 +437,7 @@ impl<IoHandler: Write> Write for Sender<IoHandler> {
 pub struct Receiver<IoHandler> {
     io_handler: IoHandler,
     remote_pubkey: PublicKey,
-    recv_state: ReceiveState,
+    state: ReceiveState,
     terminate: Arc<AtomicBool>,
 }
 
@@ -452,7 +452,7 @@ impl<IoHandler: Read> Read for Receiver<IoHandler> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         checked_io!(
             self.terminate,
-            read_and_decrypt(&mut self.io_handler, &mut self.recv_state, buf)
+            read_and_decrypt(&mut self.io_handler, &mut self.state, buf)
         )
     }
 }
@@ -564,14 +564,9 @@ fn encrypt_and_write<IoHandler: Write>(
             data_copy = &[0_u8; 0];
         }
         let sealed_frame = &mut [0_u8; TAG_SIZE + TOTAL_FRAME_SIZE];
-        encrypt(
-            chunk,
-            &send_state.send_cipher,
-            &send_state.send_nonce,
-            sealed_frame,
-        )
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
-        send_state.send_nonce.increment();
+        encrypt(chunk, &send_state.cipher, &send_state.nonce, sealed_frame)
+            .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+        send_state.nonce.increment();
         // end encryption
 
         io_handler.write_all(&sealed_frame[..])?;
@@ -626,19 +621,19 @@ fn read_and_decrypt<IoHandler: Read>(
     recv_state: &mut ReceiveState,
     data: &mut [u8],
 ) -> io::Result<usize> {
-    if !recv_state.recv_buffer.is_empty() {
-        let n = cmp::min(data.len(), recv_state.recv_buffer.len());
-        data.copy_from_slice(&recv_state.recv_buffer[..n]);
+    if !recv_state.buffer.is_empty() {
+        let n = cmp::min(data.len(), recv_state.buffer.len());
+        data.copy_from_slice(&recv_state.buffer[..n]);
         let mut leftover_portion = vec![
             0;
             recv_state
-                .recv_buffer
+                .buffer
                 .len()
                 .checked_sub(n)
                 .expect("leftover calculation failed")
         ];
-        leftover_portion.clone_from_slice(&recv_state.recv_buffer[n..]);
-        recv_state.recv_buffer = leftover_portion;
+        leftover_portion.clone_from_slice(&recv_state.buffer[n..]);
+        recv_state.buffer = leftover_portion;
 
         return Ok(n);
     }
@@ -650,8 +645,8 @@ fn read_and_decrypt<IoHandler: Read>(
     let mut frame = [0_u8; TOTAL_FRAME_SIZE];
     let res = decrypt(
         &sealed_frame,
-        &recv_state.recv_cipher,
-        &recv_state.recv_nonce,
+        &recv_state.cipher,
+        &recv_state.nonce,
         &mut frame,
     );
 
@@ -659,7 +654,7 @@ fn read_and_decrypt<IoHandler: Read>(
         return Err(io::Error::new(io::ErrorKind::Other, err.to_string()));
     }
 
-    recv_state.recv_nonce.increment();
+    recv_state.nonce.increment();
     // end decryption
 
     let chunk_length = u32::from_le_bytes(frame[..4].try_into().expect("chunk framing failed"));
@@ -681,7 +676,7 @@ fn read_and_decrypt<IoHandler: Read>(
 
     let n = cmp::min(data.len(), chunk.len());
     data[..n].copy_from_slice(&chunk[..n]);
-    recv_state.recv_buffer.copy_from_slice(&chunk[n..]);
+    recv_state.buffer.copy_from_slice(&chunk[n..]);
 
     Ok(n)
 }
