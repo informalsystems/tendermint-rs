@@ -1,6 +1,6 @@
 [package]
 name        = "tendermint-p2p"
-version     = "0.20.0"
+version     = "0.21.0"
 edition     = "2018"
 license     = "Apache-2.0"
 repository  = "https://github.com/informalsystems/tendermint-rs"
@@ -9,8 +9,10 @@ readme      = "README.md"
 keywords    = ["p2p", "tendermint", "cosmos"]
 categories  = ["cryptography::cryptocurrencies", "network-programming"]
 authors     = [
+  "Informal Systems <hello@informal.systems>",
+  "Alexander Simmerl <a.simmerl@gmail.com>",
   "Tony Arcieri <tony@iqlusion.io>",
-  "Ismail Khoffi <Ismail.Khoffi@gmail.com>"
+  "Ismail Khoffi <Ismail.Khoffi@gmail.com>",
 ]
 
 description = """
@@ -39,8 +41,8 @@ x25519-dalek = "1.1"
 zeroize = "1"
 
 # path dependencies
-tendermint = { path = "../tendermint", version = "0.20.0" }
-tendermint-proto = { path = "../proto", version = "0.20.0" }
+tendermint = { path = "../tendermint", version = "0.21.0" }
+tendermint-proto = { path = "../proto", version = "0.21.0" }
 
 # optional dependencies
 prost-amino = { version = "0.6", optional = true }

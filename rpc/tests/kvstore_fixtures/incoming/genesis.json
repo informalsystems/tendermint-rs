@@ -1,5 +1,5 @@
 {
-  "id": "c6ca9b93-048b-479e-b44a-a21b92d584a8",
+  "id": "9f71da58-c631-4141-be10-a9dac3496af0",
   "jsonrpc": "2.0",
   "result": {
     "genesis": {
@@ -8,8 +8,7 @@
       "consensus_params": {
         "block": {
           "max_bytes": "22020096",
-          "max_gas": "-1",
-          "time_iota_ms": "500"
+          "max_gas": "-1"
         },
         "evidence": {
           "max_age_duration": "172800000000000",
@@ -23,16 +22,16 @@
         },
         "version": {}
       },
-      "genesis_time": "2020-12-21T07:05:55.8988413Z",
+      "genesis_time": "2021-07-16T12:16:29.232984022Z",
       "initial_height": "1",
       "validators": [
         {
-          "address": "ABAF73F9A1D15E78CA39C1E066E07D3F3B3BAFAF",
+          "address": "ABA577531E6D6F4119E7E1E0EE1909B908A8346D",
           "name": "",
           "power": "10",
           "pub_key": {
             "type": "tendermint/PubKeyEd25519",
-            "value": "oDr9j9k0ntj2lTvyMWZEEIBIp1MZNodIKLmjSYLRJqQ="
+            "value": "f+7sWZojwd8xbxZ+GJL+x/zKr1wyM0NMJkp8tCnA4t0="
           }
         }
       ]

@@ -28,6 +28,8 @@ use tendermint::net;
 use tokio::time::{Duration, Instant};
 use tracing::{debug, error};
 
+use super::router::{SubscriptionId, SubscriptionIdRef};
+
 // WebSocket connection times out if we haven't heard anything at all from the
 // server in this long.
 //
@@ -504,7 +506,7 @@ pub struct WebSocketClientDriver {
     cmd_rx: ChannelRx<DriverCommand>,
     // Commands we've received but have not yet completed, indexed by their ID.
     // A Terminate command is executed immediately.
-    pending_commands: HashMap<String, DriverCommand>,
+    pending_commands: HashMap<SubscriptionId, DriverCommand>,
 }
 
 impl WebSocketClientDriver {
@@ -650,38 +652,69 @@ impl WebSocketClientDriver {
             return Ok(());
         }
 
-        let wrapper = match serde_json::from_str::<response::Wrapper<GenericJsonResponse>>(&msg) {
+        let wrapper: response::Wrapper<GenericJsonResponse> = match serde_json::from_str(&msg) {
             Ok(w) => w,
             Err(e) => {
                 error!(
                     "Failed to deserialize incoming message as a JSON-RPC message: {}",
                     e
                 );
+
                 debug!("JSON-RPC message: {}", msg);
+
                 return Ok(());
             }
         };
+
+        debug!("Generic JSON-RPC message: {:?}", wrapper);
+
         let id = wrapper.id().to_string();
+
+        if let Some(e) = wrapper.into_error() {
+            self.publish_error(&id, e).await;
+        }
+
         if let Some(pending_cmd) = self.pending_commands.remove(&id) {
-            return self.respond_to_pending_command(pending_cmd, msg).await;
+            self.respond_to_pending_command(pending_cmd, msg).await?;
         };
+
         // We ignore incoming messages whose ID we don't recognize (could be
         // relating to a fire-and-forget unsubscribe request - see the
         // publish_event() method below).
         Ok(())
     }
 
-    async fn publish_event(&mut self, ev: Event) {
-        if let PublishResult::AllDisconnected = self.router.publish(&ev) {
+    async fn publish_error(&mut self, id: SubscriptionIdRef<'_>, err: Error) {
+        if let PublishResult::AllDisconnected(query) = self.router.publish_error(id, err) {
             debug!(
                 "All subscribers for query \"{}\" have disconnected. Unsubscribing from query...",
-                ev.query
+                query
             );
+
             // If all subscribers have disconnected for this query, we need to
             // unsubscribe from it. We issue a fire-and-forget unsubscribe
             // message.
             if let Err(e) = self
-                .send_request(Wrapper::new(unsubscribe::Request::new(ev.query.clone())))
+                .send_request(Wrapper::new(unsubscribe::Request::new(query)))
+                .await
+            {
+                error!("Failed to send unsubscribe request: {}", e);
+            }
+        }
+    }
+
+    async fn publish_event(&mut self, ev: Event) {
+        if let PublishResult::AllDisconnected(query) = self.router.publish_event(ev) {
+            debug!(
+                "All subscribers for query \"{}\" have disconnected. Unsubscribing from query...",
+                query
+            );
+
+            // If all subscribers have disconnected for this query, we need to
+            // unsubscribe from it. We issue a fire-and-forget unsubscribe
+            // message.
+            if let Err(e) = self
+                .send_request(Wrapper::new(unsubscribe::Request::new(query)))
                 .await
             {
                 error!("Failed to send unsubscribe request: {}", e);

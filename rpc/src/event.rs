@@ -2,10 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use tendermint::{
-    abci::responses::{BeginBlock, EndBlock},
-    Block,
-};
+use tendermint::abci::responses::{BeginBlock, EndBlock};
+use tendermint::Block;
 
 use crate::query::EventType;
 use crate::{response::Wrapper, Response};
@@ -74,20 +72,5 @@ pub struct TxResult {
     pub log: Option<String>,
     pub gas_wanted: Option<String>,
     pub gas_used: Option<String>,
-    pub events: Vec<TmEvent>,
-}
-
-/// Tendermint ABCI Events
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct TmEvent {
-    #[serde(rename = "type")]
-    pub event_type: String,
-    pub attributes: Vec<Attribute>,
-}
-
-/// Event Attributes
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct Attribute {
-    pub key: String,
-    pub value: String,
+    pub events: Vec<tendermint::abci::Event>,
 }

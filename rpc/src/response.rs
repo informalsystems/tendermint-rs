@@ -51,6 +51,11 @@ where
         &self.id
     }
 
+    /// Convert this wrapper into the underlying error, if any
+    pub fn into_error(self) -> Option<Error> {
+        self.error
+    }
+
     /// Convert this wrapper into a result type
     pub fn into_result(self) -> Result<R, Error> {
         // Ensure we're using a supported RPC version

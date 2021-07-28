@@ -16,3 +16,7 @@ members = [
 exclude = [
     "proto-compiler"
 ]
+
+[profile.release.package.tendermint-light-client-js]
+# Tell `rustc` to optimize for small code size.
+opt-level = "s"

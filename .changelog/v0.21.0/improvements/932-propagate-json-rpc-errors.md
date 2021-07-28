@@ -1,0 +1,1 @@
+- `[tendermint-rpc]` Propagate JSON-RPC errors through the Rust subscription ([#932](https://github.com/informalsystems/tendermint-rs/issues/932))

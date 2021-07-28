@@ -21,8 +21,15 @@ pub struct Size {
     pub max_gas: i64,
 
     /// This parameter has no value anymore in Tendermint-core
-    #[serde(with = "serializers::from_str")]
+    #[serde(with = "serializers::from_str", default = "Size::default_time_iota_ms")]
     pub time_iota_ms: i64,
+}
+
+impl Size {
+    /// The default value for the `time_iota_ms` parameter.
+    pub fn default_time_iota_ms() -> i64 {
+        1000
+    }
 }
 
 impl Protobuf<RawSize> for Size {}
@@ -37,7 +44,7 @@ impl TryFrom<RawSize> for Size {
                 .try_into()
                 .map_err(|_| error::integer_overflow_error())?,
             max_gas: value.max_gas,
-            time_iota_ms: 1000,
+            time_iota_ms: Self::default_time_iota_ms(),
         })
     }
 }

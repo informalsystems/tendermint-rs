@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint-rpc"
-version    = "0.20.0"
+version    = "0.21.0"
 edition    = "2018"
 license    = "Apache-2.0"
 homepage   = "https://www.tendermint.com/"
@@ -9,10 +9,8 @@ readme     = "README.md"
 keywords   = ["blockchain", "cosmos", "tendermint"]
 categories = ["cryptography::cryptocurrencies", "network-programming"]
 authors    = [
-  "Sean Braithwaite <sean@informal.systems>",
-  "Ethan Buchman <ethan@coinculture.info>",
+  "Informal Systems <hello@informal.systems>",
   "Ismail Khoffi <Ismail.Khoffi@gmail.com>",
-  "Romain Ruetschi <romain@informal.systems>",
   "Alexander Simmerl <a.simmerl@gmail.com>",
 ]
 
@@ -70,8 +68,8 @@ pin-project = "1.0.1"
 serde = { version = "1", features = [ "derive" ] }
 serde_bytes = "0.11"
 serde_json = "1"
-tendermint = { version = "0.20.0", path = "../tendermint" }
-tendermint-proto = { version = "0.20.0", path = "../proto" }
+tendermint = { version = "0.21.0", path = "../tendermint" }
+tendermint-proto = { version = "0.21.0", path = "../proto" }
 thiserror = "1"
 uuid = { version = "0.8", default-features = false }
 subtle-encoding = { version = "0.5", features = ["bech32-preview"] }

@@ -1,10 +1,18 @@
 //! Event routing for subscriptions.
 
-use crate::client::subscription::SubscriptionTx;
-use crate::event::Event;
-use std::borrow::BorrowMut;
 use std::collections::{HashMap, HashSet};
+
 use tracing::debug;
+
+use crate::client::subscription::SubscriptionTx;
+use crate::error::Error;
+use crate::event::Event;
+
+pub type SubscriptionQuery = String;
+pub type SubscriptionId = String;
+
+#[cfg_attr(not(feature = "websocket"), allow(dead_code))]
+pub type SubscriptionIdRef<'a> = &'a str;
 
 /// Provides a mechanism for tracking [`Subscription`]s and routing [`Event`]s
 /// to those subscriptions.
@@ -13,40 +21,71 @@ use tracing::debug;
 /// [`Event`]: ./event/struct.Event.html
 #[derive(Debug)]
 pub struct SubscriptionRouter {
-    // A map of subscription queries to collections of subscription IDs and
-    // their result channels. Used for publishing events relating to a specific
-    // query.
-    subscriptions: HashMap<String, HashMap<String, SubscriptionTx>>,
+    /// A map of subscription queries to collections of subscription IDs and
+    /// their result channels. Used for publishing events relating to a specific
+    /// query.
+    subscriptions: HashMap<SubscriptionQuery, HashMap<SubscriptionId, SubscriptionTx>>,
 }
 
 impl SubscriptionRouter {
+    /// Publishes the given error to all of the subscriptions to which the
+    /// error is relevant, based on the given subscription id query.
+    #[cfg_attr(not(feature = "websocket"), allow(dead_code))]
+    pub fn publish_error(&mut self, id: SubscriptionIdRef<'_>, err: Error) -> PublishResult {
+        if let Some(query) = self.subscription_query(id).cloned() {
+            self.publish(query, Err(err))
+        } else {
+            PublishResult::NoSubscribers
+        }
+    }
+
+    /// Get the query associated with the given subscription.
+    #[cfg_attr(not(feature = "websocket"), allow(dead_code))]
+    fn subscription_query(&self, id: SubscriptionIdRef<'_>) -> Option<&SubscriptionQuery> {
+        for (query, subs) in &self.subscriptions {
+            if subs.contains_key(id) {
+                return Some(query);
+            }
+        }
+
+        None
+    }
+
     /// Publishes the given event to all of the subscriptions to which the
-    /// event is relevant. At present, it matches purely based on the query
-    /// associated with the event, and only queries that exactly match that of
-    /// the event's.
-    pub fn publish(&mut self, ev: &Event) -> PublishResult {
-        let subs_for_query = match self.subscriptions.get_mut(&ev.query) {
+    /// event is relevant, based on the associated query.
+    #[cfg_attr(not(feature = "websocket"), allow(dead_code))]
+    pub fn publish_event(&mut self, ev: Event) -> PublishResult {
+        self.publish(ev.query.clone(), Ok(ev))
+    }
+
+    /// Publishes the given event/error to all of the subscriptions to which the
+    /// event/error is relevant, based on the given query.
+    pub fn publish(&mut self, query: SubscriptionQuery, ev: Result<Event, Error>) -> PublishResult {
+        let subs_for_query = match self.subscriptions.get_mut(&query) {
             Some(s) => s,
             None => return PublishResult::NoSubscribers,
         };
+
         // We assume here that any failure to publish an event is an indication
         // that the receiver end of the channel has been dropped, which allows
         // us to safely stop tracking the subscription.
         let mut disconnected = HashSet::new();
-        for (id, event_tx) in subs_for_query.borrow_mut() {
-            if let Err(e) = event_tx.send(Ok(ev.clone())) {
+        for (id, event_tx) in subs_for_query.iter_mut() {
+            if let Err(e) = event_tx.send(ev.clone()) {
                 disconnected.insert(id.clone());
                 debug!(
                     "Automatically disconnecting subscription with ID {} for query \"{}\" due to failure to publish to it: {}",
-                    id, ev.query, e
+                    id, query, e
                 );
             }
         }
+
         for id in disconnected {
             subs_for_query.remove(&id);
         }
+
         if subs_for_query.is_empty() {
-            PublishResult::AllDisconnected
+            PublishResult::AllDisconnected(query)
         } else {
             PublishResult::Success
         }
@@ -63,6 +102,7 @@ impl SubscriptionRouter {
                 self.subscriptions.get_mut(&query).unwrap()
             }
         };
+
         subs_for_query.insert(id.to_string(), tx);
     }
 
@@ -98,7 +138,8 @@ impl Default for SubscriptionRouter {
 pub enum PublishResult {
     Success,
     NoSubscribers,
-    AllDisconnected,
+    // All subscriptions for the given query have disconnected.
+    AllDisconnected(String),
 }
 
 #[cfg(test)]
@@ -160,7 +201,7 @@ mod test {
 
         let mut ev = read_event("event_new_block_1").await;
         ev.query = "query1".into();
-        router.publish(&ev);
+        router.publish_event(ev.clone());
 
         let subs1_ev = must_recv(&mut subs1_event_rx, 500).await.unwrap();
         let subs2_ev = must_recv(&mut subs2_event_rx, 500).await.unwrap();
@@ -169,7 +210,7 @@ mod test {
         assert_eq!(ev, subs2_ev);
 
         ev.query = "query2".into();
-        router.publish(&ev);
+        router.publish_event(ev.clone());
 
         must_not_recv(&mut subs1_event_rx, 50).await;
         must_not_recv(&mut subs2_event_rx, 50).await;

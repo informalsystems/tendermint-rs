@@ -79,7 +79,7 @@ pub struct DeliverTx {
 }
 
 /// Event
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Event {
     /// Event type
     #[serde(rename = "type")]

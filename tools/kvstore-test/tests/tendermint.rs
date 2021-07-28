@@ -69,7 +69,7 @@ mod rpc {
         let abci_info = localhost_http_client().abci_info().await.unwrap();
 
         assert_eq!(abci_info.app_version, 1u64);
-        assert_eq!(abci_info.data.is_empty(), false);
+        assert!(!abci_info.data.is_empty());
     }
 
     /// `/abci_query` endpoint
@@ -164,7 +164,7 @@ mod rpc {
             .unwrap();
 
         assert_eq!(commit_info.signed_header.header.height.value(), height);
-        assert_eq!(commit_info.canonical, true);
+        assert!(commit_info.canonical);
         assert_eq!(
             commit_info.signed_header.header.hash(),
             commit_info.signed_header.commit.block_id.hash

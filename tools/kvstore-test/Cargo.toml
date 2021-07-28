@@ -1,7 +1,7 @@
 [package]
 name = "kvstore-test"
 version = "0.1.0"
-authors = ["Greg Szabo <greg@philosobear.com>"]
+authors = ["Informal Systems <hello@informal.systems>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -10,9 +10,9 @@ edition = "2018"
 
 [dev-dependencies]
 futures = "0.3"
-tendermint = { version = "0.20.0", path = "../../tendermint" }
-tendermint-light-client = { version = "0.20.0", path = "../../light-client", features = ["unstable"] }
-tendermint-rpc = { version = "0.20.0", path = "../../rpc", features = [ "http-client", "websocket-client" ] }
+tendermint = { version = "0.21.0", path = "../../tendermint" }
+tendermint-light-client = { version = "0.21.0", path = "../../light-client", features = ["unstable"] }
+tendermint-rpc = { version = "0.21.0", path = "../../rpc", features = [ "http-client", "websocket-client" ] }
 tokio = { version = "1.0", features = [ "rt-multi-thread", "macros" ] }
 tracing = "0.1"
 tracing-subscriber = "0.2"

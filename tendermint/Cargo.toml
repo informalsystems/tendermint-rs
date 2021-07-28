@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint"
-version    = "0.20.0" # Also update `html_root_url` in lib.rs and
+version    = "0.21.0" # Also update `html_root_url` in lib.rs and
                       # depending crates (rpc, light-node, ..) when bumping this
 license    = "Apache-2.0"
 homepage   = "https://www.tendermint.com/"
@@ -19,10 +19,10 @@ description = """
     """
 
 authors = [
+    "Informal Systems <hello@informal.systems>",
     "Ismail Khoffi <Ismail.Khoffi@gmail.com>",
     "ValarDragon <dojha12@gmail.com>",
     "Tony Arcieri <tony@iqlusion.io>",
-    "Thane Thomson <thane@informal.systems>"
 ]
 
 [package.metadata.docs.rs]
@@ -34,7 +34,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 anyhow = {version = "1.0", default-features = false}
-flex-error = { version = "0.3.0", default-features = false, features = ["anyhow_tracer"], git  = "https://github.com/DaviRain-Su/flex-error.git" }
+flex-error = { version = "0.3.0", default-features = false, features = ["anyhow_tracer"] }
 async-trait = "0.1"
 bytes = { version = "1.0", default-features = false }
 chrono = { version = "0.4", default-features = false, features = ["serde", "clock"] }
