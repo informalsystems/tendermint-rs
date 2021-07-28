@@ -143,7 +143,7 @@ fn test_split_secret_connection() {
     println!("peer2 handshake concluded");
 
     let (mut write_conn, mut read_conn) = conn_to_peer1
-        .try_split()
+        .split()
         .expect("to be able to clone the underlying TcpStream");
     let (write_tx, write_rx) = std::sync::mpsc::channel::<String>();
 

@@ -351,7 +351,7 @@ where
     /// ## Errors
     /// Fails when the `try_clone` operation for the underlying I/O handler
     /// fails.
-    pub fn try_split(self) -> Result<(Sender<IoHandler>, Receiver<IoHandler>)> {
+    pub fn split(self) -> Result<(Sender<IoHandler>, Receiver<IoHandler>)> {
         let remote_pubkey = self.remote_pubkey.expect("remote_pubkey to be initialized");
         Ok((
             Sender {
