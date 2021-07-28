@@ -21,6 +21,7 @@
 #![allow(unused_attributes)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+extern crate core;
 extern crate alloc;
 extern crate sp_std as std;
 extern crate std as _std;

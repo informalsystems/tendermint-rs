@@ -28,7 +28,7 @@ define_error! {
 
         ParseInt
             { data: String }
-            [ DisplayError<std::num::ParseIntError>]
+            [ DisplayError<core::num::ParseIntError>]
             | e | { format_args!("error parsing int data: {}", e.data) },
 
         ParseUrl
