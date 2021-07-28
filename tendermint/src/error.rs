@@ -178,5 +178,14 @@ define_error! {
         Toml
             [ DisplayError<toml::de::Error> ]
             |_| { format_args!("toml de error") },
+
+        TrustThresholdTooLarge
+            |_| { format_args!("trust threshold too large") },
+
+        UndefinedTrustThreshold
+            |_| { format_args!("undefined trust threshold") },
+
+        TrustThresholdTooSmall
+            |_| { format_args!("trust threshold too small") },
     }
 }
