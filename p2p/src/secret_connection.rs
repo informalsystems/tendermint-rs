@@ -1,12 +1,12 @@
 //! `SecretConnection`: Transport layer encryption for Tendermint P2P connections.
 
-use std::{
-    cmp,
-    convert::{TryFrom, TryInto},
-    io::{self, Read, Write},
-    marker::{Send, Sync},
-    slice,
-};
+use std::cmp;
+use std::convert::{TryFrom, TryInto};
+use std::io::{self, Read, Write};
+use std::marker::{Send, Sync};
+use std::slice;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 use chacha20poly1305::{
     aead::{generic_array::GenericArray, AeadInPlace, NewAead},
@@ -21,6 +21,7 @@ use thiserror::Error;
 use x25519_dalek::{EphemeralSecret, PublicKey as EphemeralPublic};
 
 use tendermint_proto as proto;
+use tendermint_std_ext::TryClone;
 
 pub use self::{
     kdf::Kdf,
@@ -218,16 +219,59 @@ impl Handshake<AwaitingAuthSig> {
     }
 }
 
+// Macro usage allows us to avoid unnecessarily cloning the Arc<AtomicBool>
+// that indicates whether we need to terminate the connection.
+//
+// Limitation: this only checks once prior to the execution of an I/O operation
+// whether we need to terminate. This should be sufficient for our purposes
+// though.
+macro_rules! checked_io {
+    ($term:expr, $f:expr) => {{
+        if $term.load(Ordering::SeqCst) {
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                "secret connection was terminated elsewhere by previous error",
+            ));
+        }
+        let result = { $f };
+        if result.is_err() {
+            $term.store(true, Ordering::SeqCst);
+        }
+        result
+    }};
+}
+
 /// Encrypted connection between peers in a Tendermint network.
-pub struct SecretConnection<IoHandler: Read + Write + Send + Sync> {
+///
+/// ## Connection integrity and failures
+///
+/// Due to the underlying encryption mechanism (currently [RFC 8439]), when a
+/// read or write failure occurs, it is necessary to disconnect from the remote
+/// peer and attempt to reconnect.
+///
+/// ## Half- and full-duplex connections
+/// By default, a `SecretConnection` facilitates half-duplex operations (i.e.
+/// one can either read from the connection or write to it at a given time, but
+/// not both simultaneously).
+///
+/// If, however, the underlying I/O handler class implements
+/// [`tendermint_std_ext::TryClone`], then you can use
+/// [`SecretConnection::split`] to split the `SecretConnection` into its
+/// sending and receiving halves. Each of these halves can then be used in a
+/// separate thread to facilitate full-duplex communication.
+///
+/// ## Contracts
+///
+/// When reading data, data smaller than [`DATA_MAX_SIZE`] is read atomically.
+///
+/// [RFC 8439]: https://www.rfc-editor.org/rfc/rfc8439.html
+pub struct SecretConnection<IoHandler> {
     io_handler: IoHandler,
     protocol_version: Version,
-    recv_nonce: Nonce,
-    send_nonce: Nonce,
-    recv_cipher: ChaCha20Poly1305,
-    send_cipher: ChaCha20Poly1305,
     remote_pubkey: Option<PublicKey>,
-    recv_buffer: Vec<u8>,
+    send_state: SendState,
+    recv_state: ReceiveState,
+    terminate: Arc<AtomicBool>,
 }
 
 impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
@@ -262,12 +306,17 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         let mut sc = Self {
             io_handler,
             protocol_version,
-            recv_buffer: vec![],
-            recv_nonce: Nonce::default(),
-            send_nonce: Nonce::default(),
-            recv_cipher: h.state.recv_cipher.clone(),
-            send_cipher: h.state.send_cipher.clone(),
             remote_pubkey: None,
+            send_state: SendState {
+                cipher: h.state.send_cipher.clone(),
+                nonce: Nonce::default(),
+            },
+            recv_state: ReceiveState {
+                cipher: h.state.recv_cipher.clone(),
+                nonce: Nonce::default(),
+                buffer: vec![],
+            },
+            terminate: Arc::new(AtomicBool::new(false)),
         };
 
         // Share each other's pubkey & challenge signature.
@@ -285,170 +334,126 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         sc.remote_pubkey = Some(remote_pubkey);
         Ok(sc)
     }
+}
 
-    /// Encrypt AEAD authenticated data
-    #[allow(clippy::cast_possible_truncation)]
-    fn encrypt(
-        &self,
-        chunk: &[u8],
-        sealed_frame: &mut [u8; TAG_SIZE + TOTAL_FRAME_SIZE],
-    ) -> Result<()> {
-        debug_assert!(!chunk.is_empty(), "chunk is empty");
-        debug_assert!(
-            chunk.len() <= TOTAL_FRAME_SIZE - DATA_LEN_SIZE,
-            "chunk is too big: {}! max: {}",
-            chunk.len(),
-            DATA_MAX_SIZE,
-        );
-        sealed_frame[..DATA_LEN_SIZE].copy_from_slice(&(chunk.len() as u32).to_le_bytes());
-        sealed_frame[DATA_LEN_SIZE..DATA_LEN_SIZE + chunk.len()].copy_from_slice(chunk);
-
-        let tag = self
-            .send_cipher
-            .encrypt_in_place_detached(
-                GenericArray::from_slice(self.send_nonce.to_bytes()),
-                b"",
-                &mut sealed_frame[..TOTAL_FRAME_SIZE],
-            )
-            .map_err(|_| Error::Crypto)?;
-
-        sealed_frame[TOTAL_FRAME_SIZE..].copy_from_slice(tag.as_slice());
-
-        Ok(())
-    }
-
-    /// Decrypt AEAD authenticated data
-    fn decrypt(&self, ciphertext: &[u8], out: &mut [u8]) -> Result<usize> {
-        if ciphertext.len() < TAG_SIZE {
-            return Err(Error::Crypto).wrap_err_with(|| {
-                format!(
-                    "ciphertext must be at least as long as a MAC tag {}",
-                    TAG_SIZE
-                )
-            });
-        }
-
-        // Split ChaCha20 ciphertext from the Poly1305 tag
-        let (ct, tag) = ciphertext.split_at(ciphertext.len() - TAG_SIZE);
-
-        if out.len() < ct.len() {
-            return Err(Error::Crypto).wrap_err("output buffer is too small");
-        }
-
-        let in_out = &mut out[..ct.len()];
-        in_out.copy_from_slice(ct);
-
-        self.recv_cipher
-            .decrypt_in_place_detached(
-                GenericArray::from_slice(self.recv_nonce.to_bytes()),
-                b"",
-                in_out,
-                tag.into(),
-            )
-            .map_err(|_| Error::Crypto)?;
-
-        Ok(in_out.len())
+impl<IoHandler> SecretConnection<IoHandler>
+where
+    IoHandler: TryClone,
+    <IoHandler as TryClone>::Error: 'static + std::error::Error + Send + Sync,
+{
+    /// For secret connections whose underlying I/O layer implements
+    /// [`tendermint_std_ext::TryClone`], this attempts to split such a
+    /// connection into its sending and receiving halves.
+    ///
+    /// This facilitates full-duplex communications when each half is used in
+    /// a separate thread.
+    ///
+    /// ## Errors
+    /// Fails when the `try_clone` operation for the underlying I/O handler
+    /// fails.
+    pub fn split(self) -> Result<(Sender<IoHandler>, Receiver<IoHandler>)> {
+        let remote_pubkey = self.remote_pubkey.expect("remote_pubkey to be initialized");
+        Ok((
+            Sender {
+                io_handler: self.io_handler.try_clone()?,
+                remote_pubkey,
+                state: self.send_state,
+                terminate: self.terminate.clone(),
+            },
+            Receiver {
+                io_handler: self.io_handler,
+                remote_pubkey,
+                state: self.recv_state,
+                terminate: self.terminate,
+            },
+        ))
     }
 }
 
-impl<IoHandler> Read for SecretConnection<IoHandler>
-where
-    IoHandler: Read + Write + Send + Sync,
-{
-    // CONTRACT: data smaller than DATA_MAX_SIZE is read atomically.
+impl<IoHandler: Read> Read for SecretConnection<IoHandler> {
     fn read(&mut self, data: &mut [u8]) -> io::Result<usize> {
-        if !self.recv_buffer.is_empty() {
-            let n = cmp::min(data.len(), self.recv_buffer.len());
-            data.copy_from_slice(&self.recv_buffer[..n]);
-            let mut leftover_portion = vec![
-                0;
-                self.recv_buffer
-                    .len()
-                    .checked_sub(n)
-                    .expect("leftover calculation failed")
-            ];
-            leftover_portion.clone_from_slice(&self.recv_buffer[n..]);
-            self.recv_buffer = leftover_portion;
-
-            return Ok(n);
-        }
-
-        let mut sealed_frame = [0_u8; TAG_SIZE + TOTAL_FRAME_SIZE];
-        self.io_handler.read_exact(&mut sealed_frame)?;
-
-        // decrypt the frame
-        let mut frame = [0_u8; TOTAL_FRAME_SIZE];
-        let res = self.decrypt(&sealed_frame, &mut frame);
-
-        if let Err(err) = res {
-            return Err(io::Error::new(io::ErrorKind::Other, err.to_string()));
-        }
-
-        self.recv_nonce.increment();
-        // end decryption
-
-        let chunk_length = u32::from_le_bytes(frame[..4].try_into().expect("chunk framing failed"));
-
-        if chunk_length as usize > DATA_MAX_SIZE {
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                format!("chunk is too big: {}! max: {}", chunk_length, DATA_MAX_SIZE),
-            ));
-        }
-
-        let mut chunk = vec![0; chunk_length as usize];
-        chunk.clone_from_slice(
-            &frame[DATA_LEN_SIZE
-                ..(DATA_LEN_SIZE
-                    .checked_add(chunk_length as usize)
-                    .expect("chunk size addition overflow"))],
-        );
-
-        let n = cmp::min(data.len(), chunk.len());
-        data[..n].copy_from_slice(&chunk[..n]);
-        self.recv_buffer.copy_from_slice(&chunk[n..]);
-
-        Ok(n)
+        checked_io!(
+            self.terminate,
+            read_and_decrypt(&mut self.io_handler, &mut self.recv_state, data)
+        )
     }
 }
 
-impl<IoHandler> Write for SecretConnection<IoHandler>
-where
-    IoHandler: Read + Write + Send + Sync,
-{
-    // Writes encrypted frames of `TAG_SIZE` + `TOTAL_FRAME_SIZE`
-    // CONTRACT: data smaller than DATA_MAX_SIZE is read atomically.
+impl<IoHandler: Write> Write for SecretConnection<IoHandler> {
     fn write(&mut self, data: &[u8]) -> io::Result<usize> {
-        let mut n = 0_usize;
-        let mut data_copy = data;
-        while !data_copy.is_empty() {
-            let chunk: &[u8];
-            if DATA_MAX_SIZE < data.len() {
-                chunk = &data[..DATA_MAX_SIZE];
-                data_copy = &data_copy[DATA_MAX_SIZE..];
-            } else {
-                chunk = data_copy;
-                data_copy = &[0_u8; 0];
-            }
-            let sealed_frame = &mut [0_u8; TAG_SIZE + TOTAL_FRAME_SIZE];
-            let res = self.encrypt(chunk, sealed_frame);
-            if let Err(err) = res {
-                return Err(io::Error::new(io::ErrorKind::Other, err.to_string()));
-            }
-            self.send_nonce.increment();
-            // end encryption
-
-            self.io_handler.write_all(&sealed_frame[..])?;
-            n = n
-                .checked_add(chunk.len())
-                .expect("overflow when adding chunk lenghts");
-        }
-
-        Ok(n)
+        checked_io!(
+            self.terminate,
+            encrypt_and_write(&mut self.io_handler, &mut self.send_state, data)
+        )
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        self.io_handler.flush()
+        checked_io!(self.terminate, self.io_handler.flush())
+    }
+}
+
+// Sending state for a `SecretConnection`.
+struct SendState {
+    cipher: ChaCha20Poly1305,
+    nonce: Nonce,
+}
+
+// Receiving state for a `SecretConnection`.
+struct ReceiveState {
+    cipher: ChaCha20Poly1305,
+    nonce: Nonce,
+    buffer: Vec<u8>,
+}
+
+/// The sending end of a [`SecretConnection`].
+pub struct Sender<IoHandler> {
+    io_handler: IoHandler,
+    remote_pubkey: PublicKey,
+    state: SendState,
+    terminate: Arc<AtomicBool>,
+}
+
+impl<IoHandler> Sender<IoHandler> {
+    /// Returns the remote pubkey. Panics if there's no key.
+    pub const fn remote_pubkey(&self) -> PublicKey {
+        self.remote_pubkey
+    }
+}
+
+impl<IoHandler: Write> Write for Sender<IoHandler> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        checked_io!(
+            self.terminate,
+            encrypt_and_write(&mut self.io_handler, &mut self.state, buf)
+        )
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        checked_io!(self.terminate, self.io_handler.flush())
+    }
+}
+
+/// The receiving end of a [`SecretConnection`].
+pub struct Receiver<IoHandler> {
+    io_handler: IoHandler,
+    remote_pubkey: PublicKey,
+    state: ReceiveState,
+    terminate: Arc<AtomicBool>,
+}
+
+impl<IoHandler> Receiver<IoHandler> {
+    /// Returns the remote pubkey. Panics if there's no key.
+    pub const fn remote_pubkey(&self) -> PublicKey {
+        self.remote_pubkey
+    }
+}
+
+impl<IoHandler: Read> Read for Receiver<IoHandler> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        checked_io!(
+            self.terminate,
+            read_and_decrypt(&mut self.io_handler, &mut self.state, buf)
+        )
     }
 }
 
@@ -508,4 +513,170 @@ pub fn sort32(first: [u8; 32], second: [u8; 32]) -> ([u8; 32], [u8; 32]) {
     } else {
         (second, first)
     }
+}
+
+/// Encrypt AEAD authenticated data
+#[allow(clippy::cast_possible_truncation)]
+fn encrypt(
+    chunk: &[u8],
+    send_cipher: &ChaCha20Poly1305,
+    send_nonce: &Nonce,
+    sealed_frame: &mut [u8; TAG_SIZE + TOTAL_FRAME_SIZE],
+) -> Result<()> {
+    assert!(!chunk.is_empty(), "chunk is empty");
+    assert!(
+        chunk.len() <= TOTAL_FRAME_SIZE - DATA_LEN_SIZE,
+        "chunk is too big: {}! max: {}",
+        chunk.len(),
+        DATA_MAX_SIZE,
+    );
+    sealed_frame[..DATA_LEN_SIZE].copy_from_slice(&(chunk.len() as u32).to_le_bytes());
+    sealed_frame[DATA_LEN_SIZE..DATA_LEN_SIZE + chunk.len()].copy_from_slice(chunk);
+
+    let tag = send_cipher
+        .encrypt_in_place_detached(
+            GenericArray::from_slice(send_nonce.to_bytes()),
+            b"",
+            &mut sealed_frame[..TOTAL_FRAME_SIZE],
+        )
+        .map_err(|_| Error::Crypto)?;
+
+    sealed_frame[TOTAL_FRAME_SIZE..].copy_from_slice(tag.as_slice());
+
+    Ok(())
+}
+
+// Writes encrypted frames of `TAG_SIZE` + `TOTAL_FRAME_SIZE`
+fn encrypt_and_write<IoHandler: Write>(
+    io_handler: &mut IoHandler,
+    send_state: &mut SendState,
+    data: &[u8],
+) -> io::Result<usize> {
+    let mut n = 0_usize;
+    let mut data_copy = data;
+    while !data_copy.is_empty() {
+        let chunk: &[u8];
+        if DATA_MAX_SIZE < data.len() {
+            chunk = &data[..DATA_MAX_SIZE];
+            data_copy = &data_copy[DATA_MAX_SIZE..];
+        } else {
+            chunk = data_copy;
+            data_copy = &[0_u8; 0];
+        }
+        let sealed_frame = &mut [0_u8; TAG_SIZE + TOTAL_FRAME_SIZE];
+        encrypt(chunk, &send_state.cipher, &send_state.nonce, sealed_frame)
+            .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+        send_state.nonce.increment();
+        // end encryption
+
+        io_handler.write_all(&sealed_frame[..])?;
+        n = n
+            .checked_add(chunk.len())
+            .expect("overflow when adding chunk lengths");
+    }
+
+    Ok(n)
+}
+
+/// Decrypt AEAD authenticated data
+fn decrypt(
+    ciphertext: &[u8],
+    recv_cipher: &ChaCha20Poly1305,
+    recv_nonce: &Nonce,
+    out: &mut [u8],
+) -> Result<usize> {
+    if ciphertext.len() < TAG_SIZE {
+        return Err(Error::Crypto).wrap_err_with(|| {
+            format!(
+                "ciphertext must be at least as long as a MAC tag {}",
+                TAG_SIZE
+            )
+        });
+    }
+
+    // Split ChaCha20 ciphertext from the Poly1305 tag
+    let (ct, tag) = ciphertext.split_at(ciphertext.len() - TAG_SIZE);
+
+    if out.len() < ct.len() {
+        return Err(Error::Crypto).wrap_err("output buffer is too small");
+    }
+
+    let in_out = &mut out[..ct.len()];
+    in_out.copy_from_slice(ct);
+
+    recv_cipher
+        .decrypt_in_place_detached(
+            GenericArray::from_slice(recv_nonce.to_bytes()),
+            b"",
+            in_out,
+            tag.into(),
+        )
+        .map_err(|_| Error::Crypto)?;
+
+    Ok(in_out.len())
+}
+
+fn read_and_decrypt<IoHandler: Read>(
+    io_handler: &mut IoHandler,
+    recv_state: &mut ReceiveState,
+    data: &mut [u8],
+) -> io::Result<usize> {
+    if !recv_state.buffer.is_empty() {
+        let n = cmp::min(data.len(), recv_state.buffer.len());
+        data.copy_from_slice(&recv_state.buffer[..n]);
+        let mut leftover_portion = vec![
+            0;
+            recv_state
+                .buffer
+                .len()
+                .checked_sub(n)
+                .expect("leftover calculation failed")
+        ];
+        leftover_portion.clone_from_slice(&recv_state.buffer[n..]);
+        recv_state.buffer = leftover_portion;
+
+        return Ok(n);
+    }
+
+    let mut sealed_frame = [0_u8; TAG_SIZE + TOTAL_FRAME_SIZE];
+    io_handler.read_exact(&mut sealed_frame)?;
+
+    // decrypt the frame
+    let mut frame = [0_u8; TOTAL_FRAME_SIZE];
+    let res = decrypt(
+        &sealed_frame,
+        &recv_state.cipher,
+        &recv_state.nonce,
+        &mut frame,
+    );
+
+    if let Err(err) = res {
+        return Err(io::Error::new(io::ErrorKind::Other, err.to_string()));
+    }
+
+    recv_state.nonce.increment();
+    // end decryption
+
+    let chunk_length = u32::from_le_bytes(frame[..4].try_into().expect("chunk framing failed"));
+
+    if chunk_length as usize > DATA_MAX_SIZE {
+        return Err(io::Error::new(
+            io::ErrorKind::Other,
+            format!("chunk is too big: {}! max: {}", chunk_length, DATA_MAX_SIZE),
+        ));
+    }
+
+    let mut chunk = vec![0; chunk_length as usize];
+    chunk.clone_from_slice(
+        &frame[DATA_LEN_SIZE
+            ..(DATA_LEN_SIZE
+                .checked_add(chunk_length as usize)
+                .expect("chunk size addition overflow"))],
+    );
+
+    let n = cmp::min(data.len(), chunk.len());
+    data[..n].copy_from_slice(&chunk[..n]);
+    recv_state.buffer.copy_from_slice(&chunk[n..]);
+
+    Ok(n)
 }

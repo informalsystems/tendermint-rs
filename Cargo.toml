@@ -8,6 +8,7 @@ members = [
     "pbt-gen",
     "proto",
     "rpc",
+    "std-ext",
     "tendermint",
     "test",
     "testgen"
