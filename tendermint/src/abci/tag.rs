@@ -82,7 +82,7 @@ mod test {
     #[test]
     fn tag_serde() {
         let json = r#"{"key": "cGFja2V0X3RpbWVvdXRfaGVpZ2h0", "value": "MC00ODQw"}"#;
-        let tag: Tag = serde_json::from_str(&json).unwrap();
+        let tag: Tag = serde_json::from_str(json).unwrap();
         assert_eq!("packet_timeout_height", tag.key.0);
         assert_eq!("0-4840", tag.value.0);
     }

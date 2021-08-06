@@ -48,7 +48,7 @@ impl Generator<validator::Set> for ValidatorSet {
     }
 
     fn generate(&self) -> Result<validator::Set, SimpleError> {
-        let vals = generate_validators(&self.validators.as_ref().unwrap())?;
+        let vals = generate_validators(self.validators.as_ref().unwrap())?;
         Ok(validator::Set::without_proposer(vals))
     }
 }

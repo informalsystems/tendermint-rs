@@ -320,7 +320,7 @@ impl Supervisor {
             .collect();
 
         self.fork_detector
-            .detect_forks(verified_block, &trusted_block, witnesses)
+            .detect_forks(verified_block, trusted_block, witnesses)
     }
 
     /// Run the supervisor event loop in the same thread.
