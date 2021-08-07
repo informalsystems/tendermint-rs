@@ -29,10 +29,8 @@ impl FromStr for PageNumber {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let raw = i64::from_str(s).map_err(|e| Error::client_internal_error(e.to_string()))?;
-        let raw_usize: usize = raw.try_into().map_err(|_| {
-            Error::client_internal_error(format!("page number out of range: {}", raw))
-        })?;
+        let raw = i64::from_str(s).map_err(Error::parse_int)?;
+        let raw_usize: usize = raw.try_into().map_err(Error::out_of_range)?;
         Ok(raw_usize.into())
     }
 }
@@ -57,10 +55,8 @@ impl FromStr for PerPage {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let raw = i64::from_str(s).map_err(|e| Error::client_internal_error(e.to_string()))?;
-        let raw_u8: u8 = raw.try_into().map_err(|_| {
-            Error::client_internal_error(format!("items per page out of range: {}", raw))
-        })?;
+        let raw = i64::from_str(s).map_err(Error::parse_int)?;
+        let raw_u8: u8 = raw.try_into().map_err(Error::out_of_range)?;
         Ok(raw_u8.into())
     }
 }

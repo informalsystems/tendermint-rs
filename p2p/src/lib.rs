@@ -16,7 +16,6 @@
     clippy::nursery,
     clippy::pedantic,
     clippy::unwrap_used,
-    missing_docs,
     unused_import_braces,
     unused_qualifications
 )]

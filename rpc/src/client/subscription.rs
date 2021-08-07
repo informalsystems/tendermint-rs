@@ -3,7 +3,7 @@
 use crate::client::sync::{ChannelRx, ChannelTx};
 use crate::event::Event;
 use crate::query::Query;
-use crate::Result;
+use crate::Error;
 use async_trait::async_trait;
 use futures::task::{Context, Poll};
 use futures::Stream;
@@ -15,7 +15,7 @@ use std::pin::Pin;
 #[async_trait]
 pub trait SubscriptionClient {
     /// `/subscribe`: subscribe to receive events produced by the given query.
-    async fn subscribe(&self, query: Query) -> Result<Subscription>;
+    async fn subscribe(&self, query: Query) -> Result<Subscription, Error>;
 
     /// `/unsubscribe`: unsubscribe from events relating to the given query.
     ///
@@ -26,15 +26,15 @@ pub trait SubscriptionClient {
     /// terminate them separately.
     ///
     /// [`select_all`]: https://docs.rs/futures/*/futures/stream/fn.select_all.html
-    async fn unsubscribe(&self, query: Query) -> Result<()>;
+    async fn unsubscribe(&self, query: Query) -> Result<(), Error>;
 
     /// Subscription clients will usually have long-running underlying
     /// transports that will need to be closed at some point.
-    fn close(self) -> Result<()>;
+    fn close(self) -> Result<(), Error>;
 }
 
-pub(crate) type SubscriptionTx = ChannelTx<Result<Event>>;
-pub(crate) type SubscriptionRx = ChannelRx<Result<Event>>;
+pub(crate) type SubscriptionTx = ChannelTx<Result<Event, Error>>;
+pub(crate) type SubscriptionRx = ChannelRx<Result<Event, Error>>;
 
 /// An interface that can be used to asynchronously receive [`Event`]s for a
 /// particular subscription.
@@ -74,7 +74,7 @@ pub struct Subscription {
 }
 
 impl Stream for Subscription {
-    type Item = Result<Event>;
+    type Item = Result<Event, Error>;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         self.project().rx.poll_next(cx)

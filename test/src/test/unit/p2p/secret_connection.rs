@@ -4,7 +4,6 @@ use std::net::{TcpListener, TcpStream};
 use std::thread;
 
 use ed25519_dalek::{self as ed25519};
-use eyre::Result;
 use rand_core::OsRng;
 use x25519_dalek::PublicKey as EphemeralPublic;
 
@@ -180,7 +179,9 @@ fn test_split_secret_connection() {
     peer1.join().expect("peer 1's thread to run to completion")
 }
 
-fn new_peer_conn<IoHandler>(io_handler: IoHandler) -> Result<SecretConnection<IoHandler>>
+fn new_peer_conn<IoHandler>(
+    io_handler: IoHandler,
+) -> Result<SecretConnection<IoHandler>, tendermint_p2p::error::Error>
 where
     IoHandler: std::io::Read + std::io::Write + Send + Sync,
 {

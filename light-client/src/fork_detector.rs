@@ -1,9 +1,7 @@
 //! Fork detection data structures and implementation.
 
-use serde::{Deserialize, Serialize};
-
 use crate::{
-    errors::{Error, ErrorExt, ErrorKind},
+    errors::{Error, ErrorDetail, ErrorExt},
     operations::{Hasher, ProdHasher},
     state::State,
     store::memory::MemoryStore,
@@ -12,7 +10,7 @@ use crate::{
 };
 
 /// Result of fork detection
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug)]
 pub enum ForkDetection {
     /// One or more forks have been detected
     Detected(Vec<Fork>),
@@ -21,7 +19,7 @@ pub enum ForkDetection {
 }
 
 /// Types of fork
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug)]
 pub enum Fork {
     /// An actual fork was found for this `LightBlock`
     Forked {
@@ -31,9 +29,9 @@ pub enum Fork {
         witness: LightBlock,
     },
     /// The node has been deemed faulty for this `LightBlock`
-    Faulty(LightBlock, ErrorKind),
+    Faulty(LightBlock, ErrorDetail),
     /// The node has timed out
-    Timeout(PeerId, ErrorKind),
+    Timeout(PeerId, ErrorDetail),
 }
 
 /// Interface for a fork detector
@@ -122,16 +120,19 @@ impl ForkDetector for ProdForkDetector {
                     primary: verified_block.clone(),
                     witness: witness_block,
                 }),
-                Err(e) if e.kind().has_expired() => {
+                Err(Error(e, _)) if e.has_expired() => {
                     forks.push(Fork::Forked {
                         primary: verified_block.clone(),
                         witness: witness_block,
                     });
                 }
-                Err(e) if e.kind().is_timeout() => {
-                    forks.push(Fork::Timeout(witness_block.provider, e.kind().clone()))
+                Err(Error(e, _)) => {
+                    if e.is_timeout().is_some() {
+                        forks.push(Fork::Timeout(witness_block.provider, e))
+                    } else {
+                        forks.push(Fork::Faulty(witness_block, e))
+                    }
                 }
-                Err(e) => forks.push(Fork::Faulty(witness_block, e.kind().clone())),
             }
         }
 

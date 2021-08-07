@@ -8,16 +8,15 @@ use std::slice;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
+use crate::error::Error;
 use chacha20poly1305::{
     aead::{generic_array::GenericArray, AeadInPlace, NewAead},
     ChaCha20Poly1305,
 };
 use ed25519_dalek::{self as ed25519, Signer, Verifier};
-use eyre::{eyre, Result, WrapErr};
 use merlin::Transcript;
 use rand_core::OsRng;
 use subtle::ConstantTimeEq;
-use thiserror::Error;
 use x25519_dalek::{EphemeralSecret, PublicKey as EphemeralPublic};
 
 use tendermint_proto as proto;
@@ -47,22 +46,6 @@ pub const DATA_MAX_SIZE: usize = 1024;
 /// 4 + 1024 == 1028 total frame size
 const DATA_LEN_SIZE: usize = 4;
 const TOTAL_FRAME_SIZE: usize = DATA_MAX_SIZE + DATA_LEN_SIZE;
-
-/// Kinds of errors
-#[derive(Copy, Clone, Debug, Error, Eq, PartialEq)]
-pub enum Error {
-    /// Cryptographic operation failed
-    #[error("cryptographic error")]
-    Crypto,
-
-    /// Malformatted or otherwise invalid cryptographic key
-    #[error("invalid key")]
-    InvalidKey,
-
-    /// Network protocol-related errors
-    #[error("protocol error")]
-    Protocol,
-}
 
 /// Handshake is a process of establishing the `SecretConnection` between two peers.
 /// [Specification](https://github.com/tendermint/spec/blob/master/spec/p2p/peer.md#authenticated-encryption-handshake)
@@ -122,10 +105,10 @@ impl Handshake<AwaitingEphKey> {
     pub fn got_key(
         &mut self,
         remote_eph_pubkey: EphemeralPublic,
-    ) -> Result<Handshake<AwaitingAuthSig>> {
+    ) -> Result<Handshake<AwaitingAuthSig>, Error> {
         let local_eph_privkey = match self.state.local_eph_privkey.take() {
             Some(key) => key,
-            None => return Err(eyre!("forgot to call Handshake::new?")),
+            None => return Err(Error::missing_secret()),
         };
         let local_eph_pubkey = EphemeralPublic::from(&local_eph_privkey);
 
@@ -142,8 +125,7 @@ impl Handshake<AwaitingEphKey> {
         // - https://github.com/tendermint/kms/issues/142
         // - https://eprint.iacr.org/2019/526.pdf
         if shared_secret.as_bytes().ct_eq(&[0x00; 32]).unwrap_u8() == 1 {
-            return Err(Error::InvalidKey)
-                .wrap_err("low-order points found (potential MitM attack!)");
+            return Err(Error::low_order_key());
         }
 
         // Sort by lexical order.
@@ -190,28 +172,33 @@ impl Handshake<AwaitingAuthSig> {
     /// # Errors
     ///
     /// * if signature scheme isn't supported
-    pub fn got_signature(&mut self, auth_sig_msg: proto::p2p::AuthSigMessage) -> Result<PublicKey> {
-        let remote_pubkey = auth_sig_msg
+    pub fn got_signature(
+        &mut self,
+        auth_sig_msg: proto::p2p::AuthSigMessage,
+    ) -> Result<PublicKey, Error> {
+        let pk_sum = auth_sig_msg
             .pub_key
-            .and_then(|pk| match pk.sum? {
-                proto::crypto::public_key::Sum::Ed25519(ref bytes) => {
-                    ed25519::PublicKey::from_bytes(bytes).ok()
-                }
-                proto::crypto::public_key::Sum::Secp256k1(_) => None,
-            })
-            .ok_or(Error::Crypto)?;
+            .and_then(|key| key.sum)
+            .ok_or_else(Error::missing_key)?;
+
+        let remote_pubkey = match pk_sum {
+            proto::crypto::public_key::Sum::Ed25519(ref bytes) => {
+                ed25519::PublicKey::from_bytes(bytes).map_err(Error::signature)
+            }
+            proto::crypto::public_key::Sum::Secp256k1(_) => Err(Error::unsupported_key()),
+        }?;
 
         let remote_sig =
-            ed25519::Signature::try_from(auth_sig_msg.sig.as_slice()).map_err(|_| Error::Crypto)?;
+            ed25519::Signature::try_from(auth_sig_msg.sig.as_slice()).map_err(Error::signature)?;
 
         if self.protocol_version.has_transcript() {
             remote_pubkey
                 .verify(&self.state.sc_mac, &remote_sig)
-                .map_err(|_| Error::Crypto)?;
+                .map_err(Error::signature)?;
         } else {
             remote_pubkey
                 .verify(&self.state.kdf.challenge, &remote_sig)
-                .map_err(|_| Error::Crypto)?;
+                .map_err(Error::signature)?;
         }
 
         // We've authorized.
@@ -291,7 +278,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         mut io_handler: IoHandler,
         local_privkey: ed25519::Keypair,
         protocol_version: Version,
-    ) -> Result<Self> {
+    ) -> Result<Self, Error> {
         // Start a handshake process.
         let local_pubkey = PublicKey::from(&local_privkey);
         let (mut h, local_eph_pubkey) = Handshake::new(local_privkey, protocol_version);
@@ -339,7 +326,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
 impl<IoHandler> SecretConnection<IoHandler>
 where
     IoHandler: TryClone,
-    <IoHandler as TryClone>::Error: 'static + std::error::Error + Send + Sync,
+    <IoHandler as TryClone>::Error: std::error::Error + Send + Sync + 'static,
 {
     /// For secret connections whose underlying I/O layer implements
     /// [`tendermint_std_ext::TryClone`], this attempts to split such a
@@ -351,11 +338,14 @@ where
     /// ## Errors
     /// Fails when the `try_clone` operation for the underlying I/O handler
     /// fails.
-    pub fn split(self) -> Result<(Sender<IoHandler>, Receiver<IoHandler>)> {
+    pub fn split(self) -> Result<(Sender<IoHandler>, Receiver<IoHandler>), Error> {
         let remote_pubkey = self.remote_pubkey.expect("remote_pubkey to be initialized");
         Ok((
             Sender {
-                io_handler: self.io_handler.try_clone()?,
+                io_handler: self
+                    .io_handler
+                    .try_clone()
+                    .map_err(|e| Error::transport_clone(e.to_string()))?,
                 remote_pubkey,
                 state: self.send_state,
                 terminate: self.terminate.clone(),
@@ -462,7 +452,7 @@ fn share_eph_pubkey<IoHandler: Read + Write + Send + Sync>(
     handler: &mut IoHandler,
     local_eph_pubkey: &EphemeralPublic,
     protocol_version: Version,
-) -> Result<EphemeralPublic> {
+) -> Result<EphemeralPublic, Error> {
     // Send our pubkey and receive theirs in tandem.
     // TODO(ismail): on the go side this is done in parallel, here we do send and receive after
     // each other. thread::spawn would require a static lifetime.
@@ -481,10 +471,8 @@ fn share_eph_pubkey<IoHandler: Read + Write + Send + Sync>(
 fn sign_challenge(
     challenge: &[u8; 32],
     local_privkey: &dyn Signer<ed25519::Signature>,
-) -> Result<ed25519::Signature> {
-    local_privkey
-        .try_sign(challenge)
-        .map_err(|_| Error::Crypto.into())
+) -> Result<ed25519::Signature, Error> {
+    local_privkey.try_sign(challenge).map_err(Error::signature)
 }
 
 // TODO(ismail): change from DecodeError to something more generic
@@ -493,7 +481,7 @@ fn share_auth_signature<IoHandler: Read + Write + Send + Sync>(
     sc: &mut SecretConnection<IoHandler>,
     pubkey: &ed25519::PublicKey,
     local_signature: &ed25519::Signature,
-) -> Result<proto::p2p::AuthSigMessage> {
+) -> Result<proto::p2p::AuthSigMessage, Error> {
     let buf = sc
         .protocol_version
         .encode_auth_signature(pubkey, local_signature);
@@ -522,7 +510,7 @@ fn encrypt(
     send_cipher: &ChaCha20Poly1305,
     send_nonce: &Nonce,
     sealed_frame: &mut [u8; TAG_SIZE + TOTAL_FRAME_SIZE],
-) -> Result<()> {
+) -> Result<(), Error> {
     assert!(!chunk.is_empty(), "chunk is empty");
     assert!(
         chunk.len() <= TOTAL_FRAME_SIZE - DATA_LEN_SIZE,
@@ -539,7 +527,7 @@ fn encrypt(
             b"",
             &mut sealed_frame[..TOTAL_FRAME_SIZE],
         )
-        .map_err(|_| Error::Crypto)?;
+        .map_err(Error::aead)?;
 
     sealed_frame[TOTAL_FRAME_SIZE..].copy_from_slice(tag.as_slice());
 
@@ -584,21 +572,16 @@ fn decrypt(
     recv_cipher: &ChaCha20Poly1305,
     recv_nonce: &Nonce,
     out: &mut [u8],
-) -> Result<usize> {
+) -> Result<usize, Error> {
     if ciphertext.len() < TAG_SIZE {
-        return Err(Error::Crypto).wrap_err_with(|| {
-            format!(
-                "ciphertext must be at least as long as a MAC tag {}",
-                TAG_SIZE
-            )
-        });
+        return Err(Error::short_ciphertext(TAG_SIZE));
     }
 
     // Split ChaCha20 ciphertext from the Poly1305 tag
     let (ct, tag) = ciphertext.split_at(ciphertext.len() - TAG_SIZE);
 
     if out.len() < ct.len() {
-        return Err(Error::Crypto).wrap_err("output buffer is too small");
+        return Err(Error::small_output_buffer());
     }
 
     let in_out = &mut out[..ct.len()];
@@ -611,7 +594,7 @@ fn decrypt(
             in_out,
             tag.into(),
         )
-        .map_err(|_| Error::Crypto)?;
+        .map_err(Error::aead)?;
 
     Ok(in_out.len())
 }

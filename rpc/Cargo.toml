@@ -29,7 +29,8 @@ path = "src/client/bin/main.rs"
 required-features = [ "cli" ]
 
 [features]
-default = []
+default = ["std", "eyre_tracer"]
+eyre_tracer = ["flex-error/eyre_tracer"]
 cli = [
   "http-client",
   "structopt",
@@ -59,6 +60,9 @@ websocket-client = [
   "tokio/time",
   "tracing"
 ]
+std = [
+    "flex-error/std"
+]
 
 [dependencies]
 bytes = "1.0"
@@ -75,7 +79,7 @@ uuid = { version = "0.8", default-features = false }
 subtle-encoding = { version = "0.5", features = ["bech32-preview"] }
 url = "2.2"
 walkdir = "2.3"
-
+flex-error = { version = "0.4.1", default-features = false }
 async-trait = { version = "0.1", optional = true }
 async-tungstenite = { version = "0.12", features = ["tokio-runtime", "tokio-rustls"], optional = true }
 futures = { version = "0.3", optional = true }

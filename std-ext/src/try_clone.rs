@@ -7,7 +7,7 @@ use std::net::TcpStream;
 pub trait TryClone: Sized {
     /// The type of error that can be returned when an attempted clone
     /// operation fails.
-    type Error;
+    type Error: std::error::Error;
 
     /// Attempt to clone this instance.
     ///

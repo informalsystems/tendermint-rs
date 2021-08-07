@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::builder::error::{self, Error};
+use crate::builder::error::Error;
 use crate::peer_list::{PeerList, PeerListBuilder};
 use crate::supervisor::Instance;
 use crate::types::PeerId;
@@ -95,7 +95,7 @@ impl SupervisorBuilder<HasPrimary> {
     ) -> Result<SupervisorBuilder<Done>, Error> {
         let mut iter = witnesses.into_iter().peekable();
         if iter.peek().is_none() {
-            return Err(error::Kind::EmptyWitnessList.into());
+            return Err(Error::empty_witness_list());
         }
 
         for (peer_id, address, instance) in iter {

@@ -122,8 +122,8 @@ fn find_reference_or_commit<'a>(
         tried_origin = true;
         if try_reference.is_err() {
             // Remote branch not found, last chance: try as a commit ID
-            // Note: Oid::from_str() currently does an incorrect conversion and cuts the second half of the ID.
-            // We are falling back on Oid::from_bytes() for now.
+            // Note: Oid::from_str() currently does an incorrect conversion and cuts the second half
+            // of the ID. We are falling back on Oid::from_bytes() for now.
             let commitish_vec =
                 hex::decode(commitish).unwrap_or_else(|_| hex::decode_upper(commitish).unwrap());
             return (

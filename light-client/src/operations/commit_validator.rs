@@ -1,7 +1,6 @@
 //! Provides an interface and default implementation for the `CommitValidator` operation
 
 use crate::{
-    bail,
     operations::{Hasher, ProdHasher},
     predicates::errors::VerificationError,
     types::{SignedHeader, ValidatorSet},
@@ -59,18 +58,15 @@ impl CommitValidator for ProdCommitValidator {
         // See https://github.com/informalsystems/tendermint-rs/issues/650
         let has_present_signatures = signatures.iter().any(|cs| !cs.is_absent());
         if !has_present_signatures {
-            bail!(VerificationError::ImplementationSpecific(
-                "no signatures for commit".to_string()
-            ));
+            return Err(VerificationError::no_signature_for_commit());
         }
 
         // Check that that the number of signatures matches the number of validators.
         if signatures.len() != validator_set.validators().len() {
-            bail!(VerificationError::ImplementationSpecific(format!(
-                "pre-commit length: {} doesn't match validator length: {}",
+            return Err(VerificationError::mismatch_pre_commit_length(
                 signatures.len(),
-                validator_set.validators().len()
-            )));
+                validator_set.validators().len(),
+            ));
         }
 
         Ok(())
@@ -99,11 +95,10 @@ impl CommitValidator for ProdCommitValidator {
             };
 
             if validator_set.validator(*validator_address) == None {
-                bail!(VerificationError::ImplementationSpecific(format!(
-                    "Found a faulty signer ({}) not present in the validator set ({})",
-                    validator_address,
-                    self.hasher.hash_validator_set(validator_set)
-                )));
+                return Err(VerificationError::faulty_signer(
+                    *validator_address,
+                    self.hasher.hash_validator_set(validator_set),
+                ));
             }
         }
 

@@ -1,12 +1,6 @@
 //! Node keys
 
-use crate::{
-    error::{Error, Kind},
-    node,
-    private_key::PrivateKey,
-    public_key::PublicKey,
-};
-use anomaly::format_err;
+use crate::{error::Error, node, private_key::PrivateKey, public_key::PublicKey};
 use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};
 
@@ -20,7 +14,8 @@ pub struct NodeKey {
 impl NodeKey {
     /// Parse `node_key.json`
     pub fn parse_json<T: AsRef<str>>(json_string: T) -> Result<Self, Error> {
-        Ok(serde_json::from_str(json_string.as_ref())?)
+        let res = serde_json::from_str(json_string.as_ref()).map_err(Error::serde_json)?;
+        Ok(res)
     }
 
     /// Load `node_key.json` from a file
@@ -28,14 +23,8 @@ impl NodeKey {
     where
         P: AsRef<Path>,
     {
-        let json_string = fs::read_to_string(path).map_err(|e| {
-            format_err!(
-                Kind::Parse,
-                "couldn't open {}: {}",
-                path.as_ref().display(),
-                e
-            )
-        })?;
+        let json_string = fs::read_to_string(path)
+            .map_err(|e| Error::file_io(format!("{}", path.as_ref().display()), e))?;
 
         Self::parse_json(json_string)
     }

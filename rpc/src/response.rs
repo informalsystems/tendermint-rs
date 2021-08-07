@@ -1,6 +1,7 @@
 //! JSON-RPC response types
 
-use super::{Error, Id, Version};
+use crate::response_error::ResponseError;
+use crate::{Error, Id, Version};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::io::Read;
 
@@ -9,13 +10,13 @@ pub trait Response: Serialize + DeserializeOwned + Sized {
     /// Parse a JSON-RPC response from a JSON string
     fn from_string(response: impl AsRef<[u8]>) -> Result<Self, Error> {
         let wrapper: Wrapper<Self> =
-            serde_json::from_slice(response.as_ref()).map_err(Error::parse_error)?;
+            serde_json::from_slice(response.as_ref()).map_err(Error::serde)?;
         wrapper.into_result()
     }
 
     /// Parse a JSON-RPC response from an `io::Reader`
     fn from_reader(reader: impl Read) -> Result<Self, Error> {
-        let wrapper: Wrapper<Self> = serde_json::from_reader(reader).map_err(Error::parse_error)?;
+        let wrapper: Wrapper<Self> = serde_json::from_reader(reader).map_err(Error::serde)?;
         wrapper.into_result()
     }
 }
@@ -33,7 +34,7 @@ pub struct Wrapper<R> {
     result: Option<R>,
 
     /// Error message if unsuccessful
-    error: Option<Error>,
+    error: Option<ResponseError>,
 }
 
 impl<R> Wrapper<R>
@@ -53,7 +54,7 @@ where
 
     /// Convert this wrapper into the underlying error, if any
     pub fn into_error(self) -> Option<Error> {
-        self.error
+        self.error.map(Error::response)
     }
 
     /// Convert this wrapper into a result type
@@ -61,19 +62,17 @@ where
         // Ensure we're using a supported RPC version
         self.version().ensure_supported()?;
 
-        if let Some(error) = self.error {
-            Err(error)
+        if let Some(e) = self.error {
+            Err(Error::response(e))
         } else if let Some(result) = self.result {
             Ok(result)
         } else {
-            Err(Error::server_error(
-                "server returned malformatted JSON (no 'result' or 'error')",
-            ))
+            Err(Error::malformed_json())
         }
     }
 
     #[cfg(test)]
-    pub fn new_with_id(id: Id, result: Option<R>, error: Option<Error>) -> Self {
+    pub fn new_with_id(id: Id, result: Option<R>, error: Option<ResponseError>) -> Self {
         Self {
             jsonrpc: Version::current(),
             id,

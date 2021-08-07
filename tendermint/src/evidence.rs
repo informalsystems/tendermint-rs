@@ -1,7 +1,7 @@
 //! Evidence of malfeasance by validators (i.e. signing conflicting votes).
 
 use crate::{
-    block::signed_header::SignedHeader, serializers, vote::Power, Error, Kind, Time, Vote,
+    block::signed_header::SignedHeader, error::Error, serializers, vote::Power, Time, Vote,
 };
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
@@ -40,7 +40,7 @@ impl TryFrom<RawEvidence> for Evidence {
     type Error = Error;
 
     fn try_from(value: RawEvidence) -> Result<Self, Self::Error> {
-        match value.sum.ok_or(Kind::InvalidEvidence)? {
+        match value.sum.ok_or_else(Error::invalid_evidence)? {
             Sum::DuplicateVoteEvidence(ev) => Ok(Evidence::DuplicateVote(ev.try_into()?)),
             Sum::LightClientAttackEvidence(_ev) => Ok(Evidence::LightClientAttackEvidence),
         }
@@ -74,11 +74,17 @@ impl TryFrom<RawDuplicateVoteEvidence> for DuplicateVoteEvidence {
 
     fn try_from(value: RawDuplicateVoteEvidence) -> Result<Self, Self::Error> {
         Ok(Self {
-            vote_a: value.vote_a.ok_or(Kind::MissingEvidence)?.try_into()?,
-            vote_b: value.vote_b.ok_or(Kind::MissingEvidence)?.try_into()?,
+            vote_a: value
+                .vote_a
+                .ok_or_else(Error::missing_evidence)?
+                .try_into()?,
+            vote_b: value
+                .vote_b
+                .ok_or_else(Error::missing_evidence)?
+                .try_into()?,
             total_voting_power: value.total_voting_power.try_into()?,
             validator_power: value.validator_power.try_into()?,
-            timestamp: value.timestamp.ok_or(Kind::MissingTimestamp)?.try_into()?,
+            timestamp: value.timestamp.ok_or_else(Error::missing_timestamp)?.into(),
         })
     }
 }
@@ -99,7 +105,7 @@ impl DuplicateVoteEvidence {
     /// constructor
     pub fn new(vote_a: Vote, vote_b: Vote) -> Result<Self, Error> {
         if vote_a.height != vote_b.height {
-            return Err(Kind::InvalidEvidence.into());
+            return Err(Error::invalid_evidence());
         }
         // Todo: make more assumptions about what is considered a valid evidence for duplicate vote
         Ok(Self {
@@ -224,10 +230,10 @@ impl TryFrom<RawEvidenceParams> for Params {
             max_age_num_blocks: value
                 .max_age_num_blocks
                 .try_into()
-                .map_err(|_| Self::Error::from(Kind::NegativeMaxAgeNum))?,
+                .map_err(Error::negative_max_age_num)?,
             max_age_duration: value
                 .max_age_duration
-                .ok_or(Kind::MissingMaxAgeDuration)?
+                .ok_or_else(Error::missing_max_age_duration)?
                 .try_into()?,
             max_bytes: value.max_bytes,
         })
@@ -266,14 +272,8 @@ impl TryFrom<RawDuration> for Duration {
 
     fn try_from(value: RawDuration) -> Result<Self, Self::Error> {
         Ok(Self(std::time::Duration::new(
-            value
-                .seconds
-                .try_into()
-                .map_err(|_| Self::Error::from(Kind::IntegerOverflow))?,
-            value
-                .nanos
-                .try_into()
-                .map_err(|_| Self::Error::from(Kind::IntegerOverflow))?,
+            value.seconds.try_into().map_err(Error::integer_overflow)?,
+            value.nanos.try_into().map_err(Error::integer_overflow)?,
         )))
     }
 }

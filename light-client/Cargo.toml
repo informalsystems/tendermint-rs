@@ -28,17 +28,20 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["rpc-client", "lightstore-sled"]
+default = ["std", "eyre_tracer", "rpc-client", "lightstore-sled"]
+eyre_tracer = ["flex-error/eyre_tracer"]
 rpc-client = ["tokio", "tendermint-rpc/http-client"]
 secp256k1 = ["tendermint/secp256k1", "tendermint-rpc/secp256k1"]
 lightstore-sled = ["sled"]
 unstable = []
+std = [
+    "flex-error/std"
+]
 
 [dependencies]
 tendermint = { version = "0.21.0", path = "../tendermint" }
 tendermint-rpc = { version = "0.21.0", path = "../rpc", default-features = false }
 
-anomaly = { version = "0.2.0", features = ["serializer"] }
 contracts = "0.4.0"
 crossbeam-channel = "0.4.2"
 derive_more = "0.99.5"
@@ -48,8 +51,8 @@ serde_cbor = "0.11.1"
 serde_derive = "1.0.106"
 sled = { version = "0.34.3", optional = true }
 static_assertions = "1.1.0"
-thiserror = "1.0.15"
 tokio = { version = "1.0", features = ["rt"], optional = true }
+flex-error = { version = "0.4.1", default-features = false }
 
 [dev-dependencies]
 tendermint-testgen = { path = "../testgen" }

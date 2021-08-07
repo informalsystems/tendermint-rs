@@ -1,4 +1,4 @@
-use crate::error::{Error, Kind};
+use crate::error::Error;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::TryInto;
 use std::{
@@ -21,7 +21,7 @@ impl TryFrom<i64> for Height {
     type Error = Error;
 
     fn try_from(value: i64) -> Result<Self, Self::Error> {
-        Ok(Height(value.try_into().map_err(|_| Kind::NegativeHeight)?))
+        Ok(Height(value.try_into().map_err(Error::negative_height)?))
     }
 }
 
@@ -35,9 +35,9 @@ impl TryFrom<u64> for Height {
     type Error = Error;
 
     fn try_from(value: u64) -> Result<Self, Self::Error> {
-        if value > i64::MAX as u64 {
-            return Err(Kind::IntegerOverflow.into());
-        }
+        // Make sure the u64 value can be converted safely to i64
+        let _ival: i64 = value.try_into().map_err(Error::integer_overflow)?;
+
         Ok(Height(value))
     }
 }
@@ -102,7 +102,7 @@ impl FromStr for Height {
     fn from_str(s: &str) -> Result<Self, Error> {
         Height::try_from(
             s.parse::<u64>()
-                .map_err(|_| Kind::Parse.context("height decode"))?,
+                .map_err(|e| Error::parse_int(s.to_string(), e))?,
         )
     }
 }

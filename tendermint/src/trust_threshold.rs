@@ -3,7 +3,7 @@
 use std::fmt::{self, Debug, Display};
 
 use crate::error::Error;
-use crate::{serializers, Kind};
+use crate::serializers;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::convert::TryFrom;
 
@@ -53,13 +53,13 @@ impl TrustThresholdFraction {
     /// In any other case we return an error.
     pub fn new(numerator: u64, denominator: u64) -> Result<Self, Error> {
         if numerator >= denominator {
-            return Err(Kind::TrustThresholdTooLarge.into());
+            return Err(Error::trust_threshold_too_large());
         }
         if denominator == 0 {
-            return Err(Kind::UndefinedTrustThreshold.into());
+            return Err(Error::undefined_trust_threshold());
         }
         if 3 * numerator < denominator {
-            return Err(Kind::TrustThresholdTooSmall.into());
+            return Err(Error::trust_threshold_too_small());
         }
         Ok(Self {
             numerator,

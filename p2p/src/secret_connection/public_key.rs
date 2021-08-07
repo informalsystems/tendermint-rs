@@ -3,10 +3,7 @@
 use ed25519_dalek as ed25519;
 use sha2::{digest::Digest, Sha256};
 use std::fmt::{self, Display};
-use tendermint::{
-    error::{self, Error},
-    node,
-};
+use tendermint::{error::Error, node};
 
 /// Secret Connection peer public keys (signing, presently Ed25519-only)
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -24,7 +21,7 @@ impl PublicKey {
     pub fn from_raw_ed25519(bytes: &[u8]) -> Result<Self, Error> {
         ed25519::PublicKey::from_bytes(bytes)
             .map(Self::Ed25519)
-            .map_err(|_| error::Kind::Crypto.into())
+            .map_err(Error::signature)
     }
 
     /// Get Ed25519 public key

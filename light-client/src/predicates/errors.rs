@@ -1,132 +1,179 @@
 //! Errors which may be raised when verifying a `LightBlock`
 
-use anomaly::{BoxError, Context};
+use flex_error::define_error;
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
+use std::time::Duration;
 
 use crate::errors::ErrorExt;
 use crate::operations::voting_power::VotingPowerTally;
 use crate::types::{Hash, Height, Time, Validator, ValidatorAddress};
+use tendermint::account::Id;
 
-/// The various errors which can be raised by the verifier component,
-/// when validating or verifying a light block.
-#[derive(Debug, Clone, Error, PartialEq, Serialize, Deserialize, Eq)]
-pub enum VerificationError {
-    /// The header is from the future
-    #[error("header from the future: header_time={header_time} now={now}")]
-    HeaderFromTheFuture {
-        /// Time in the header
-        header_time: Time,
-        /// Current time
-        now: Time,
-    },
+define_error! {
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+    VerificationError {
+        HeaderFromTheFuture
+            {
+                header_time: Time,
+                now: Time,
+            }
+            | e | {
+                format_args!("header from the future: header_time={0} now={1}",
+                    e.header_time, e.now)
+            },
 
-    /// Implementation specific error, for the purpose of extensibility
-    #[error("implementation specific: {0}")]
-    ImplementationSpecific(String),
+        ImplementationSpecific
+            {
+                detail: String,
+            }
+            | e | {
+                format_args!("implementation specific: {0}",
+                    e.detail)
+            },
 
-    /// Not enough trust because insufficient validators overlap
-    #[error("not enough trust because insufficient validators overlap: {0}")]
-    NotEnoughTrust(VotingPowerTally),
+        NotEnoughTrust
+            {
+                tally: VotingPowerTally,
+            }
+            | e | {
+                format_args!("not enough trust because insufficient validators overlap: {0}",
+                    e.tally)
+            },
 
-    /// Insufficient signers overlap
-    #[error("insufficient signers overlap: {0}")]
-    InsufficientSignersOverlap(VotingPowerTally),
+        InsufficientSignersOverlap
+            {
+                tally: VotingPowerTally,
+            }
+            | e | {
+                format_args!("insufficient signers overlap: {0}",
+                    e.tally)
+            },
 
-    /// Duplicate validator in commit signatures
-    #[error("duplicate validator with address {0}")]
-    DuplicateValidator(ValidatorAddress),
+        DuplicateValidator
+            {
+                address: ValidatorAddress,
+            }
+            | e | {
+                format_args!("duplicate validator with address {0}",
+                    e.address)
+            },
 
-    /// Invalid commit signature
-    #[error("Couldn't verify signature `{signature:?}` with validator `{validator:?}` on sign_bytes `{sign_bytes:?}`")]
-    InvalidSignature {
-        /// Signature as a byte array
-        signature: Vec<u8>,
-        /// Validator which provided the signature
-        validator: Box<Validator>,
-        /// Bytes which were signed
-        sign_bytes: Vec<u8>,
-    },
+        InvalidSignature
+            {
+                signature: Vec<u8>,
+                validator: Box<Validator>,
+                sign_bytes: Vec<u8>,
+            }
+            | e | {
+                format_args!("Couldn't verify signature `{:?}` with validator `{:?}` on sign_bytes `{:?}`",
+                    e.signature, e.validator, e.sign_bytes)
+            },
 
-    /// Invalid commit
-    #[error("invalid commit value: header_hash={header_hash} commit_hash={commit_hash}")]
-    InvalidCommitValue {
-        /// Header hash
-        #[serde(with = "tendermint::serializers::hash")]
-        header_hash: Hash,
-        /// Commit hash
-        #[serde(with = "tendermint::serializers::hash")]
-        commit_hash: Hash,
-    },
+        InvalidCommitValue
+            {
+                header_hash: Hash,
+                commit_hash: Hash,
+            }
+            | e | {
+                format_args!("invalid commit value: header_hash={0} commit_hash={1}",
+                    e.header_hash, e.commit_hash)
+            },
 
-    /// Hash mismatch for the next validator set
-    #[error("invalid next validator set: header_next_validators_hash={header_next_validators_hash} next_validators_hash={next_validators_hash}")]
-    InvalidNextValidatorSet {
-        /// Next validator set hash
-        #[serde(with = "tendermint::serializers::hash")]
-        header_next_validators_hash: Hash,
-        /// Validator set hash
-        #[serde(with = "tendermint::serializers::hash")]
-        next_validators_hash: Hash,
-    },
+        InvalidNextValidatorSet
+            {
+                header_next_validators_hash: Hash,
+                next_validators_hash: Hash,
+            }
+            | e | {
+                format_args!("invalid next validator set: header_next_validators_hash={0} next_validators_hash={1}",
+                    e.header_next_validators_hash, e.next_validators_hash)
+            },
 
-    /// Hash mismatch for the validator set
-    #[error("invalid validator set: header_validators_hash={header_validators_hash} validators_hash={validators_hash}")]
-    InvalidValidatorSet {
-        /// Hash of validator set stored in header
-        #[serde(with = "tendermint::serializers::hash")]
-        header_validators_hash: Hash,
-        /// Actual hash of validator set in header
-        #[serde(with = "tendermint::serializers::hash")]
-        validators_hash: Hash,
-    },
+        InvalidValidatorSet
+            {
+                header_validators_hash: Hash,
+                validators_hash: Hash,
+            }
+            | e | {
+                format_args!("invalid validator set: header_validators_hash={0} validators_hash={1}",
+                    e.header_validators_hash, e.validators_hash)
+            },
 
-    /// Unexpected header of non-increasing height compared to what was expected
-    #[error("non increasing height: got={got} expected={expected}")]
-    NonIncreasingHeight {
-        /// Actual height of header
-        got: Height,
-        /// Expected minimum height
-        expected: Height,
-    },
+        NonIncreasingHeight
+            {
+                got: Height,
+                expected: Height,
+            }
+            | e | {
+                format_args!("non increasing height: got={0} expected={1}",
+                    e.got, e.expected)
+            },
 
-    /// BFT Time between the trusted state and a header does not increase monotonically
-    #[error("non monotonic BFT time: header_bft_time={header_bft_time} trusted_header_bft_time={trusted_header_bft_time}")]
-    NonMonotonicBftTime {
-        /// BFT time of the untrusted header
-        header_bft_time: Time,
-        /// BFT time of the trusted header
-        trusted_header_bft_time: Time,
-    },
+        NonMonotonicBftTime
+            {
+                header_bft_time: Time,
+                trusted_header_bft_time: Time,
+            }
+            | e | {
+                format_args!("non monotonic BFT time: header_bft_time={0} trusted_header_bft_time={1}",
+                    e.header_bft_time, e.trusted_header_bft_time)
+            },
 
-    /// Trusted state not within the trusting period
-    #[error("not withing trusting period: expires_at={expires_at} now={now}")]
-    NotWithinTrustPeriod {
-        /// Expiration time of the header
-        expires_at: Time,
-        /// Current time
-        now: Time,
-    },
-}
+        NotWithinTrustPeriod
+            {
+                expires_at: Time,
+                now: Time,
+            }
+            | e | {
+                format_args!("not withing trusting period: expires_at={0} now={1}",
+                    e.expires_at, e.now)
+            },
 
-impl VerificationError {
-    /// Add additional context (i.e. include a source error and capture a backtrace).
-    /// You can convert the resulting `Context` into an `Error` by calling `.into()`.
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
-        Context::new(self, Some(source.into()))
+        NoSignatureForCommit
+            | _ | { "no signatures for commit"  },
+
+        MismatchPreCommitLength
+            {
+                pre_commit_length: usize,
+                validator_length: usize,
+            }
+            | e | {
+                format_args!(
+                    "pre-commit length: {} doesn't match validator length: {}",
+                    e.pre_commit_length,
+                    e.validator_length
+                )
+            },
+
+        FaultySigner
+            {
+                signer: Id,
+                validator_set: Hash
+            }
+            | e | {
+                format_args!(
+                    "Found a faulty signer ({}) not present in the validator set ({})",
+                    e.signer,
+                    e.validator_set
+                )
+            },
+
     }
 }
 
-impl ErrorExt for VerificationError {
-    fn not_enough_trust(&self) -> bool {
-        matches!(self, Self::NotEnoughTrust { .. })
+impl ErrorExt for VerificationErrorDetail {
+    fn not_enough_trust(&self) -> Option<VotingPowerTally> {
+        match &self {
+            Self::NotEnoughTrust(e) => Some(e.tally),
+            _ => None,
+        }
     }
 
     fn has_expired(&self) -> bool {
         matches!(self, Self::NotWithinTrustPeriod { .. })
     }
 
-    fn is_timeout(&self) -> bool {
-        false
+    fn is_timeout(&self) -> Option<Duration> {
+        None
     }
 }

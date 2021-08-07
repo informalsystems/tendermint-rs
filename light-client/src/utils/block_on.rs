@@ -14,11 +14,11 @@ where
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
-            .map_err(|_| IoError::Runtime)?;
+            .map_err(IoError::runtime)?;
 
         if let Some(timeout) = timeout {
             let task = async { tokio::time::timeout(timeout, f).await };
-            rt.block_on(task).map_err(|_| IoError::Timeout(timeout))
+            rt.block_on(task).map_err(|e| IoError::timeout(timeout, e))
         } else {
             Ok(rt.block_on(f))
         }

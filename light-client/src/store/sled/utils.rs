@@ -6,7 +6,7 @@ use std::marker::PhantomData;
 
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::errors::{Error, ErrorKind};
+use crate::errors::Error;
 use crate::types::Height;
 
 /// Provides a view over the database for storing key/value pairs at the given prefix.
@@ -40,15 +40,11 @@ where
     /// Get the value associated with the given height within this tree
     pub fn get(&self, height: Height) -> Result<Option<V>, Error> {
         let key = key_bytes(height);
-        let value = self
-            .tree
-            .get(key)
-            .map_err(|e| ErrorKind::Store.context(e))?;
+        let value = self.tree.get(key).map_err(Error::sled)?;
 
         match value {
             Some(bytes) => {
-                let value =
-                    serde_cbor::from_slice(&bytes).map_err(|e| ErrorKind::Store.context(e))?;
+                let value = serde_cbor::from_slice(&bytes).map_err(Error::serde_cbor)?;
                 Ok(value)
             }
             None => Ok(None),
@@ -59,10 +55,7 @@ where
     pub fn contains_key(&self, height: Height) -> Result<bool, Error> {
         let key = key_bytes(height);
 
-        let exists = self
-            .tree
-            .contains_key(key)
-            .map_err(|e| ErrorKind::Store.context(e))?;
+        let exists = self.tree.contains_key(key).map_err(Error::sled)?;
 
         Ok(exists)
     }
@@ -70,11 +63,9 @@ where
     /// Insert a value associated with a height within this tree
     pub fn insert(&self, height: Height, value: &V) -> Result<(), Error> {
         let key = key_bytes(height);
-        let bytes = serde_cbor::to_vec(&value).map_err(|e| ErrorKind::Store.context(e))?;
+        let bytes = serde_cbor::to_vec(&value).map_err(Error::serde_cbor)?;
 
-        self.tree
-            .insert(key, bytes)
-            .map_err(|e| ErrorKind::Store.context(e))?;
+        self.tree.insert(key, bytes).map_err(Error::sled)?;
 
         Ok(())
     }
@@ -83,9 +74,7 @@ where
     pub fn remove(&self, height: Height) -> Result<(), Error> {
         let key = key_bytes(height);
 
-        self.tree
-            .remove(key)
-            .map_err(|e| ErrorKind::Store.context(e))?;
+        self.tree.remove(key).map_err(Error::sled)?;
 
         Ok(())
     }
