@@ -16,7 +16,7 @@ where
     /// List of addresses to be communicated as publicly reachable to other nodes, which in turn
     /// can use that to share with third parties.
     ///
-    /// TODO(xla): Dependning on where this information is going to be disseminated it might be
+    /// TODO(xla): Depending on where this information is going to be disseminated it might be
     /// better placed in a higher-level protocol. What stands in opposition to that is the fact
     /// that advertised addresses will be helpful for hole punching and other involved network
     /// traversals.
@@ -140,6 +140,6 @@ where
     ///
     /// # Errors
     ///
-    /// * If resource allocation fails for lack of priviliges or being not available.
+    /// * If resource allocation fails for lack of privileges or being not available.
     fn bind(self, bind_info: BindInfo<A>) -> Result<(Self::Endpoint, Self::Incoming)>;
 }

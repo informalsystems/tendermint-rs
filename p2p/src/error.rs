@@ -63,5 +63,15 @@ define_error! {
         SmallOutputBuffer
             | _ | { "output buffer is too small" },
 
+        TransportClone
+            { detail: String }
+            | e | { format_args!("failed to clone underlying transport: {}", e.detail) }
+
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(e: std::io::Error) -> Self {
+        Self::io(e)
     }
 }
