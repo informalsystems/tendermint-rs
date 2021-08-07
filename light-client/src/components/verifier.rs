@@ -119,8 +119,8 @@ impl Verifier for ProdVerifier {
             &*self.voting_power_calculator,
             &*self.commit_validator,
             &*self.hasher,
-            &trusted,
-            &untrusted,
+            trusted,
+            untrusted,
             options,
             now,
         )

@@ -269,7 +269,7 @@ impl Tester {
         T: 'static + DeserializeOwned + UnwindSafe,
         F: Fn(T) + UnwindSafe + RefUnwindSafe + 'static,
     {
-        let test_fn = move |_path: &str, input: &str| match parse_as::<T>(&input) {
+        let test_fn = move |_path: &str, input: &str| match parse_as::<T>(input) {
             Ok(test_case) => Tester::capture_test(|| {
                 test(test_case);
             }),
@@ -288,7 +288,7 @@ impl Tester {
     {
         let test_env = self.env().unwrap();
         let output_env = self.output_env().unwrap();
-        let test_fn = move |path: &str, input: &str| match parse_as::<T>(&input) {
+        let test_fn = move |path: &str, input: &str| match parse_as::<T>(input) {
             Ok(test_case) => Tester::capture_test(|| {
                 // It is OK to unwrap() here: in case of unwrapping failure, the test will fail.
                 let dir = TempDir::new().unwrap();
@@ -311,7 +311,7 @@ impl Tester {
         T: 'static + DeserializeOwned,
         F: Fn(T) -> Vec<(String, String)> + 'static,
     {
-        let batch_fn = move |_path: &str, input: &str| match parse_as::<T>(&input) {
+        let batch_fn = move |_path: &str, input: &str| match parse_as::<T>(input) {
             Ok(test_batch) => Some(batch(test_batch)),
             Err(_) => None,
         };

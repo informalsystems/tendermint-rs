@@ -81,6 +81,7 @@ impl LightStore for MemoryStore {
             .map(|(_, e)| e.light_block.clone())
     }
 
+    #[allow(clippy::needless_collect)]
     fn all(&self, status: Status) -> Box<dyn Iterator<Item = LightBlock>> {
         let light_blocks: Vec<_> = self
             .store

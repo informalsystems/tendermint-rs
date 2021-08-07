@@ -4,7 +4,7 @@
 #[macro_export]
 macro_rules! bail {
     ($kind:expr) => {
-        return Err($kind.into());
+        return Err($kind.into())
     };
 }
 
