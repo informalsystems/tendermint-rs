@@ -654,7 +654,7 @@ mod tests {
                 },
                 _ => panic!("expected Rpc error"),
             },
-            _ => panic!("expected NoWitnesses error"),
+            _ => panic!("expected Io error"),
         }
     }
 

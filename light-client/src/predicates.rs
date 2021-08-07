@@ -559,7 +559,7 @@ mod tests {
                 assert_eq!(e.pre_commit_length, signed_header.commit.signatures.len());
                 assert_eq!(e.validator_length, val_set.validators().len());
             }
-            _ => panic!("expected ImplementationSpecific error"),
+            _ => panic!("expected MismatchPreCommitLength error"),
         }
 
         // 4. commit.BlockIdFlagAbsent - should be "Ok"
@@ -606,7 +606,7 @@ mod tests {
                     hasher.hash_validator_set(&val_set_with_faulty_signer)
                 );
             }
-            _ => panic!("expected ImplementationSpecific error"),
+            _ => panic!("expected FaultySigner error"),
         }
     }
 
