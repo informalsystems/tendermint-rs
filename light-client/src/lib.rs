@@ -34,7 +34,4 @@ pub mod types;
 pub(crate) mod utils;
 
 #[doc(hidden)]
-mod macros;
-
-#[doc(hidden)]
 pub mod tests;
