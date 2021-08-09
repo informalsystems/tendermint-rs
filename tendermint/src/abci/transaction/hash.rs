@@ -12,8 +12,8 @@ use subtle_encoding::hex;
 /// Size of a transaction hash in bytes
 pub const LENGTH: usize = 32;
 
-/// Trannsaction hashes
-#[derive(Copy, Clone, Hash, PartialEq)]
+/// Transaction hashes
+#[derive(Copy, Clone, Hash, Eq)]
 pub struct Hash([u8; LENGTH]);
 
 impl Hash {
@@ -38,6 +38,12 @@ impl ConstantTimeEq for Hash {
     #[inline]
     fn ct_eq(&self, other: &Hash) -> subtle::Choice {
         self.as_bytes().ct_eq(other.as_bytes())
+    }
+}
+
+impl PartialEq for Hash {
+    fn eq(&self, other: &Hash) -> bool {
+        self.ct_eq(other).into()
     }
 }
 
