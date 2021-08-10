@@ -236,6 +236,7 @@ mod rpc {
         simple_transaction_subscription().await;
         concurrent_subscriptions().await;
         tx_search().await;
+        tx_search_by_hash().await;
     }
 
     async fn transaction_by_hash() {
@@ -421,6 +422,26 @@ mod rpc {
 
         subs_client.close().unwrap();
         driver_handle.await.unwrap().unwrap();
+    }
+
+    async fn tx_search_by_hash() {
+        let client = localhost_http_client();
+
+        let tx = Transaction::from(String::from("tx_search_by=hash").into_bytes());
+        let r = client.broadcast_tx_commit(tx).await.unwrap();
+        let hash = r.hash;
+
+        let r = client
+            .tx_search(
+                Query::eq("tx.hash", hash.to_string()),
+                false,
+                1,
+                10,
+                Order::Ascending,
+            )
+            .await
+            .unwrap();
+        assert_eq!(r.total_count, 1);
     }
 
     async fn broadcast_tx(
