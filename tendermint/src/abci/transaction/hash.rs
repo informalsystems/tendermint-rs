@@ -13,7 +13,7 @@ use subtle_encoding::hex;
 pub const LENGTH: usize = 32;
 
 /// Transaction hashes
-#[derive(Copy, Clone, Hash, Eq)]
+#[derive(Copy, Clone, Eq)]
 pub struct Hash([u8; LENGTH]);
 
 impl Hash {
@@ -38,6 +38,15 @@ impl ConstantTimeEq for Hash {
     #[inline]
     fn ct_eq(&self, other: &Hash) -> subtle::Choice {
         self.as_bytes().ct_eq(other.as_bytes())
+    }
+}
+
+impl core::hash::Hash for Hash {
+    fn hash<H>(&self, hasher: &mut H)
+    where
+        H: std::hash::Hasher,
+    {
+        self.0.hash(hasher)
     }
 }
 
