@@ -3,6 +3,7 @@
 use std::str::FromStr;
 use std::{fs, path::PathBuf};
 use subtle_encoding::{base64, hex};
+use tendermint::abci::transaction::Hash;
 use tendermint_rpc::{
     endpoint,
     error::{Error, ErrorDetail},
@@ -228,6 +229,19 @@ fn outgoing_fixtures() {
                     wrapped.params().tx.as_bytes(),
                     base64::decode("dHg1PXZhbHVl").unwrap()
                 );
+            }
+            "tx" => {
+                let wrapped =
+                    serde_json::from_str::<RequestWrapper<endpoint::tx::Request>>(&content)
+                        .unwrap();
+                assert_eq!(
+                    wrapped.params().hash,
+                    Hash::new([
+                        214, 63, 156, 35, 121, 30, 97, 4, 16, 181, 118, 216, 194, 123, 181, 174,
+                        172, 147, 204, 26, 88, 82, 36, 40, 167, 179, 42, 18, 118, 8, 88, 96
+                    ])
+                );
+                assert!(!wrapped.params().prove);
             }
             "tx_search_no_prove" => {
                 let wrapped =
@@ -1312,6 +1326,17 @@ fn incoming_fixtures() {
                     tendermint::abci::transaction::Hash::new([0; 32])
                 );
                 assert!(result.log.value().is_empty());
+            }
+            "tx" => {
+                let result = endpoint::tx::Response::from_string(content).unwrap();
+                assert_eq!(
+                    result.hash,
+                    Hash::new([
+                        214, 63, 156, 35, 121, 30, 97, 4, 16, 181, 118, 216, 194, 123, 181, 174,
+                        172, 147, 204, 26, 88, 82, 36, 40, 167, 179, 42, 18, 118, 8, 88, 96
+                    ])
+                );
+                assert_eq!(u64::from(result.height), 12u64);
             }
             "tx_search_no_prove" => {
                 let result = endpoint::tx_search::Response::from_string(content).unwrap();
