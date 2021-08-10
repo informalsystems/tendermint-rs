@@ -433,7 +433,7 @@ mod rpc {
 
         let r = client
             .tx_search(
-                Query::eq("tx.hash", hash.to_string()),
+                Query::from(EventType::Tx).and_eq("tx.hash", hash.to_string()),
                 false,
                 1,
                 10,
