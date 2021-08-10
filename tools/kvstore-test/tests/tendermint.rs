@@ -227,14 +227,27 @@ mod rpc {
     }
 
     #[tokio::test]
-    async fn transaction_subscription() {
+    async fn transactions() {
         // We run these sequentially wrapped within a single test to ensure
         // that Tokio doesn't execute them simultaneously. If they are executed
         // simultaneously, their submitted transactions interfere with each
         // other and one of them will (incorrectly) fail.
+        transaction_by_hash().await;
         simple_transaction_subscription().await;
         concurrent_subscriptions().await;
         tx_search().await;
+    }
+
+    async fn transaction_by_hash() {
+        let tx = Transaction::from(String::from("txtest=value").into_bytes());
+        let r = localhost_http_client()
+            .broadcast_tx_commit(tx.clone())
+            .await
+            .unwrap();
+        let hash = r.hash;
+        let r = localhost_http_client().tx(hash, false).await.unwrap();
+        assert_eq!(r.hash, hash);
+        assert_eq!(r.tx, tx);
     }
 
     async fn simple_transaction_subscription() {
