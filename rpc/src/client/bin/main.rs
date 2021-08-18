@@ -3,6 +3,7 @@
 use futures::StreamExt;
 use std::str::FromStr;
 use structopt::StructOpt;
+use tendermint::abci::transaction::Hash;
 use tendermint::abci::{Path, Transaction};
 use tendermint_rpc::query::Query;
 use tendermint_rpc::{
@@ -127,6 +128,17 @@ enum ClientRequest {
     NetInfo,
     /// Get Tendermint status (node info, public key, latest block hash, etc.).
     Status,
+    /// Fetch a transaction by way of its hash.
+    Tx {
+        /// The SHA256 hash of the transaction (in hexadecimal).
+        hash: String,
+        /// Include proofs that the transaction was included in a block in the
+        /// response.
+        #[structopt(long)]
+        prove: bool,
+    },
+    /// Search for a transaction by way of a specific query. Uses the same
+    /// query syntax as the `subscribe` endpoint.
     TxSearch {
         /// The query against which transactions should be matched.
         query: Query,
@@ -340,6 +352,15 @@ where
         ClientRequest::Status => {
             serde_json::to_string_pretty(&client.status().await?).map_err(Error::serde)?
         }
+        ClientRequest::Tx { hash, prove } => serde_json::to_string_pretty(
+            &client
+                .tx(
+                    Hash::from_str(&hash).map_err(|e| Error::parse(e.to_string()))?,
+                    prove,
+                )
+                .await?,
+        )
+        .map_err(Error::serde)?,
         ClientRequest::TxSearch {
             query,
             page,

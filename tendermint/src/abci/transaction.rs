@@ -2,7 +2,7 @@
 
 mod hash;
 
-pub use self::hash::Hash;
+pub use self::hash::{Hash, LENGTH as HASH_LENGTH};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{fmt, slice};
 use subtle_encoding::base64;
