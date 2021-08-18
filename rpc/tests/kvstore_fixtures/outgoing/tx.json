@@ -1,0 +1,9 @@
+{
+  "id": "aeca4fe2-9a71-4906-8a8e-91ea4114ea4b",
+  "jsonrpc": "2.0",
+  "method": "tx",
+  "params": {
+    "hash": "1j+cI3keYQQQtXbYwnu1rqyTzBpYUiQop7MqEnYIWGA=",
+    "prove": false
+  }
+}

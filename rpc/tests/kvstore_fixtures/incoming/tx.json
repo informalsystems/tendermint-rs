@@ -1,0 +1,46 @@
+{
+  "id": "aeca4fe2-9a71-4906-8a8e-91ea4114ea4b",
+  "jsonrpc": "2.0",
+  "result": {
+    "hash": "D63F9C23791E610410B576D8C27BB5AEAC93CC1A58522428A7B32A1276085860",
+    "height": "12",
+    "index": 2,
+    "tx": "Y29tbWl0LWtleT12YWx1ZQ==",
+    "tx_result": {
+      "code": 0,
+      "codespace": "",
+      "data": null,
+      "events": [
+        {
+          "attributes": [
+            {
+              "index": true,
+              "key": "Y3JlYXRvcg==",
+              "value": "Q29zbW9zaGkgTmV0b3dva28="
+            },
+            {
+              "index": true,
+              "key": "a2V5",
+              "value": "Y29tbWl0LWtleQ=="
+            },
+            {
+              "index": true,
+              "key": "aW5kZXhfa2V5",
+              "value": "aW5kZXggaXMgd29ya2luZw=="
+            },
+            {
+              "index": false,
+              "key": "bm9pbmRleF9rZXk=",
+              "value": "aW5kZXggaXMgd29ya2luZw=="
+            }
+          ],
+          "type": "app"
+        }
+      ],
+      "gas_used": "0",
+      "gas_wanted": "0",
+      "info": "",
+      "log": ""
+    }
+  }
+}

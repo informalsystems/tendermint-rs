@@ -2,6 +2,7 @@
 
 use std::str::FromStr;
 use structopt::StructOpt;
+use tendermint::abci::transaction::Hash;
 use tendermint::abci::{Path, Transaction};
 use tendermint_rpc::{
     Client, Error, HttpClient, Paging, Scheme, SubscriptionClient, Url, WebSocketClient,
@@ -112,6 +113,15 @@ enum ClientRequest {
     NetInfo,
     /// Get Tendermint status (node info, public key, latest block hash, etc.).
     Status,
+    /// Fetch a transaction by way of its hash.
+    Tx {
+        /// The SHA256 hash of the transaction (in hexadecimal).
+        hash: String,
+        /// Include proofs that the transaction was included in a block in the
+        /// response.
+        #[structopt(long)]
+        prove: bool,
+    },
     // TODO(thane): Implement txsearch endpoint.
     /// Get the validators at the given height.
     Validators {
@@ -305,6 +315,15 @@ where
         ClientRequest::NetInfo => {
             serde_json::to_string_pretty(&client.net_info().await?).map_err(Error::serde)?
         }
+        ClientRequest::Tx { hash, prove } => serde_json::to_string_pretty(
+            &client
+                .tx(
+                    Hash::from_str(&hash).map_err(|e| Error::parse(e.to_string()))?,
+                    prove,
+                )
+                .await?,
+        )
+        .map_err(Error::serde)?,
         ClientRequest::Status => {
             serde_json::to_string_pretty(&client.status().await?).map_err(Error::serde)?
         }

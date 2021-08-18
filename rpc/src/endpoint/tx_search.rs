@@ -54,7 +54,3 @@ pub struct Response {
 }
 
 impl crate::Response for Response {}
-
-// TODO: remove this after the next breaking release
-#[deprecated(note = "use endpoint::tx::Response instead")]
-pub type ResultTx = tx::Response;
