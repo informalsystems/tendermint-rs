@@ -76,7 +76,7 @@ fn run_test(tc: LightClientTest<LightBlock>) -> BisectionTestResult {
         io.clone(),
     );
 
-    let result = verify_bisection(untrusted_height, &mut light_client, &mut state);
+    let result = async_std::task::block_on(verify_bisection(untrusted_height, &mut light_client, &mut state));
 
     let untrusted_light_block = async_std::task::block_on(io
         .fetch_light_block(AtHeight::At(untrusted_height)))

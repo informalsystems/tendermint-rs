@@ -164,12 +164,12 @@ pub fn verify_single(
     }
 }
 
-pub fn verify_bisection(
+pub async fn verify_bisection(
     untrusted_height: Height,
     light_client: &mut LightClient,
     state: &mut State,
 ) -> Result<Vec<LightBlock>, Error> {
-    async_std::task::block_on(light_client
+    light_client
         .verify_to_target(untrusted_height, state)
-    ).map(|_| state.get_trace(untrusted_height))
+    .await.map(|_| state.get_trace(untrusted_height))
 }
