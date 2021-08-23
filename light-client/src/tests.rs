@@ -107,7 +107,7 @@ impl MockIo {
     }
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 impl Io for MockIo {
     async fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
         let height = match height {
@@ -126,7 +126,7 @@ impl Io for MockIo {
 #[derive(Clone, Debug, Default)]
 pub struct MockEvidenceReporter;
 
-#[async_trait]
+#[async_trait(?Send)]
 #[contract_trait]
 impl EvidenceReporter for MockEvidenceReporter {
     async fn report(&self, _e: Evidence, _peer: PeerId) -> Result<Hash, IoError> {

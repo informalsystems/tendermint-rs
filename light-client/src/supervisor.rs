@@ -139,7 +139,7 @@ impl std::fmt::Debug for Supervisor {
 }
 
 // Ensure the `Supervisor` can be sent across thread boundaries.
-static_assertions::assert_impl_all!(Supervisor: Send);
+// static_assertions::assert_impl_all!(Supervisor: Send);
 
 impl Supervisor {
     /// Constructs a new supervisor from the given list of peers and fork detector instance.
@@ -199,7 +199,7 @@ impl Supervisor {
 
     /// Verify either to the latest block (if `height == None`) or to a given block (if `height ==
     /// Some(height)`).
-    #[async_recursion]
+    #[async_recursion(?Send)]
     async fn verify(&mut self, height: Option<Height>) -> Result<LightBlock, Error> {
         let primary = self.peers.primary_mut();
 
@@ -499,7 +499,7 @@ mod tests {
         );
 
         let handle = supervisor.handle();
-        async_std::task::spawn(async move {
+        tokio::task::spawn_local(async move {
             supervisor.run().await
         });
 

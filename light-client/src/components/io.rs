@@ -77,13 +77,13 @@ impl IoErrorDetail {
 }
 
 /// Interface for fetching light blocks from a full node, typically via the RPC client.
-#[async_trait]
-pub trait Io: Send + Sync {
+#[async_trait(?Send)]
+pub trait Io {
     /// Fetch a light block at the given height from a peer
     async fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError>;
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 impl<F: Send + Sync> Io for F
 where
     F: Fn(AtHeight) -> Result<LightBlock, IoError>,
@@ -119,7 +119,7 @@ mod prod {
         timeout: Option<Duration>,
     }
 
-    #[async_trait]
+    #[async_trait(?Send)]
     impl Io for ProdIo {
         async fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
             let signed_header = self.fetch_signed_header(height)?;

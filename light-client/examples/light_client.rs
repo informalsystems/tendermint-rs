@@ -61,7 +61,8 @@ struct SyncOpts {
     db_path: PathBuf,
 }
 
-fn main() {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opts = CliOptions::parse_args_default_or_exit();
 
     match opts.command {
@@ -75,7 +76,8 @@ fn main() {
             eprintln!("Command failed: {}", e);
             std::process::exit(1);
         }),
-    }
+    };
+    Ok(())
 }
 
 fn make_instance(
@@ -123,8 +125,7 @@ fn sync_cmd(opts: SyncOpts) -> Result<(), Box<dyn std::error::Error>> {
         .build_prod();
 
     let handle = supervisor.handle();
-
-    async_std::task::spawn(async move {
+    tokio::task::spawn_local(async move {
         supervisor.run().await
     });
 

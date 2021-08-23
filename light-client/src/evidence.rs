@@ -9,10 +9,10 @@ use contracts::contract_trait;
 pub use tendermint::evidence::Evidence;
 
 /// Interface for reporting evidence to full nodes, typically via the RPC client.
-#[async_trait]
+#[async_trait(?Send)]
 #[contract_trait]
 #[allow(missing_docs)] // This is required because of the `contracts` crate (TODO: open/link issue)
-pub trait EvidenceReporter: Send + Sync {
+pub trait EvidenceReporter {
     /// Report evidence to all connected full nodes.
     async fn report(&self, e: Evidence, peer: PeerId) -> Result<Hash, IoError>;
 }
@@ -38,7 +38,7 @@ mod prod {
         timeout: Option<Duration>,
     }
 
-    #[async_trait]
+    #[async_trait(?Send)]
     #[contract_trait]
     impl EvidenceReporter for ProdEvidenceReporter {
         #[pre(self.peer_map.contains_key(&peer))]
