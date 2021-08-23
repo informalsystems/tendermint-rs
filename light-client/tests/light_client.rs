@@ -51,8 +51,8 @@ fn run_test(tc: LightClientTest<LightBlock>) -> BisectionTestResult {
     let io = MockIo::new(provider.chain_id, provider.lite_blocks);
 
     let trusted_height = tc.trust_options.height;
-    let trusted_state = io
-        .fetch_light_block(AtHeight::At(trusted_height))
+    let trusted_state = async_std::task::block_on(io
+        .fetch_light_block(AtHeight::At(trusted_height)))
         .expect("could not 'request' light block");
 
     let mut light_store = MemoryStore::new();
@@ -78,8 +78,8 @@ fn run_test(tc: LightClientTest<LightBlock>) -> BisectionTestResult {
 
     let result = verify_bisection(untrusted_height, &mut light_client, &mut state);
 
-    let untrusted_light_block = io
-        .fetch_light_block(AtHeight::At(untrusted_height))
+    let untrusted_light_block = async_std::task::block_on(io
+        .fetch_light_block(AtHeight::At(untrusted_height)))
         .expect("header at untrusted height not found");
 
     BisectionTestResult {

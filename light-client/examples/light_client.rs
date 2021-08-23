@@ -96,7 +96,7 @@ fn make_instance(
         LightClientBuilder::prod(peer_id, rpc_client, Box::new(light_store), options, None);
 
     let builder = if let (Some(height), Some(hash)) = (opts.trusted_height, opts.trusted_hash) {
-        builder.trust_primary_at(height, hash)
+        async_std::task::block_on(builder.trust_primary_at(height, hash))
     } else {
         builder.trust_from_store()
     }?;

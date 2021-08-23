@@ -28,8 +28,8 @@ const TEST_FILES_PATH: &str = "./tests/support/";
 
 fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: Time) -> Instance {
     let trusted_height = trust_options.height;
-    let trusted_state = io
-        .fetch_light_block(AtHeight::At(trusted_height))
+    let trusted_state = async_std::task::block_on(io
+        .fetch_light_block(AtHeight::At(trusted_height)))
         .expect("could not 'request' light block");
 
     let mut light_store = MemoryStore::new();
@@ -102,8 +102,8 @@ fn run_multipeer_test(tc: LightClientTest<LightBlock>) {
     match handle.verify_to_target(target_height) {
         Ok(new_state) => {
             // Check that the expected state and new_state match
-            let untrusted_light_block = io
-                .fetch_light_block(AtHeight::At(target_height))
+            let untrusted_light_block = async_std::task::block_on(io
+                .fetch_light_block(AtHeight::At(target_height)))
                 .expect("header at untrusted height not found");
 
             let expected_state = untrusted_light_block;

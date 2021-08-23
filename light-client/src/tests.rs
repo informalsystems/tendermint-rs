@@ -107,8 +107,9 @@ impl MockIo {
     }
 }
 
+#[async_trait]
 impl Io for MockIo {
-    fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
+    async fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
         let height = match height {
             AtHeight::Highest => self.latest_height,
             AtHeight::At(height) => height,
@@ -168,7 +169,7 @@ pub fn verify_bisection(
     light_client: &mut LightClient,
     state: &mut State,
 ) -> Result<Vec<LightBlock>, Error> {
-    light_client
+    async_std::task::block_on(light_client
         .verify_to_target(untrusted_height, state)
-        .map(|_| state.get_trace(untrusted_height))
+    ).map(|_| state.get_trace(untrusted_height))
 }

@@ -9,6 +9,7 @@ use tendermint_rpc::Client;
 use tendermint_rpc as rpc;
 
 use crate::types::{Height, LightBlock};
+use async_trait::async_trait;
 
 #[cfg(feature = "tokio")]
 type TimeoutError = flex_error::DisplayOnly<tokio::time::error::Elapsed>;
@@ -76,16 +77,18 @@ impl IoErrorDetail {
 }
 
 /// Interface for fetching light blocks from a full node, typically via the RPC client.
+#[async_trait]
 pub trait Io: Send + Sync {
     /// Fetch a light block at the given height from a peer
-    fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError>;
+    async fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError>;
 }
 
+#[async_trait]
 impl<F: Send + Sync> Io for F
 where
     F: Fn(AtHeight) -> Result<LightBlock, IoError>,
 {
-    fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
+    async fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
         self(height)
     }
 }
@@ -116,8 +119,9 @@ mod prod {
         timeout: Option<Duration>,
     }
 
+    #[async_trait]
     impl Io for ProdIo {
-        fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
+        async fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
             let signed_header = self.fetch_signed_header(height)?;
             let height = signed_header.header.height;
             let proposer_address = signed_header.header.proposer_address;

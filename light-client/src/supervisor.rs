@@ -205,10 +205,10 @@ impl Supervisor {
 
         // Perform light client core verification for the given height (or highest).
         let verdict = match height {
-            None => primary.light_client.verify_to_highest(&mut primary.state),
+            None => primary.light_client.verify_to_highest(&mut primary.state).await,
             Some(height) => primary
                 .light_client
-                .verify_to_target(height, &mut primary.state),
+                .verify_to_target(height, &mut primary.state).await,
         };
 
         match verdict {
@@ -219,7 +219,7 @@ impl Supervisor {
                     .ok_or_else(|| Error::no_trusted_state(Status::Trusted))?;
 
                 // Perform fork detection with the highest verified block and the trusted block.
-                let outcome = self.detect_forks(&verified_block, &trusted_block)?;
+                let outcome = self.detect_forks(&verified_block, &trusted_block).await?;
 
                 match outcome {
                     // There was a fork or a faulty peer
@@ -304,7 +304,7 @@ impl Supervisor {
     }
 
     /// Perform fork detection with the given verified block and trusted block.
-    fn detect_forks(
+    async fn detect_forks(
         &self,
         verified_block: &LightBlock,
         trusted_block: &LightBlock,
@@ -321,7 +321,7 @@ impl Supervisor {
             .collect();
 
         self.fork_detector
-            .detect_forks(verified_block, trusted_block, witnesses)
+            .detect_forks(verified_block, trusted_block, witnesses).await
     }
 
     /// Run the supervisor event loop in the same thread.
@@ -452,7 +452,7 @@ mod tests {
         Commit, Generator, Header, LightBlock as TestgenLightBlock, LightChain, ValidatorSet,
     };
 
-    fn make_instance(
+    async fn make_instance(
         peer_id: PeerId,
         trust_options: TrustOptions,
         io: MockIo,
@@ -460,7 +460,7 @@ mod tests {
     ) -> Instance {
         let trusted_height = trust_options.height;
         let trusted_state = io
-            .fetch_light_block(AtHeight::At(trusted_height))
+            .fetch_light_block(AtHeight::At(trusted_height)).await
             .expect("could not 'request' light block");
 
         let mut light_store = MemoryStore::new();
@@ -511,7 +511,7 @@ mod tests {
         )
     }
 
-    fn make_peer_list(
+    async fn make_peer_list(
         primary: Option<Vec<LightBlock>>,
         witnesses: Option<Vec<Vec<LightBlock>>>,
         now: Time,
@@ -531,7 +531,7 @@ mod tests {
             );
 
             let primary_instance =
-                make_instance(primary[0].provider, trust_options.clone(), io, now);
+                make_instance(primary[0].provider, trust_options.clone(), io, now).await;
 
             peer_list.primary(primary[0].provider, primary_instance);
         }
@@ -543,7 +543,7 @@ mod tests {
                     provider[0].signed_header.header.chain_id.to_string(),
                     provider,
                 );
-                let instance = make_instance(peer_id, trust_options.clone(), io.clone(), now);
+                let instance = make_instance(peer_id, trust_options.clone(), io.clone(), now).await;
                 peer_list.witness(peer_id, instance);
             }
         }
@@ -602,7 +602,7 @@ mod tests {
 
         let witness = change_provider(primary.clone(), None);
 
-        let peer_list = make_peer_list(Some(primary.clone()), Some(vec![witness]), get_time(11));
+        let peer_list = async_std::task::block_on(make_peer_list(Some(primary.clone()), Some(vec![witness]), get_time(11)));
 
         let (result, _) = run_bisection_test(peer_list, 10);
 
@@ -621,7 +621,7 @@ mod tests {
             .map(|lb| lb.generate().unwrap().into())
             .collect::<Vec<LightBlock>>();
 
-        let peer_list = make_peer_list(Some(primary), None, get_time(11));
+        let peer_list = async_std::task::block_on(make_peer_list(Some(primary), None, get_time(11)));
 
         let (result, _) = run_bisection_test(peer_list, 10);
 
@@ -644,7 +644,7 @@ mod tests {
         light_blocks.truncate(9);
         let witness = change_provider(light_blocks, None);
 
-        let peer_list = make_peer_list(Some(primary), Some(vec![witness]), get_time(11));
+        let peer_list = async_std::task::block_on(make_peer_list(Some(primary), Some(vec![witness]), get_time(11)));
 
         let (result, _) = run_bisection_test(peer_list, 10);
 
@@ -673,7 +673,7 @@ mod tests {
 
         let witness = make_conflicting_witness(5, None, None, None);
 
-        let peer_list = make_peer_list(Some(primary), Some(vec![witness]), get_time(11));
+        let peer_list = async_std::task::block_on(make_peer_list(Some(primary), Some(vec![witness]), get_time(11)));
 
         let (result, _) = run_bisection_test(peer_list, 10);
 
@@ -724,7 +724,7 @@ mod tests {
             None,
         );
 
-        let peer_list = make_peer_list(Some(primary), Some(vec![witness]), get_time(11));
+        let peer_list = async_std::task::block_on(make_peer_list(Some(primary), Some(vec![witness]), get_time(11)));
 
         let (result, _) = run_bisection_test(peer_list, 5);
 
@@ -749,11 +749,11 @@ mod tests {
             Some("EDC0C0ADEADBEBA0BEFEDFADADEFC0FFEEFACADE"),
         );
 
-        let mut peer_list = make_peer_list(
+        let mut peer_list = async_std::task::block_on(make_peer_list(
             Some(primary.clone()),
             Some(vec![witness1.clone(), witness2]),
             get_time(11),
-        );
+        ));
         peer_list
             .get_mut(&primary[0].provider)
             .expect("cannot find instance")
@@ -794,7 +794,7 @@ mod tests {
         let witness = change_provider(primary.clone(), None);
 
         let peer_list =
-            make_peer_list(Some(primary.clone()), Some(vec![witness]), get_time(604801));
+            async_std::task::block_on(make_peer_list(Some(primary.clone()), Some(vec![witness]), get_time(604801)));
 
         let (_, latest_status) = run_bisection_test(peer_list, 2);
 
@@ -822,7 +822,7 @@ mod tests {
 
         let witness = change_provider(primary.clone(), None);
 
-        let peer_list = make_peer_list(Some(primary.clone()), Some(vec![witness]), get_time(11));
+        let peer_list = async_std::task::block_on(make_peer_list(Some(primary.clone()), Some(vec![witness]), get_time(11)));
 
         let (_, latest_status) = run_bisection_test(peer_list, 10);
 

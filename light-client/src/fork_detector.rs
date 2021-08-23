@@ -8,6 +8,7 @@ use crate::{
     supervisor::Instance,
     types::{LightBlock, PeerId, Status},
 };
+use async_trait::async_trait;
 
 /// Result of fork detection
 #[derive(Debug)]
@@ -35,10 +36,11 @@ pub enum Fork {
 }
 
 /// Interface for a fork detector
+#[async_trait]
 pub trait ForkDetector: Send + Sync {
     /// Detect forks using the given verified block, trusted block,
     /// and list of witnesses to verify the given light block against.
-    fn detect_forks(
+    async fn detect_forks(
         &self,
         verified_block: &LightBlock,
         trusted_block: &LightBlock,
@@ -75,9 +77,10 @@ impl Default for ProdForkDetector {
     }
 }
 
+#[async_trait]
 impl ForkDetector for ProdForkDetector {
     /// Perform fork detection. See the documentation `ProdForkDetector` for details.
-    fn detect_forks(
+    async fn detect_forks(
         &self,
         verified_block: &LightBlock,
         trusted_block: &LightBlock,
@@ -94,7 +97,7 @@ impl ForkDetector for ProdForkDetector {
 
             let (witness_block, _) = witness
                 .light_client
-                .get_or_fetch_block(verified_block.height(), &mut state)?;
+                .get_or_fetch_block(verified_block.height(), &mut state).await?;
 
             let witness_hash = self.hasher.hash_header(&witness_block.signed_header.header);
 
@@ -113,7 +116,7 @@ impl ForkDetector for ProdForkDetector {
 
             let result = witness
                 .light_client
-                .verify_to_target(verified_block.height(), &mut state);
+                .verify_to_target(verified_block.height(), &mut state).await;
 
             match result {
                 Ok(_) => forks.push(Fork::Forked {
