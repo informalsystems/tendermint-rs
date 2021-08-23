@@ -92,7 +92,10 @@ fn run_multipeer_test(tc: LightClientTest<LightBlock>) {
     // TODO: Add method to `Handle` to get a copy of the current peer list
 
     let handle = supervisor.handle();
-    std::thread::spawn(|| supervisor.run());
+    async_std::task::spawn(async move {
+        supervisor.run().await
+    });
+
 
     let target_height = tc.height_to_verify;
 

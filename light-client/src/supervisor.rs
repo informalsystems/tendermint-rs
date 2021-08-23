@@ -11,6 +11,7 @@ use crate::light_client::LightClient;
 use crate::peer_list::PeerList;
 use crate::state::State;
 use crate::types::{Height, LatestStatus, LightBlock, PeerId, Status};
+use async_recursion::async_recursion;
 
 /// Provides an interface to the supervisor for use in downstream code.
 pub trait Handle: Send + Sync {
@@ -169,8 +170,8 @@ impl Supervisor {
     }
 
     /// Verify to the highest block.
-    pub fn verify_to_highest(&mut self) -> Result<LightBlock, Error> {
-        self.verify(None)
+    pub async fn verify_to_highest(&mut self) -> Result<LightBlock, Error> {
+        self.verify(None).await
     }
 
     /// Return latest trusted status summary.
@@ -192,13 +193,14 @@ impl Supervisor {
     }
 
     /// Verify to the block at the given height.
-    pub fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error> {
-        self.verify(Some(height))
+    pub async fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error> {
+        self.verify(Some(height)).await
     }
 
     /// Verify either to the latest block (if `height == None`) or to a given block (if `height ==
     /// Some(height)`).
-    fn verify(&mut self, height: Option<Height>) -> Result<LightBlock, Error> {
+    #[async_recursion]
+    async fn verify(&mut self, height: Option<Height>) -> Result<LightBlock, Error> {
         let primary = self.peers.primary_mut();
 
         // Perform light client core verification for the given height (or highest).
@@ -222,14 +224,14 @@ impl Supervisor {
                 match outcome {
                     // There was a fork or a faulty peer
                     ForkDetection::Detected(forks) => {
-                        let forked = self.process_forks(forks)?;
+                        let forked = self.process_forks(forks).await?;
                         if !forked.is_empty() {
                             // Fork detected, exiting
                             return Err(Error::fork_detected(forked));
                         }
 
                         // If there were no hard forks, perform verification again
-                        self.verify(height)
+                        self.verify(height).await
                     }
                     ForkDetection::NotDetected => {
                         // We need to re-ask for the primary here as the compiler
@@ -248,12 +250,12 @@ impl Supervisor {
             Err(err) => {
                 // Swap primary, and continue with new primary, if there is any witness left.
                 self.peers.replace_faulty_primary(Some(err))?;
-                self.verify(height)
+                self.verify(height).await
             }
         }
     }
 
-    fn process_forks(&mut self, forks: Vec<Fork>) -> Result<Vec<PeerId>, Error> {
+    async fn process_forks(&mut self, forks: Vec<Fork>) -> Result<Vec<PeerId>, Error> {
         let mut forked = Vec::with_capacity(forks.len());
 
         for fork in forks {
@@ -262,7 +264,7 @@ impl Supervisor {
                 // TODO: also report to primary
                 Fork::Forked { primary, witness } => {
                     let provider = witness.provider;
-                    self.report_evidence(provider, &primary, &witness)?;
+                    self.report_evidence(provider, &primary, &witness).await?;
 
                     forked.push(provider);
                 }
@@ -283,7 +285,7 @@ impl Supervisor {
     }
 
     /// Report the given evidence of a fork.
-    fn report_evidence(
+    async fn report_evidence(
         &mut self,
         provider: PeerId,
         primary: &LightBlock,
@@ -295,7 +297,7 @@ impl Supervisor {
         );
 
         self.evidence_reporter
-            .report(Evidence::ConflictingHeaders(Box::new(evidence)), provider)
+            .report(Evidence::ConflictingHeaders(Box::new(evidence)), provider).await
             .map_err(Error::io)?;
 
         Ok(())
@@ -325,7 +327,7 @@ impl Supervisor {
     /// Run the supervisor event loop in the same thread.
     ///
     /// This method should typically be called within a new thread with `std::thread::spawn`.
-    pub fn run(mut self) -> Result<(), Error> {
+    pub async fn run(mut self) -> Result<(), Error> {
         loop {
             let event = self.receiver.recv().map_err(Error::recv)?;
 
@@ -339,11 +341,11 @@ impl Supervisor {
                     return Ok(());
                 }
                 HandleInput::VerifyToTarget(height, sender) => {
-                    let outcome = self.verify_to_target(height);
+                    let outcome = self.verify_to_target(height).await;
                     sender.send(outcome).map_err(Error::send)?;
                 }
                 HandleInput::VerifyToHighest(sender) => {
-                    let outcome = self.verify_to_highest();
+                    let outcome = self.verify_to_highest().await;
                     sender.send(outcome).map_err(Error::send)?;
                 }
                 HandleInput::GetStatus(sender) => {
@@ -497,7 +499,9 @@ mod tests {
         );
 
         let handle = supervisor.handle();
-        std::thread::spawn(|| supervisor.run());
+        async_std::task::spawn(async move {
+            supervisor.run().await
+        });
 
         let target_height = Height::try_from(height_to_verify).expect("Error while making height");
 

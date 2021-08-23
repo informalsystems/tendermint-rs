@@ -17,6 +17,7 @@ Cargo.lock
 
 # Proptest regressions dumps
 **/*.proptest-regressions
+.idea
 
 # Light Client WASM
 light-client-js/pkg/

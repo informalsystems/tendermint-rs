@@ -124,7 +124,10 @@ fn sync_cmd(opts: SyncOpts) -> Result<(), Box<dyn std::error::Error>> {
 
     let handle = supervisor.handle();
 
-    std::thread::spawn(|| supervisor.run());
+    async_std::task::spawn(async move {
+        supervisor.run().await
+    });
+
 
     loop {
         match handle.verify_to_highest() {

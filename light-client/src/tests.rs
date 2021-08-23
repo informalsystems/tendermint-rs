@@ -18,6 +18,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 use tendermint::block::Height as HeightStr;
 use tendermint::evidence::{Duration as DurationStr, Evidence};
+use async_trait::async_trait;
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct TestCases<LB> {
@@ -124,9 +125,10 @@ impl Io for MockIo {
 #[derive(Clone, Debug, Default)]
 pub struct MockEvidenceReporter;
 
+#[async_trait]
 #[contract_trait]
 impl EvidenceReporter for MockEvidenceReporter {
-    fn report(&self, _e: Evidence, _peer: PeerId) -> Result<Hash, IoError> {
+    async fn report(&self, _e: Evidence, _peer: PeerId) -> Result<Hash, IoError> {
         Ok(Hash::new([0; 32]))
     }
 }
