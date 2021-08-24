@@ -4,7 +4,7 @@ use std::time::Duration;
 use tendermint_light_client::{
     components::{
         io::{AtHeight, Io},
-        scheduler,
+        scheduler::BasicBisectingScheduler,
         verifier::ProdVerifier,
     },
     errors::Error,
@@ -59,18 +59,18 @@ fn run_test(tc: LightClientTest<LightBlock>) -> BisectionTestResult {
     light_store.insert(trusted_state, Status::Trusted);
 
     let mut state = State {
-        light_store: Box::new(light_store),
+        light_store: light_store,
         verification_trace: HashMap::new(),
     };
 
     let verifier = ProdVerifier::default();
     let hasher = ProdHasher::default();
 
-    let mut light_client = LightClient::new(
+    let mut light_client = <LightClient<TestComponents>>::new(
         primary,
         options,
         clock,
-        scheduler::basic_bisecting_schedule,
+        BasicBisectingScheduler,
         verifier,
         hasher,
         io.clone(),

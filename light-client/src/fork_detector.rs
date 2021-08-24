@@ -1,10 +1,11 @@
 //! Fork detection data structures and implementation.
 
+use crate::light_client::LightClientComponents;
 use crate::{
     errors::{Error, ErrorDetail, ErrorExt},
     operations::{Hasher, ProdHasher},
     state::State,
-    store::memory::MemoryStore,
+    store::{memory::MemoryStore, LightStore},
     supervisor::Instance,
     types::{LightBlock, PeerId, Status},
 };
@@ -35,14 +36,14 @@ pub enum Fork {
 }
 
 /// Interface for a fork detector
-pub trait ForkDetector: Send + Sync {
+pub trait ForkDetector {
     /// Detect forks using the given verified block, trusted block,
     /// and list of witnesses to verify the given light block against.
-    fn detect_forks(
+    fn detect_forks<C: LightClientComponents>(
         &self,
         verified_block: &LightBlock,
         trusted_block: &LightBlock,
-        witnesses: Vec<&Instance>,
+        witnesses: Vec<&Instance<C>>,
     ) -> Result<ForkDetection, Error>;
 }
 
@@ -56,32 +57,30 @@ pub trait ForkDetector: Send + Sync {
 /// - If the verification succeeds, we have a real fork
 /// - If verification fails because of lack of trust, we have a potential fork.
 /// - If verification fails for any other reason, the witness is deemed faulty.
-pub struct ProdForkDetector {
-    hasher: Box<dyn Hasher>,
+pub struct ProdForkDetector<H: Hasher> {
+    hasher: H,
 }
 
-impl ProdForkDetector {
+impl<H: Hasher> ProdForkDetector<H> {
     /// Construct a new fork detector that will use the given header hasher.
-    pub fn new(hasher: impl Hasher + 'static) -> Self {
-        Self {
-            hasher: Box::new(hasher),
-        }
+    pub fn new(hasher: H) -> Self {
+        Self { hasher }
     }
 }
 
-impl Default for ProdForkDetector {
+impl Default for ProdForkDetector<ProdHasher> {
     fn default() -> Self {
         Self::new(ProdHasher)
     }
 }
 
-impl ForkDetector for ProdForkDetector {
+impl<H: Hasher> ForkDetector for ProdForkDetector<H> {
     /// Perform fork detection. See the documentation `ProdForkDetector` for details.
-    fn detect_forks(
+    fn detect_forks<C: LightClientComponents>(
         &self,
         verified_block: &LightBlock,
         trusted_block: &LightBlock,
-        witnesses: Vec<&Instance>,
+        witnesses: Vec<&Instance<C>>,
     ) -> Result<ForkDetection, Error> {
         let primary_hash = self
             .hasher

@@ -7,9 +7,10 @@ use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
 use crate::errors::Error;
 use crate::evidence::EvidenceReporter;
 use crate::fork_detector::{Fork, ForkDetection, ForkDetector};
-use crate::light_client::LightClient;
+use crate::light_client::{LightClient, LightClientComponents};
 use crate::peer_list::PeerList;
 use crate::state::State;
+use crate::store::LightStore;
 use crate::types::{Height, LatestStatus, LightBlock, PeerId, Status};
 
 /// Provides an interface to the supervisor for use in downstream code.
@@ -52,17 +53,17 @@ enum HandleInput {
 
 /// A light client `Instance` packages a `LightClient` together with its `State`.
 #[derive(Debug)]
-pub struct Instance {
+pub struct Instance<C: LightClientComponents> {
     /// The light client for this instance
-    pub light_client: LightClient,
+    pub light_client: LightClient<C>,
 
     /// The state of the light client for this instance
-    pub state: State,
+    pub state: State<C::LightStore>,
 }
 
-impl Instance {
+impl<C: LightClientComponents> Instance<C> {
     /// Constructs a new instance from the given light client and its state.
-    pub fn new(light_client: LightClient, state: State) -> Self {
+    pub fn new(light_client: LightClient<C>, state: State<C::LightStore>) -> Self {
         Self {
             light_client,
             state,
@@ -78,6 +79,11 @@ impl Instance {
     pub fn trust_block(&mut self, lb: &LightBlock) {
         self.state.light_store.update(lb, Status::Trusted);
     }
+}
+
+pub trait SupervisorComponents: LightClientComponents {
+    type ForkDetector: ForkDetector;
+    type EvidenceReporter: EvidenceReporter;
 }
 
 /// The supervisor manages multiple light client instances, of which one
@@ -116,20 +122,20 @@ impl Instance {
 ///     std::thread::sleep(Duration::from_millis(800));
 /// }
 /// ```
-pub struct Supervisor {
+pub struct Supervisor<C: SupervisorComponents> {
     /// List of peers and their instances (primary, witnesses, full and faulty nodes)
-    peers: PeerList<Instance>,
+    peers: PeerList<Instance<C>>,
     /// An instance of the fork detector
-    fork_detector: Box<dyn ForkDetector>,
+    fork_detector: C::ForkDetector,
     /// Reporter of fork evidence
-    evidence_reporter: Box<dyn EvidenceReporter>,
+    evidence_reporter: C::EvidenceReporter,
     /// Channel through which to reply to `Handle`s
     sender: channel::Sender<HandleInput>,
     /// Channel through which to receive events from the `Handle`s
     receiver: channel::Receiver<HandleInput>,
 }
 
-impl std::fmt::Debug for Supervisor {
+impl<C: SupervisorComponents> std::fmt::Debug for Supervisor<C> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Supervisor")
             .field("peers", &self.peers)
@@ -137,15 +143,12 @@ impl std::fmt::Debug for Supervisor {
     }
 }
 
-// Ensure the `Supervisor` can be sent across thread boundaries.
-static_assertions::assert_impl_all!(Supervisor: Send);
-
-impl Supervisor {
+impl<C: SupervisorComponents> Supervisor<C> {
     /// Constructs a new supervisor from the given list of peers and fork detector instance.
     pub fn new(
-        peers: PeerList<Instance>,
-        fork_detector: impl ForkDetector + 'static,
-        evidence_reporter: impl EvidenceReporter + 'static,
+        peers: PeerList<Instance<C>>,
+        fork_detector: C::ForkDetector,
+        evidence_reporter: C::EvidenceReporter,
     ) -> Self {
         let (sender, receiver) = channel::unbounded::<HandleInput>();
 
@@ -153,8 +156,8 @@ impl Supervisor {
             peers,
             sender,
             receiver,
-            fork_detector: Box::new(fork_detector),
-            evidence_reporter: Box::new(evidence_reporter),
+            fork_detector,
+            evidence_reporter,
         }
     }
 
@@ -429,11 +432,12 @@ mod tests {
     use crate::{
         components::{
             io::{self, AtHeight, Io},
-            scheduler,
+            scheduler::BasicBisectingScheduler,
             verifier::ProdVerifier,
         },
         fork_detector::ProdForkDetector,
         store::{memory::MemoryStore, LightStore},
+        tests::TestComponents,
         tests::{MockClock, MockEvidenceReporter, MockIo, TrustOptions},
         types::Time,
     };
@@ -455,7 +459,7 @@ mod tests {
         trust_options: TrustOptions,
         io: MockIo,
         now: Time,
-    ) -> Instance {
+    ) -> Instance<TestComponents> {
         let trusted_height = trust_options.height;
         let trusted_state = io
             .fetch_light_block(AtHeight::At(trusted_height))
@@ -465,7 +469,7 @@ mod tests {
         light_store.insert(trusted_state, Status::Trusted);
 
         let state = State {
-            light_store: Box::new(light_store),
+            light_store,
             verification_trace: HashMap::new(),
         };
 
@@ -477,7 +481,7 @@ mod tests {
 
         let verifier = ProdVerifier::default();
         let clock = MockClock { now };
-        let scheduler = scheduler::basic_bisecting_schedule;
+        let scheduler = BasicBisectingScheduler;
         let hasher = ProdHasher::default();
 
         let light_client =
@@ -487,7 +491,7 @@ mod tests {
     }
 
     fn run_bisection_test(
-        peer_list: PeerList<Instance>,
+        peer_list: PeerList<Instance<TestComponents>>,
         height_to_verify: u64,
     ) -> (Result<LightBlock, Error>, LatestStatus) {
         let supervisor = Supervisor::new(
@@ -511,7 +515,7 @@ mod tests {
         primary: Option<Vec<LightBlock>>,
         witnesses: Option<Vec<Vec<LightBlock>>>,
         now: Time,
-    ) -> PeerList<Instance> {
+    ) -> PeerList<Instance<TestComponents>> {
         let trust_options = TrustOptions {
             period: DurationStr(Duration::new(604800, 0)),
             height: Height::try_from(1_u64).expect("Error while making height"),

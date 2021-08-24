@@ -8,6 +8,7 @@ use contracts::*;
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
 
+use crate::store::LightStore;
 use crate::{
     components::{clock::Clock, io::*, scheduler::*, verifier::*},
     contracts::*,
@@ -37,6 +38,15 @@ pub struct Options {
     pub clock_drift: Duration,
 }
 
+pub trait LightClientComponents: Sized + fmt::Debug {
+    type Clock: Clock;
+    type Scheduler: Scheduler;
+    type Verifier: Verifier;
+    type Io: Io;
+    type Hasher: Hasher;
+    type LightStore: LightStore;
+}
+
 /// The light client implements a read operation of a header from the blockchain,
 /// by communicating with full nodes. As full nodes may be faulty, it cannot trust
 /// the received information, but the light client has to check whether the header
@@ -47,23 +57,23 @@ pub struct Options {
 /// of the header, more than two-thirds of the next validators of a new block are
 /// correct for the duration of the trusted period.  The fault-tolerant read operation
 /// is designed for this security model.
-pub struct LightClient {
+pub struct LightClient<C: LightClientComponents> {
     /// The peer id of the peer this client is connected to
     pub peer: PeerId,
     /// Options for this light client
     pub options: Options,
 
-    clock: Box<dyn Clock>,
-    scheduler: Box<dyn Scheduler>,
-    verifier: Box<dyn Verifier>,
-    io: Box<dyn Io>,
+    clock: C::Clock,
+    scheduler: C::Scheduler,
+    verifier: C::Verifier,
+    io: C::Io,
 
     // Only used in verify_backwards when "unstable" feature is enabled
     #[allow(dead_code)]
-    hasher: Box<dyn Hasher>,
+    hasher: C::Hasher,
 }
 
-impl fmt::Debug for LightClient {
+impl<C: LightClientComponents> fmt::Debug for LightClient<C> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("LightClient")
             .field("peer", &self.peer)
@@ -72,37 +82,16 @@ impl fmt::Debug for LightClient {
     }
 }
 
-impl LightClient {
+impl<C: LightClientComponents> LightClient<C> {
     /// Constructs a new light client
     pub fn new(
         peer: PeerId,
         options: Options,
-        clock: impl Clock + 'static,
-        scheduler: impl Scheduler + 'static,
-        verifier: impl Verifier + 'static,
-        hasher: impl Hasher + 'static,
-        io: impl Io + 'static,
-    ) -> Self {
-        Self {
-            peer,
-            options,
-            clock: Box::new(clock),
-            scheduler: Box::new(scheduler),
-            verifier: Box::new(verifier),
-            hasher: Box::new(hasher),
-            io: Box::new(io),
-        }
-    }
-
-    /// Constructs a new light client from boxed components
-    pub fn from_boxed(
-        peer: PeerId,
-        options: Options,
-        clock: Box<dyn Clock>,
-        scheduler: Box<dyn Scheduler>,
-        verifier: Box<dyn Verifier>,
-        hasher: Box<dyn Hasher>,
-        io: Box<dyn Io>,
+        clock: C::Clock,
+        scheduler: C::Scheduler,
+        verifier: C::Verifier,
+        hasher: C::Hasher,
+        io: C::Io,
     ) -> Self {
         Self {
             peer,
@@ -110,15 +99,18 @@ impl LightClient {
             clock,
             scheduler,
             verifier,
-            io,
             hasher,
+            io,
         }
     }
 
     /// Attempt to update the light client to the highest block of the primary node.
     ///
     /// Note: This function delegates the actual work to `verify_to_target`.
-    pub fn verify_to_highest(&mut self, state: &mut State) -> Result<LightBlock, Error> {
+    pub fn verify_to_highest(
+        &mut self,
+        state: &mut State<C::LightStore>,
+    ) -> Result<LightBlock, Error> {
         let target_block = self
             .io
             .fetch_light_block(AtHeight::Highest)
@@ -159,14 +151,14 @@ impl LightClient {
     /// - If the fetching a light block from the primary node fails
     #[post(
         ret.is_ok() ==> trusted_store_contains_block_at_target_height(
-            state.light_store.as_ref(),
+            &state.light_store,
             target_height,
         )
     )]
-    pub fn verify_to_target(
+    pub fn verify_to_target<S: LightStore>(
         &self,
         target_height: Height,
-        state: &mut State,
+        state: &mut State<S>,
     ) -> Result<LightBlock, Error> {
         // Let's first look in the store to see whether
         // we have already successfully verified this block.
@@ -190,10 +182,10 @@ impl LightClient {
     }
 
     /// Perform forward verification with bisection.
-    fn verify_forward(
+    fn verify_forward<S: LightStore>(
         &self,
         target_height: Height,
-        state: &mut State,
+        state: &mut State<S>,
     ) -> Result<LightBlock, Error> {
         let mut current_height = target_height;
 
@@ -266,17 +258,17 @@ impl LightClient {
             // Compute the next height to fetch and verify
             current_height =
                 self.scheduler
-                    .schedule(state.light_store.as_ref(), current_height, target_height);
+                    .schedule(&state.light_store, current_height, target_height);
         }
     }
 
     /// Stub for when "unstable" feature is disabled.
     #[doc(hidden)]
     #[cfg(not(feature = "unstable"))]
-    fn verify_backward(
+    fn verify_backward<S: LightStore>(
         &self,
         target_height: Height,
-        state: &mut State,
+        state: &mut State<S>,
     ) -> Result<LightBlock, Error> {
         let trusted_state = state
             .light_store
@@ -308,10 +300,10 @@ impl LightClient {
     /// height is lower than the highest trusted state will result in a
     /// `TargetLowerThanTrustedState` error.
     #[cfg(feature = "unstable")]
-    fn verify_backward(
+    fn verify_backward<S: LightStore>(
         &self,
         target_height: Height,
-        state: &mut State,
+        state: &mut State<S>,
     ) -> Result<LightBlock, Error> {
         use std::convert::TryFrom;
 
@@ -380,10 +372,10 @@ impl LightClient {
     /// ## Postcondition
     /// - The provider of block that is returned matches the given peer.
     #[post(ret.as_ref().map(|(lb, _)| lb.provider == self.peer).unwrap_or(true))]
-    pub fn get_or_fetch_block(
+    pub fn get_or_fetch_block<S: LightStore>(
         &self,
         height: Height,
-        state: &mut State,
+        state: &mut State<S>,
     ) -> Result<(LightBlock, Status), Error> {
         let block = state.light_store.get_non_failed(height);
 

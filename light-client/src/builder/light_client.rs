@@ -1,25 +1,30 @@
 //! DSL for building a light client [`Instance`]
 
+use core::marker::PhantomData;
 use tendermint::{block::Height, Hash};
 
 use crate::builder::error::Error;
 use crate::components::clock::Clock;
 use crate::components::io::{AtHeight, Io};
-use crate::components::scheduler::Scheduler;
-use crate::components::verifier::Verifier;
-use crate::light_client::{LightClient, Options};
+use crate::evidence::ProdEvidenceReporter;
+use crate::fork_detector::ProdForkDetector;
+use crate::light_client::{LightClient, LightClientComponents, Options};
 use crate::operations::Hasher;
 use crate::predicates::VerificationPredicates;
 use crate::state::{State, VerificationTrace};
 use crate::store::LightStore;
-use crate::supervisor::Instance;
+use crate::supervisor::{Instance, SupervisorComponents};
 use crate::types::{LightBlock, PeerId, Status};
 
 #[cfg(feature = "rpc-client")]
 use {
-    crate::components::clock::SystemClock, crate::components::io::ProdIo,
-    crate::components::scheduler, crate::components::verifier::ProdVerifier,
-    crate::operations::ProdHasher, crate::predicates::ProdPredicates, std::time::Duration,
+    crate::components::clock::SystemClock,
+    crate::components::io::ProdIo,
+    crate::components::scheduler::BasicBisectingScheduler,
+    crate::components::verifier::{ProdVerifier, ProdVerifierComponents},
+    crate::operations::ProdHasher,
+    crate::predicates::ProdPredicates,
+    std::time::Duration,
     tendermint_rpc as rpc,
 };
 
@@ -29,26 +34,65 @@ pub struct NoTrustedState;
 /// A trusted state has been set and validated
 pub struct HasTrustedState;
 
+// pub trait LightClientBuilder {
+//     type Io: Io;
+//     type Clock: Clock;
+//     type Hasher: Hasher;
+//     type Verifier: Verifier;
+//     type Scheduler: Scheduler;
+//     type VerificationPredicates: VerificationPredicates;
+//     type LightStore: LightStore;
+// }
+
+// pub trait LightClientBuilderWithTrustedState: LightClientBuilder {
+
+// }
+
+pub trait LightClientBuilderComponents: LightClientComponents {
+    type VerificationPredicates: VerificationPredicates;
+}
+
+#[derive(Debug)]
+pub struct ProdLightClientComponents<S: LightStore>(PhantomData<S>);
+
+impl<S: LightStore> LightClientComponents for ProdLightClientComponents<S> {
+    type Clock = SystemClock;
+    type Scheduler = BasicBisectingScheduler;
+    type Verifier = ProdVerifier<ProdVerifierComponents>;
+    type Io = ProdIo;
+    type Hasher = ProdHasher;
+    type LightStore = S;
+}
+
+impl<S: LightStore> LightClientBuilderComponents for ProdLightClientComponents<S> {
+    type VerificationPredicates = ProdPredicates;
+}
+
+impl<S: LightStore> SupervisorComponents for ProdLightClientComponents<S> {
+    type ForkDetector = ProdForkDetector<ProdHasher>;
+    type EvidenceReporter = ProdEvidenceReporter;
+}
+
 /// Builder for a light client [`Instance`]
 #[must_use]
-pub struct LightClientBuilder<State> {
+pub struct LightClientBuilder<C: LightClientBuilderComponents, State> {
     peer_id: PeerId,
     options: Options,
-    io: Box<dyn Io>,
-    clock: Box<dyn Clock>,
-    hasher: Box<dyn Hasher>,
-    verifier: Box<dyn Verifier>,
-    scheduler: Box<dyn Scheduler>,
-    predicates: Box<dyn VerificationPredicates>,
-    light_store: Box<dyn LightStore>,
+    io: C::Io,
+    clock: C::Clock,
+    hasher: C::Hasher,
+    verifier: C::Verifier,
+    scheduler: C::Scheduler,
+    predicates: C::VerificationPredicates,
+    light_store: C::LightStore,
 
     #[allow(dead_code)]
     state: State,
 }
 
-impl<Current> LightClientBuilder<Current> {
+impl<C: LightClientBuilderComponents, Current> LightClientBuilder<C, Current> {
     /// Private method to move from one state to another
-    fn with_state<Next>(self, state: Next) -> LightClientBuilder<Next> {
+    fn with_state<Next>(self, state: Next) -> LightClientBuilder<C, Next> {
         LightClientBuilder {
             peer_id: self.peer_id,
             options: self.options,
@@ -64,13 +108,13 @@ impl<Current> LightClientBuilder<Current> {
     }
 }
 
-impl LightClientBuilder<NoTrustedState> {
+impl<S: LightStore> LightClientBuilder<ProdLightClientComponents<S>, NoTrustedState> {
     /// Initialize a builder for a production (non-mock) light client.
     #[cfg(feature = "rpc-client")]
     pub fn prod(
         peer_id: PeerId,
         rpc_client: rpc::HttpClient,
-        light_store: Box<dyn LightStore>,
+        light_store: S,
         options: Options,
         timeout: Option<Duration>,
     ) -> Self {
@@ -78,27 +122,29 @@ impl LightClientBuilder<NoTrustedState> {
             peer_id,
             options,
             light_store,
-            Box::new(ProdIo::new(peer_id, rpc_client, timeout)),
-            Box::new(ProdHasher),
-            Box::new(SystemClock),
-            Box::new(ProdVerifier::default()),
-            Box::new(scheduler::basic_bisecting_schedule),
-            Box::new(ProdPredicates),
+            ProdIo::new(peer_id, rpc_client, timeout),
+            ProdHasher,
+            SystemClock,
+            ProdVerifier::default(),
+            BasicBisectingScheduler,
+            ProdPredicates,
         )
     }
+}
 
+impl<C: LightClientBuilderComponents> LightClientBuilder<C, NoTrustedState> {
     /// Initialize a builder for a custom light client, by providing all dependencies upfront.
     #[allow(clippy::too_many_arguments)]
     pub fn custom(
         peer_id: PeerId,
         options: Options,
-        light_store: Box<dyn LightStore>,
-        io: Box<dyn Io>,
-        hasher: Box<dyn Hasher>,
-        clock: Box<dyn Clock>,
-        verifier: Box<dyn Verifier>,
-        scheduler: Box<dyn Scheduler>,
-        predicates: Box<dyn VerificationPredicates>,
+        light_store: C::LightStore,
+        io: C::Io,
+        hasher: C::Hasher,
+        clock: C::Clock,
+        verifier: C::Verifier,
+        scheduler: C::Scheduler,
+        predicates: C::VerificationPredicates,
     ) -> Self {
         Self {
             peer_id,
@@ -118,7 +164,7 @@ impl LightClientBuilder<NoTrustedState> {
     fn trust_light_block(
         mut self,
         trusted_state: LightBlock,
-    ) -> Result<LightClientBuilder<HasTrustedState>, Error> {
+    ) -> Result<LightClientBuilder<C, HasTrustedState>, Error> {
         self.validate(&trusted_state)?;
 
         // TODO(liamsi, romac): it is unclear if this should be Trusted or only Verified
@@ -129,7 +175,7 @@ impl LightClientBuilder<NoTrustedState> {
 
     /// Keep using the latest verified or trusted block in the light store.
     /// Such a block must exists otherwise this will fail.
-    pub fn trust_from_store(self) -> Result<LightClientBuilder<HasTrustedState>, Error> {
+    pub fn trust_from_store(self) -> Result<LightClientBuilder<C, HasTrustedState>, Error> {
         let trusted_state = self
             .light_store
             .highest_trusted_or_verified()
@@ -143,7 +189,7 @@ impl LightClientBuilder<NoTrustedState> {
         self,
         trusted_height: Height,
         trusted_hash: Hash,
-    ) -> Result<LightClientBuilder<HasTrustedState>, Error> {
+    ) -> Result<LightClientBuilder<C, HasTrustedState>, Error> {
         let trusted_state = self
             .io
             .fetch_light_block(AtHeight::At(trusted_height))
@@ -178,27 +224,27 @@ impl LightClientBuilder<NoTrustedState> {
             .map_err(Error::invalid_light_block)?;
 
         self.predicates
-            .validator_sets_match(light_block, &*self.hasher)
+            .validator_sets_match(light_block, &self.hasher)
             .map_err(Error::invalid_light_block)?;
 
         self.predicates
-            .next_validators_match(light_block, &*self.hasher)
+            .next_validators_match(light_block, &self.hasher)
             .map_err(Error::invalid_light_block)?;
 
         Ok(())
     }
 }
 
-impl LightClientBuilder<HasTrustedState> {
+impl<C: LightClientBuilderComponents> LightClientBuilder<C, HasTrustedState> {
     /// Build the light client [`Instance`].
     #[must_use]
-    pub fn build(self) -> Instance {
+    pub fn build(self) -> Instance<C> {
         let state = State {
             light_store: self.light_store,
             verification_trace: VerificationTrace::new(),
         };
 
-        let light_client = LightClient::from_boxed(
+        let light_client = LightClient::new(
             self.peer_id,
             self.options,
             self.clock,

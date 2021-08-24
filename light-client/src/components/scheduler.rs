@@ -24,24 +24,23 @@ pub trait Scheduler: Send + Sync {
     #[post(valid_schedule(ret, target_height, current_height, light_store))]
     fn schedule(
         &self,
-        light_store: &dyn LightStore,
+        light_store: &impl LightStore,
         current_height: Height,
         target_height: Height,
     ) -> Height;
 }
 
+pub struct BasicBisectingScheduler;
+
 #[contract_trait]
-impl<F: Send + Sync> Scheduler for F
-where
-    F: Fn(&dyn LightStore, Height, Height) -> Height,
-{
+impl Scheduler for BasicBisectingScheduler {
     fn schedule(
         &self,
-        light_store: &dyn LightStore,
+        light_store: &impl LightStore,
         current_height: Height,
         target_height: Height,
     ) -> Height {
-        self(light_store, current_height, target_height)
+        basic_bisecting_schedule(light_store, current_height, target_height)
     }
 }
 
@@ -56,7 +55,7 @@ where
 #[pre(light_store.highest_trusted_or_verified().is_some())]
 #[post(valid_schedule(ret, target_height, current_height, light_store))]
 pub fn basic_bisecting_schedule(
-    light_store: &dyn LightStore,
+    light_store: &impl LightStore,
     current_height: Height,
     target_height: Height,
 ) -> Height {
@@ -102,7 +101,7 @@ pub fn valid_schedule(
     scheduled_height: Height,
     target_height: Height,
     current_height: Height,
-    light_store: &dyn LightStore,
+    light_store: &impl LightStore,
 ) -> bool {
     let latest_trusted_height = light_store
         .highest_trusted_or_verified()

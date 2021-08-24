@@ -8,11 +8,16 @@ use tendermint_rpc as rpc;
 
 use crate::components::clock::Clock;
 use crate::components::io::{AtHeight, Io, IoError};
-use crate::components::verifier::{ProdVerifier, Verdict, Verifier};
+use crate::components::scheduler::BasicBisectingScheduler;
+use crate::components::verifier::{ProdVerifier, ProdVerifierComponents, Verdict, Verifier};
 use crate::errors::Error;
 use crate::evidence::EvidenceReporter;
-use crate::light_client::{LightClient, Options};
+use crate::fork_detector::ProdForkDetector;
+use crate::light_client::{LightClient, LightClientComponents, Options};
+use crate::operations::ProdHasher;
 use crate::state::State;
+use crate::store::memory::MemoryStore;
+use crate::supervisor::SupervisorComponents;
 use contracts::contract_trait;
 use std::collections::HashMap;
 use std::time::Duration;
@@ -137,6 +142,23 @@ impl MockEvidenceReporter {
     }
 }
 
+#[derive(Debug)]
+pub struct TestComponents;
+
+impl LightClientComponents for TestComponents {
+    type Clock = MockClock;
+    type Scheduler = BasicBisectingScheduler;
+    type Verifier = ProdVerifier<ProdVerifierComponents>;
+    type Io = MockIo;
+    type Hasher = ProdHasher;
+    type LightStore = MemoryStore;
+}
+
+impl SupervisorComponents for TestComponents {
+    type ForkDetector = ProdForkDetector<ProdHasher>;
+    type EvidenceReporter = MockEvidenceReporter;
+}
+
 pub fn verify_single(
     trusted_state: LightBlock,
     input: LightBlock,
@@ -161,10 +183,10 @@ pub fn verify_single(
     }
 }
 
-pub fn verify_bisection(
+pub fn verify_bisection<C: LightClientComponents>(
     untrusted_height: Height,
-    light_client: &mut LightClient,
-    state: &mut State,
+    light_client: &mut LightClient<C>,
+    state: &mut State<C::LightStore>,
 ) -> Result<Vec<LightBlock>, Error> {
     light_client
         .verify_to_target(untrusted_height, state)

@@ -29,7 +29,7 @@ pub trait VerificationPredicates: Send + Sync {
     fn validator_sets_match(
         &self,
         light_block: &LightBlock,
-        hasher: &dyn Hasher,
+        hasher: &impl Hasher,
     ) -> Result<(), VerificationError> {
         let validators_hash = hasher.hash_validator_set(&light_block.validators);
 
@@ -47,7 +47,7 @@ pub trait VerificationPredicates: Send + Sync {
     fn next_validators_match(
         &self,
         light_block: &LightBlock,
-        hasher: &dyn Hasher,
+        hasher: &impl Hasher,
     ) -> Result<(), VerificationError> {
         let next_validators_hash = hasher.hash_validator_set(&light_block.next_validators);
 
@@ -65,7 +65,7 @@ pub trait VerificationPredicates: Send + Sync {
     fn header_matches_commit(
         &self,
         signed_header: &SignedHeader,
-        hasher: &dyn Hasher,
+        hasher: &impl Hasher,
     ) -> Result<(), VerificationError> {
         let header_hash = hasher.hash_header(&signed_header.header);
 
@@ -84,7 +84,7 @@ pub trait VerificationPredicates: Send + Sync {
         &self,
         signed_header: &SignedHeader,
         validators: &ValidatorSet,
-        commit_validator: &dyn CommitValidator,
+        commit_validator: &impl CommitValidator,
     ) -> Result<(), VerificationError> {
         commit_validator.validate(signed_header, validators)?;
         commit_validator.validate_full(signed_header, validators)?;
@@ -217,10 +217,10 @@ pub trait VerificationPredicates: Send + Sync {
 /// the trusted block.
 #[allow(clippy::too_many_arguments)]
 pub fn verify(
-    vp: &dyn VerificationPredicates,
-    voting_power_calculator: &dyn VotingPowerCalculator,
-    commit_validator: &dyn CommitValidator,
-    hasher: &dyn Hasher,
+    vp: &impl VerificationPredicates,
+    voting_power_calculator: &impl VotingPowerCalculator,
+    commit_validator: &impl CommitValidator,
+    hasher: &impl Hasher,
     trusted: &LightBlock,
     untrusted: &LightBlock,
     options: &Options,
