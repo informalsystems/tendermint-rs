@@ -219,8 +219,9 @@ impl<T> PeerListBuilder<T> {
     ///
     /// ## Precondition
     /// - A primary has been set with a call to `PeerListBuilder::primary`.
+
+    // #[post(PeerList::invariant(&ret))]
     #[pre(self.primary.is_some())]
-    #[post(PeerList::invariant(&ret))]
     pub fn build(self) -> PeerList<T> {
         PeerList {
             values: self.values,
