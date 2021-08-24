@@ -195,7 +195,7 @@ impl<T> PeerListBuilder<T> {
     }
 
     /// Register the given peer id and value as a witness.
-    #[pre(self.primary != Some(peer_id))]
+    // #[pre(self.primary != Some(peer_id))]
     pub fn witness(&mut self, peer_id: PeerId, value: T) {
         self.values.insert(peer_id, value);
         self.witnesses.insert(peer_id);
