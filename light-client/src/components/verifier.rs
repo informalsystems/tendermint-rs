@@ -6,15 +6,11 @@ use crate::{
     errors::ErrorExt,
     light_client::Options,
     operations::{
-        CommitValidator, Hasher, ProdCommitValidator, ProdHasher, ProdVotingPowerCalculator,
-        VotingPowerCalculator,
+        CommitValidator, ProdCommitValidator, ProdVotingPowerCalculator, VotingPowerCalculator,
     },
     types::{LightBlock, Time},
 };
-use preds::{
-    errors::{VerificationError, VerificationErrorDetail},
-    ProdPredicates, VerificationPredicates,
-};
+use preds::errors::{VerificationError, VerificationErrorDetail};
 use serde::{Deserialize, Serialize};
 
 /// Represents the result of the verification performed by the
@@ -62,6 +58,9 @@ pub trait Verifier: Send + Sync {
     ) -> Verdict;
 }
 
+/// Production implementation of [`Verifier`].
+pub type ProdVerifier = VerifierImpl<ProdVotingPowerCalculator, ProdCommitValidator>;
+
 /// Production implementation of the verifier.
 ///
 /// For testing purposes, this implementation is parametrized by:
@@ -71,26 +70,21 @@ pub trait Verifier: Send + Sync {
 /// - A header hasher
 ///
 /// For regular use, one can construct a standard implementation with `ProdVerifier::default()`.
-pub struct ProdVerifier {
-    predicates: Box<dyn VerificationPredicates>,
-    voting_power_calculator: Box<dyn VotingPowerCalculator>,
-    commit_validator: Box<dyn CommitValidator>,
-    hasher: Box<dyn Hasher>,
+pub struct VerifierImpl<C, V> {
+    voting_power_calculator: C,
+    commit_validator: V,
 }
 
-impl ProdVerifier {
+impl<C, V> VerifierImpl<C, V>
+where
+    C: VotingPowerCalculator,
+    V: CommitValidator,
+{
     /// Constructs a new instance of this struct
-    pub fn new(
-        predicates: impl VerificationPredicates + 'static,
-        voting_power_calculator: impl VotingPowerCalculator + 'static,
-        commit_validator: impl CommitValidator + 'static,
-        hasher: impl Hasher + 'static,
-    ) -> Self {
+    pub fn new(voting_power_calculator: C, commit_validator: V) -> Self {
         Self {
-            predicates: Box::new(predicates),
-            voting_power_calculator: Box::new(voting_power_calculator),
-            commit_validator: Box::new(commit_validator),
-            hasher: Box::new(hasher),
+            voting_power_calculator,
+            commit_validator,
         }
     }
 }
@@ -98,15 +92,17 @@ impl ProdVerifier {
 impl Default for ProdVerifier {
     fn default() -> Self {
         Self::new(
-            ProdPredicates::default(),
             ProdVotingPowerCalculator::default(),
             ProdCommitValidator::default(),
-            ProdHasher::default(),
         )
     }
 }
 
-impl Verifier for ProdVerifier {
+impl<C, V> Verifier for VerifierImpl<C, V>
+where
+    C: VotingPowerCalculator,
+    V: CommitValidator,
+{
     fn verify(
         &self,
         untrusted: &LightBlock,
@@ -115,10 +111,8 @@ impl Verifier for ProdVerifier {
         now: Time,
     ) -> Verdict {
         preds::verify(
-            &*self.predicates,
-            &*self.voting_power_calculator,
-            &*self.commit_validator,
-            &*self.hasher,
+            &self.voting_power_calculator,
+            &self.commit_validator,
             trusted,
             untrusted,
             options,

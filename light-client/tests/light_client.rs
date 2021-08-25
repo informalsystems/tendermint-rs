@@ -4,12 +4,11 @@ use std::time::Duration;
 use tendermint_light_client::{
     components::{
         io::{AtHeight, Io},
-        scheduler,
+        scheduler::BasicBisectingScheduler,
         verifier::ProdVerifier,
     },
     errors::Error,
-    light_client::{LightClient, Options},
-    operations::ProdHasher,
+    light_client::{LightClientImpl, Options},
     state::State,
     store::{memory::MemoryStore, LightStore},
     tests::*,
@@ -27,6 +26,8 @@ struct BisectionTestResult {
     untrusted_light_block: LightBlock,
     new_states: Result<Vec<LightBlock>, Error>,
 }
+
+type MockLightClient = LightClientImpl<MockClock, BasicBisectingScheduler, ProdVerifier, MockIo>;
 
 fn run_test(tc: LightClientTest<LightBlock>) -> BisectionTestResult {
     let primary = default_peer_id();
@@ -59,24 +60,22 @@ fn run_test(tc: LightClientTest<LightBlock>) -> BisectionTestResult {
     light_store.insert(trusted_state, Status::Trusted);
 
     let mut state = State {
-        light_store: Box::new(light_store),
+        light_store,
         verification_trace: HashMap::new(),
     };
 
     let verifier = ProdVerifier::default();
-    let hasher = ProdHasher::default();
 
-    let mut light_client = LightClient::new(
+    let light_client = MockLightClient::new(
         primary,
         options,
         clock,
-        scheduler::basic_bisecting_schedule,
+        BasicBisectingScheduler,
         verifier,
-        hasher,
         io.clone(),
     );
 
-    let result = verify_bisection(untrusted_height, &mut light_client, &mut state);
+    let result = verify_bisection(untrusted_height, &light_client, &mut state);
 
     let untrusted_light_block = io
         .fetch_light_block(AtHeight::At(untrusted_height))

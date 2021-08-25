@@ -9,8 +9,8 @@ use std::time::Duration;
 
 /// Whether or not the given light store contains a verified or
 /// trusted block at the given target height.
-pub fn trusted_store_contains_block_at_target_height(
-    light_store: &dyn LightStore,
+pub fn trusted_store_contains_block_at_target_height<S: LightStore>(
+    light_store: &S,
     target_height: Height,
 ) -> bool {
     light_store.get(target_height, Status::Verified).is_some()
@@ -32,8 +32,8 @@ pub fn is_within_trust_period(
 /// within the trusting period.
 ///
 /// See `is_within_trust_period`.
-pub fn light_store_contains_block_within_trusting_period(
-    light_store: &dyn LightStore,
+pub fn light_store_contains_block_within_trusting_period<S: LightStore>(
+    light_store: &S,
     trusting_period: Duration,
     now: Time,
 ) -> bool {

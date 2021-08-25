@@ -7,12 +7,11 @@ use tendermint::{hash::Algorithm, Hash};
 use tendermint_light_client::{
     components::{
         io::{AtHeight, Io},
-        scheduler,
+        scheduler::BasicBisectingScheduler,
         verifier::ProdVerifier,
     },
     errors::Error,
-    light_client::{LightClient, Options},
-    operations::ProdHasher,
+    light_client::{LightClient, LightClientImpl, Options},
     state::State,
     store::{memory::MemoryStore, LightStore},
     tests::{MockClock, MockIo},
@@ -43,7 +42,9 @@ struct TestCase {
     trusted_height: Height,
 }
 
-fn make(chain: LightChain, trusted_height: Height) -> (LightClient, State) {
+type MockLightClient = LightClientImpl<MockClock, BasicBisectingScheduler, ProdVerifier, MockIo>;
+
+fn make(chain: LightChain, trusted_height: Height) -> (MockLightClient, State<MemoryStore>) {
     let primary = default_peer_id();
     let chain_id = "testchain-1".parse().unwrap();
 
@@ -75,20 +76,18 @@ fn make(chain: LightChain, trusted_height: Height) -> (LightClient, State) {
     light_store.insert(trusted_state, Status::Trusted);
 
     let state = State {
-        light_store: Box::new(light_store),
+        light_store,
         verification_trace: HashMap::new(),
     };
 
     let verifier = ProdVerifier::default();
-    let hasher = ProdHasher::default();
 
-    let light_client = LightClient::new(
+    let light_client = MockLightClient::new(
         primary,
         options,
         clock,
-        scheduler::basic_bisecting_schedule,
+        BasicBisectingScheduler,
         verifier,
-        hasher,
         io,
     );
 

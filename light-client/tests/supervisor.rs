@@ -1,12 +1,11 @@
 use tendermint_light_client::{
     components::{
         io::{AtHeight, Io},
-        scheduler,
+        scheduler::BasicBisectingScheduler,
         verifier::ProdVerifier,
     },
     fork_detector::ProdForkDetector,
-    light_client::{self, LightClient},
-    operations::ProdHasher,
+    light_client::{self, LightClientImpl},
     peer_list::PeerList,
     state::State,
     store::LightStore,
@@ -26,7 +25,15 @@ use tendermint_testgen::Tester;
 
 const TEST_FILES_PATH: &str = "./tests/support/";
 
-fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: Time) -> Instance {
+type MockLightClient = LightClientImpl<MockClock, BasicBisectingScheduler, ProdVerifier, MockIo>;
+type MockInstance = Instance<MockLightClient, MemoryStore>;
+
+fn make_instance(
+    peer_id: PeerId,
+    trust_options: TrustOptions,
+    io: MockIo,
+    now: Time,
+) -> MockInstance {
     let trusted_height = trust_options.height;
     let trusted_state = io
         .fetch_light_block(AtHeight::At(trusted_height))
@@ -36,7 +43,7 @@ fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: 
     light_store.insert(trusted_state, Status::Trusted);
 
     let state = State {
-        light_store: Box::new(light_store),
+        light_store,
         verification_trace: HashMap::new(),
     };
 
@@ -48,10 +55,9 @@ fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: 
 
     let clock = MockClock { now };
     let verifier = ProdVerifier::default();
-    let hasher = ProdHasher::default();
-    let scheduler = scheduler::basic_bisecting_schedule;
+    let scheduler = BasicBisectingScheduler;
 
-    let light_client = LightClient::new(peer_id, options, clock, scheduler, verifier, hasher, io);
+    let light_client = MockLightClient::new(peer_id, options, clock, scheduler, verifier, io);
 
     Instance::new(light_client, state)
 }

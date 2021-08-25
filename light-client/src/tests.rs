@@ -1,5 +1,6 @@
 //! Utilities and datatypes for use in tests.
 
+use crate::store::LightStore;
 use crate::types::{Height, LightBlock, PeerId, SignedHeader, Time, TrustThreshold, ValidatorSet};
 
 use serde::{Deserialize, Serialize};
@@ -161,10 +162,10 @@ pub fn verify_single(
     }
 }
 
-pub fn verify_bisection(
+pub fn verify_bisection<L: LightClient, S: LightStore>(
     untrusted_height: Height,
-    light_client: &mut LightClient,
-    state: &mut State,
+    light_client: &L,
+    state: &mut State<S>,
 ) -> Result<Vec<LightBlock>, Error> {
     light_client
         .verify_to_target(untrusted_height, state)

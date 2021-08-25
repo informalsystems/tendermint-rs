@@ -9,11 +9,16 @@ use derive_more::Display;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    components::{clock::Clock, io::*, scheduler::*, verifier::*},
+    components::{
+        clock::{Clock, SystemClock},
+        io::*,
+        scheduler::*,
+        verifier::*,
+    },
     contracts::*,
     errors::Error,
-    operations::Hasher,
     state::State,
+    store::LightStore,
     types::{Height, LightBlock, PeerId, Status, TrustThreshold},
 };
 
@@ -47,23 +52,54 @@ pub struct Options {
 /// of the header, more than two-thirds of the next validators of a new block are
 /// correct for the duration of the trusted period.  The fault-tolerant read operation
 /// is designed for this security model.
-pub struct LightClient {
+pub trait LightClient {
+    /// Attempt to update the light client to the highest block of the primary
+    /// node.
+    fn verify_to_highest<S: LightStore>(
+        &mut self,
+        state: &mut State<S>,
+    ) -> Result<LightBlock, Error>;
+
+    /// Update the light client to a block of the primary node at the given
+    /// height.
+    fn verify_to_target<S: LightStore>(
+        &self,
+        target_height: Height,
+        state: &mut State<S>,
+    ) -> Result<LightBlock, Error>;
+
+    /// Look in the light store for a block from the given peer at the given height,
+    /// which has not previously failed verification (ie. its status is not `Failed`).
+    ///
+    /// If one cannot be found, fetch the block from the given peer and store
+    /// it in the light store with `Unverified` status.
+    fn get_or_fetch_block<S: LightStore>(
+        &self,
+        height: Height,
+        state: &mut State<S>,
+    ) -> Result<(LightBlock, Status), Error>;
+}
+
+/// Production implementation of a [`LightClient`].
+pub type ProdLightClient =
+    LightClientImpl<SystemClock, BasicBisectingScheduler, ProdVerifier, ProdIo>;
+
+/// Generic implementation of the [`LightClient`] trait.
+///
+/// Parameterized by a [`Clock`], [`Scheduler`], [`Verifier`] and [`Io`].
+pub struct LightClientImpl<C, S, V, I> {
     /// The peer id of the peer this client is connected to
     pub peer: PeerId,
     /// Options for this light client
     pub options: Options,
 
-    clock: Box<dyn Clock>,
-    scheduler: Box<dyn Scheduler>,
-    verifier: Box<dyn Verifier>,
-    io: Box<dyn Io>,
-
-    // Only used in verify_backwards when "unstable" feature is enabled
-    #[allow(dead_code)]
-    hasher: Box<dyn Hasher>,
+    clock: C,
+    scheduler: S,
+    verifier: V,
+    io: I,
 }
 
-impl fmt::Debug for LightClient {
+impl<C, S, V, I> fmt::Debug for LightClientImpl<C, S, V, I> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("LightClient")
             .field("peer", &self.peer)
@@ -72,53 +108,20 @@ impl fmt::Debug for LightClient {
     }
 }
 
-impl LightClient {
-    /// Constructs a new light client
-    pub fn new(
-        peer: PeerId,
-        options: Options,
-        clock: impl Clock + 'static,
-        scheduler: impl Scheduler + 'static,
-        verifier: impl Verifier + 'static,
-        hasher: impl Hasher + 'static,
-        io: impl Io + 'static,
-    ) -> Self {
-        Self {
-            peer,
-            options,
-            clock: Box::new(clock),
-            scheduler: Box::new(scheduler),
-            verifier: Box::new(verifier),
-            hasher: Box::new(hasher),
-            io: Box::new(io),
-        }
-    }
-
-    /// Constructs a new light client from boxed components
-    pub fn from_boxed(
-        peer: PeerId,
-        options: Options,
-        clock: Box<dyn Clock>,
-        scheduler: Box<dyn Scheduler>,
-        verifier: Box<dyn Verifier>,
-        hasher: Box<dyn Hasher>,
-        io: Box<dyn Io>,
-    ) -> Self {
-        Self {
-            peer,
-            options,
-            clock,
-            scheduler,
-            verifier,
-            io,
-            hasher,
-        }
-    }
-
+impl<C, S, V, I> LightClient for LightClientImpl<C, S, V, I>
+where
+    C: Clock,
+    S: Scheduler,
+    V: Verifier,
+    I: Io,
+{
     /// Attempt to update the light client to the highest block of the primary node.
     ///
     /// Note: This function delegates the actual work to `verify_to_target`.
-    pub fn verify_to_highest(&mut self, state: &mut State) -> Result<LightBlock, Error> {
+    fn verify_to_highest<Store: LightStore>(
+        &mut self,
+        state: &mut State<Store>,
+    ) -> Result<LightBlock, Error> {
         let target_block = self
             .io
             .fetch_light_block(AtHeight::Highest)
@@ -159,14 +162,14 @@ impl LightClient {
     /// - If the fetching a light block from the primary node fails
     #[post(
         ret.is_ok() ==> trusted_store_contains_block_at_target_height(
-            state.light_store.as_ref(),
+            &state.light_store,
             target_height,
         )
     )]
-    pub fn verify_to_target(
+    fn verify_to_target<Store: LightStore>(
         &self,
         target_height: Height,
-        state: &mut State,
+        state: &mut State<Store>,
     ) -> Result<LightBlock, Error> {
         // Let's first look in the store to see whether
         // we have already successfully verified this block.
@@ -189,11 +192,61 @@ impl LightClient {
         }
     }
 
+    /// Look in the light store for a block from the given peer at the given height,
+    /// which has not previously failed verification (ie. its status is not `Failed`).
+    ///
+    /// If one cannot be found, fetch the block from the given peer and store
+    /// it in the light store with `Unverified` status.
+    ///
+    /// ## Postcondition
+    /// - The provider of block that is returned matches the given peer.
+    #[post(ret.as_ref().map(|(lb, _)| lb.provider == self.peer).unwrap_or(true))]
+    fn get_or_fetch_block<Store: LightStore>(
+        &self,
+        height: Height,
+        state: &mut State<Store>,
+    ) -> Result<(LightBlock, Status), Error> {
+        let block = state.light_store.get_non_failed(height);
+
+        if let Some(block) = block {
+            return Ok(block);
+        }
+
+        let block = self
+            .io
+            .fetch_light_block(AtHeight::At(height))
+            .map_err(Error::io)?;
+
+        state.light_store.insert(block.clone(), Status::Unverified);
+
+        Ok((block, Status::Unverified))
+    }
+}
+
+impl<C, S, V, I> LightClientImpl<C, S, V, I>
+where
+    C: Clock,
+    S: Scheduler,
+    V: Verifier,
+    I: Io,
+{
+    /// Constructs a new light client
+    pub fn new(peer: PeerId, options: Options, clock: C, scheduler: S, verifier: V, io: I) -> Self {
+        Self {
+            peer,
+            options,
+            clock,
+            scheduler,
+            verifier,
+            io,
+        }
+    }
+
     /// Perform forward verification with bisection.
-    fn verify_forward(
+    fn verify_forward<L: LightStore>(
         &self,
         target_height: Height,
-        state: &mut State,
+        state: &mut State<L>,
     ) -> Result<LightBlock, Error> {
         let mut current_height = target_height;
 
@@ -266,17 +319,17 @@ impl LightClient {
             // Compute the next height to fetch and verify
             current_height =
                 self.scheduler
-                    .schedule(state.light_store.as_ref(), current_height, target_height);
+                    .schedule(&state.light_store, current_height, target_height);
         }
     }
 
     /// Stub for when "unstable" feature is disabled.
     #[doc(hidden)]
     #[cfg(not(feature = "unstable"))]
-    fn verify_backward(
+    fn verify_backward<L: LightStore>(
         &self,
         target_height: Height,
-        state: &mut State,
+        state: &mut State<L>,
     ) -> Result<LightBlock, Error> {
         let trusted_state = state
             .light_store
@@ -308,10 +361,10 @@ impl LightClient {
     /// height is lower than the highest trusted state will result in a
     /// `TargetLowerThanTrustedState` error.
     #[cfg(feature = "unstable")]
-    fn verify_backward(
+    fn verify_backward<L: LightStore>(
         &self,
         target_height: Height,
-        state: &mut State,
+        state: &mut State<L>,
     ) -> Result<LightBlock, Error> {
         use std::convert::TryFrom;
 
@@ -345,7 +398,7 @@ impl LightClient {
                 .last_block_id
                 .ok_or_else(|| Error::missing_last_block_id(latest.height()))?;
 
-            let current_hash = self.hasher.hash_header(&current.signed_header.header);
+            let current_hash = current.signed_header.header.hash();
 
             if current_hash != latest_last_block_id.hash {
                 return Err(Error::invalid_adjacent_headers(
@@ -369,35 +422,5 @@ impl LightClient {
         assert_eq!(latest.height(), target_height);
 
         Ok(latest)
-    }
-
-    /// Look in the light store for a block from the given peer at the given height,
-    /// which has not previously failed verification (ie. its status is not `Failed`).
-    ///
-    /// If one cannot be found, fetch the block from the given peer and store
-    /// it in the light store with `Unverified` status.
-    ///
-    /// ## Postcondition
-    /// - The provider of block that is returned matches the given peer.
-    #[post(ret.as_ref().map(|(lb, _)| lb.provider == self.peer).unwrap_or(true))]
-    pub fn get_or_fetch_block(
-        &self,
-        height: Height,
-        state: &mut State,
-    ) -> Result<(LightBlock, Status), Error> {
-        let block = state.light_store.get_non_failed(height);
-
-        if let Some(block) = block {
-            return Ok(block);
-        }
-
-        let block = self
-            .io
-            .fetch_light_block(AtHeight::At(height))
-            .map_err(Error::io)?;
-
-        state.light_store.insert(block.clone(), Status::Unverified);
-
-        Ok((block, Status::Unverified))
     }
 }

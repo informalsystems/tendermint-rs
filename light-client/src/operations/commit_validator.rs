@@ -1,7 +1,6 @@
 //! Provides an interface and default implementation for the `CommitValidator` operation
 
 use crate::{
-    operations::{Hasher, ProdHasher},
     predicates::errors::VerificationError,
     types::{SignedHeader, ValidatorSet},
 };
@@ -26,25 +25,8 @@ pub trait CommitValidator: Send + Sync {
 }
 
 /// Production-ready implementation of a commit validator
-pub struct ProdCommitValidator {
-    hasher: Box<dyn Hasher>,
-}
-
-impl ProdCommitValidator {
-    /// Create a new commit validator using the given [`Hasher`]
-    /// to compute the hash of headers and validator sets.
-    pub fn new(hasher: impl Hasher + 'static) -> Self {
-        Self {
-            hasher: Box::new(hasher),
-        }
-    }
-}
-
-impl Default for ProdCommitValidator {
-    fn default() -> Self {
-        Self::new(ProdHasher::default())
-    }
-}
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ProdCommitValidator;
 
 impl CommitValidator for ProdCommitValidator {
     fn validate(
@@ -97,7 +79,7 @@ impl CommitValidator for ProdCommitValidator {
             if validator_set.validator(*validator_address) == None {
                 return Err(VerificationError::faulty_signer(
                     *validator_address,
-                    self.hasher.hash_validator_set(validator_set),
+                    validator_set.hash(),
                 ));
             }
         }

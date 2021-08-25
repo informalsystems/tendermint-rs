@@ -8,12 +8,15 @@ use gumdrop::Options;
 use tendermint::Hash;
 use tendermint_rpc as rpc;
 
-use tendermint_light_client::supervisor::{Handle as _, Instance};
 use tendermint_light_client::{
     builder::{LightClientBuilder, SupervisorBuilder},
     light_client,
     store::sled::SledStore,
     types::{Height, PeerId, TrustThreshold},
+};
+use tendermint_light_client::{
+    light_client::ProdLightClient,
+    supervisor::{Handle as _, Instance},
 };
 
 #[derive(Debug, Options)]
@@ -83,7 +86,7 @@ fn make_instance(
     addr: tendermint_rpc::Url,
     db_path: impl AsRef<Path>,
     opts: &SyncOpts,
-) -> Result<Instance, Box<dyn std::error::Error>> {
+) -> Result<Instance<ProdLightClient, SledStore>, Box<dyn std::error::Error>> {
     let light_store = SledStore::open(db_path)?;
     let rpc_client = rpc::HttpClient::new(addr).unwrap();
     let options = light_client::Options {
@@ -93,7 +96,7 @@ fn make_instance(
     };
 
     let builder =
-        LightClientBuilder::prod(peer_id, rpc_client, Box::new(light_store), options, None);
+        LightClientBuilder::prod(peer_id, rpc_client, light_store, options, None);
 
     let builder = if let (Some(height), Some(hash)) = (opts.trusted_height, opts.trusted_hash) {
         builder.trust_primary_at(height, hash)

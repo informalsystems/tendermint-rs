@@ -2,8 +2,8 @@
 
 use crate::{
     light_client::Options,
-    operations::{CommitValidator, Hasher, VotingPowerCalculator},
-    types::{Header, LightBlock, SignedHeader, Time, TrustThreshold, ValidatorSet},
+    operations::{CommitValidator, VotingPowerCalculator},
+    types::{Header, LightBlock, SignedHeader, Time, ValidatorSet},
 };
 
 use errors::VerificationError;
@@ -11,196 +11,142 @@ use std::time::Duration;
 
 pub mod errors;
 
-/// Production predicates, using the default implementation
-/// of the `VerificationPredicates` trait.
-#[derive(Clone, Copy, Debug, Default)]
-pub struct ProdPredicates;
-impl VerificationPredicates for ProdPredicates {}
+/// Compare the provided validator_set_hash against the hash produced from
+/// hashing the validator set.
+pub fn validator_sets_match(light_block: &LightBlock) -> Result<(), VerificationError> {
+    let validators_hash = light_block.validators.hash();
 
-/// Defines the various predicates used to validate and verify light blocks.
-///
-/// A default, spec abiding implementation is provided for each method.
-///
-/// This enables test implementations to only override a single method rather than
-/// have to re-define every predicate.
-pub trait VerificationPredicates: Send + Sync {
-    /// Compare the provided validator_set_hash against the hash produced from hashing the validator
-    /// set.
-    fn validator_sets_match(
-        &self,
-        light_block: &LightBlock,
-        hasher: &dyn Hasher,
-    ) -> Result<(), VerificationError> {
-        let validators_hash = hasher.hash_validator_set(&light_block.validators);
-
-        if light_block.signed_header.header.validators_hash == validators_hash {
-            Ok(())
-        } else {
-            Err(VerificationError::invalid_validator_set(
-                light_block.signed_header.header.validators_hash,
-                validators_hash,
-            ))
-        }
-    }
-
-    /// Check that the hash of the next validator set in the header match the actual one.
-    fn next_validators_match(
-        &self,
-        light_block: &LightBlock,
-        hasher: &dyn Hasher,
-    ) -> Result<(), VerificationError> {
-        let next_validators_hash = hasher.hash_validator_set(&light_block.next_validators);
-
-        if light_block.signed_header.header.next_validators_hash == next_validators_hash {
-            Ok(())
-        } else {
-            Err(VerificationError::invalid_next_validator_set(
-                light_block.signed_header.header.next_validators_hash,
-                next_validators_hash,
-            ))
-        }
-    }
-
-    /// Check that the hash of the header in the commit matches the actual one.
-    fn header_matches_commit(
-        &self,
-        signed_header: &SignedHeader,
-        hasher: &dyn Hasher,
-    ) -> Result<(), VerificationError> {
-        let header_hash = hasher.hash_header(&signed_header.header);
-
-        if header_hash == signed_header.commit.block_id.hash {
-            Ok(())
-        } else {
-            Err(VerificationError::invalid_commit_value(
-                header_hash,
-                signed_header.commit.block_id.hash,
-            ))
-        }
-    }
-
-    /// Validate the commit using the given commit validator.
-    fn valid_commit(
-        &self,
-        signed_header: &SignedHeader,
-        validators: &ValidatorSet,
-        commit_validator: &dyn CommitValidator,
-    ) -> Result<(), VerificationError> {
-        commit_validator.validate(signed_header, validators)?;
-        commit_validator.validate_full(signed_header, validators)?;
-
+    if light_block.signed_header.header.validators_hash == validators_hash {
         Ok(())
+    } else {
+        Err(VerificationError::invalid_validator_set(
+            light_block.signed_header.header.validators_hash,
+            validators_hash,
+        ))
     }
+}
 
-    /// Check that the trusted header is within the trusting period, adjusting for clock drift.
-    fn is_within_trust_period(
-        &self,
-        trusted_header: &Header,
-        trusting_period: Duration,
-        now: Time,
-    ) -> Result<(), VerificationError> {
-        let expires_at = trusted_header.time + trusting_period;
+/// Check that the hash of the next validator set in the header match the actual
+/// one.
+pub fn next_validators_match(light_block: &LightBlock) -> Result<(), VerificationError> {
+    let next_validators_hash = light_block.next_validators.hash();
 
-        if expires_at > now {
-            Ok(())
-        } else {
-            Err(VerificationError::not_within_trust_period(expires_at, now))
-        }
-    }
-
-    /// Check that the untrusted header is from past.
-    fn is_header_from_past(
-        &self,
-        untrusted_header: &Header,
-        clock_drift: Duration,
-        now: Time,
-    ) -> Result<(), VerificationError> {
-        if untrusted_header.time < now + clock_drift {
-            Ok(())
-        } else {
-            Err(VerificationError::header_from_the_future(
-                untrusted_header.time,
-                now,
-            ))
-        }
-    }
-
-    /// Check that time passed monotonically between the trusted header and the untrusted one.
-    fn is_monotonic_bft_time(
-        &self,
-        untrusted_header: &Header,
-        trusted_header: &Header,
-    ) -> Result<(), VerificationError> {
-        if untrusted_header.time > trusted_header.time {
-            Ok(())
-        } else {
-            Err(VerificationError::non_monotonic_bft_time(
-                untrusted_header.time,
-                trusted_header.time,
-            ))
-        }
-    }
-
-    /// Check that the height increased between the trusted header and the untrusted one.
-    fn is_monotonic_height(
-        &self,
-        untrusted_header: &Header,
-        trusted_header: &Header,
-    ) -> Result<(), VerificationError> {
-        let trusted_height = trusted_header.height;
-
-        if untrusted_header.height > trusted_header.height {
-            Ok(())
-        } else {
-            Err(VerificationError::non_increasing_height(
-                untrusted_header.height,
-                trusted_height.increment(),
-            ))
-        }
-    }
-
-    /// Check that there is enough validators overlap between the trusted validator set
-    /// and the untrusted signed header.
-    fn has_sufficient_validators_overlap(
-        &self,
-        untrusted_sh: &SignedHeader,
-        trusted_validators: &ValidatorSet,
-        trust_threshold: &TrustThreshold,
-        calculator: &dyn VotingPowerCalculator,
-    ) -> Result<(), VerificationError> {
-        calculator.check_enough_trust(untrusted_sh, trusted_validators, *trust_threshold)?;
+    if light_block.signed_header.header.next_validators_hash == next_validators_hash {
         Ok(())
+    } else {
+        Err(VerificationError::invalid_next_validator_set(
+            light_block.signed_header.header.next_validators_hash,
+            next_validators_hash,
+        ))
     }
+}
 
-    /// Check that there is enough signers overlap between the given, untrusted validator set
-    /// and the untrusted signed header.
-    fn has_sufficient_signers_overlap(
-        &self,
-        untrusted_sh: &SignedHeader,
-        untrusted_validators: &ValidatorSet,
-        calculator: &dyn VotingPowerCalculator,
-    ) -> Result<(), VerificationError> {
-        calculator.check_signers_overlap(untrusted_sh, untrusted_validators)?;
+/// Check that the hash of the header in the commit matches the actual one.
+pub fn header_matches_commit(signed_header: &SignedHeader) -> Result<(), VerificationError> {
+    let header_hash = signed_header.header.hash();
+
+    if header_hash == signed_header.commit.block_id.hash {
         Ok(())
+    } else {
+        Err(VerificationError::invalid_commit_value(
+            header_hash,
+            signed_header.commit.block_id.hash,
+        ))
     }
+}
 
-    /// Check that the hash of the next validator set in the trusted block matches
-    /// the hash of the validator set in the untrusted one.
-    fn valid_next_validator_set(
-        &self,
-        light_block: &LightBlock,
-        trusted_state: &LightBlock,
-    ) -> Result<(), VerificationError> {
-        if light_block.signed_header.header.validators_hash
-            == trusted_state.signed_header.header.next_validators_hash
-        {
-            Ok(())
-        } else {
-            Err(VerificationError::invalid_next_validator_set(
-                light_block.signed_header.header.validators_hash,
-                trusted_state.signed_header.header.next_validators_hash,
-            ))
-        }
+/// Validate the commit using the given commit validator.
+pub fn validate_commit<C: CommitValidator>(
+    signed_header: &SignedHeader,
+    validators: &ValidatorSet,
+    commit_validator: &C,
+) -> Result<(), VerificationError> {
+    commit_validator.validate(signed_header, validators)?;
+    commit_validator.validate_full(signed_header, validators)?;
+
+    Ok(())
+}
+
+/// Check that the trusted header is within the trusting period, adjusting for clock drift.
+pub fn is_within_trust_period(
+    trusted_header: &Header,
+    trusting_period: Duration,
+    now: Time,
+) -> Result<(), VerificationError> {
+    let expires_at = trusted_header.time + trusting_period;
+
+    if expires_at > now {
+        Ok(())
+    } else {
+        Err(VerificationError::not_within_trust_period(expires_at, now))
+    }
+}
+
+/// Check that the untrusted header is from past.
+pub fn is_header_from_past(
+    untrusted_header: &Header,
+    clock_drift: Duration,
+    now: Time,
+) -> Result<(), VerificationError> {
+    if untrusted_header.time < now + clock_drift {
+        Ok(())
+    } else {
+        Err(VerificationError::header_from_the_future(
+            untrusted_header.time,
+            now,
+        ))
+    }
+}
+
+/// Check that time passed monotonically between the trusted header and the
+/// untrusted one.
+pub fn is_monotonic_bft_time(
+    untrusted_header: &Header,
+    trusted_header: &Header,
+) -> Result<(), VerificationError> {
+    if untrusted_header.time > trusted_header.time {
+        Ok(())
+    } else {
+        Err(VerificationError::non_monotonic_bft_time(
+            untrusted_header.time,
+            trusted_header.time,
+        ))
+    }
+}
+
+/// Check that the height increased between the trusted header and the untrusted
+/// one.
+pub fn is_monotonic_height(
+    untrusted_header: &Header,
+    trusted_header: &Header,
+) -> Result<(), VerificationError> {
+    let trusted_height = trusted_header.height;
+
+    if untrusted_header.height > trusted_header.height {
+        Ok(())
+    } else {
+        Err(VerificationError::non_increasing_height(
+            untrusted_header.height,
+            trusted_height.increment(),
+        ))
+    }
+}
+
+/// Check that the hash of the next validator set in the trusted block matches
+/// the hash of the validator set in the untrusted one.
+pub fn valid_next_validator_set(
+    light_block: &LightBlock,
+    trusted_state: &LightBlock,
+) -> Result<(), VerificationError> {
+    if light_block.signed_header.header.validators_hash
+        == trusted_state.signed_header.header.next_validators_hash
+    {
+        Ok(())
+    } else {
+        Err(VerificationError::invalid_next_validator_set(
+            light_block.signed_header.header.validators_hash,
+            trusted_state.signed_header.header.next_validators_hash,
+        ))
     }
 }
 
@@ -215,41 +161,42 @@ pub trait VerificationPredicates: Send + Sync {
 /// check that their (next) validator sets hashes match.
 /// - Otherwise, ensure that the untrusted block has a greater height than
 /// the trusted block.
-#[allow(clippy::too_many_arguments)]
-pub fn verify(
-    vp: &dyn VerificationPredicates,
-    voting_power_calculator: &dyn VotingPowerCalculator,
-    commit_validator: &dyn CommitValidator,
-    hasher: &dyn Hasher,
+pub fn verify<C, V>(
+    voting_power_calculator: &C,
+    commit_validator: &V,
     trusted: &LightBlock,
     untrusted: &LightBlock,
     options: &Options,
     now: Time,
-) -> Result<(), VerificationError> {
+) -> Result<(), VerificationError>
+where
+    C: VotingPowerCalculator,
+    V: CommitValidator,
+{
     // Ensure the latest trusted header hasn't expired
-    vp.is_within_trust_period(&trusted.signed_header.header, options.trusting_period, now)?;
+    is_within_trust_period(&trusted.signed_header.header, options.trusting_period, now)?;
 
     // Ensure the header isn't from a future time
-    vp.is_header_from_past(&untrusted.signed_header.header, options.clock_drift, now)?;
+    is_header_from_past(&untrusted.signed_header.header, options.clock_drift, now)?;
 
     // Ensure the header validator hashes match the given validators
-    vp.validator_sets_match(untrusted, &*hasher)?;
+    validator_sets_match(untrusted)?;
 
     // Ensure the header next validator hashes match the given next validators
-    vp.next_validators_match(untrusted, &*hasher)?;
+    next_validators_match(untrusted)?;
 
     // Ensure the header matches the commit
-    vp.header_matches_commit(&untrusted.signed_header, hasher)?;
+    header_matches_commit(&untrusted.signed_header)?;
 
     // Additional implementation specific validation
-    vp.valid_commit(
+    validate_commit(
         &untrusted.signed_header,
         &untrusted.validators,
         commit_validator,
     )?;
 
     // Check that the untrusted block is more recent than the trusted state
-    vp.is_monotonic_bft_time(
+    is_monotonic_bft_time(
         &untrusted.signed_header.header,
         &trusted.signed_header.header,
     )?;
@@ -259,37 +206,35 @@ pub fn verify(
     if untrusted.height() == trusted_next_height {
         // If the untrusted block is the very next block after the trusted block,
         // check that their (next) validator sets hashes match.
-        vp.valid_next_validator_set(untrusted, trusted)?;
+        valid_next_validator_set(untrusted, trusted)?;
     } else {
         // Otherwise, ensure that the untrusted block has a greater height than
         // the trusted block.
-        vp.is_monotonic_height(
+        is_monotonic_height(
             &untrusted.signed_header.header,
             &trusted.signed_header.header,
         )?;
 
         // Check there is enough overlap between the validator sets of
         // the trusted and untrusted blocks.
-        vp.has_sufficient_validators_overlap(
+        voting_power_calculator.check_enough_trust(
             &untrusted.signed_header,
             &trusted.next_validators,
-            &options.trust_threshold,
-            voting_power_calculator,
+            options.trust_threshold,
         )?;
     }
 
     // Verify that more than 2/3 of the validators correctly committed the block.
-    vp.has_sufficient_signers_overlap(
-        &untrusted.signed_header,
-        &untrusted.validators,
-        voting_power_calculator,
-    )?;
+    voting_power_calculator
+        .check_signers_overlap(&untrusted.signed_header, &untrusted.validators)?;
 
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     use std::ops::Sub;
     use std::time::Duration;
     use tendermint::Time;
@@ -299,14 +244,9 @@ mod tests {
         Commit, Generator, Header, Validator, ValidatorSet,
     };
 
-    use crate::predicates::{
-        errors::{VerificationError, VerificationErrorDetail},
-        ProdPredicates, VerificationPredicates,
-    };
+    use crate::predicates::errors::{VerificationError, VerificationErrorDetail};
 
-    use crate::operations::{
-        Hasher, ProdCommitValidator, ProdHasher, ProdVotingPowerCalculator, VotingPowerTally,
-    };
+    use crate::operations::{ProdCommitValidator, ProdVotingPowerCalculator, VotingPowerTally};
     use crate::types::{LightBlock, TrustThreshold};
     use tendermint::block::CommitSig;
     use tendermint::validator::Set;
@@ -328,14 +268,12 @@ mod tests {
         let header_one = Header::new(&val).generate().unwrap();
         let header_two = Header::new(&val).generate().unwrap();
 
-        let vp = ProdPredicates::default();
-
         // 1. ensure valid header verifies
-        let result_ok = vp.is_monotonic_bft_time(&header_two, &header_one);
+        let result_ok = is_monotonic_bft_time(&header_two, &header_one);
         assert!(result_ok.is_ok());
 
         // 2. ensure header with non-monotonic bft time fails
-        let result_err = vp.is_monotonic_bft_time(&header_one, &header_two);
+        let result_err = is_monotonic_bft_time(&header_one, &header_two);
         match result_err {
             Err(VerificationError(VerificationErrorDetail::NonMonotonicBftTime(e), _)) => {
                 assert_eq!(e.header_bft_time, header_one.time);
@@ -351,14 +289,12 @@ mod tests {
         let header_one = Header::new(&val).generate().unwrap();
         let header_two = Header::new(&val).height(2).generate().unwrap();
 
-        let vp = ProdPredicates::default();
-
         // 1. ensure valid header verifies
-        let result_ok = vp.is_monotonic_height(&header_two, &header_one);
+        let result_ok = is_monotonic_height(&header_two, &header_one);
         assert!(result_ok.is_ok());
 
         // 2. ensure header with non-monotonic height fails
-        let result_err = vp.is_monotonic_height(&header_one, &header_two);
+        let result_err = is_monotonic_height(&header_one, &header_two);
 
         match result_err {
             Err(VerificationError(VerificationErrorDetail::NonIncreasingHeight(e), _)) => {
@@ -374,19 +310,17 @@ mod tests {
         let val = Validator::new("val-1");
         let header = Header::new(&[val]).generate().unwrap();
 
-        let vp = ProdPredicates::default();
-
         // 1. ensure valid header verifies
         let mut trusting_period = Duration::new(1000, 0);
         let now = Time::now();
 
-        let result_ok = vp.is_within_trust_period(&header, trusting_period, now);
+        let result_ok = is_within_trust_period(&header, trusting_period, now);
         assert!(result_ok.is_ok());
 
         // 2. ensure header outside trusting period fails
         trusting_period = Duration::new(0, 1);
 
-        let result_err = vp.is_within_trust_period(&header, trusting_period, now);
+        let result_err = is_within_trust_period(&header, trusting_period, now);
 
         let expires_at = header.time + trusting_period;
         match result_err {
@@ -403,17 +337,16 @@ mod tests {
         let val = Validator::new("val-1");
         let header = Header::new(&[val]).generate().unwrap();
 
-        let vp = ProdPredicates::default();
         let one_second = Duration::new(1, 0);
 
         // 1. ensure valid header verifies
-        let result_ok = vp.is_header_from_past(&header, one_second, Time::now());
+        let result_ok = is_header_from_past(&header, one_second, Time::now());
 
         assert!(result_ok.is_ok());
 
         // 2. ensure it fails if header is from a future time
         let now = Time::now().sub(one_second * 15);
-        let result_err = vp.is_header_from_past(&header, one_second, now);
+        let result_err = is_header_from_past(&header, one_second, now);
 
         match result_err {
             Err(VerificationError(VerificationErrorDetail::HeaderFromTheFuture(e), _)) => {
@@ -432,17 +365,14 @@ mod tests {
 
         let bad_validator_set = ValidatorSet::new(vec!["bad-val"]).generate().unwrap();
 
-        let vp = ProdPredicates::default();
-        let hasher = ProdHasher::default();
-
         // Test positive case
         // 1. For predicate: validator_sets_match
-        let val_sets_match_ok = vp.validator_sets_match(&light_block, &hasher);
+        let val_sets_match_ok = validator_sets_match(&light_block);
 
         assert!(val_sets_match_ok.is_ok());
 
         // 2. For predicate: next_validator_sets_match
-        let next_val_sets_match_ok = vp.next_validators_match(&light_block, &hasher);
+        let next_val_sets_match_ok = next_validators_match(&light_block);
 
         assert!(next_val_sets_match_ok.is_ok());
 
@@ -450,7 +380,7 @@ mod tests {
         // 1. For predicate: validator_sets_match
         light_block.validators = bad_validator_set.clone();
 
-        let val_sets_match_err = vp.validator_sets_match(&light_block, &hasher);
+        let val_sets_match_err = validator_sets_match(&light_block);
 
         match val_sets_match_err {
             Err(VerificationError(VerificationErrorDetail::InvalidValidatorSet(e), _)) => {
@@ -458,17 +388,14 @@ mod tests {
                     e.header_validators_hash,
                     light_block.signed_header.header.validators_hash
                 );
-                assert_eq!(
-                    e.validators_hash,
-                    hasher.hash_validator_set(&light_block.validators)
-                );
+                assert_eq!(e.validators_hash, light_block.validators.hash());
             }
             _ => panic!("expected InvalidValidatorSet error"),
         }
 
         // 2. For predicate: next_validator_sets_match
         light_block.next_validators = bad_validator_set;
-        let next_val_sets_match_err = vp.next_validators_match(&light_block, &hasher);
+        let next_val_sets_match_err = next_validators_match(&light_block);
 
         match next_val_sets_match_err {
             Err(VerificationError(VerificationErrorDetail::InvalidNextValidatorSet(e), _)) => {
@@ -476,10 +403,7 @@ mod tests {
                     e.header_next_validators_hash,
                     light_block.signed_header.header.next_validators_hash
                 );
-                assert_eq!(
-                    e.next_validators_hash,
-                    hasher.hash_validator_set(&light_block.next_validators)
-                );
+                assert_eq!(e.next_validators_hash, light_block.next_validators.hash());
             }
             _ => panic!("expected InvalidNextValidatorSet error"),
         }
@@ -492,11 +416,8 @@ mod tests {
             .unwrap()
             .signed_header;
 
-        let vp = ProdPredicates::default();
-        let hasher = ProdHasher::default();
-
         // 1. ensure valid signed header verifies
-        let result_ok = vp.header_matches_commit(&signed_header, &hasher);
+        let result_ok = header_matches_commit(&signed_header);
 
         assert!(result_ok.is_ok());
 
@@ -505,10 +426,10 @@ mod tests {
             "15F15EF50BDE2018F4B129A827F90C18222C757770C8295EB8EE7BF50E761BC0"
                 .parse()
                 .unwrap();
-        let result_err = vp.header_matches_commit(&signed_header, &hasher);
+        let result_err = header_matches_commit(&signed_header);
 
         // 3. ensure it fails with: VerificationVerificationError::InvalidCommitValue
-        let header_hash = hasher.hash_header(&signed_header.header);
+        let header_hash = signed_header.header.hash();
 
         match result_err {
             Err(VerificationError(VerificationErrorDetail::InvalidCommitValue(e), _)) => {
@@ -526,13 +447,11 @@ mod tests {
         let mut signed_header = light_block.signed_header;
         let val_set = light_block.validators;
 
-        let vp = ProdPredicates::default();
-        let hasher = ProdHasher::default();
-        let commit_validator = ProdCommitValidator::new(hasher);
+        let commit_validator = ProdCommitValidator;
 
         // Test scenarios -->
         // 1. valid commit - must result "Ok"
-        let mut result_ok = vp.valid_commit(&signed_header, &val_set, &commit_validator);
+        let mut result_ok = validate_commit(&signed_header, &val_set, &commit_validator);
 
         assert!(result_ok.is_ok());
 
@@ -540,7 +459,7 @@ mod tests {
         let signatures = signed_header.commit.signatures.clone();
         signed_header.commit.signatures = vec![];
 
-        let mut result_err = vp.valid_commit(&signed_header, &val_set, &commit_validator);
+        let mut result_err = validate_commit(&signed_header, &val_set, &commit_validator);
 
         match result_err {
             Err(VerificationError(VerificationErrorDetail::NoSignatureForCommit(_), _)) => {}
@@ -552,7 +471,7 @@ mod tests {
         let mut bad_sigs = vec![signatures.clone().swap_remove(1)];
         signed_header.commit.signatures = bad_sigs.clone();
 
-        result_err = vp.valid_commit(&signed_header, &val_set, &commit_validator);
+        result_err = validate_commit(&signed_header, &val_set, &commit_validator);
 
         match result_err {
             Err(VerificationError(VerificationErrorDetail::MismatchPreCommitLength(e), _)) => {
@@ -565,7 +484,7 @@ mod tests {
         // 4. commit.BlockIdFlagAbsent - should be "Ok"
         bad_sigs.push(CommitSig::BlockIdFlagAbsent);
         signed_header.commit.signatures = bad_sigs;
-        result_ok = vp.valid_commit(&signed_header, &val_set, &commit_validator);
+        result_ok = validate_commit(&signed_header, &val_set, &commit_validator);
         assert!(result_ok.is_ok());
 
         // 5. faulty signer - must return error
@@ -581,7 +500,7 @@ mod tests {
         // reset signatures
         signed_header.commit.signatures = signatures;
 
-        result_err = vp.valid_commit(
+        result_err = validate_commit(
             &signed_header,
             &val_set_with_faulty_signer,
             &commit_validator,
@@ -601,10 +520,7 @@ mod tests {
                         .unwrap()
                 );
 
-                assert_eq!(
-                    e.validator_set,
-                    hasher.hash_validator_set(&val_set_with_faulty_signer)
-                );
+                assert_eq!(e.validator_set, val_set_with_faulty_signer.hash());
             }
             _ => panic!("expected FaultySigner error"),
         }
@@ -617,11 +533,9 @@ mod tests {
 
         let light_block2: LightBlock = test_lb1.next().generate().unwrap().into();
 
-        let vp = ProdPredicates::default();
-
         // Test scenarios -->
         // 1. next_validator_set hash matches
-        let result_ok = vp.valid_next_validator_set(&light_block1, &light_block2);
+        let result_ok = valid_next_validator_set(&light_block1, &light_block2);
 
         assert!(result_ok.is_ok());
 
@@ -635,7 +549,7 @@ mod tests {
             .unwrap()
             .into();
 
-        let result_err = vp.valid_next_validator_set(&light_block3, &light_block2);
+        let result_err = valid_next_validator_set(&light_block3, &light_block2);
 
         match result_err {
             Err(VerificationError(VerificationErrorDetail::InvalidNextValidatorSet(e), _)) => {
@@ -658,18 +572,13 @@ mod tests {
         let val_set = light_block.validators;
         let signed_header = light_block.signed_header;
 
-        let vp = ProdPredicates::default();
         let mut trust_threshold = TrustThreshold::new(1, 3).expect("Cannot make trust threshold");
         let voting_power_calculator = ProdVotingPowerCalculator::default();
 
         // Test scenarios -->
         // 1. > trust_threshold validators overlap
-        let result_ok = vp.has_sufficient_validators_overlap(
-            &signed_header,
-            &val_set,
-            &trust_threshold,
-            &voting_power_calculator,
-        );
+        let result_ok =
+            voting_power_calculator.check_enough_trust(&signed_header, &val_set, trust_threshold);
 
         assert!(result_ok.is_ok());
 
@@ -685,11 +594,10 @@ mod tests {
 
         trust_threshold = TrustThreshold::new(2, 3).expect("Cannot make trust threshold");
 
-        let result_err = vp.has_sufficient_validators_overlap(
+        let result_err = voting_power_calculator.check_enough_trust(
             &signed_header,
             &bad_valset,
-            &trust_threshold,
-            &voting_power_calculator,
+            trust_threshold,
         );
 
         match result_err {
@@ -712,27 +620,20 @@ mod tests {
         let mut light_block: LightBlock =
             TestgenLightBlock::new_default(2).generate().unwrap().into();
 
-        let vp = ProdPredicates::default();
         let voting_power_calculator = ProdVotingPowerCalculator::default();
 
         // Test scenarios -->
         // 1. +2/3 validators sign
-        let result_ok = vp.has_sufficient_signers_overlap(
-            &light_block.signed_header,
-            &light_block.validators,
-            &voting_power_calculator,
-        );
+        let result_ok = voting_power_calculator
+            .check_signers_overlap(&light_block.signed_header, &light_block.validators);
 
         assert!(result_ok.is_ok());
 
         // 1. less than 2/3 validators sign
         light_block.signed_header.commit.signatures.pop();
 
-        let result_err = vp.has_sufficient_signers_overlap(
-            &light_block.signed_header,
-            &light_block.validators,
-            &voting_power_calculator,
-        );
+        let result_err = voting_power_calculator
+            .check_signers_overlap(&light_block.signed_header, &light_block.validators);
 
         let trust_threshold = TrustThreshold::TWO_THIRDS;
 

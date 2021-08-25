@@ -22,27 +22,12 @@ pub trait Scheduler: Send + Sync {
     /// - The resulting height must be valid according to `valid_schedule`. [LCV-SCHEDULE-POST.1]
     #[pre(light_store.highest_trusted_or_verified().is_some())]
     #[post(valid_schedule(ret, target_height, current_height, light_store))]
-    fn schedule(
+    fn schedule<L: LightStore>(
         &self,
-        light_store: &dyn LightStore,
+        light_store: &L,
         current_height: Height,
         target_height: Height,
     ) -> Height;
-}
-
-#[contract_trait]
-impl<F: Send + Sync> Scheduler for F
-where
-    F: Fn(&dyn LightStore, Height, Height) -> Height,
-{
-    fn schedule(
-        &self,
-        light_store: &dyn LightStore,
-        current_height: Height,
-        target_height: Height,
-    ) -> Height {
-        self(light_store, current_height, target_height)
-    }
 }
 
 /// Basic bisecting scheduler which picks the appropriate midpoint without
@@ -53,25 +38,31 @@ where
 ///
 /// ## Postcondition
 /// - The resulting height must be valid according to `valid_schedule`. [LCV-SCHEDULE-POST.1]
-#[pre(light_store.highest_trusted_or_verified().is_some())]
-#[post(valid_schedule(ret, target_height, current_height, light_store))]
-pub fn basic_bisecting_schedule(
-    light_store: &dyn LightStore,
-    current_height: Height,
-    target_height: Height,
-) -> Height {
-    let trusted_height = light_store
-        .highest_trusted_or_verified()
-        .map(|lb| lb.height())
-        .unwrap();
+pub struct BasicBisectingScheduler;
 
-    if trusted_height == current_height {
-        // We can't go further back, so let's try to verify the target height again,
-        // hopefully we have enough trust in the store by now.
-        target_height
-    } else {
-        // Pick a midpoint H between `trusted_height <= H <= current_height`.
-        midpoint(trusted_height, current_height)
+#[contract_trait]
+impl Scheduler for BasicBisectingScheduler {
+    #[pre(light_store.highest_trusted_or_verified().is_some())]
+    #[post(valid_schedule(ret, target_height, current_height, light_store))]
+    fn schedule<L: LightStore>(
+        &self,
+        light_store: &L,
+        current_height: Height,
+        target_height: Height,
+    ) -> Height {
+        let trusted_height = light_store
+            .highest_trusted_or_verified()
+            .map(|lb| lb.height())
+            .unwrap();
+
+        if trusted_height == current_height {
+            // We can't go further back, so let's try to verify the target height again,
+            // hopefully we have enough trust in the store by now.
+            target_height
+        } else {
+            // Pick a midpoint H between `trusted_height <= H <= current_height`.
+            midpoint(trusted_height, current_height)
+        }
     }
 }
 
