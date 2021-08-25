@@ -16,8 +16,9 @@ use tendermint_light_client::{
     builder::{LightClientBuilder, SupervisorBuilder},
     components::io::{AtHeight, Io, IoError, ProdIo},
     errors::Error,
-    evidence::{Evidence, EvidenceReporter},
-    light_client,
+    evidence::{Evidence, EvidenceReporter, ProdEvidenceReporter},
+    fork_detector::ProdForkDetector,
+    light_client::{self, ProdLightClient},
     store::{memory::MemoryStore, LightStore},
     supervisor::{Handle, Instance, Supervisor},
     types::{Height, PeerId, Status, TrustThreshold},
@@ -41,12 +42,16 @@ impl EvidenceReporter for TestEvidenceReporter {
     }
 }
 
-fn make_instance(peer_id: PeerId, options: light_client::Options, address: rpc::Url) -> Instance {
+fn make_instance(
+    peer_id: PeerId,
+    options: light_client::Options,
+    address: rpc::Url,
+) -> Instance<ProdLightClient, MemoryStore> {
     let rpc_client = rpc::HttpClient::new(address).unwrap();
     let io = ProdIo::new(peer_id, rpc_client.clone(), Some(Duration::from_secs(2)));
     let latest_block = io.fetch_light_block(AtHeight::Highest).unwrap();
 
-    let mut light_store = Box::new(MemoryStore::new());
+    let mut light_store = MemoryStore::new();
     light_store.insert(latest_block, Status::Trusted);
 
     LightClientBuilder::prod(
@@ -61,7 +66,8 @@ fn make_instance(peer_id: PeerId, options: light_client::Options, address: rpc::
     .build()
 }
 
-fn make_supervisor() -> Supervisor {
+fn make_supervisor(
+) -> Supervisor<ProdLightClient, MemoryStore, ProdForkDetector, ProdEvidenceReporter> {
     let primary: PeerId = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap();
     let witness: PeerId = "CEFEEDBADFADAD0C0CEEFACADE0ADEADBEEFC0FF".parse().unwrap();
 
