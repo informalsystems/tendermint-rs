@@ -5,7 +5,7 @@ use tendermint::{block::Height, Hash};
 use crate::builder::error::Error;
 use crate::components::clock::Clock;
 use crate::components::io::{AtHeight, Io};
-use crate::components::scheduler::{BasicBisectingScheduler, Scheduler};
+use crate::components::scheduler::Scheduler;
 use crate::components::verifier::Verifier;
 use crate::light_client::{LightClientImpl, Options};
 use crate::predicates;
@@ -17,6 +17,7 @@ use crate::types::{LightBlock, PeerId, Status};
 #[cfg(feature = "rpc-client")]
 use {
     crate::components::clock::SystemClock, crate::components::io::ProdIo,
+    crate::components::scheduler::BasicBisectingScheduler,
     crate::components::verifier::ProdVerifier, std::time::Duration, tendermint_rpc as rpc,
 };
 
@@ -58,6 +59,7 @@ impl<Current, C, S, V, I, L> LightClientBuilder<Current, C, S, V, I, L> {
     }
 }
 
+#[cfg(feature = "rpc-client")]
 impl<L: LightStore>
     LightClientBuilder<
         NoTrustedState,
@@ -69,7 +71,6 @@ impl<L: LightStore>
     >
 {
     /// Initialize a builder for a production (non-mock) light client.
-    #[cfg(feature = "rpc-client")]
     pub fn prod(
         peer_id: PeerId,
         rpc_client: rpc::HttpClient,

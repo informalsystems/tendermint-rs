@@ -9,18 +9,16 @@ use derive_more::Display;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    components::{
-        clock::{Clock, SystemClock},
-        io::*,
-        scheduler::*,
-        verifier::*,
-    },
+    components::{clock::Clock, io::*, scheduler::*, verifier::*},
     contracts::*,
     errors::Error,
     state::State,
     store::LightStore,
     types::{Height, LightBlock, PeerId, Status, TrustThreshold},
 };
+
+#[cfg(feature = "rpc-client")]
+use crate::components::clock::SystemClock;
 
 /// Verification parameters
 #[derive(Copy, Clone, Debug, PartialEq, Display, Serialize, Deserialize)]
@@ -80,6 +78,7 @@ pub trait LightClient {
     ) -> Result<(LightBlock, Status), Error>;
 }
 
+#[cfg(feature = "rpc-client")]
 /// Production implementation of a [`LightClient`].
 pub type ProdLightClient =
     LightClientImpl<SystemClock, BasicBisectingScheduler, ProdVerifier, ProdIo>;
