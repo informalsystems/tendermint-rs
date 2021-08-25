@@ -95,8 +95,7 @@ fn make_instance(
         clock_drift: Duration::from_secs(1),
     };
 
-    let builder =
-        LightClientBuilder::prod(peer_id, rpc_client, light_store, options, None);
+    let builder = LightClientBuilder::prod(peer_id, rpc_client, light_store, options, None);
 
     let builder = if let (Some(height), Some(hash)) = (opts.trusted_height, opts.trusted_hash) {
         builder.trust_primary_at(height, hash)
