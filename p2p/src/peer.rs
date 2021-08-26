@@ -10,7 +10,7 @@ use flume::{self, Receiver, Sender};
 use tendermint::node;
 
 use crate::message;
-use crate::transport::{Connection, Direction, StreamId};
+use crate::transport::{Connection, Direction, StreamId, StreamSend as _};
 
 pub trait State: private::Sealed {}
 
@@ -22,7 +22,8 @@ impl<Conn> State for Connected<Conn> {}
 pub struct Running<Conn> {
     connection: Direction<Conn>,
     pub receiver: Receiver<message::Receive>,
-    senders: HashMap<StreamId, Sender<Box<dyn message::Outgoing>>>,
+    // senders: HashMap<StreamId, Sender<Box<dyn message::Outgoing>>>,
+    senders: HashMap<StreamId, Sender<message::Send>>,
 }
 impl<Conn> State for Running<Conn> {}
 
@@ -50,8 +51,8 @@ where
             Direction::Incoming(conn) | Direction::Outgoing(conn) => conn.public_key(),
         };
 
-        let id =
-            node::Id::try_from(pk).map_err(|err| eyre!("unabel to obtain id, got {:?}", err))?;
+        let id = node::Id::try_from(pk)
+            .map_err(|err| eyre!("unable to obtain node id, got {:?}", err))?;
 
         Ok(Self {
             id,
@@ -64,14 +65,18 @@ impl<Conn> Peer<Connected<Conn>>
 where
     Conn: Connection,
 {
-    pub fn run(self, stream_ids: Vec<StreamId>) -> Result<Peer<Running<Conn>>> {
+    pub fn run(self, stream_ids: Vec<StreamId>) -> Result<Peer<Running<Conn>>>
+    where
+        <Conn as Connection>::StreamReceive: 'static,
+        <Conn as Connection>::StreamSend: 'static,
+    {
         // FIXME(xla): No queue should be unbounded, backpressure should be finley tuned and/or
         // tunable.
         let (receive_tx, receiver) = flume::unbounded::<message::Receive>();
         let mut senders = HashMap::new();
 
         for stream_id in stream_ids {
-            let (_read, _write) = match &self.state.connection {
+            let (mut stream_receive, stream_send) = match &self.state.connection {
                 Direction::Incoming(conn) | Direction::Outgoing(conn) => {
                     conn.open_bidirectional(stream_id)?
                 }
@@ -81,16 +86,19 @@ where
                 let tx = receive_tx.clone();
 
                 thread::spawn(move || {
-                    loop {
-                        // Deserialize into typed message
-                        // send on receiver_send
-
-                        match tx.try_send(message::Receive::Pex(message::PexReceive::Noop)) {
-                            Ok(_) => continue,
-                            // The receiver is gone, this subroutine needs to be terminated.
-                            Err(flume::TrySendError::Disconnected(_)) => break,
-                            // TODO(xla): Graceful handling here needs to be figured out.
-                            Err(flume::TrySendError::Full(_)) => todo!(),
+                    for res in stream_receive.next() {
+                        match res {
+                            Err(_err) => todo!(),
+                            Ok(buf) => match message::Receive::decode(stream_id, buf) {
+                                Err(_err) => todo!(),
+                                Ok(msg) => match tx.try_send(msg) {
+                                    Ok(_) => continue,
+                                    // The receiver is gone, this subroutine needs to be terminated.
+                                    Err(flume::TrySendError::Disconnected(_)) => break,
+                                    // TODO(xla): Graceful handling needs to be figured out.
+                                    Err(flume::TrySendError::Full(_)) => todo!(),
+                                },
+                            },
                         }
                     }
 
@@ -100,16 +108,23 @@ where
 
             // FIXME(xla): No queue should be unbounded, backpressure should be finley tuned and/or
             // tunable.
-            let (write_tx, write_rx) = flume::unbounded();
+            let (send_tx, send_rx) = flume::unbounded::<message::Send>();
 
             thread::spawn(move || {
                 loop {
-                    match write_rx.recv() {
+                    match send_rx.recv() {
                         // If the sender is gone this subroutine needs to vanish with it.
                         Err(flume::RecvError::Disconnected) => break,
-                        Ok(_msg) => {
-                            // Serialise message
-                            // write bytes
+                        Ok(msg) => {
+                            let mut buf = vec![];
+
+                            match msg.encode(&mut buf) {
+                                Err(_err) => todo!(),
+                                Ok(()) => match stream_send.send(&buf) {
+                                    Err(_err) => todo!(),
+                                    Ok(_) => continue,
+                                },
+                            }
                         }
                     }
                 }
@@ -117,7 +132,7 @@ where
                 // TODO(xla): Log subroutine termination.
             });
 
-            senders.insert(stream_id, write_tx);
+            senders.insert(stream_id, send_tx);
         }
 
         Ok(Peer {
@@ -136,13 +151,13 @@ impl<Conn> Peer<Running<Conn>>
 where
     Conn: Connection,
 {
-    pub fn send(&self, send: message::Send) -> Result<()> {
-        let (id, msg) = match send {
-            message::Send::Pex(msg) => (StreamId::Pex, msg),
+    pub fn send(&self, msg: message::Send) -> Result<()> {
+        let id = match &msg {
+            message::Send::Pex(_msg) => StreamId::Pex,
         };
 
         match self.state.senders.get(&id) {
-            Some(sender) => sender.send(Box::new(msg)).map_err(Report::from),
+            Some(sender) => sender.send(msg).map_err(Report::from),
             None => Err(Report::msg("no open stream to send on")),
         }
     }

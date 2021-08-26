@@ -63,7 +63,7 @@ pub trait StreamSend {
     /// * If the underlying I/O operations fail.
     /// * If the stream is closed.
     /// * If the peer is gone
-    fn send<B: AsRef<[u8]>>(msg: B) -> Result<()>;
+    fn send(&self, msg: &[u8]) -> Result<()>;
 }
 
 /// Trait which describes the core concept of a connection between two peers established by
@@ -73,9 +73,9 @@ pub trait Connection: Send {
     type Error: std::error::Error + Send + Sync + 'static;
     /// Read end of a bidirectional stream. Carries a finite stream of framed messages. Decoding is
     /// left to the caller and should correspond to the type of stream.
-    type StreamRead: Iterator<Item = Result<Vec<u8>>> + Send;
+    type StreamReceive: Iterator<Item = Result<&'static [u8]>> + Send;
     /// Send end of a stream.
-    type StreamSend: StreamSend;
+    type StreamSend: StreamSend + Send;
 
     /// Returns the list of advertised addresses known for this connection.
     fn advertised_addrs(&self) -> Vec<SocketAddr>;
@@ -97,7 +97,7 @@ pub trait Connection: Send {
     fn open_bidirectional(
         &self,
         stream_id: StreamId,
-    ) -> Result<(Self::StreamRead, Self::StreamSend), Self::Error>;
+    ) -> Result<(Self::StreamReceive, Self::StreamSend), Self::Error>;
     /// Public key of the remote peer.
     fn public_key(&self) -> PublicKey;
     /// Local address(es) to the endpoint listens on.
