@@ -134,12 +134,22 @@ impl PublicKey {
                 Signature::Ed25519(sig) => pk.verify(msg, sig).map_err(|_| {
                     Error::signature_invalid("Ed25519 signature verification failed".to_string())
                 }),
+                #[cfg(feature = "secp256k1")]
+                Signature::Secp256k1(_) => Err(Error::signature_mismatch(
+                    "Secp256k1 signature incompatible with Ed25519 public key".to_string(),
+                )),
                 Signature::None => Err(Error::signature_invalid("missing signature".to_string())),
             },
             #[cfg(feature = "secp256k1")]
-            PublicKey::Secp256k1(_) => Err(Error::invalid_key(
-                "unsupported signature algorithm (ECDSA/secp256k1)".to_string(),
-            )),
+            PublicKey::Secp256k1(pk) => match signature {
+                Signature::Secp256k1(sig) => pk.verify(msg, sig).map_err(|_| {
+                    Error::signature_invalid("Secp256k1 signature verification failed".to_string())
+                }),
+                Signature::Ed25519(_) => Err(Error::signature_invalid(
+                    "Ed25519 signature incompatible with Secp256k1 public key".to_string(),
+                )),
+                Signature::None => Err(Error::signature_invalid("missing signature".to_string())),
+            },
         }
     }
 
