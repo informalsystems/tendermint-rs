@@ -9,22 +9,24 @@ pub use self::canonical_vote::CanonicalVote;
 pub use self::power::Power;
 pub use self::sign_vote::*;
 pub use self::validator_index::ValidatorIndex;
+
+use std::convert::{TryFrom, TryInto};
+use std::fmt;
+use std::str::FromStr;
+
+use bytes::BufMut;
+use ed25519::Signature as Ed25519Signature;
+use ed25519::SIGNATURE_LENGTH as ED25519_SIGNATURE_LENGTH;
+use serde::{Deserialize, Serialize};
+
+use tendermint_proto::types::Vote as RawVote;
+use tendermint_proto::{Error as ProtobufError, Protobuf};
+
 use crate::chain::Id as ChainId;
 use crate::consensus::State;
 use crate::error::Error;
 use crate::hash;
 use crate::{account, block, Signature, Time};
-use bytes::BufMut;
-use ed25519::Signature as ed25519Signature;
-use ed25519::SIGNATURE_LENGTH as ed25519SignatureLength;
-use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
-use std::fmt;
-use tendermint_proto::types::Vote as RawVote;
-use tendermint_proto::{Error as ProtobufError, Protobuf};
-
-use crate::signature::Signature::Ed25519;
-use std::str::FromStr;
 
 /// Votes are signed messages from validators for a particular block which
 /// include information about the validator signing it.
@@ -55,7 +57,7 @@ pub struct Vote {
     pub validator_index: ValidatorIndex,
 
     /// Signature
-    pub signature: Signature,
+    pub signature: Option<Signature>,
 }
 
 impl Protobuf<RawVote> for Vote {}
@@ -80,7 +82,7 @@ impl TryFrom<RawVote> for Vote {
             timestamp: value.timestamp.map(|t| t.into()),
             validator_address: value.validator_address.try_into()?,
             validator_index: value.validator_index.try_into()?,
-            signature: value.signature.try_into()?,
+            signature: Signature::new(value.signature),
         })
     }
 }
@@ -95,7 +97,7 @@ impl From<Vote> for RawVote {
             timestamp: value.timestamp.map(Into::into),
             validator_address: value.validator_address.into(),
             validator_index: value.validator_index.into(),
-            signature: value.signature.into(),
+            signature: value.signature.map(|s| s.to_bytes()).unwrap_or_default(),
         }
     }
 }
@@ -166,7 +168,9 @@ impl Default for Vote {
             timestamp: Some(Time::unix_epoch()),
             validator_address: account::Id::new([0; account::LENGTH]),
             validator_index: ValidatorIndex::try_from(0_i32).unwrap(),
-            signature: Ed25519(ed25519Signature::new([0; ed25519SignatureLength])),
+            signature: Some(Signature::from(Ed25519Signature::new(
+                [0; ED25519_SIGNATURE_LENGTH],
+            ))),
         }
     }
 }
@@ -179,7 +183,7 @@ pub struct SignedVote {
 }
 
 impl SignedVote {
-    /// Create new SignedVote from provided canonicalized vote, validator id, and
+    /// Create new `SignedVote` from provided canonicalized vote, validator id, and
     /// the signature of that validator.
     pub fn new(
         vote: Vote,
@@ -193,6 +197,15 @@ impl SignedVote {
             signature,
             validator_address,
         }
+    }
+
+    /// Create a new `SignedVote` from the provided `Vote`, which may or may not be signed.
+    /// If the vote is not signed, this function will return `None`.
+    pub fn from_vote(vote: Vote, chain_id: ChainId) -> Option<Self> {
+        let validator_address = vote.validator_address;
+        vote.signature
+            .clone()
+            .map(|signature| Self::new(vote, chain_id, validator_address, signature))
     }
 
     /// Return the id of the validator that signed this vote.

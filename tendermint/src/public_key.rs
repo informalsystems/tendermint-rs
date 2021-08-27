@@ -110,7 +110,6 @@ impl PublicKey {
 
     /// Get Ed25519 public key
     pub fn ed25519(self) -> Option<Ed25519> {
-        #[allow(unreachable_patterns)]
         match self {
             PublicKey::Ed25519(pk) => Some(pk),
             _ => None,
@@ -130,26 +129,33 @@ impl PublicKey {
     /// Verify the given [`Signature`] using this public key
     pub fn verify(&self, msg: &[u8], signature: &Signature) -> Result<(), Error> {
         match self {
-            PublicKey::Ed25519(pk) => match signature {
-                Signature::Ed25519(sig) => pk.verify(msg, sig).map_err(|_| {
-                    Error::signature_invalid("Ed25519 signature verification failed".to_string())
-                }),
-                #[cfg(feature = "secp256k1")]
-                Signature::Secp256k1(_) => Err(Error::signature_mismatch(
-                    "Secp256k1 signature incompatible with Ed25519 public key".to_string(),
-                )),
-                Signature::None => Err(Error::signature_invalid("missing signature".to_string())),
-            },
+            PublicKey::Ed25519(pk) => {
+                match ed25519_dalek::Signature::try_from(signature.as_bytes()) {
+                    Ok(sig) => pk.verify(msg, &sig).map_err(|_| {
+                        Error::signature_invalid(
+                            "Ed25519 signature verification failed".to_string(),
+                        )
+                    }),
+                    Err(e) => Err(Error::signature_invalid(format!(
+                        "invalid Ed25519 signature: {}",
+                        e
+                    ))),
+                }
+            }
             #[cfg(feature = "secp256k1")]
-            PublicKey::Secp256k1(pk) => match signature {
-                Signature::Secp256k1(sig) => pk.verify(msg, sig).map_err(|_| {
-                    Error::signature_invalid("Secp256k1 signature verification failed".to_string())
-                }),
-                Signature::Ed25519(_) => Err(Error::signature_invalid(
-                    "Ed25519 signature incompatible with Secp256k1 public key".to_string(),
-                )),
-                Signature::None => Err(Error::signature_invalid("missing signature".to_string())),
-            },
+            PublicKey::Secp256k1(pk) => {
+                match k256::ecdsa::Signature::try_from(signature.as_bytes()) {
+                    Ok(sig) => pk.verify(msg, &sig).map_err(|_| {
+                        Error::signature_invalid(
+                            "Secp256k1 signature verification failed".to_string(),
+                        )
+                    }),
+                    Err(e) => Err(Error::signature_invalid(format!(
+                        "invalid Secp256k1 signature: {}",
+                        e
+                    ))),
+                }
+            }
         }
     }
 

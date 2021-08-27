@@ -51,6 +51,9 @@ define_error! {
             [ DisplayOnly<OutOfRangeError> ]
             |_| { format_args!("value out of range") },
 
+        EmptySignature
+            |_| { format_args!("empty signature") },
+
         SignatureInvalid
             { detail: String }
             |e| { format_args!("bad signature: {}", e.detail) },
