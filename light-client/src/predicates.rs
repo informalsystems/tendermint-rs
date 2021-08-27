@@ -189,8 +189,8 @@ pub trait VerificationPredicates: Send + Sync {
     /// the hash of the validator set in the untrusted one.
     fn valid_next_validator_set(
         &self,
-        trusted_header: &Header,
         untrusted_header: &Header,
+        trusted_header: &Header,
     ) -> Result<(), VerificationError> {
         if trusted_header.next_validators_hash == untrusted_header.validators_hash {
             Ok(())
@@ -271,8 +271,8 @@ pub fn verify(
         // If the untrusted block is the very next block after the trusted block,
         // check that their (next) validator sets hashes match.
         vp.valid_next_validator_set(
-            &trusted.signed_header.header,
             &untrusted.signed_header.header,
+            &trusted.signed_header.header,
         )?;
     } else {
         // Otherwise, ensure that the untrusted block has a greater height than
@@ -660,8 +660,8 @@ mod tests {
         // Test scenarios -->
         // 1. next_validator_set hash matches
         let result_ok = vp.valid_next_validator_set(
-            &light_block2.signed_header.header,
             &light_block1.signed_header.header,
+            &light_block2.signed_header.header,
         );
 
         assert!(result_ok.is_ok());
@@ -677,8 +677,8 @@ mod tests {
             .into();
 
         let result_err = vp.valid_next_validator_set(
-            &light_block2.signed_header.header,
             &light_block3.signed_header.header,
+            &light_block2.signed_header.header,
         );
 
         match result_err {
