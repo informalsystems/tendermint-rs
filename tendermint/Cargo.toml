@@ -72,6 +72,4 @@ std = [
 [dev-dependencies]
 pretty_assertions = "0.7.2"
 proptest = "0.10.1"
-rand = "0.8.4"
-rand_chacha = "0.3.1"
 tendermint-pbt-gen = { path = "../pbt-gen" }

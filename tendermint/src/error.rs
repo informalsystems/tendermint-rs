@@ -58,10 +58,6 @@ define_error! {
             { detail: String }
             |e| { format_args!("bad signature: {}", e.detail) },
 
-        SignatureMismatch
-            { detail: String }
-            |e| { format_args!("signature mismatch: {}", e.detail) },
-
         InvalidMessageType
             |_| { format_args!("invalid message type") },
 
