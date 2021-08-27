@@ -8,6 +8,7 @@ use crate::{
 
 use errors::VerificationError;
 use std::time::Duration;
+use tendermint::hash::Hash;
 
 pub mod errors;
 
@@ -28,16 +29,16 @@ pub trait VerificationPredicates: Send + Sync {
     /// set.
     fn validator_sets_match(
         &self,
-        light_block: &LightBlock,
+        validators: &ValidatorSet,
+        header_validators_hash: Hash,
         hasher: &dyn Hasher,
     ) -> Result<(), VerificationError> {
-        let validators_hash = hasher.hash_validator_set(&light_block.validators);
-
-        if light_block.signed_header.header.validators_hash == validators_hash {
+        let validators_hash = hasher.hash_validator_set(validators);
+        if header_validators_hash == validators_hash {
             Ok(())
         } else {
             Err(VerificationError::invalid_validator_set(
-                light_block.signed_header.header.validators_hash,
+                header_validators_hash,
                 validators_hash,
             ))
         }
@@ -46,16 +47,16 @@ pub trait VerificationPredicates: Send + Sync {
     /// Check that the hash of the next validator set in the header match the actual one.
     fn next_validators_match(
         &self,
-        light_block: &LightBlock,
+        next_validators: &ValidatorSet,
+        header_next_validators_hash: Hash,
         hasher: &dyn Hasher,
     ) -> Result<(), VerificationError> {
-        let next_validators_hash = hasher.hash_validator_set(&light_block.next_validators);
-
-        if light_block.signed_header.header.next_validators_hash == next_validators_hash {
+        let next_validators_hash = hasher.hash_validator_set(next_validators);
+        if header_next_validators_hash == next_validators_hash {
             Ok(())
         } else {
             Err(VerificationError::invalid_next_validator_set(
-                light_block.signed_header.header.next_validators_hash,
+                header_next_validators_hash,
                 next_validators_hash,
             ))
         }
@@ -64,17 +65,17 @@ pub trait VerificationPredicates: Send + Sync {
     /// Check that the hash of the header in the commit matches the actual one.
     fn header_matches_commit(
         &self,
-        signed_header: &SignedHeader,
+        header: &Header,
+        commit_hash: Hash,
         hasher: &dyn Hasher,
     ) -> Result<(), VerificationError> {
-        let header_hash = hasher.hash_header(&signed_header.header);
-
-        if header_hash == signed_header.commit.block_id.hash {
+        let header_hash = hasher.hash_header(header);
+        if header_hash == commit_hash {
             Ok(())
         } else {
             Err(VerificationError::invalid_commit_value(
                 header_hash,
-                signed_header.commit.block_id.hash,
+                commit_hash,
             ))
         }
     }
@@ -188,17 +189,15 @@ pub trait VerificationPredicates: Send + Sync {
     /// the hash of the validator set in the untrusted one.
     fn valid_next_validator_set(
         &self,
-        light_block: &LightBlock,
-        trusted_state: &LightBlock,
+        trusted_header: &Header,
+        untrusted_header: &Header,
     ) -> Result<(), VerificationError> {
-        if light_block.signed_header.header.validators_hash
-            == trusted_state.signed_header.header.next_validators_hash
-        {
+        if trusted_header.next_validators_hash == untrusted_header.validators_hash {
             Ok(())
         } else {
             Err(VerificationError::invalid_next_validator_set(
-                light_block.signed_header.header.validators_hash,
-                trusted_state.signed_header.header.next_validators_hash,
+                untrusted_header.validators_hash,
+                trusted_header.next_validators_hash,
             ))
         }
     }
@@ -233,13 +232,25 @@ pub fn verify(
     vp.is_header_from_past(&untrusted.signed_header.header, options.clock_drift, now)?;
 
     // Ensure the header validator hashes match the given validators
-    vp.validator_sets_match(untrusted, &*hasher)?;
+    vp.validator_sets_match(
+        &untrusted.validators,
+        untrusted.signed_header.header.validators_hash,
+        &*hasher,
+    )?;
 
     // Ensure the header next validator hashes match the given next validators
-    vp.next_validators_match(untrusted, &*hasher)?;
+    vp.next_validators_match(
+        &untrusted.next_validators,
+        untrusted.signed_header.header.next_validators_hash,
+        &*hasher,
+    )?;
 
     // Ensure the header matches the commit
-    vp.header_matches_commit(&untrusted.signed_header, hasher)?;
+    vp.header_matches_commit(
+        &untrusted.signed_header.header,
+        untrusted.signed_header.commit.block_id.hash,
+        hasher,
+    )?;
 
     // Additional implementation specific validation
     vp.valid_commit(
@@ -259,7 +270,10 @@ pub fn verify(
     if untrusted.height() == trusted_next_height {
         // If the untrusted block is the very next block after the trusted block,
         // check that their (next) validator sets hashes match.
-        vp.valid_next_validator_set(untrusted, trusted)?;
+        vp.valid_next_validator_set(
+            &trusted.signed_header.header,
+            &untrusted.signed_header.header,
+        )?;
     } else {
         // Otherwise, ensure that the untrusted block has a greater height than
         // the trusted block.
@@ -437,12 +451,20 @@ mod tests {
 
         // Test positive case
         // 1. For predicate: validator_sets_match
-        let val_sets_match_ok = vp.validator_sets_match(&light_block, &hasher);
+        let val_sets_match_ok = vp.validator_sets_match(
+            &light_block.validators,
+            light_block.signed_header.header.validators_hash,
+            &hasher,
+        );
 
         assert!(val_sets_match_ok.is_ok());
 
         // 2. For predicate: next_validator_sets_match
-        let next_val_sets_match_ok = vp.next_validators_match(&light_block, &hasher);
+        let next_val_sets_match_ok = vp.next_validators_match(
+            &light_block.next_validators,
+            light_block.signed_header.header.next_validators_hash,
+            &hasher,
+        );
 
         assert!(next_val_sets_match_ok.is_ok());
 
@@ -450,7 +472,11 @@ mod tests {
         // 1. For predicate: validator_sets_match
         light_block.validators = bad_validator_set.clone();
 
-        let val_sets_match_err = vp.validator_sets_match(&light_block, &hasher);
+        let val_sets_match_err = vp.validator_sets_match(
+            &light_block.validators,
+            light_block.signed_header.header.validators_hash,
+            &hasher,
+        );
 
         match val_sets_match_err {
             Err(VerificationError(VerificationErrorDetail::InvalidValidatorSet(e), _)) => {
@@ -468,7 +494,11 @@ mod tests {
 
         // 2. For predicate: next_validator_sets_match
         light_block.next_validators = bad_validator_set;
-        let next_val_sets_match_err = vp.next_validators_match(&light_block, &hasher);
+        let next_val_sets_match_err = vp.next_validators_match(
+            &light_block.next_validators,
+            light_block.signed_header.header.next_validators_hash,
+            &hasher,
+        );
 
         match next_val_sets_match_err {
             Err(VerificationError(VerificationErrorDetail::InvalidNextValidatorSet(e), _)) => {
@@ -496,7 +526,11 @@ mod tests {
         let hasher = ProdHasher::default();
 
         // 1. ensure valid signed header verifies
-        let result_ok = vp.header_matches_commit(&signed_header, &hasher);
+        let result_ok = vp.header_matches_commit(
+            &signed_header.header,
+            signed_header.commit.block_id.hash,
+            &hasher,
+        );
 
         assert!(result_ok.is_ok());
 
@@ -505,7 +539,11 @@ mod tests {
             "15F15EF50BDE2018F4B129A827F90C18222C757770C8295EB8EE7BF50E761BC0"
                 .parse()
                 .unwrap();
-        let result_err = vp.header_matches_commit(&signed_header, &hasher);
+        let result_err = vp.header_matches_commit(
+            &signed_header.header,
+            signed_header.commit.block_id.hash,
+            &hasher,
+        );
 
         // 3. ensure it fails with: VerificationVerificationError::InvalidCommitValue
         let header_hash = hasher.hash_header(&signed_header.header);
@@ -621,7 +659,10 @@ mod tests {
 
         // Test scenarios -->
         // 1. next_validator_set hash matches
-        let result_ok = vp.valid_next_validator_set(&light_block1, &light_block2);
+        let result_ok = vp.valid_next_validator_set(
+            &light_block2.signed_header.header,
+            &light_block1.signed_header.header,
+        );
 
         assert!(result_ok.is_ok());
 
@@ -635,7 +676,10 @@ mod tests {
             .unwrap()
             .into();
 
-        let result_err = vp.valid_next_validator_set(&light_block3, &light_block2);
+        let result_err = vp.valid_next_validator_set(
+            &light_block2.signed_header.header,
+            &light_block3.signed_header.header,
+        );
 
         match result_err {
             Err(VerificationError(VerificationErrorDetail::InvalidNextValidatorSet(e), _)) => {
