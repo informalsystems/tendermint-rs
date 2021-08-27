@@ -110,6 +110,7 @@ impl PublicKey {
 
     /// Get Ed25519 public key
     pub fn ed25519(self) -> Option<Ed25519> {
+        #[allow(unreachable_patterns)]
         match self {
             PublicKey::Ed25519(pk) => Some(pk),
             _ => None,
