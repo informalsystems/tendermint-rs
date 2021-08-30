@@ -14,7 +14,7 @@ pub mod errors;
 
 /// Production predicates, using the default implementation
 /// of the `VerificationPredicates` trait.
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct ProdPredicates;
 impl VerificationPredicates for ProdPredicates {}
 
