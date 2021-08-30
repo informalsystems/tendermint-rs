@@ -58,7 +58,7 @@ impl TryFrom<RawProposal> for Proposal {
             pol_round,
             block_id: value.block_id.map(TryInto::try_into).transpose()?,
             timestamp: value.timestamp.map(|t| t.into()),
-            signature: Signature::new(value.signature),
+            signature: Signature::new(value.signature)?,
         })
     }
 }

@@ -11,6 +11,9 @@ use tendermint_proto::Protobuf;
 
 use crate::error::Error;
 
+/// The expected length of all currently supported signatures, in bytes.
+pub const SIGNATURE_LENGTH: usize = 64;
+
 /// Signatures
 #[derive(Clone, Debug, PartialEq)]
 pub struct Signature(Vec<u8>);
@@ -21,11 +24,15 @@ impl TryFrom<Vec<u8>> for Signature {
     type Error = Error;
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
-        if bytes.is_empty() {
-            return Err(Error::empty_signature());
-        }
+        Self::new_non_empty(bytes)
+    }
+}
 
-        Ok(Self(bytes))
+impl TryFrom<&[u8]> for Signature {
+    type Error = Error;
+
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        Self::new_non_empty(bytes)
     }
 }
 
@@ -37,12 +44,26 @@ impl From<Signature> for Vec<u8> {
 
 impl Signature {
     /// Create a new signature from the given byte array, if non-empty.
-    pub fn new(bytes: Vec<u8>) -> Option<Self> {
+    ///
+    /// If the given byte array is empty, returns `Ok(None)`.
+    pub fn new<B: AsRef<[u8]>>(bytes: B) -> Result<Option<Self>, Error> {
+        let bytes = bytes.as_ref();
         if bytes.is_empty() {
-            None
-        } else {
-            Some(Self(bytes))
+            return Ok(None);
         }
+        if bytes.len() != SIGNATURE_LENGTH {
+            return Err(Error::signature_invalid(format!(
+                "expected signature to be {} bytes long, but was {} bytes",
+                SIGNATURE_LENGTH,
+                bytes.len()
+            )));
+        }
+
+        Ok(Some(Self(bytes.to_vec())))
+    }
+
+    fn new_non_empty<B: AsRef<[u8]>>(bytes: B) -> Result<Self, Error> {
+        Self::new(bytes)?.ok_or_else(Error::empty_signature)
     }
 
     /// Return a reference to the underlying byte array
