@@ -1,22 +1,27 @@
+use std::convert::TryFrom;
+
 use bytes::buf::{Buf, BufMut};
-use eyre::Result;
+use eyre::{Report, Result};
 use prost::Message as _;
 
+use proto::Protobuf;
 use tendermint_proto as proto;
 
 use crate::transport::StreamId;
 
+pub trait Outgoing: std::marker::Send + Sync {}
+
 pub enum Receive {
-    Pex(PexReceive),
+    Pex(Pex),
 }
 
 impl From<proto::p2p::message::Sum> for Receive {
     fn from(raw: proto::p2p::message::Sum) -> Self {
         match raw {
             proto::p2p::message::Sum::PexAddrs(proto::p2p::PexAddrs { addrs }) => {
-                Self::Pex(PexReceive::Addrs(addrs))
+                Self::Pex(Pex::Addrs(addrs))
             }
-            proto::p2p::message::Sum::PexRequest(_) => Self::Pex(PexReceive::Request),
+            proto::p2p::message::Sum::PexRequest(_) => Self::Pex(Pex::Request),
         }
     }
 }
@@ -40,44 +45,56 @@ impl Receive {
     }
 }
 
-pub enum PexReceive {
+#[derive(Clone)]
+pub enum Pex {
     Addrs(Vec<proto::p2p::NetAddress>),
     Request,
 }
 
-pub enum Send {
-    Pex(PexSend),
-}
+impl Outgoing for Pex {}
 
-impl Send {
-    pub fn encode<B>(self, buf: &mut B) -> Result<()>
-    where
-        B: BufMut,
-    {
-        let msg = match self {
-            Self::Pex(pex) => proto::p2p::message::Sum::from(pex),
-        };
+impl Protobuf<proto::p2p::Message> for Pex {}
 
-        Ok(msg.encode(buf))
-    }
-}
+impl TryFrom<proto::p2p::Message> for Pex {
+    type Error = Report;
 
-pub trait Outgoing: std::marker::Send + Sync {}
-
-pub enum PexSend {
-    Addrs(Vec<proto::p2p::NetAddress>),
-    Request,
-}
-
-impl From<PexSend> for proto::p2p::message::Sum {
-    fn from(msg: PexSend) -> Self {
-        match msg {
-            PexSend::Addrs(addrs) => {
-                proto::p2p::message::Sum::PexAddrs(proto::p2p::PexAddrs { addrs })
+    fn try_from(proto::p2p::Message { sum }: proto::p2p::Message) -> Result<Self, Self::Error> {
+        match sum {
+            Some(proto::p2p::message::Sum::PexAddrs(proto::p2p::PexAddrs { addrs })) => {
+                Ok(Self::Addrs(addrs))
             }
-            PexSend::Request => proto::p2p::message::Sum::PexRequest(proto::p2p::PexRequest {}),
+            Some(proto::p2p::message::Sum::PexRequest(_)) => Ok(Self::Request),
+            None => Err(Report::msg("unable to decode message into PexReceive")),
         }
     }
 }
 
-impl Outgoing for PexSend {}
+impl From<Pex> for proto::p2p::Message {
+    fn from(pex: Pex) -> Self {
+        use proto::p2p::{message::Sum, PexAddrs, PexRequest};
+
+        let sum = match pex {
+            Pex::Addrs(addrs) => Sum::PexAddrs(PexAddrs { addrs }),
+            Pex::Request => Sum::PexRequest(PexRequest {}),
+        };
+
+        Self { sum: Some(sum) }
+    }
+}
+
+pub enum Send {
+    Pex(Pex),
+}
+
+impl Send {
+    pub fn encode<B>(self, buf: &mut B) -> Result<(), proto::Error>
+    where
+        B: BufMut,
+    {
+        let msg = match self {
+            Self::Pex(pex) => pex,
+        };
+
+        msg.encode(buf)
+    }
+}

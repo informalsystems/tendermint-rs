@@ -23,6 +23,8 @@ pub struct Running<Conn> {
     connection: Direction<Conn>,
     pub receiver: Receiver<message::Receive>,
     // senders: HashMap<StreamId, Sender<Box<dyn message::Outgoing>>>,
+    // FIXME(xla): This is suboptimal, every sender can send all messages of type `message::Send`,
+    // this should be constraint to the messages pertaining to that stream.
     senders: HashMap<StreamId, Sender<message::Send>>,
 }
 impl<Conn> State for Running<Conn> {}
