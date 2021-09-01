@@ -58,6 +58,11 @@ define_error! {
                     e.address)
             },
 
+        MissingSignature
+            | _ | {
+                format_args!("missing signature")
+            },
+
         InvalidSignature
             {
                 signature: Vec<u8>,
@@ -65,7 +70,7 @@ define_error! {
                 sign_bytes: Vec<u8>,
             }
             | e | {
-                format_args!("Couldn't verify signature `{:?}` with validator `{:?}` on sign_bytes `{:?}`",
+                format_args!("failed to verify signature `{:?}` with validator `{:?}` on sign_bytes `{:?}`",
                     e.signature, e.validator, e.sign_bytes)
             },
 

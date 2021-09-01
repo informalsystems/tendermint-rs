@@ -215,12 +215,12 @@ mod tests {
                     assert!(!verify_signature(
                         &valset2[i].get_public_key().unwrap(),
                         &sign_bytes,
-                        signature
+                        signature.as_ref().unwrap()
                     ));
                     assert!(verify_signature(
                         &valset1[i].get_public_key().unwrap(),
                         &sign_bytes,
-                        signature
+                        signature.as_ref().unwrap()
                     ));
                 }
                 _ => panic!("signature was not a commit"),

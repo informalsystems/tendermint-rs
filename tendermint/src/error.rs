@@ -45,15 +45,18 @@ define_error! {
 
         Protocol
             { detail: String }
-            |_| { format_args!("protocol error") },
+            |e| { format_args!("protocol error: {}", e.detail) },
 
         OutOfRange
             [ DisplayOnly<OutOfRangeError> ]
             |_| { format_args!("value out of range") },
 
+        EmptySignature
+            |_| { format_args!("empty signature") },
+
         SignatureInvalid
             { detail: String }
-            |_| { format_args!("bad signature") },
+            |e| { format_args!("bad signature: {}", e.detail) },
 
         InvalidMessageType
             |_| { format_args!("invalid message type") },

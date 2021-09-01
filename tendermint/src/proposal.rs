@@ -35,7 +35,7 @@ pub struct Proposal {
     /// Timestamp
     pub timestamp: Option<Time>,
     /// Signature
-    pub signature: Signature,
+    pub signature: Option<Signature>,
 }
 
 impl Protobuf<RawProposal> for Proposal {}
@@ -58,7 +58,7 @@ impl TryFrom<RawProposal> for Proposal {
             pol_round,
             block_id: value.block_id.map(TryInto::try_into).transpose()?,
             timestamp: value.timestamp.map(|t| t.into()),
-            signature: value.signature.try_into()?,
+            signature: Signature::new(value.signature)?,
         })
     }
 }
@@ -72,7 +72,7 @@ impl From<Proposal> for RawProposal {
             pol_round: value.pol_round.map_or(-1, Into::into),
             block_id: value.block_id.map(Into::into),
             timestamp: value.timestamp.map(Into::into),
-            signature: value.signature.into(),
+            signature: value.signature.map(|s| s.to_bytes()).unwrap_or_default(),
         }
     }
 }
@@ -150,7 +150,9 @@ mod tests {
                 .unwrap(),
             }),
             timestamp: Some(dt.into()),
-            signature: Signature::Ed25519(Ed25519Signature::new([0; ED25519_SIGNATURE_SIZE])),
+            signature: Some(Signature::from(Ed25519Signature::new(
+                [0; ED25519_SIGNATURE_SIZE],
+            ))),
         };
 
         let mut got = vec![];
@@ -232,7 +234,9 @@ mod tests {
                 .unwrap(),
             }),
             timestamp: Some(dt.into()),
-            signature: Signature::Ed25519(Ed25519Signature::new([0; ED25519_SIGNATURE_SIZE])),
+            signature: Some(Signature::from(Ed25519Signature::new(
+                [0; ED25519_SIGNATURE_SIZE],
+            ))),
         };
 
         let mut got = vec![];
@@ -316,7 +320,9 @@ mod tests {
                 )
                 .unwrap(),
             }),
-            signature: Signature::Ed25519(Ed25519Signature::new([0; ED25519_SIGNATURE_SIZE])),
+            signature: Some(Signature::from(Ed25519Signature::new(
+                [0; ED25519_SIGNATURE_SIZE],
+            ))),
         };
         let want = SignProposalRequest {
             proposal,

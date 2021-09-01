@@ -4,103 +4,94 @@ pub use ed25519::{Signature as Ed25519Signature, SIGNATURE_LENGTH as ED25519_SIG
 pub use signature::{Signer, Verifier};
 
 #[cfg(feature = "secp256k1")]
-pub use k256::ecdsa::Signature as Secp256k1;
+pub use k256::ecdsa::Signature as Secp256k1Signature;
 
-use crate::error::Error;
 use std::convert::TryFrom;
 use tendermint_proto::Protobuf;
 
+use crate::error::Error;
+
+/// The expected length of all currently supported signatures, in bytes.
+pub const SIGNATURE_LENGTH: usize = 64;
+
 /// Signatures
-#[derive(Copy, Clone, Debug, PartialEq)]
-#[non_exhaustive]
-pub enum Signature {
-    /// Ed25519 block signature
-    Ed25519(Ed25519Signature),
-    /// No signature present
-    None, /* This could have been implemented as an `Option<>` but then handling it would be
-           * outside the scope of this enum. */
-}
+#[derive(Clone, Debug, PartialEq)]
+pub struct Signature(Vec<u8>);
 
 impl Protobuf<Vec<u8>> for Signature {}
 
 impl TryFrom<Vec<u8>> for Signature {
     type Error = Error;
 
-    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        if value.is_empty() {
-            return Ok(Self::default());
-        }
-        if value.len() != ED25519_SIGNATURE_SIZE {
-            return Err(Error::invalid_signature_id_length());
-        }
-        let mut slice: [u8; ED25519_SIGNATURE_SIZE] = [0; ED25519_SIGNATURE_SIZE];
-        slice.copy_from_slice(&value[..]);
-        Ok(Signature::Ed25519(Ed25519Signature::new(slice)))
+    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+        Self::new_non_empty(bytes)
+    }
+}
+
+impl TryFrom<&[u8]> for Signature {
+    type Error = Error;
+
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        Self::new_non_empty(bytes)
     }
 }
 
 impl From<Signature> for Vec<u8> {
     fn from(value: Signature) -> Self {
-        value.as_bytes().to_vec()
-    }
-}
-
-impl Default for Signature {
-    fn default() -> Self {
-        Signature::None
+        value.0
     }
 }
 
 impl Signature {
-    /// Return the algorithm used to create this particular signature
-    pub fn algorithm(&self) -> Algorithm {
-        match self {
-            Signature::Ed25519(_) => Algorithm::Ed25519,
-            Signature::None => Algorithm::Ed25519, /* It doesn't matter what algorithm an empty
-                                                    * signature has. */
+    /// Create a new signature from the given byte array, if non-empty.
+    ///
+    /// If the given byte array is empty, returns `Ok(None)`.
+    pub fn new<B: AsRef<[u8]>>(bytes: B) -> Result<Option<Self>, Error> {
+        let bytes = bytes.as_ref();
+        if bytes.is_empty() {
+            return Ok(None);
         }
+        if bytes.len() != SIGNATURE_LENGTH {
+            return Err(Error::signature_invalid(format!(
+                "expected signature to be {} bytes long, but was {} bytes",
+                SIGNATURE_LENGTH,
+                bytes.len()
+            )));
+        }
+
+        Ok(Some(Self(bytes.to_vec())))
     }
 
-    /// Get Ed25519 signature
-    pub fn ed25519(self) -> Option<Ed25519Signature> {
-        match self {
-            Signature::Ed25519(sig) => Some(sig),
-            Signature::None => None,
-        }
+    fn new_non_empty<B: AsRef<[u8]>>(bytes: B) -> Result<Self, Error> {
+        Self::new(bytes)?.ok_or_else(Error::empty_signature)
     }
 
-    /// Return the raw bytes of this signature
+    /// Return a reference to the underlying byte array
     pub fn as_bytes(&self) -> &[u8] {
-        self.as_ref()
+        self.0.as_ref()
     }
 
-    /// Get a vector containing the byte serialization of this key
+    /// Return the underlying byte array
     pub fn to_bytes(self) -> Vec<u8> {
-        self.as_bytes().to_vec()
+        self.0
     }
 }
 
 impl AsRef<[u8]> for Signature {
     fn as_ref(&self) -> &[u8] {
-        match self {
-            Signature::Ed25519(sig) => sig.as_ref(),
-            Signature::None => &[],
-        }
+        self.as_bytes()
     }
 }
 
 impl From<Ed25519Signature> for Signature {
     fn from(pk: Ed25519Signature) -> Signature {
-        Signature::Ed25519(pk)
+        Self(pk.as_ref().to_vec())
     }
 }
 
-/// Digital signature algorithms
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum Algorithm {
-    /// ECDSA over secp256k1
-    EcdsaSecp256k1,
-
-    /// EdDSA over Curve25519
-    Ed25519,
+#[cfg(feature = "secp256k1")]
+impl From<Secp256k1Signature> for Signature {
+    fn from(pk: Secp256k1Signature) -> Signature {
+        Self(pk.as_ref().to_vec())
+    }
 }

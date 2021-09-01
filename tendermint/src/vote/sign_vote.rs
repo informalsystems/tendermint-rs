@@ -128,7 +128,7 @@ mod tests {
             ])
             .unwrap(),
             validator_index: ValidatorIndex::try_from(56789).unwrap(),
-            signature: Signature::try_from(vec![
+            signature: Signature::new(vec![
                 130u8, 246, 183, 50, 153, 248, 28, 57, 51, 142, 55, 217, 194, 24, 134, 212, 233,
                 100, 211, 10, 24, 174, 179, 117, 41, 65, 141, 134, 149, 239, 65, 174, 217, 42, 6,
                 184, 112, 17, 7, 97, 255, 221, 252, 16, 60, 144, 30, 212, 167, 39, 67, 35, 118,
@@ -136,6 +136,7 @@ mod tests {
             ])
             .unwrap(),
         };
+
         let mut got = vec![];
 
         let request = SignVoteRequest {
@@ -213,7 +214,7 @@ mod tests {
             ])
             .unwrap(),
             validator_index: ValidatorIndex::try_from(56789).unwrap(),
-            signature: Signature::try_from(vec![
+            signature: Signature::new(vec![
                 130u8, 246, 183, 50, 153, 248, 28, 57, 51, 142, 55, 217, 194, 24, 134, 212, 233,
                 100, 211, 10, 24, 174, 179, 117, 41, 65, 141, 134, 149, 239, 65, 174, 217, 42, 6,
                 184, 112, 17, 7, 97, 255, 221, 252, 16, 60, 144, 30, 212, 167, 39, 67, 35, 118,
@@ -363,7 +364,7 @@ mod tests {
                 .unwrap(),
             }),
             // signature: None,
-            signature: Signature::try_from(vec![
+            signature: Signature::new(vec![
                 130u8, 246, 183, 50, 153, 248, 28, 57, 51, 142, 55, 217, 194, 24, 134, 212, 233,
                 100, 211, 10, 24, 174, 179, 117, 41, 65, 141, 134, 149, 239, 65, 174, 217, 42, 6,
                 184, 112, 17, 7, 97, 255, 221, 252, 16, 60, 144, 30, 212, 167, 39, 67, 35, 118,
@@ -425,7 +426,7 @@ mod tests {
                 )
                 .unwrap(),
             }),
-            signature: Signature::try_from(vec![1; ED25519_SIGNATURE_SIZE]).unwrap(),
+            signature: Signature::new(vec![1; ED25519_SIGNATURE_SIZE]).unwrap(),
         };
         let want = SignVoteRequest {
             vote,

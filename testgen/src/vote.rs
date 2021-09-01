@@ -5,7 +5,7 @@ use simple_error::*;
 use std::convert::TryFrom;
 use tendermint::{
     block::{self, parts::Header as PartSetHeader},
-    signature::{self, Signature, Signer, ED25519_SIGNATURE_SIZE},
+    signature::{Signature, Signer, ED25519_SIGNATURE_SIZE},
     vote,
     vote::ValidatorIndex,
 };
@@ -130,13 +130,13 @@ impl Generator<vote::Vote> for Vote {
             timestamp: Some(timestamp),
             validator_address: block_validator.address,
             validator_index: ValidatorIndex::try_from(validator_index as u32).unwrap(),
-            signature: Signature::Ed25519(try_with!(
-                signature::Ed25519Signature::try_from(&[0_u8; ED25519_SIGNATURE_SIZE][..]),
-                "failed to construct empty ed25519 signature"
-            )),
+            signature: Signature::new(vec![0_u8; ED25519_SIGNATURE_SIZE])
+                .map_err(|e| SimpleError::new(e.to_string()))?,
         };
+
         let sign_bytes = get_vote_sign_bytes(block_header.chain_id, &vote);
-        vote.signature = signer.sign(sign_bytes.as_slice()).into();
+        vote.signature = Some(signer.sign(sign_bytes.as_slice()).into());
+
         Ok(vote)
     }
 }
@@ -183,12 +183,12 @@ mod tests {
         assert!(!verify_signature(
             &valset1[0].get_public_key().unwrap(),
             &sign_bytes,
-            &block_vote.signature
+            block_vote.signature.as_ref().unwrap()
         ));
         assert!(verify_signature(
             &valset1[1].get_public_key().unwrap(),
             &sign_bytes,
-            &block_vote.signature
+            block_vote.signature.as_ref().unwrap()
         ));
     }
 }

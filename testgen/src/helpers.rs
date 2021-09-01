@@ -43,20 +43,16 @@ pub fn read_stdin() -> Result<String, SimpleError> {
 }
 
 pub fn get_vote_sign_bytes(chain_id: chain::Id, vote: &vote::Vote) -> Vec<u8> {
-    let signed_vote = vote::SignedVote::new(
-        vote.clone(),
-        chain_id,
-        vote.validator_address,
-        vote.signature,
-    );
+    let signed_vote = vote::SignedVote::from_vote(vote.clone(), chain_id).unwrap();
+
     signed_vote.sign_bytes()
 }
 
 pub fn verify_signature(verifier: &public_key::Ed25519, msg: &[u8], signature: &Signature) -> bool {
-    match signature {
-        tendermint::signature::Signature::Ed25519(sig) => verifier.verify(msg, sig).is_ok(),
-        _ => false,
-    }
+    use std::convert::TryFrom;
+
+    let sig = ed25519_dalek::Signature::try_from(signature.as_bytes());
+    sig.and_then(|sig| verifier.verify(msg, &sig)).is_ok()
 }
 
 pub fn get_time(abs: u64) -> Time {

@@ -138,12 +138,9 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
                 None => continue, // Cannot find matching validator, so we skip the vote
             };
 
-            let signed_vote = SignedVote::new(
-                vote.clone(),
-                signed_header.header.chain_id.clone(),
-                vote.validator_address,
-                vote.signature,
-            );
+            let signed_vote =
+                SignedVote::from_vote(vote.clone(), signed_header.header.chain_id.clone())
+                    .ok_or_else(VerificationError::missing_signature)?;
 
             // Check vote is valid
             let sign_bytes = signed_vote.sign_bytes();
@@ -152,7 +149,7 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
                 .is_err()
             {
                 return Err(VerificationError::invalid_signature(
-                    signed_vote.signature().to_bytes(),
+                    signed_vote.signature().as_bytes().to_vec(),
                     Box::new(validator),
                     sign_bytes,
                 ));
@@ -212,7 +209,7 @@ fn non_absent_vote(
         timestamp: Some(timestamp),
         validator_address,
         validator_index,
-        signature: *signature,
+        signature: signature.clone(),
     })
 }
 
