@@ -77,6 +77,21 @@ impl Status {
     }
 }
 
+/// Encapsulated reference to the state of a [`LightBlock`] without its
+/// provider. Primarily used in Light Client verification.
+pub struct LightBlockState<'a> {
+    pub signed_header: &'a SignedHeader,
+    pub validators: &'a ValidatorSet,
+    pub next_validators: &'a ValidatorSet,
+}
+
+impl<'a> LightBlockState<'a> {
+    /// Convenience method to expose the height of the associated header.
+    pub fn height(&self) -> Height {
+        self.signed_header.header.height
+    }
+}
+
 /// A light block is the core data structure used by the light client.
 /// It records everything the light client needs to know about a block.
 #[derive(Clone, Debug, Display, PartialEq, Serialize, Deserialize)]
@@ -116,6 +131,15 @@ impl LightBlock {
     /// This is a shorthand for `block.signed_header.header.height`.
     pub fn height(&self) -> Height {
         self.signed_header.header.height
+    }
+
+    /// Obtain the state of the light block, without its provider.
+    pub fn state(&self) -> LightBlockState<'_> {
+        LightBlockState {
+            signed_header: &self.signed_header,
+            validators: &self.validators,
+            next_validators: &self.next_validators,
+        }
     }
 }
 

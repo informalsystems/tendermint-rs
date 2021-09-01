@@ -235,9 +235,12 @@ impl LightClient {
             let (current_block, status) = self.get_or_fetch_block(current_height, state)?;
 
             // Validate and verify the current block
-            let verdict = self
-                .verifier
-                .verify(&current_block, &trusted_state, &self.options, now);
+            let verdict = self.verifier.verify(
+                current_block.state(),
+                trusted_state.state(),
+                &self.options,
+                now,
+            );
 
             match verdict {
                 Verdict::Success => {

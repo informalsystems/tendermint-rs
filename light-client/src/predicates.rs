@@ -1,9 +1,8 @@
 //! Predicates for light block validation and verification.
 
 use crate::{
-    light_client::Options,
     operations::{CommitValidator, Hasher, VotingPowerCalculator},
-    types::{Header, LightBlock, SignedHeader, Time, TrustThreshold, ValidatorSet},
+    types::{Header, SignedHeader, Time, TrustThreshold, ValidatorSet},
 };
 
 use errors::VerificationError;
@@ -201,105 +200,6 @@ pub trait VerificationPredicates: Send + Sync {
             ))
         }
     }
-}
-
-/// Validate the given light block.
-///
-/// - Ensure the latest trusted header hasn't expired
-/// - Ensure the header validator hashes match the given validators
-/// - Ensure the header next validator hashes match the given next validators
-/// - Additional implementation specific validation via `commit_validator`
-/// - Check that the untrusted block is more recent than the trusted state
-/// - If the untrusted block is the very next block after the trusted block,
-/// check that their (next) validator sets hashes match.
-/// - Otherwise, ensure that the untrusted block has a greater height than
-/// the trusted block.
-#[allow(clippy::too_many_arguments)]
-pub fn verify(
-    vp: &dyn VerificationPredicates,
-    voting_power_calculator: &dyn VotingPowerCalculator,
-    commit_validator: &dyn CommitValidator,
-    hasher: &dyn Hasher,
-    trusted: &LightBlock,
-    untrusted: &LightBlock,
-    options: &Options,
-    now: Time,
-) -> Result<(), VerificationError> {
-    // Ensure the latest trusted header hasn't expired
-    vp.is_within_trust_period(&trusted.signed_header.header, options.trusting_period, now)?;
-
-    // Ensure the header isn't from a future time
-    vp.is_header_from_past(&untrusted.signed_header.header, options.clock_drift, now)?;
-
-    // Ensure the header validator hashes match the given validators
-    vp.validator_sets_match(
-        &untrusted.validators,
-        untrusted.signed_header.header.validators_hash,
-        &*hasher,
-    )?;
-
-    // Ensure the header next validator hashes match the given next validators
-    vp.next_validators_match(
-        &untrusted.next_validators,
-        untrusted.signed_header.header.next_validators_hash,
-        &*hasher,
-    )?;
-
-    // Ensure the header matches the commit
-    vp.header_matches_commit(
-        &untrusted.signed_header.header,
-        untrusted.signed_header.commit.block_id.hash,
-        hasher,
-    )?;
-
-    // Additional implementation specific validation
-    vp.valid_commit(
-        &untrusted.signed_header,
-        &untrusted.validators,
-        commit_validator,
-    )?;
-
-    // Check that the untrusted block is more recent than the trusted state
-    vp.is_monotonic_bft_time(
-        &untrusted.signed_header.header,
-        &trusted.signed_header.header,
-    )?;
-
-    let trusted_next_height = trusted.height().increment();
-
-    if untrusted.height() == trusted_next_height {
-        // If the untrusted block is the very next block after the trusted block,
-        // check that their (next) validator sets hashes match.
-        vp.valid_next_validator_set(
-            &untrusted.signed_header.header,
-            &trusted.signed_header.header,
-        )?;
-    } else {
-        // Otherwise, ensure that the untrusted block has a greater height than
-        // the trusted block.
-        vp.is_monotonic_height(
-            &untrusted.signed_header.header,
-            &trusted.signed_header.header,
-        )?;
-
-        // Check there is enough overlap between the validator sets of
-        // the trusted and untrusted blocks.
-        vp.has_sufficient_validators_overlap(
-            &untrusted.signed_header,
-            &trusted.next_validators,
-            &options.trust_threshold,
-            voting_power_calculator,
-        )?;
-    }
-
-    // Verify that more than 2/3 of the validators correctly committed the block.
-    vp.has_sufficient_signers_overlap(
-        &untrusted.signed_header,
-        &untrusted.validators,
-        voting_power_calculator,
-    )?;
-
-    Ok(())
 }
 
 #[cfg(test)]
