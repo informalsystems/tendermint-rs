@@ -82,7 +82,7 @@ impl TryFrom<RawVote> for Vote {
             timestamp: value.timestamp.map(|t| t.into()),
             validator_address: value.validator_address.try_into()?,
             validator_index: value.validator_index.try_into()?,
-            signature: Signature::new(value.signature),
+            signature: Signature::new(value.signature)?,
         })
     }
 }

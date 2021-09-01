@@ -105,7 +105,7 @@ impl TryFrom<RawCommitSig> for CommitSig {
             return Ok(CommitSig::BlockIdFlagCommit {
                 validator_address: value.validator_address.try_into()?,
                 timestamp,
-                signature: Signature::new(value.signature),
+                signature: Signature::new(value.signature)?,
             });
         }
         if value.block_id_flag == BlockIdFlag::Nil.to_i32().unwrap() {
@@ -120,7 +120,7 @@ impl TryFrom<RawCommitSig> for CommitSig {
             return Ok(CommitSig::BlockIdFlagNil {
                 validator_address: value.validator_address.try_into()?,
                 timestamp: value.timestamp.ok_or_else(Error::missing_timestamp)?.into(),
-                signature: Signature::new(value.signature),
+                signature: Signature::new(value.signature)?,
             });
         }
         Err(Error::block_id_flag())
