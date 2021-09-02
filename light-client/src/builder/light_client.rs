@@ -139,7 +139,7 @@ impl LightClientBuilder<NoTrustedState> {
     }
 
     /// Set the block from the primary peer at the given height as the trusted state.
-    pub fn trust_primary_at(
+    pub async fn trust_primary_at(
         self,
         trusted_height: Height,
         trusted_hash: Hash,
@@ -147,6 +147,7 @@ impl LightClientBuilder<NoTrustedState> {
         let trusted_state = self
             .io
             .fetch_light_block(AtHeight::At(trusted_height))
+            .await
             .map_err(Error::io)?;
 
         if trusted_state.height() != trusted_height {

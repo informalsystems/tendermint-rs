@@ -12,6 +12,7 @@ use tendermint_light_client::{
     store::LightStore,
     supervisor::{Handle, Instance, Supervisor},
     types::{LightBlock, PeerId, Status, Time},
+    utils::block_on::block_on,
 };
 
 use std::collections::HashMap;
@@ -28,9 +29,14 @@ const TEST_FILES_PATH: &str = "./tests/support/";
 
 fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: Time) -> Instance {
     let trusted_height = trust_options.height;
-    let trusted_state = io
-        .fetch_light_block(AtHeight::At(trusted_height))
-        .expect("could not 'request' light block");
+    let io_clone = io.clone();
+    let trusted_state = block_on(None, async move {
+        io_clone
+            .fetch_light_block(AtHeight::At(trusted_height))
+            .await
+    })
+    .unwrap()
+    .expect("could not 'request' light block");
 
     let mut light_store = MemoryStore::new();
     light_store.insert(trusted_state, Status::Trusted);
@@ -99,9 +105,11 @@ fn run_multipeer_test(tc: LightClientTest<LightBlock>) {
     match handle.verify_to_target(target_height) {
         Ok(new_state) => {
             // Check that the expected state and new_state match
-            let untrusted_light_block = io
-                .fetch_light_block(AtHeight::At(target_height))
-                .expect("header at untrusted height not found");
+            let untrusted_light_block = block_on(None, async move {
+                io.fetch_light_block(AtHeight::At(target_height)).await
+            })
+            .unwrap()
+            .expect("header at untrusted height not found");
 
             let expected_state = untrusted_light_block;
             assert_eq!(new_state.height(), expected_state.height());

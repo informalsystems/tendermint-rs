@@ -2,6 +2,7 @@
 
 use crate::types::{Height, LightBlock, PeerId, SignedHeader, Time, TrustThreshold, ValidatorSet};
 
+use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use tendermint::abci::transaction::Hash;
 use tendermint_rpc as rpc;
@@ -106,8 +107,9 @@ impl MockIo {
     }
 }
 
+#[async_trait]
 impl Io for MockIo {
-    fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
+    async fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
         let height = match height {
             AtHeight::Highest => self.latest_height,
             AtHeight::At(height) => height,
@@ -124,9 +126,10 @@ impl Io for MockIo {
 #[derive(Clone, Debug, Default)]
 pub struct MockEvidenceReporter;
 
+#[async_trait]
 #[contract_trait]
 impl EvidenceReporter for MockEvidenceReporter {
-    fn report(&self, _e: Evidence, _peer: PeerId) -> Result<Hash, IoError> {
+    async fn report(&self, _e: Evidence, _peer: PeerId) -> Result<Hash, IoError> {
         Ok(Hash::new([0; 32]))
     }
 }
@@ -161,12 +164,13 @@ pub fn verify_single(
     }
 }
 
-pub fn verify_bisection(
+pub async fn verify_bisection(
     untrusted_height: Height,
     light_client: &mut LightClient,
     state: &mut State,
 ) -> Result<Vec<LightBlock>, Error> {
     light_client
         .verify_to_target(untrusted_height, state)
+        .await
         .map(|_| state.get_trace(untrusted_height))
 }

@@ -42,6 +42,8 @@ std = [
 tendermint = { version = "0.21.0", path = "../tendermint" }
 tendermint-rpc = { version = "0.21.0", path = "../rpc", default-features = false }
 
+async-trait = "0.1"
+async-recursion = "0.3.2"
 contracts = "0.4.0"
 crossbeam-channel = "0.4.2"
 derive_more = "0.99.5"
