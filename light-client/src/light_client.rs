@@ -174,23 +174,13 @@ impl LightClient {
             .highest_trusted_or_verified()
             .ok_or_else(Error::no_initial_trusted_state)?;
 
-        let ret = if target_height >= highest.height() {
+        if target_height >= highest.height() {
             // Perform forward verification with bisection
             self.verify_forward(target_height, state).await
         } else {
             // Perform sequential backward verification
             self.verify_backward(target_height, state)
-        };
-
-        assert!(
-            ret.is_ok()
-                && trusted_store_contains_block_at_target_height(
-                    state.light_store.as_ref(),
-                    target_height,
-                )
-        );
-
-        ret
+        }
     }
 
     /// Perform forward verification with bisection.
@@ -402,13 +392,6 @@ impl LightClient {
 
         state.light_store.insert(block.clone(), Status::Unverified);
 
-        let ret = Ok((block, Status::Unverified));
-
-        assert!(ret
-            .as_ref()
-            .map(|(lb, _)| lb.provider == self.peer)
-            .unwrap_or(true));
-
-        ret
+        Ok((block, Status::Unverified))
     }
 }

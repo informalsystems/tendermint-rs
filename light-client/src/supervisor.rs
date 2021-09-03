@@ -438,7 +438,6 @@ mod tests {
     use crate::errors::{Error, ErrorDetail};
     use crate::light_client::Options;
     use crate::operations::ProdHasher;
-    use crate::utils::block_on;
     use crate::{
         components::{
             io::{self, AtHeight, Io},
@@ -463,6 +462,8 @@ mod tests {
         Commit, Generator, Header, LightBlock as TestgenLightBlock, LightChain, ValidatorSet,
     };
 
+    use futures::executor::block_on;
+
     fn make_instance(
         peer_id: PeerId,
         trust_options: TrustOptions,
@@ -470,14 +471,8 @@ mod tests {
         now: Time,
     ) -> Instance {
         let trusted_height = trust_options.height;
-        let io_clone = io.clone();
-        let trusted_state = block_on(None, async move {
-            io_clone
-                .fetch_light_block(AtHeight::At(trusted_height))
-                .await
-                .expect("could not 'request' light block")
-        })
-        .expect("could not 'request' light block");
+        let trusted_state = block_on(io.fetch_light_block(AtHeight::At(trusted_height)))
+            .expect("could not 'request' light block");
 
         let mut light_store = MemoryStore::new();
         light_store.insert(trusted_state, Status::Trusted);
@@ -515,7 +510,7 @@ mod tests {
         );
 
         let handle = supervisor.handle();
-        std::thread::spawn(|| supervisor.run());
+        std::thread::spawn(|| block_on(supervisor.run()));
 
         let target_height = Height::try_from(height_to_verify).expect("Error while making height");
 

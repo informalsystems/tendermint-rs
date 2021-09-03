@@ -14,8 +14,9 @@ use tendermint_light_client::{
     light_client,
     store::sled::SledStore,
     types::{Height, PeerId, TrustThreshold},
-    utils::block_on::block_on,
 };
+
+use futures::executor::block_on;
 
 #[derive(Debug, Options)]
 struct CliOptions {
@@ -97,11 +98,7 @@ fn make_instance(
         LightClientBuilder::prod(peer_id, rpc_client, Box::new(light_store), options, None);
 
     let builder = if let (Some(height), Some(hash)) = (opts.trusted_height, opts.trusted_hash) {
-        block_on(
-            None,
-            async move { builder.trust_primary_at(height, hash).await },
-        )
-        .unwrap()
+        block_on(builder.trust_primary_at(height, hash))
     } else {
         builder.trust_from_store()
     }?;

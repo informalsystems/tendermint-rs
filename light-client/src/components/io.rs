@@ -125,8 +125,12 @@ mod prod {
             let height = signed_header.header.height;
             let proposer_address = signed_header.header.proposer_address;
 
-            let validator_set = self.fetch_validator_set(height.into(), Some(proposer_address)).await?;
-            let next_validator_set = self.fetch_validator_set(height.increment().into(), None).await?;
+            let validator_set = self
+                .fetch_validator_set(height.into(), Some(proposer_address))
+                .await?;
+            let next_validator_set = self
+                .fetch_validator_set(height.increment().into(), None)
+                .await?;
 
             let light_block = LightBlock::new(
                 signed_header,

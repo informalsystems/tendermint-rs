@@ -31,9 +31,10 @@ use std::time::Duration;
 
 struct TestEvidenceReporter;
 
+#[async_trait]
 #[contracts::contract_trait]
 impl EvidenceReporter for TestEvidenceReporter {
-    fn report(&self, evidence: Evidence, peer: PeerId) -> Result<TxHash, IoError> {
+    async fn report(&self, evidence: Evidence, peer: PeerId) -> Result<TxHash, IoError> {
         panic!(
             "unexpected fork detected for peer {} with evidence: {:?}",
             peer, evidence

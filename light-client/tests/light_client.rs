@@ -14,11 +14,12 @@ use tendermint_light_client::{
     store::{memory::MemoryStore, LightStore},
     tests::*,
     types::{LightBlock, Status},
-    utils::block_on,
 };
 
 use tendermint_testgen::light_block::default_peer_id;
 use tendermint_testgen::Tester;
+
+use futures::executor::block_on;
 
 // Link to JSON test files repo:
 // https://github.com/informalsystems/conformance-tests
@@ -52,14 +53,8 @@ fn run_test(tc: LightClientTest<LightBlock>) -> BisectionTestResult {
     let io = MockIo::new(provider.chain_id, provider.lite_blocks);
 
     let trusted_height = tc.trust_options.height;
-    let io_clone = io.clone();
-    let trusted_state = block_on(None, async move {
-        io_clone
-            .fetch_light_block(AtHeight::At(trusted_height))
-            .await
-    })
-    .unwrap()
-    .expect("could not 'request' light block");
+    let trusted_state = block_on(io.fetch_light_block(AtHeight::At(trusted_height)))
+        .expect("could not 'request' light block");
 
     let mut light_store = MemoryStore::new();
     light_store.insert(trusted_state, Status::Trusted);
@@ -82,20 +77,14 @@ fn run_test(tc: LightClientTest<LightBlock>) -> BisectionTestResult {
         io.clone(),
     );
 
-    let result = block_on(None, async move {
-        verify_bisection(untrusted_height, &mut light_client, &mut state).await
-    })
-    .unwrap();
+    let result = block_on(verify_bisection(
+        untrusted_height,
+        &mut light_client,
+        &mut state,
+    ));
 
-    let io_clone = io.clone();
-
-    let untrusted_light_block = block_on(None, async move {
-        io_clone
-            .fetch_light_block(AtHeight::At(untrusted_height))
-            .await
-    })
-    .unwrap()
-    .expect("header at untrusted height not found");
+    let untrusted_light_block = block_on(io.fetch_light_block(AtHeight::At(untrusted_height)))
+        .expect("header at untrusted height not found");
 
     BisectionTestResult {
         untrusted_light_block,
