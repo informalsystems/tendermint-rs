@@ -179,7 +179,7 @@ impl LightClient {
             self.verify_forward(target_height, state).await
         } else {
             // Perform sequential backward verification
-            self.verify_backward(target_height, state)
+            self.verify_backward(target_height, state).await
         }
     }
 
@@ -267,7 +267,7 @@ impl LightClient {
     /// Stub for when "unstable" feature is disabled.
     #[doc(hidden)]
     #[cfg(not(feature = "unstable"))]
-    fn verify_backward(
+    async fn verify_backward(
         &self,
         target_height: Height,
         state: &mut State,
@@ -302,7 +302,7 @@ impl LightClient {
     /// height is lower than the highest trusted state will result in a
     /// `TargetLowerThanTrustedState` error.
     #[cfg(feature = "unstable")]
-    fn verify_backward(
+    async fn verify_backward(
         &self,
         target_height: Height,
         state: &mut State,
@@ -331,7 +331,7 @@ impl LightClient {
         let mut latest = root;
 
         for height in heights {
-            let (current, _status) = self.get_or_fetch_block(height, state)?;
+            let (current, _status) = self.get_or_fetch_block(height, state).await?;
 
             let latest_last_block_id = latest
                 .signed_header

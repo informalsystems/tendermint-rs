@@ -24,6 +24,8 @@ use tendermint_testgen::{
     Generator, LightChain,
 };
 
+use futures::executor::block_on;
+
 use proptest::{prelude::*, test_runner::TestRng};
 
 fn testgen_to_lb(tm_lb: TGLightBlock) -> LightBlock {
@@ -67,8 +69,8 @@ fn make(chain: LightChain, trusted_height: Height) -> (LightClient, State) {
 
     let io = MockIo::new(chain_id, light_blocks);
 
-    let trusted_state = io
-        .fetch_light_block(AtHeight::At(trusted_height))
+    let trusted_state = block_on(io
+        .fetch_light_block(AtHeight::At(trusted_height)))
         .expect("could not find trusted light block");
 
     let mut light_store = MemoryStore::new();
@@ -97,7 +99,7 @@ fn make(chain: LightChain, trusted_height: Height) -> (LightClient, State) {
 
 fn verify(tc: TestCase) -> Result<LightBlock, Error> {
     let (light_client, mut state) = make(tc.chain, tc.trusted_height);
-    light_client.verify_to_target(tc.target_height, &mut state)
+    block_on(light_client.verify_to_target(tc.target_height, &mut state))
 }
 
 fn ok_test(tc: TestCase) -> Result<(), TestCaseError> {
