@@ -9,7 +9,7 @@ use std::io::Error as IoError;
 use time::OutOfRangeError;
 
 define_error! {
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, PartialEq, Eq)]
     Error {
         Crypto
             |_| { format_args!("cryptographic error") },

@@ -2,7 +2,7 @@
 
 use crate::operations::voting_power::VotingPowerTally;
 use crate::predicates as preds;
-use crate::types::LightBlockState;
+use crate::types::VerificationState;
 use crate::{
     errors::ErrorExt,
     light_client::Options,
@@ -56,8 +56,8 @@ pub trait Verifier: Send + Sync {
     /// Perform the verification.
     fn verify(
         &self,
-        untrusted: LightBlockState<'_>,
-        trusted: LightBlockState<'_>,
+        untrusted: VerificationState<'_>,
+        trusted: VerificationState<'_>,
         options: &Options,
         now: Time,
     ) -> Verdict;
@@ -74,6 +74,7 @@ macro_rules! verdict {
 
 /// Predicate verifier encapsulating components necessary to facilitate
 /// verification.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PredicateVerifier<P, C, V, H> {
     predicates: P,
     voting_power_calculator: C,
@@ -123,7 +124,7 @@ where
     V: CommitValidator,
     H: Hasher,
 {
-    /// Validate the given light block.
+    /// Validate the given light block state.
     ///
     /// - Ensure the latest trusted header hasn't expired
     /// - Ensure the header validator hashes match the given validators
@@ -137,8 +138,8 @@ where
     ///   the trusted block.
     fn verify(
         &self,
-        untrusted: LightBlockState<'_>,
-        trusted: LightBlockState<'_>,
+        untrusted: VerificationState<'_>,
+        trusted: VerificationState<'_>,
         options: &Options,
         now: Time,
     ) -> Verdict {

@@ -77,15 +77,28 @@ impl Status {
     }
 }
 
-/// Encapsulated reference to the state of a [`LightBlock`] without its
-/// provider. Primarily used in Light Client verification.
-pub struct LightBlockState<'a> {
+/// The minimal state required to perform Light Client verification at a
+/// particular height.
+pub struct VerificationState<'a> {
     pub signed_header: &'a SignedHeader,
     pub validators: &'a ValidatorSet,
     pub next_validators: &'a ValidatorSet,
 }
 
-impl<'a> LightBlockState<'a> {
+impl<'a> VerificationState<'a> {
+    /// Constructor.
+    pub fn new(
+        signed_header: &'a SignedHeader,
+        validators: &'a ValidatorSet,
+        next_validators: &'a ValidatorSet,
+    ) -> Self {
+        Self {
+            signed_header,
+            validators,
+            next_validators,
+        }
+    }
+
     /// Convenience method to expose the height of the associated header.
     pub fn height(&self) -> Height {
         self.signed_header.header.height
@@ -133,13 +146,9 @@ impl LightBlock {
         self.signed_header.header.height
     }
 
-    /// Obtain the state of the light block, without its provider.
-    pub fn state(&self) -> LightBlockState<'_> {
-        LightBlockState {
-            signed_header: &self.signed_header,
-            validators: &self.validators,
-            next_validators: &self.next_validators,
-        }
+    /// Obtain the verification state of the light block.
+    pub fn verification_state(&self) -> VerificationState<'_> {
+        VerificationState::new(&self.signed_header, &self.validators, &self.next_validators)
     }
 }
 

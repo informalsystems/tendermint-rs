@@ -98,7 +98,7 @@ pub trait VotingPowerCalculator: Send + Sync {
 }
 
 /// Default implementation of a `VotingPowerCalculator`
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct ProdVotingPowerCalculator;
 
 impl VotingPowerCalculator for ProdVotingPowerCalculator {

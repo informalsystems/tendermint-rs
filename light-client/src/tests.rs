@@ -153,7 +153,12 @@ pub fn verify_single(
         clock_drift,
     };
 
-    let result = verifier.verify(input.state(), trusted_state.state(), &options, now);
+    let result = verifier.verify(
+        input.verification_state(),
+        trusted_state.verification_state(),
+        &options,
+        now,
+    );
 
     match result {
         Verdict::Success => Ok(input),
