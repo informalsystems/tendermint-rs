@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 
 [dev-dependencies]
+async-trait = "0.1"
 futures = "0.3"
 tendermint = { version = "0.21.0", path = "../../tendermint" }
 tendermint-light-client = { version = "0.21.0", path = "../../light-client", features = ["unstable"] }

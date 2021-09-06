@@ -12,6 +12,9 @@
 //!
 //! (Make sure you install cargo-make using `cargo install cargo-make` first.)
 
+use async_trait::async_trait;
+use futures::executor::block_on;
+
 use tendermint_light_client::{
     builder::{LightClientBuilder, SupervisorBuilder},
     components::io::{AtHeight, Io, IoError, ProdIo},
@@ -45,7 +48,7 @@ impl EvidenceReporter for TestEvidenceReporter {
 fn make_instance(peer_id: PeerId, options: light_client::Options, address: rpc::Url) -> Instance {
     let rpc_client = rpc::HttpClient::new(address).unwrap();
     let io = ProdIo::new(peer_id, rpc_client.clone(), Some(Duration::from_secs(2)));
-    let latest_block = io.fetch_light_block(AtHeight::Highest).unwrap();
+    let latest_block = block_on(io.fetch_light_block(AtHeight::Highest)).unwrap();
 
     let mut light_store = Box::new(MemoryStore::new());
     light_store.insert(latest_block, Status::Trusted);
