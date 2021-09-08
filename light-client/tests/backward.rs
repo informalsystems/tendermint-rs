@@ -69,8 +69,7 @@ fn make(chain: LightChain, trusted_height: Height) -> (LightClient, State) {
 
     let io = MockIo::new(chain_id, light_blocks);
 
-    let trusted_state = block_on(io
-        .fetch_light_block(AtHeight::At(trusted_height)))
+    let trusted_state = block_on(io.fetch_light_block(AtHeight::At(trusted_height)))
         .expect("could not find trusted light block");
 
     let mut light_store = MemoryStore::new();
