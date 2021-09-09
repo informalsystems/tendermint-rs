@@ -1,6 +1,9 @@
 use core::{fmt, num::NonZeroU32};
-use serde::de::{Deserialize, Deserializer, Visitor};
-use serde::{Serialize, Serializer};
+
+use serde::{
+    de::{Deserialize, Deserializer, Visitor},
+    Serialize, Serializer,
+};
 
 /// ABCI application response codes.
 ///

@@ -3,12 +3,15 @@
 use alloc::collections::BTreeMap as HashMap;
 
 use serde::{Deserialize, Serialize};
-use tendermint::{
-    abci::responses::{BeginBlock, EndBlock},
-    Block,
-};
+use tendermint::Block;
 
-use crate::{prelude::*, query::EventType, response::Wrapper, Response};
+use crate::{
+    abci::responses::{BeginBlock, EndBlock},
+    prelude::*,
+    query::EventType,
+    response::Wrapper,
+    Response,
+};
 
 /// An incoming event produced by a [`Subscription`].
 ///
@@ -76,5 +79,5 @@ pub struct TxResult {
     pub log: Option<String>,
     pub gas_wanted: Option<String>,
     pub gas_used: Option<String>,
-    pub events: Vec<tendermint::abci::Event>,
+    pub events: Vec<crate::abci::Event>,
 }

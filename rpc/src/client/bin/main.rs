@@ -4,10 +4,11 @@ use core::str::FromStr;
 
 use futures::StreamExt;
 use structopt::StructOpt;
-use tendermint::abci::{transaction::Hash, Path, Transaction};
 use tendermint_rpc::{
-    query::Query, Client, Error, HttpClient, Order, Paging, Scheme, Subscription,
-    SubscriptionClient, Url, WebSocketClient,
+    abci::{transaction::Hash, Path, Transaction},
+    query::Query,
+    Client, Error, HttpClient, Order, Paging, Scheme, Subscription, SubscriptionClient, Url,
+    WebSocketClient,
 };
 use tokio::time::Duration;
 use tracing::{error, info, level_filters::LevelFilter, warn};

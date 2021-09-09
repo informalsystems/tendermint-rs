@@ -4,9 +4,10 @@ use core::str::FromStr;
 use std::{fs, path::PathBuf};
 
 use subtle_encoding::{base64, hex};
-use tendermint::{abci::transaction::Hash, evidence::Duration, public_key};
+use tendermint::{evidence::Duration, public_key};
 use tendermint_config::net::Address;
 use tendermint_rpc::{
+    abci::transaction::Hash,
     endpoint,
     error::{Error, ErrorDetail},
     request::Wrapper as RequestWrapper,
@@ -363,7 +364,7 @@ fn incoming_fixtures() {
             },
             "block_at_height_1" => {
                 let result = endpoint::block::Response::from_string(content).unwrap();
-                assert!(result.block.data.iter().next().is_none());
+                assert!(result.block.data.first().is_none());
                 assert!(result.block.evidence.iter().next().is_none());
                 assert!(result.block.header.app_hash.value().is_empty());
                 assert_eq!(result.block.header.chain_id.as_str(), CHAIN_ID);
@@ -404,7 +405,7 @@ fn incoming_fixtures() {
             },
             "block_at_height_10" => {
                 let result = endpoint::block::Response::from_string(content).unwrap();
-                assert!(result.block.data.iter().next().is_none());
+                assert!(result.block.data.first().is_none());
                 assert!(result.block.evidence.iter().next().is_none());
                 assert_eq!(result.block.header.app_hash.value(), [0u8; 8]);
                 assert_eq!(result.block.header.chain_id.as_str(), CHAIN_ID);
@@ -463,7 +464,7 @@ fn incoming_fixtures() {
                 assert_eq!(result.total_count as usize, result.blocks.len());
                 // Test a few selected attributes of the results.
                 for block in result.blocks {
-                    assert!(block.block.data.iter().next().is_none());
+                    assert!(block.block.data.first().is_none());
                     assert!(block.block.evidence.iter().next().is_none());
                     assert_eq!(block.block.header.app_hash.value(), [0u8; 8]);
                     assert_eq!(block.block.header.chain_id.as_str(), CHAIN_ID);
@@ -549,21 +550,21 @@ fn incoming_fixtures() {
             },
             "broadcast_tx_async" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
-                assert_eq!(result.code, tendermint::abci::Code::Ok);
+                assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
                 assert!(result.data.value().is_empty());
                 assert_ne!(
                     result.hash,
-                    tendermint::abci::transaction::Hash::new([0; 32])
+                    tendermint_rpc::abci::transaction::Hash::new([0; 32])
                 );
                 assert!(result.log.value().is_empty());
             },
             "broadcast_tx_commit" => {
                 let result =
                     endpoint::broadcast::tx_commit::Response::from_string(content).unwrap();
-                assert_eq!(result.check_tx.code, tendermint::abci::Code::Ok);
+                assert_eq!(result.check_tx.code, tendermint_rpc::abci::Code::Ok);
                 assert_eq!(
                     result.check_tx.codespace,
-                    tendermint::abci::responses::Codespace::default()
+                    tendermint_rpc::abci::responses::Codespace::default()
                 );
                 assert!(result.check_tx.data.is_none());
                 assert!(result.check_tx.events.is_empty());
@@ -572,10 +573,10 @@ fn incoming_fixtures() {
                 // assert_eq!(result.check_tx.gas_wanted.value(), 1);
                 assert!(result.check_tx.info.to_string().is_empty());
                 assert!(result.check_tx.log.value().is_empty());
-                assert_eq!(result.deliver_tx.code, tendermint::abci::Code::Ok);
+                assert_eq!(result.deliver_tx.code, tendermint_rpc::abci::Code::Ok);
                 assert_eq!(
                     result.deliver_tx.codespace,
-                    tendermint::abci::responses::Codespace::default()
+                    tendermint_rpc::abci::responses::Codespace::default()
                 );
                 assert!(result.deliver_tx.data.is_none());
                 assert_eq!(result.deliver_tx.events.len(), 1);
@@ -643,16 +644,16 @@ fn incoming_fixtures() {
                 assert!(result.deliver_tx.log.value().is_empty());
                 assert_ne!(
                     result.hash,
-                    tendermint::abci::transaction::Hash::new([0; 32])
+                    tendermint_rpc::abci::transaction::Hash::new([0; 32])
                 );
             },
             "broadcast_tx_sync" => {
                 let result = endpoint::broadcast::tx_sync::Response::from_string(content).unwrap();
-                assert_eq!(result.code, tendermint::abci::Code::Ok);
+                assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
                 assert!(result.data.value().is_empty());
                 assert_ne!(
                     result.hash,
-                    tendermint::abci::transaction::Hash::new([0; 32])
+                    tendermint_rpc::abci::transaction::Hash::new([0; 32])
                 );
                 assert!(result.log.value().is_empty());
             },
@@ -863,7 +864,7 @@ fn incoming_fixtures() {
                 } = result.data
                 {
                     let b = block.unwrap();
-                    assert!(b.data.iter().next().is_none());
+                    assert!(b.data.first().is_none());
                     assert!(b.evidence.iter().next().is_none());
                     assert!(!b.header.app_hash.value().is_empty());
                     assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
@@ -918,7 +919,7 @@ fn incoming_fixtures() {
                 } = result.data
                 {
                     let b = block.unwrap();
-                    assert!(b.data.iter().next().is_none());
+                    assert!(b.data.first().is_none());
                     assert!(b.evidence.iter().next().is_none());
                     assert!(!b.header.app_hash.value().is_empty());
                     assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
@@ -973,7 +974,7 @@ fn incoming_fixtures() {
                 } = result.data
                 {
                     let b = block.unwrap();
-                    assert!(b.data.iter().next().is_none());
+                    assert!(b.data.first().is_none());
                     assert!(b.evidence.iter().next().is_none());
                     assert!(!b.header.app_hash.value().is_empty());
                     assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
@@ -1028,7 +1029,7 @@ fn incoming_fixtures() {
                 } = result.data
                 {
                     let b = block.unwrap();
-                    assert!(b.data.iter().next().is_none());
+                    assert!(b.data.first().is_none());
                     assert!(b.evidence.iter().next().is_none());
                     assert!(!b.header.app_hash.value().is_empty());
                     assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
@@ -1083,7 +1084,7 @@ fn incoming_fixtures() {
                 } = result.data
                 {
                     let b = block.unwrap();
-                    assert!(b.data.iter().next().is_none());
+                    assert!(b.data.first().is_none());
                     assert!(b.evidence.iter().next().is_none());
                     assert!(!b.header.app_hash.value().is_empty());
                     assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
@@ -1354,61 +1355,61 @@ fn incoming_fixtures() {
             },
             "subscribe_txs_broadcast_tx_0" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
-                assert_eq!(result.code, tendermint::abci::Code::Ok);
+                assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
                 assert!(result.data.value().is_empty());
                 assert_ne!(
                     result.hash,
-                    tendermint::abci::transaction::Hash::new([0; 32])
+                    tendermint_rpc::abci::transaction::Hash::new([0; 32])
                 );
                 assert!(result.log.value().is_empty());
             },
             "subscribe_txs_broadcast_tx_1" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
-                assert_eq!(result.code, tendermint::abci::Code::Ok);
+                assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
                 assert!(result.data.value().is_empty());
                 assert_ne!(
                     result.hash,
-                    tendermint::abci::transaction::Hash::new([0; 32])
+                    tendermint_rpc::abci::transaction::Hash::new([0; 32])
                 );
                 assert!(result.log.value().is_empty());
             },
             "subscribe_txs_broadcast_tx_2" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
-                assert_eq!(result.code, tendermint::abci::Code::Ok);
+                assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
                 assert!(result.data.value().is_empty());
                 assert_ne!(
                     result.hash,
-                    tendermint::abci::transaction::Hash::new([0; 32])
+                    tendermint_rpc::abci::transaction::Hash::new([0; 32])
                 );
                 assert!(result.log.value().is_empty());
             },
             "subscribe_txs_broadcast_tx_3" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
-                assert_eq!(result.code, tendermint::abci::Code::Ok);
+                assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
                 assert!(result.data.value().is_empty());
                 assert_ne!(
                     result.hash,
-                    tendermint::abci::transaction::Hash::new([0; 32])
+                    tendermint_rpc::abci::transaction::Hash::new([0; 32])
                 );
                 assert!(result.log.value().is_empty());
             },
             "subscribe_txs_broadcast_tx_4" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
-                assert_eq!(result.code, tendermint::abci::Code::Ok);
+                assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
                 assert!(result.data.value().is_empty());
                 assert_ne!(
                     result.hash,
-                    tendermint::abci::transaction::Hash::new([0; 32])
+                    tendermint_rpc::abci::transaction::Hash::new([0; 32])
                 );
                 assert!(result.log.value().is_empty());
             },
             "subscribe_txs_broadcast_tx_5" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
-                assert_eq!(result.code, tendermint::abci::Code::Ok);
+                assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
                 assert!(result.data.value().is_empty());
                 assert_ne!(
                     result.hash,
-                    tendermint::abci::transaction::Hash::new([0; 32])
+                    tendermint_rpc::abci::transaction::Hash::new([0; 32])
                 );
                 assert!(result.log.value().is_empty());
             },
@@ -1429,7 +1430,7 @@ fn incoming_fixtures() {
                 // Test a few selected attributes of the results.
                 for tx in result.txs {
                     assert_ne!(tx.hash.as_bytes(), [0; 32]);
-                    assert_eq!(tx.tx_result.code, tendermint::abci::Code::Ok);
+                    assert_eq!(tx.tx_result.code, tendermint_rpc::abci::Code::Ok);
                     assert_eq!(tx.tx_result.events.len(), 1);
                     assert_eq!(tx.tx_result.events[0].type_str, "app");
                     assert_eq!(tx.tx_result.gas_used.value(), 0);
@@ -1445,7 +1446,7 @@ fn incoming_fixtures() {
                 // Test a few selected attributes of the results.
                 for tx in result.txs {
                     assert_ne!(tx.hash.as_bytes(), [0; 32]);
-                    assert_eq!(tx.tx_result.code, tendermint::abci::Code::Ok);
+                    assert_eq!(tx.tx_result.code, tendermint_rpc::abci::Code::Ok);
                     assert_eq!(tx.tx_result.events.len(), 1);
                     assert_eq!(tx.tx_result.events[0].type_str, "app");
                     assert_eq!(tx.tx_result.gas_used.value(), 0);

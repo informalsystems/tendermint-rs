@@ -1,7 +1,8 @@
 //! `/broadcast_tx_sync`: returns with the response from `CheckTx`.
 
 use serde::{Deserialize, Serialize};
-use tendermint::abci::{transaction, Code, Data, Log, Transaction};
+
+use crate::abci::{transaction, Code, Data, Log, Transaction};
 
 /// `/broadcast_tx_sync`: returns with the response from `CheckTx`.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

@@ -9,12 +9,7 @@ use core::{fmt, time::Duration};
 
 use async_trait::async_trait;
 use serde::{de::DeserializeOwned, Serialize};
-use tendermint::{
-    abci::{self, Transaction},
-    block::Height,
-    evidence::Evidence,
-    Genesis,
-};
+use tendermint::{block::Height, evidence::Evidence, Genesis};
 use tokio::time;
 #[cfg(feature = "http-client")]
 pub use transport::http::{HttpClient, HttpClientUrl};
@@ -25,6 +20,7 @@ pub use transport::websocket::{
 };
 
 use crate::{
+    abci::{self, Transaction},
     endpoint::{validators::DEFAULT_VALIDATORS_PER_PAGE, *},
     paging::Paging,
     prelude::*,
