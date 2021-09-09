@@ -201,22 +201,22 @@ impl LightClient {
             let now = self.clock.now();
 
             // Get the latest trusted state
-            let trusted_state = state
+            let trusted_block = state
                 .light_store
                 .highest_trusted_or_verified()
                 .ok_or_else(Error::no_initial_trusted_state)?;
 
-            if target_height < trusted_state.height() {
+            if target_height < trusted_block.height() {
                 return Err(Error::target_lower_than_trusted_state(
                     target_height,
-                    trusted_state.height(),
+                    trusted_block.height(),
                 ));
             }
 
             // Check invariant [LCV-INV-TP.1]
-            if !is_within_trust_period(&trusted_state, self.options.trusting_period, now) {
+            if !is_within_trust_period(&trusted_block, self.options.trusting_period, now) {
                 return Err(Error::trusted_state_outside_trusting_period(
-                    Box::new(trusted_state),
+                    Box::new(trusted_block),
                     self.options,
                 ));
             }
@@ -226,8 +226,8 @@ impl LightClient {
 
             // If the trusted state is now at a height equal to the target height, we are done.
             // [LCV-DIST-LIFE.1]
-            if target_height == trusted_state.height() {
-                return Ok(trusted_state);
+            if target_height == trusted_block.height() {
+                return Ok(trusted_block);
             }
 
             // Fetch the block at the current height from the light store if already present,
@@ -236,8 +236,8 @@ impl LightClient {
 
             // Validate and verify the current block
             let verdict = self.verifier.verify(
-                current_block.verify_params(),
-                trusted_state.verify_params(),
+                current_block.as_untrusted_state(),
+                trusted_block.as_trusted_state(),
                 &self.options,
                 now,
             );

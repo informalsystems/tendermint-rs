@@ -170,11 +170,11 @@ impl LightClientBuilder<NoTrustedState> {
         let now = self.clock.now();
 
         self.predicates
-            .is_within_trust_period(header, self.options.trusting_period, now)
+            .is_within_trust_period(header.time, self.options.trusting_period, now)
             .map_err(Error::invalid_light_block)?;
 
         self.predicates
-            .is_header_from_past(header, self.options.clock_drift, now)
+            .is_header_from_past(header.time, self.options.clock_drift, now)
             .map_err(Error::invalid_light_block)?;
 
         self.predicates

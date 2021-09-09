@@ -138,7 +138,7 @@ impl MockEvidenceReporter {
 }
 
 pub fn verify_single(
-    trusted_state: LightBlock,
+    trusted_block: LightBlock,
     input: LightBlock,
     trust_threshold: TrustThreshold,
     trusting_period: Duration,
@@ -154,8 +154,8 @@ pub fn verify_single(
     };
 
     let result = verifier.verify(
-        input.verify_params(),
-        trusted_state.verify_params(),
+        input.as_untrusted_state(),
+        trusted_block.as_trusted_state(),
         &options,
         now,
     );

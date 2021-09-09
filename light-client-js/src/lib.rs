@@ -33,8 +33,8 @@ pub fn verify(untrusted: &JsValue, trusted: &JsValue, options: &JsValue, now: &J
         |(untrusted, trusted, options, now)| {
             let verifier = ProdVerifier::default();
             verifier.verify(
-                untrusted.verify_params(),
-                trusted.verify_params(),
+                untrusted.as_untrusted_state(),
+                trusted.as_trusted_state(),
                 &options,
                 now,
             )

@@ -7,7 +7,7 @@ use crate::{
 
 use errors::VerificationError;
 use std::time::Duration;
-use tendermint::hash::Hash;
+use tendermint::{block::Height, hash::Hash};
 
 pub mod errors;
 
@@ -95,11 +95,11 @@ pub trait VerificationPredicates: Send + Sync {
     /// Check that the trusted header is within the trusting period, adjusting for clock drift.
     fn is_within_trust_period(
         &self,
-        trusted_header: &Header,
+        trusted_header_time: Time,
         trusting_period: Duration,
         now: Time,
     ) -> Result<(), VerificationError> {
-        let expires_at = trusted_header.time + trusting_period;
+        let expires_at = trusted_header_time + trusting_period;
 
         if expires_at > now {
             Ok(())
@@ -111,15 +111,15 @@ pub trait VerificationPredicates: Send + Sync {
     /// Check that the untrusted header is from past.
     fn is_header_from_past(
         &self,
-        untrusted_header: &Header,
+        untrusted_header_time: Time,
         clock_drift: Duration,
         now: Time,
     ) -> Result<(), VerificationError> {
-        if untrusted_header.time < now + clock_drift {
+        if untrusted_header_time < now + clock_drift {
             Ok(())
         } else {
             Err(VerificationError::header_from_the_future(
-                untrusted_header.time,
+                untrusted_header_time,
                 now,
             ))
         }
@@ -128,15 +128,15 @@ pub trait VerificationPredicates: Send + Sync {
     /// Check that time passed monotonically between the trusted header and the untrusted one.
     fn is_monotonic_bft_time(
         &self,
-        untrusted_header: &Header,
-        trusted_header: &Header,
+        untrusted_header_time: Time,
+        trusted_header_time: Time,
     ) -> Result<(), VerificationError> {
-        if untrusted_header.time > trusted_header.time {
+        if untrusted_header_time > trusted_header_time {
             Ok(())
         } else {
             Err(VerificationError::non_monotonic_bft_time(
-                untrusted_header.time,
-                trusted_header.time,
+                untrusted_header_time,
+                trusted_header_time,
             ))
         }
     }
@@ -144,16 +144,14 @@ pub trait VerificationPredicates: Send + Sync {
     /// Check that the height increased between the trusted header and the untrusted one.
     fn is_monotonic_height(
         &self,
-        untrusted_header: &Header,
-        trusted_header: &Header,
+        untrusted_height: Height,
+        trusted_height: Height,
     ) -> Result<(), VerificationError> {
-        let trusted_height = trusted_header.height;
-
-        if untrusted_header.height > trusted_header.height {
+        if untrusted_height > trusted_height {
             Ok(())
         } else {
             Err(VerificationError::non_increasing_height(
-                untrusted_header.height,
+                untrusted_height,
                 trusted_height.increment(),
             ))
         }
@@ -188,15 +186,15 @@ pub trait VerificationPredicates: Send + Sync {
     /// the hash of the validator set in the untrusted one.
     fn valid_next_validator_set(
         &self,
-        untrusted_header: &Header,
-        trusted_header: &Header,
+        untrusted_validators_hash: Hash,
+        trusted_next_validators_hash: Hash,
     ) -> Result<(), VerificationError> {
-        if trusted_header.next_validators_hash == untrusted_header.validators_hash {
+        if trusted_next_validators_hash == untrusted_validators_hash {
             Ok(())
         } else {
             Err(VerificationError::invalid_next_validator_set(
-                untrusted_header.validators_hash,
-                trusted_header.next_validators_hash,
+                untrusted_validators_hash,
+                trusted_next_validators_hash,
             ))
         }
     }
@@ -245,11 +243,11 @@ mod tests {
         let vp = ProdPredicates::default();
 
         // 1. ensure valid header verifies
-        let result_ok = vp.is_monotonic_bft_time(&header_two, &header_one);
+        let result_ok = vp.is_monotonic_bft_time(header_two.time, header_one.time);
         assert!(result_ok.is_ok());
 
         // 2. ensure header with non-monotonic bft time fails
-        let result_err = vp.is_monotonic_bft_time(&header_one, &header_two);
+        let result_err = vp.is_monotonic_bft_time(header_one.time, header_two.time);
         match result_err {
             Err(VerificationError(VerificationErrorDetail::NonMonotonicBftTime(e), _)) => {
                 assert_eq!(e.header_bft_time, header_one.time);
@@ -268,11 +266,11 @@ mod tests {
         let vp = ProdPredicates::default();
 
         // 1. ensure valid header verifies
-        let result_ok = vp.is_monotonic_height(&header_two, &header_one);
+        let result_ok = vp.is_monotonic_height(header_two.height, header_one.height);
         assert!(result_ok.is_ok());
 
         // 2. ensure header with non-monotonic height fails
-        let result_err = vp.is_monotonic_height(&header_one, &header_two);
+        let result_err = vp.is_monotonic_height(header_one.height, header_two.height);
 
         match result_err {
             Err(VerificationError(VerificationErrorDetail::NonIncreasingHeight(e), _)) => {
@@ -294,13 +292,13 @@ mod tests {
         let mut trusting_period = Duration::new(1000, 0);
         let now = Time::now();
 
-        let result_ok = vp.is_within_trust_period(&header, trusting_period, now);
+        let result_ok = vp.is_within_trust_period(header.time, trusting_period, now);
         assert!(result_ok.is_ok());
 
         // 2. ensure header outside trusting period fails
         trusting_period = Duration::new(0, 1);
 
-        let result_err = vp.is_within_trust_period(&header, trusting_period, now);
+        let result_err = vp.is_within_trust_period(header.time, trusting_period, now);
 
         let expires_at = header.time + trusting_period;
         match result_err {
@@ -321,13 +319,13 @@ mod tests {
         let one_second = Duration::new(1, 0);
 
         // 1. ensure valid header verifies
-        let result_ok = vp.is_header_from_past(&header, one_second, Time::now());
+        let result_ok = vp.is_header_from_past(header.time, one_second, Time::now());
 
         assert!(result_ok.is_ok());
 
         // 2. ensure it fails if header is from a future time
         let now = Time::now().sub(one_second * 15);
-        let result_err = vp.is_header_from_past(&header, one_second, now);
+        let result_err = vp.is_header_from_past(header.time, one_second, now);
 
         match result_err {
             Err(VerificationError(VerificationErrorDetail::HeaderFromTheFuture(e), _)) => {
@@ -560,8 +558,8 @@ mod tests {
         // Test scenarios -->
         // 1. next_validator_set hash matches
         let result_ok = vp.valid_next_validator_set(
-            &light_block1.signed_header.header,
-            &light_block2.signed_header.header,
+            light_block1.signed_header.header.validators_hash,
+            light_block2.signed_header.header.next_validators_hash,
         );
 
         assert!(result_ok.is_ok());
@@ -577,8 +575,8 @@ mod tests {
             .into();
 
         let result_err = vp.valid_next_validator_set(
-            &light_block3.signed_header.header,
-            &light_block2.signed_header.header,
+            light_block3.signed_header.header.validators_hash,
+            light_block2.signed_header.header.next_validators_hash,
         );
 
         match result_err {

@@ -77,28 +77,20 @@ impl Status {
     }
 }
 
-/// The minimal state required to perform Light Client verification at a
-/// particular height.
-pub struct VerifyParams<'a> {
-    pub signed_header: &'a SignedHeader,
-    pub validators: &'a ValidatorSet,
+pub struct TrustedBlockState<'a> {
+    pub header_time: Time,
+    pub height: Height,
     pub next_validators: &'a ValidatorSet,
+    pub next_validators_hash: Hash,
 }
 
-impl<'a> VerifyParams<'a> {
-    /// Constructor.
-    pub fn new(
-        signed_header: &'a SignedHeader,
-        validators: &'a ValidatorSet,
-        next_validators: &'a ValidatorSet,
-    ) -> Self {
-        Self {
-            signed_header,
-            validators,
-            next_validators,
-        }
-    }
+pub struct UntrustedBlockState<'a> {
+    pub signed_header: &'a SignedHeader,
+    pub validators: &'a ValidatorSet,
+    pub next_validators: Option<&'a ValidatorSet>,
+}
 
+impl<'a> UntrustedBlockState<'a> {
     /// Convenience method to expose the height of the associated header.
     pub fn height(&self) -> Height {
         self.signed_header.header.height
@@ -147,8 +139,21 @@ impl LightBlock {
     }
 
     /// Obtain the verification parameters for the light block.
-    pub fn verify_params(&self) -> VerifyParams<'_> {
-        VerifyParams::new(&self.signed_header, &self.validators, &self.next_validators)
+    pub fn as_trusted_state(&self) -> TrustedBlockState<'_> {
+        TrustedBlockState {
+            header_time: self.signed_header.header.time,
+            height: self.signed_header.header.height,
+            next_validators: &self.next_validators,
+            next_validators_hash: self.signed_header.header.next_validators_hash,
+        }
+    }
+
+    pub fn as_untrusted_state(&self) -> UntrustedBlockState<'_> {
+        UntrustedBlockState {
+            signed_header: &self.signed_header,
+            validators: &self.validators,
+            next_validators: Some(&self.next_validators),
+        }
     }
 }
 

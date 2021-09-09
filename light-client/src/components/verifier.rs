@@ -2,7 +2,7 @@
 
 use crate::operations::voting_power::VotingPowerTally;
 use crate::predicates as preds;
-use crate::types::VerifyParams;
+use crate::types::{TrustedBlockState, UntrustedBlockState};
 use crate::{
     errors::ErrorExt,
     light_client::Options,
@@ -56,8 +56,8 @@ pub trait Verifier: Send + Sync {
     /// Perform the verification.
     fn verify(
         &self,
-        untrusted: VerifyParams<'_>,
-        trusted: VerifyParams<'_>,
+        untrusted: UntrustedBlockState<'_>,
+        trusted: TrustedBlockState<'_>,
         options: &Options,
         now: Time,
     ) -> Verdict;
@@ -138,21 +138,21 @@ where
     ///   the trusted block.
     fn verify(
         &self,
-        untrusted: VerifyParams<'_>,
-        trusted: VerifyParams<'_>,
+        untrusted: UntrustedBlockState<'_>,
+        trusted: TrustedBlockState<'_>,
         options: &Options,
         now: Time,
     ) -> Verdict {
         // Ensure the latest trusted header hasn't expired
         verdict!(self.predicates.is_within_trust_period(
-            &trusted.signed_header.header,
+            trusted.header_time,
             options.trusting_period,
             now,
         ));
 
         // Ensure the header isn't from a future time
         verdict!(self.predicates.is_header_from_past(
-            &untrusted.signed_header.header,
+            untrusted.signed_header.header.time,
             options.clock_drift,
             now,
         ));
@@ -164,12 +164,15 @@ where
             &self.hasher,
         ));
 
-        // Ensure the header next validator hashes match the given next validators
-        verdict!(self.predicates.next_validators_match(
-            untrusted.next_validators,
-            untrusted.signed_header.header.next_validators_hash,
-            &self.hasher,
-        ));
+        // TODO(thane): Is this check necessary for IBC?
+        if let Some(untrusted_next_validators) = untrusted.next_validators {
+            // Ensure the header next validator hashes match the given next validators
+            verdict!(self.predicates.next_validators_match(
+                untrusted_next_validators,
+                untrusted.signed_header.header.next_validators_hash,
+                &self.hasher,
+            ));
+        }
 
         // Ensure the header matches the commit
         verdict!(self.predicates.header_matches_commit(
@@ -186,27 +189,25 @@ where
         ));
 
         // Check that the untrusted block is more recent than the trusted state
-        verdict!(self.predicates.is_monotonic_bft_time(
-            &untrusted.signed_header.header,
-            &trusted.signed_header.header,
-        ));
+        verdict!(self
+            .predicates
+            .is_monotonic_bft_time(untrusted.signed_header.header.time, trusted.header_time,));
 
-        let trusted_next_height = trusted.height().increment();
+        let trusted_next_height = trusted.height.increment();
 
         if untrusted.height() == trusted_next_height {
             // If the untrusted block is the very next block after the trusted block,
             // check that their (next) validator sets hashes match.
             verdict!(self.predicates.valid_next_validator_set(
-                &untrusted.signed_header.header,
-                &trusted.signed_header.header,
+                untrusted.signed_header.header.validators_hash,
+                trusted.next_validators_hash,
             ));
         } else {
             // Otherwise, ensure that the untrusted block has a greater height than
             // the trusted block.
-            verdict!(self.predicates.is_monotonic_height(
-                &untrusted.signed_header.header,
-                &trusted.signed_header.header,
-            ));
+            verdict!(self
+                .predicates
+                .is_monotonic_height(untrusted.signed_header.header.height, trusted.height));
 
             // Check there is enough overlap between the validator sets of
             // the trusted and untrusted blocks.
