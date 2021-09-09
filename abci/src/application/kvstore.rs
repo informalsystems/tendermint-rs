@@ -172,6 +172,9 @@ impl Application for KeyValueStoreApp {
             gas_used: 0,
             events: vec![],
             codespace: "".to_string(),
+            mempool_error: "".to_string(),
+            priority: 0,
+            sender: "".to_string(),
         }
     }
 
@@ -195,18 +198,18 @@ impl Application for KeyValueStoreApp {
                 r#type: "app".to_string(),
                 attributes: vec![
                     EventAttribute {
-                        key: "key".as_bytes().to_owned(),
-                        value: key.as_bytes().to_owned(),
+                        key: "key".to_string(),
+                        value: key.to_string(),
                         index: true,
                     },
                     EventAttribute {
-                        key: "index_key".as_bytes().to_owned(),
-                        value: "index is working".as_bytes().to_owned(),
+                        key: "index_key".to_string(),
+                        value: "index is working".to_string(),
                         index: true,
                     },
                     EventAttribute {
-                        key: "noindex_key".as_bytes().to_owned(),
-                        value: "index is working".as_bytes().to_owned(),
+                        key: "noindex_key".to_string(),
+                        value: "index is working".to_string(),
                         index: false,
                     },
                 ],
