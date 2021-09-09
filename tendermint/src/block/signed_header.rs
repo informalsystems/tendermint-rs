@@ -7,7 +7,7 @@ use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::SignedHeader as RawSignedHeader;
 
 /// Signed block headers
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "RawSignedHeader", into = "RawSignedHeader")] // used by RPC /commit endpoint
 #[non_exhaustive]
 pub struct SignedHeader {

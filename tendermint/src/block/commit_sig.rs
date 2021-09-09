@@ -9,7 +9,7 @@ use tendermint_proto::types::CommitSig as RawCommitSig;
 
 /// CommitSig represents a signature of a validator.
 /// It's a part of the Commit and can be used to reconstruct the vote set given the validator set.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CommitSig {
     /// no vote was received from a validator.
     BlockIdFlagAbsent,

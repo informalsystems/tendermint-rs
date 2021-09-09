@@ -15,7 +15,7 @@ use crate::error::Error;
 pub const SIGNATURE_LENGTH: usize = 64;
 
 /// Signatures
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Signature(Vec<u8>);
 
 impl Protobuf<Vec<u8>> for Signature {}
