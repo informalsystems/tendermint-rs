@@ -8,7 +8,7 @@ use tendermint::merkle::proof::Proof;
 use tendermint::serializers;
 
 /// Query the ABCI application for information
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Request {
     /// Path to the data
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -53,7 +53,7 @@ impl crate::Request for Request {
 impl crate::SimpleRequest for Request {}
 
 /// ABCI query response wrapper
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Response {
     /// ABCI query results
     pub response: AbciQuery,
@@ -62,7 +62,7 @@ pub struct Response {
 impl crate::Response for Response {}
 
 /// ABCI query results
-#[derive(Clone, Debug, Deserialize, Serialize, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, Default)]
 #[serde(default)]
 pub struct AbciQuery {
     /// Response code
