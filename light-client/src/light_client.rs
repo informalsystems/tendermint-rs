@@ -236,8 +236,8 @@ impl LightClient {
 
             // Validate and verify the current block
             let verdict = self.verifier.verify(
-                current_block.verification_state(),
-                trusted_state.verification_state(),
+                current_block.verify_params(),
+                trusted_state.verify_params(),
                 &self.options,
                 now,
             );

@@ -154,8 +154,8 @@ pub fn verify_single(
     };
 
     let result = verifier.verify(
-        input.verification_state(),
-        trusted_state.verification_state(),
+        input.verify_params(),
+        trusted_state.verify_params(),
         &options,
         now,
     );

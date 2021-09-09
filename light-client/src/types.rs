@@ -79,13 +79,13 @@ impl Status {
 
 /// The minimal state required to perform Light Client verification at a
 /// particular height.
-pub struct VerificationState<'a> {
+pub struct VerifyParams<'a> {
     pub signed_header: &'a SignedHeader,
     pub validators: &'a ValidatorSet,
     pub next_validators: &'a ValidatorSet,
 }
 
-impl<'a> VerificationState<'a> {
+impl<'a> VerifyParams<'a> {
     /// Constructor.
     pub fn new(
         signed_header: &'a SignedHeader,
@@ -146,9 +146,9 @@ impl LightBlock {
         self.signed_header.header.height
     }
 
-    /// Obtain the verification state of the light block.
-    pub fn verification_state(&self) -> VerificationState<'_> {
-        VerificationState::new(&self.signed_header, &self.validators, &self.next_validators)
+    /// Obtain the verification parameters for the light block.
+    pub fn verify_params(&self) -> VerifyParams<'_> {
+        VerifyParams::new(&self.signed_header, &self.validators, &self.next_validators)
     }
 }
 

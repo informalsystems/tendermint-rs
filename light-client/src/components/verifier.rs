@@ -2,7 +2,7 @@
 
 use crate::operations::voting_power::VotingPowerTally;
 use crate::predicates as preds;
-use crate::types::VerificationState;
+use crate::types::VerifyParams;
 use crate::{
     errors::ErrorExt,
     light_client::Options,
@@ -56,8 +56,8 @@ pub trait Verifier: Send + Sync {
     /// Perform the verification.
     fn verify(
         &self,
-        untrusted: VerificationState<'_>,
-        trusted: VerificationState<'_>,
+        untrusted: VerifyParams<'_>,
+        trusted: VerifyParams<'_>,
         options: &Options,
         now: Time,
     ) -> Verdict;
@@ -138,8 +138,8 @@ where
     ///   the trusted block.
     fn verify(
         &self,
-        untrusted: VerificationState<'_>,
-        trusted: VerificationState<'_>,
+        untrusted: VerifyParams<'_>,
+        trusted: VerifyParams<'_>,
         options: &Options,
         now: Time,
     ) -> Verdict {
