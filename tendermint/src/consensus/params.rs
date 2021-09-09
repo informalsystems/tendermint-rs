@@ -5,7 +5,7 @@ use crate::prelude::*;
 use crate::{block, evidence, public_key};
 use core::convert::{TryFrom, TryInto};
 use serde::{Deserialize, Serialize};
-use tendermint_proto::abci::ConsensusParams as RawParams;
+use tendermint_proto::types::ConsensusParams as RawParams;
 use tendermint_proto::types::ValidatorParams as RawValidatorParams;
 use tendermint_proto::types::VersionParams as RawVersionParams;
 use tendermint_proto::Protobuf;

@@ -6,7 +6,7 @@ use tendermint_proto::Protobuf;
 use {
     crate::serializers,
     serde::{Deserialize, Serialize},
-    tendermint_proto::abci::BlockParams as RawSize,
+    tendermint_proto::types::BlockParams as RawSize,
 };
 
 /// Block size parameters
