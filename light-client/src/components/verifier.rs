@@ -136,6 +136,10 @@ where
     ///   check that their (next) validator sets hashes match.
     /// - Otherwise, ensure that the untrusted block has a greater height than
     ///   the trusted block.
+    ///
+    /// **NOTE**: If the untrusted state's `next_validators` field is `None`,
+    /// this will not (and will not be able to) check whether the untrusted
+    /// state's `next_validators_hash` field is valid.
     fn verify(
         &self,
         untrusted: UntrustedBlockState<'_>,

@@ -77,6 +77,7 @@ impl Status {
     }
 }
 
+/// Trusted block parameters needed for light client verification.
 pub struct TrustedBlockState<'a> {
     pub header_time: Time,
     pub height: Height,
@@ -84,6 +85,7 @@ pub struct TrustedBlockState<'a> {
     pub next_validators_hash: Hash,
 }
 
+/// Untrusted block parameters needed for light client verification.
 pub struct UntrustedBlockState<'a> {
     pub signed_header: &'a SignedHeader,
     pub validators: &'a ValidatorSet,
@@ -138,7 +140,8 @@ impl LightBlock {
         self.signed_header.header.height
     }
 
-    /// Obtain the verification parameters for the light block.
+    /// Obtain the verification parameters for the light block when using it as
+    /// trusted state.
     pub fn as_trusted_state(&self) -> TrustedBlockState<'_> {
         TrustedBlockState {
             header_time: self.signed_header.header.time,
@@ -148,6 +151,8 @@ impl LightBlock {
         }
     }
 
+    /// Obtain the verification parameters for the light block when using it as
+    /// untrusted state.
     pub fn as_untrusted_state(&self) -> UntrustedBlockState<'_> {
         UntrustedBlockState {
             signed_header: &self.signed_header,
