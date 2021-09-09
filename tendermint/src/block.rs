@@ -22,7 +22,7 @@ pub use self::{
     size::Size,
 };
 use crate::prelude::*;
-use crate::{abci::transaction, error::Error, evidence};
+use crate::{error::Error, evidence};
 use core::convert::{TryFrom, TryInto};
 use serde::{Deserialize, Serialize};
 use tendermint_proto::types::Block as RawBlock;
@@ -41,7 +41,7 @@ pub struct Block {
     pub header: Header,
 
     /// Transaction data
-    pub data: transaction::Data,
+    pub data: Vec<Vec<u8>>,
 
     /// Evidence of malfeasance
     pub evidence: evidence::Data,
@@ -75,7 +75,7 @@ impl TryFrom<RawBlock> for Block {
         //}
         Ok(Block {
             header,
-            data: value.data.ok_or_else(Error::missing_data)?.into(),
+            data: value.data.ok_or_else(Error::missing_data)?.txs,
             evidence: value
                 .evidence
                 .ok_or_else(Error::missing_evidence)?
@@ -87,9 +87,10 @@ impl TryFrom<RawBlock> for Block {
 
 impl From<Block> for RawBlock {
     fn from(value: Block) -> Self {
+        use tendermint_proto::types::Data as RawData;
         RawBlock {
             header: Some(value.header.into()),
-            data: Some(value.data.into()),
+            data: Some(RawData { txs: value.data }),
             evidence: Some(value.evidence.into()),
             last_commit: value.last_commit.map(Into::into),
         }
@@ -100,7 +101,7 @@ impl Block {
     /// constructor
     pub fn new(
         header: Header,
-        data: transaction::Data,
+        data: Vec<Vec<u8>>,
         evidence: evidence::Data,
         last_commit: Option<Commit>,
     ) -> Result<Self, Error> {
@@ -128,7 +129,7 @@ impl Block {
     }
 
     /// Get data
-    pub fn data(&self) -> &transaction::Data {
+    pub fn data(&self) -> &Vec<Vec<u8>> {
         &self.data
     }
 
