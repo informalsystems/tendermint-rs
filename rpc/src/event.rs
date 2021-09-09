@@ -1,8 +1,8 @@
 //! RPC subscription event-related data structures.
 
+use crate::abci::responses::{BeginBlock, EndBlock};
 use alloc::collections::BTreeMap as HashMap;
 use serde::{Deserialize, Serialize};
-use tendermint::abci::responses::{BeginBlock, EndBlock};
 use tendermint::Block;
 
 use crate::prelude::*;
@@ -73,5 +73,5 @@ pub struct TxResult {
     pub log: Option<String>,
     pub gas_wanted: Option<String>,
     pub gas_used: Option<String>,
-    pub events: Vec<tendermint::abci::Event>,
+    pub events: Vec<crate::abci::Event>,
 }

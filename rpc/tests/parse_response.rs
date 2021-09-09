@@ -1,7 +1,7 @@
 //! Tendermint RPC endpoint testing.
 
 use std::{fs, path::PathBuf};
-use tendermint::abci::Code;
+use tendermint_rpc::abci::Code;
 
 use core::str::FromStr;
 use tendermint::vote;

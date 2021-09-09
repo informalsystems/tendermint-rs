@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 /// application-specific rules.
 #[derive(Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize)]
 #[serde(transparent)]
-pub struct Data(#[serde(with = "crate::serializers::bytes::base64string")] Vec<u8>);
+pub struct Data(#[serde(with = "tendermint::serializers::bytes::base64string")] Vec<u8>);
 
 impl From<Vec<u8>> for Data {
     fn from(value: Vec<u8>) -> Self {

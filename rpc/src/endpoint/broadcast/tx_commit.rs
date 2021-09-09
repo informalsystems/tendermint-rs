@@ -3,12 +3,10 @@
 
 use serde::{Deserialize, Serialize};
 
-use tendermint::abci::responses::Codespace;
-use tendermint::abci::{Event, Gas, Info};
-use tendermint::{
-    abci::{transaction, Code, Data, Log, Transaction},
-    block,
+use crate::abci::{
+    responses::Codespace, transaction, Code, Data, Event, Gas, Info, Log, Transaction,
 };
+use tendermint::block;
 
 use crate::prelude::*;
 
