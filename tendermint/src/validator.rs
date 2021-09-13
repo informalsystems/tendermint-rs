@@ -12,7 +12,7 @@ use tendermint_proto::types::ValidatorSet as RawValidatorSet;
 use tendermint_proto::Protobuf;
 
 /// Validator set contains a vector of validators
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Set {
     validators: Vec<Info>,
     proposer: Option<Info>,
@@ -142,7 +142,7 @@ impl Set {
 
 /// Validator information
 // Todo: Remove address and make it into a function that generates it on the fly from pub_key.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Info {
     /// Validator account address
     pub address: account::Id,

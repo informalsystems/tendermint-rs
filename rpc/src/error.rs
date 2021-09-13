@@ -37,7 +37,7 @@ type TungsteniteError = flex_error::DisplayOnly<async_tungstenite::tungstenite::
 type TungsteniteError = flex_error::NoSource;
 
 define_error! {
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, PartialEq, Eq)]
     Error {
         Response
             [ DisplayError<ResponseError> ]

@@ -12,7 +12,7 @@ use tendermint_proto::types::Commit as RawCommit;
 /// TODO: Update links below!
 /// <https://github.com/tendermint/tendermint/blob/51dc810d041eaac78320adc6d53ad8b160b06601/types/block.go#L486-L502>
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#lastcommit>
-#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(try_from = "RawCommit", into = "RawCommit")] // Used by testgen Generator trait
 pub struct Commit {
     /// Block height
