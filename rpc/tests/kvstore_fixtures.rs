@@ -4,6 +4,8 @@ use std::str::FromStr;
 use std::{fs, path::PathBuf};
 use subtle_encoding::{base64, hex};
 use tendermint::abci::transaction::Hash;
+use tendermint::evidence::Duration;
+use tendermint::public_key;
 use tendermint_rpc::{
     endpoint,
     error::{Error, ErrorDetail},
@@ -136,6 +138,14 @@ fn outgoing_fixtures() {
                     serde_json::from_str::<RequestWrapper<endpoint::commit::Request>>(&content)
                         .unwrap();
                 assert_eq!(wrapped.params().height.unwrap().value(), 10);
+            }
+            "consensus_params" => {
+                let wrapped = serde_json::from_str::<
+                    RequestWrapper<endpoint::consensus_params::Request>,
+                >(&content)
+                .unwrap();
+                let height = wrapped.params().height.unwrap();
+                assert_eq!(u64::from(height), 10u64);
             }
             "consensus_state" => assert!(serde_json::from_str::<
                 RequestWrapper<endpoint::consensus_state::Request>,
@@ -637,6 +647,26 @@ fn incoming_fixtures() {
                 assert_eq!(
                     result.signed_header.header.version,
                     tendermint::block::header::Version { block: 11, app: 1 }
+                );
+            }
+            "consensus_params" => {
+                let result = endpoint::consensus_params::Response::from_string(content).unwrap();
+                assert_eq!(u64::from(result.block_height), 10_u64);
+                assert_eq!(result.consensus_params.block.max_bytes, 22020096_u64);
+                assert_eq!(result.consensus_params.block.max_gas, -1_i64);
+                assert_eq!(result.consensus_params.block.time_iota_ms, 500_i64);
+                assert_eq!(
+                    result.consensus_params.evidence.max_age_duration,
+                    Duration(std::time::Duration::from_nanos(172800000000000_u64))
+                );
+                assert_eq!(
+                    result.consensus_params.evidence.max_age_num_blocks,
+                    100000_u64
+                );
+                assert_eq!(result.consensus_params.evidence.max_bytes, 1048576_i64);
+                assert_eq!(
+                    result.consensus_params.validator.pub_key_types,
+                    vec![public_key::Algorithm::Ed25519]
                 );
             }
             "consensus_state" => {

@@ -170,6 +170,16 @@ mod rpc {
         );
     }
 
+    /// `/consensus_params` endpoint
+    #[tokio::test]
+    async fn consensus_params() {
+        // Just tests deserialization for now
+        localhost_http_client()
+            .latest_consensus_params()
+            .await
+            .unwrap();
+    }
+
     /// `/consensus_state` endpoint
     #[tokio::test]
     async fn consensus_state() {

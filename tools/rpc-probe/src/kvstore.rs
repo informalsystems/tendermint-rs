@@ -71,6 +71,16 @@ pub fn commit(height: u64) -> PlannedInteraction {
     .into()
 }
 
+pub fn consensus_params(height: u64) -> PlannedInteraction {
+    Request::new(
+        "consensus_params",
+        json!({
+            "height": format!("{}", height),
+        }),
+    )
+    .into()
+}
+
 pub fn consensus_state() -> PlannedInteraction {
     Request::new("consensus_state", json!(null)).into()
 }

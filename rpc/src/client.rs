@@ -131,6 +131,16 @@ pub trait Client {
         self.perform(commit::Request::new(height.into())).await
     }
 
+    /// `/consensus_params`: get current consensus parameters at the specified
+    /// height.
+    async fn consensus_params<H>(&self, height: H) -> Result<consensus_params::Response, Error>
+    where
+        H: Into<Height> + Send,
+    {
+        self.perform(consensus_params::Request::new(Some(height.into())))
+            .await
+    }
+
     /// `/consensus_state`: get current consensus state
     async fn consensus_state(&self) -> Result<consensus_state::Response, Error> {
         self.perform(consensus_state::Request::new()).await
@@ -183,6 +193,11 @@ pub trait Client {
                 }
             }
         }
+    }
+
+    /// `/consensus_params`: get the latest consensus parameters.
+    async fn latest_consensus_params(&self) -> Result<consensus_params::Response, Error> {
+        self.perform(consensus_params::Request::new(None)).await
     }
 
     /// `/commit`: get the latest block commit
