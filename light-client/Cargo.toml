@@ -37,6 +37,8 @@ unstable = []
 std = [
     "flex-error/std"
 ]
+# Enable to execute long-running model-based tests
+mbt = []
 
 [dependencies]
 tendermint = { version = "0.21.0", path = "../tendermint" }
