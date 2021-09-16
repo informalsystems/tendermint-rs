@@ -53,7 +53,7 @@ impl TryFrom<RawCanonicalProposal> for CanonicalProposal {
             round,
             pol_round,
             block_id: block_id.map(TryInto::try_into).transpose()?,
-            timestamp: value.timestamp.map(|t| t.into()),
+            timestamp: value.timestamp.map(TryInto::try_into).transpose()?,
             chain_id: ChainId::try_from(value.chain_id).unwrap(),
         })
     }

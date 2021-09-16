@@ -3,6 +3,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+use std::convert::TryFrom;
 use std::fmt;
 use std::ops::{Add, Sub};
 use std::str::FromStr;
@@ -21,8 +22,10 @@ pub struct Time(DateTime<Utc>);
 
 impl Protobuf<Timestamp> for Time {}
 
-impl From<Timestamp> for Time {
-    fn from(value: Timestamp) -> Self {
+impl TryFrom<Timestamp> for Time {
+    type Error = Error;
+
+    fn try_from(value: Timestamp) -> Result<Self, Self::Error> {
         // prost_types::Timestamp has a SystemTime converter but
         // tendermint_proto::Timestamp can be JSON-encoded
         let prost_value = prost_types::Timestamp {
@@ -30,7 +33,9 @@ impl From<Timestamp> for Time {
             nanos: value.nanos,
         };
 
-        SystemTime::from(prost_value).into()
+        SystemTime::try_from(prost_value)
+            .map(Into::into)
+            .map_err(|e| Error::invalid_timestamp(e.to_string()))
     }
 }
 

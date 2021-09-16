@@ -21,3 +21,6 @@ exclude = [
 [profile.release.package.tendermint-light-client-js]
 # Tell `rustc` to optimize for small code size.
 opt-level = "s"
+
+[patch.crates-io]
+prost = { git = "https://github.com/tokio-rs/prost", rev = "859f2438d955f8613bb7ca37c83bc990f55d6658" }
