@@ -10,7 +10,9 @@ pub use transport::mock::{MockClient, MockRequestMatcher, MockRequestMethodMatch
 #[cfg(feature = "http-client")]
 pub use transport::http::{HttpClient, HttpClientUrl};
 #[cfg(feature = "websocket-client")]
-pub use transport::websocket::{WebSocketClient, WebSocketClientDriver, WebSocketClientUrl};
+pub use transport::websocket::{
+    WebSocketClient, WebSocketClientDriver, WebSocketClientUrl, WebSocketConfig,
+};
 
 use crate::endpoint::validators::DEFAULT_VALIDATORS_PER_PAGE;
 use crate::endpoint::*;

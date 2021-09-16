@@ -36,7 +36,7 @@ pub use client::{
 #[cfg(feature = "http-client")]
 pub use client::{HttpClient, HttpClientUrl};
 #[cfg(feature = "websocket-client")]
-pub use client::{WebSocketClient, WebSocketClientDriver, WebSocketClientUrl};
+pub use client::{WebSocketClient, WebSocketClientDriver, WebSocketClientUrl, WebSocketConfig};
 
 pub mod endpoint;
 pub mod error;
