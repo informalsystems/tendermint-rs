@@ -23,6 +23,7 @@ pub fn quick_probe_plan(output_path: &Path, request_wait: Duration) -> Result<Pl
                 block_results(10).with_name("block_results_at_height_10"),
                 blockchain(1, 10).with_name("blockchain_from_1_to_10"),
                 commit(10).with_name("commit_at_height_10"),
+                consensus_params(10),
                 consensus_state(),
                 broadcast_tx("async", "async-key", "value"),
                 broadcast_tx("sync", "sync-key", "value"),

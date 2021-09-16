@@ -7,6 +7,7 @@ pub mod block_results;
 pub mod blockchain;
 pub mod broadcast;
 pub mod commit;
+pub mod consensus_params;
 pub mod consensus_state;
 pub mod evidence;
 pub mod genesis;

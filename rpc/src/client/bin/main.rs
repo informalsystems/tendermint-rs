@@ -112,6 +112,11 @@ enum ClientRequest {
     },
     /// Get the commit for the given height.
     Commit { height: u32 },
+    /// Get consensus parameters for a specific height.
+    ConsensusParams {
+        /// The height for which to obtain consensus parameters.
+        height: u32,
+    },
     /// Get the current consensus state.
     ConsensusState,
     /// Get the node's genesis data.
@@ -122,6 +127,8 @@ enum ClientRequest {
     LatestBlock,
     /// Request the results for the latest block.
     LatestBlockResults,
+    /// Get the consensus parameters for the latest block.
+    LatestConsensusParams,
     /// Request the latest commit.
     LatestCommit,
     /// Obtain information about the P2P stack and other network connections.
@@ -324,6 +331,10 @@ where
                 .await?,
         )
         .map_err(Error::serde)?,
+        ClientRequest::ConsensusParams { height } => {
+            serde_json::to_string_pretty(&client.consensus_params(height).await?)
+                .map_err(Error::serde)?
+        }
         ClientRequest::Commit { height } => {
             serde_json::to_string_pretty(&client.commit(height).await?).map_err(Error::serde)?
         }
@@ -336,6 +347,10 @@ where
         }
         ClientRequest::LatestCommit => {
             serde_json::to_string_pretty(&client.latest_commit().await?).map_err(Error::serde)?
+        }
+        ClientRequest::LatestConsensusParams => {
+            serde_json::to_string_pretty(&client.latest_consensus_params().await?)
+                .map_err(Error::serde)?
         }
         ClientRequest::ConsensusState => {
             serde_json::to_string_pretty(&client.consensus_state().await?).map_err(Error::serde)?
