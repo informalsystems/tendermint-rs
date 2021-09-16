@@ -429,7 +429,6 @@ mod sealed {
     impl WebSocketClient {
         pub async fn new_unsecure(
             url: Url,
-
             config: Option<WebSocketConfig>,
         ) -> Result<(Self, WebSocketClientDriver), Error> {
             let (client, driver) = AsyncTungsteniteClient::<Unsecure>::new(url, config).await?;
@@ -438,7 +437,6 @@ mod sealed {
 
         pub async fn new_secure(
             url: Url,
-
             config: Option<WebSocketConfig>,
         ) -> Result<(Self, WebSocketClientDriver), Error> {
             let (client, driver) = AsyncTungsteniteClient::<Secure>::new(url, config).await?;
