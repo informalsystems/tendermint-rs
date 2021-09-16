@@ -12,6 +12,6 @@ fn test_secret_connection_pubkey_serialization() {
 
     assert_eq!(
         example_key.to_string(),
-        "117C95C4FD7E636C38D303493302D2C271A39669"
+        "117c95c4fd7e636c38d303493302d2c271a39669"
     );
 }

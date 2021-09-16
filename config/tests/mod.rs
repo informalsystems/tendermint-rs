@@ -204,7 +204,7 @@ fn node_key_parser() {
     let node_key = NodeKey::parse_json(&raw_node_key).unwrap();
     assert_eq!(
         node_key.node_id().to_string(),
-        "1A7B6BCF3D6FB055AB3AEBCA415847531B626699"
+        "1a7b6bcf3d6fb055ab3aebca415847531b626699"
     );
 }
 
