@@ -133,11 +133,14 @@ pub trait Client {
 
     /// `/consensus_params`: get current consensus parameters at the specified
     /// height.
-    async fn consensus_params<H>(&self, height: H) -> Result<consensus_params::Response, Error>
+    async fn consensus_params<H>(
+        &self,
+        height: Option<H>,
+    ) -> Result<consensus_params::Response, Error>
     where
         H: Into<Height> + Send,
     {
-        self.perform(consensus_params::Request::new(Some(height.into())))
+        self.perform(consensus_params::Request::new(height.map(Into::into)))
             .await
     }
 
