@@ -1,7 +1,4 @@
-use std::{
-    path::{Path, PathBuf},
-    time::Duration,
-};
+use std::{path::PathBuf, time::Duration};
 
 use gumdrop::Options;
 
@@ -12,7 +9,7 @@ use tendermint_light_client::supervisor::{Handle as _, Instance};
 use tendermint_light_client::{
     builder::{LightClientBuilder, SupervisorBuilder},
     light_client,
-    store::sled::SledStore,
+    store::memory::MemoryStore,
     types::{Height, PeerId, TrustThreshold},
 };
 
@@ -81,10 +78,9 @@ fn main() {
 fn make_instance(
     peer_id: PeerId,
     addr: tendermint_rpc::Url,
-    db_path: impl AsRef<Path>,
     opts: &SyncOpts,
 ) -> Result<Instance, Box<dyn std::error::Error>> {
-    let light_store = SledStore::open(db_path)?;
+    let light_store = MemoryStore::new();
     let rpc_client = rpc::HttpClient::new(addr).unwrap();
     let options = light_client::Options {
         trust_threshold: TrustThreshold::default(),
@@ -111,11 +107,8 @@ fn sync_cmd(opts: SyncOpts) -> Result<(), Box<dyn std::error::Error>> {
     let primary_addr = opts.address.clone();
     let witness_addr = opts.address.clone();
 
-    let primary_path = opts.db_path.join(primary.to_string());
-    let witness_path = opts.db_path.join(witness.to_string());
-
-    let primary_instance = make_instance(primary, primary_addr.clone(), primary_path, &opts)?;
-    let witness_instance = make_instance(witness, witness_addr.clone(), witness_path, &opts)?;
+    let primary_instance = make_instance(primary, primary_addr.clone(), &opts)?;
+    let witness_instance = make_instance(witness, witness_addr.clone(), &opts)?;
 
     let supervisor = SupervisorBuilder::new()
         .primary(primary, primary_addr, primary_instance)
