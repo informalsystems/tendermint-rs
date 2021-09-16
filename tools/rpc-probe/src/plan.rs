@@ -366,14 +366,14 @@ async fn execute_request(
     let response_json = match client.request(&request_json).await {
         Ok(r) => {
             if expect_error {
-                return Err(Error::UnexpectedSuccess);
+                return Err(Error::UnexpectedSuccessResponse);
             }
             r
         }
         Err(e) => match e {
             Error::Failed(_, r) => {
                 if !expect_error {
-                    return Err(Error::UnexpectedError(
+                    return Err(Error::UnexpectedErrorResponse(
                         serde_json::to_string_pretty(&r).unwrap(),
                     ));
                 }
@@ -399,7 +399,7 @@ async fn execute_subscription(
         match client.subscribe(&uuid_v4(), &subs.subscription.query).await {
             Ok(r) => {
                 if expect_error {
-                    return Err(Error::UnexpectedSuccess);
+                    return Err(Error::UnexpectedSuccessResponse);
                 }
                 r
             }
@@ -408,7 +408,7 @@ async fn execute_subscription(
                 // queries).
                 Error::Failed(_, r) => {
                     if !expect_error {
-                        return Err(Error::UnexpectedError(
+                        return Err(Error::UnexpectedErrorResponse(
                             serde_json::to_string_pretty(&r).unwrap(),
                         ));
                     }
