@@ -2,13 +2,13 @@ use git2::build::{CheckoutBuilder, RepoBuilder};
 use git2::{AutotagOption, Commit, FetchOptions, Oid, Reference, Repository};
 use std::fs::{copy, create_dir_all, remove_dir_all, File};
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use subtle_encoding::hex;
 use walkdir::WalkDir;
 
 /// Clone or open+fetch a repository and check out a specific commitish
 /// In case of an existing repository, the origin remote will be set to `url`.
-pub fn get_commitish(dir: &PathBuf, url: &str, commitish: &str) {
+pub fn get_commitish(dir: &Path, url: &str, commitish: &str) {
     let repo = if dir.exists() {
         fetch_existing(dir, url)
     } else {
@@ -17,7 +17,7 @@ pub fn get_commitish(dir: &PathBuf, url: &str, commitish: &str) {
     checkout_commitish(&repo, commitish)
 }
 
-fn clone_new(dir: &PathBuf, url: &str) -> Repository {
+fn clone_new(dir: &Path, url: &str) -> Repository {
     println!(
         "  [info] => Cloning {} into {} folder",
         url,
@@ -34,7 +34,7 @@ fn clone_new(dir: &PathBuf, url: &str) -> Repository {
     builder.clone(url, dir).unwrap()
 }
 
-fn fetch_existing(dir: &PathBuf, url: &str) -> Repository {
+fn fetch_existing(dir: &Path, url: &str) -> Repository {
     println!(
         "  [info] => Fetching from {} into existing {} folder",
         url,
@@ -151,7 +151,7 @@ fn find_reference_or_commit<'a>(
 }
 
 /// Copy generated files to target folder
-pub fn copy_files(src_dir: &PathBuf, target_dir: &PathBuf) {
+pub fn copy_files(src_dir: &Path, target_dir: &Path) {
     // Remove old compiled files
     remove_dir_all(target_dir).unwrap_or_default();
     create_dir_all(target_dir).unwrap();
@@ -203,7 +203,7 @@ pub fn find_proto_files(proto_paths: Vec<PathBuf>) -> Vec<PathBuf> {
 }
 
 /// Create tendermint.rs with library information
-pub fn generate_tendermint_lib(prost_dir: &PathBuf, tendermint_lib_target: &PathBuf) {
+pub fn generate_tendermint_lib(prost_dir: &Path, tendermint_lib_target: &Path) {
     let file_names = WalkDir::new(prost_dir)
         .into_iter()
         .filter_map(|e| e.ok())
