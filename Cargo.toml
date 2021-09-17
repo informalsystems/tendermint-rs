@@ -24,4 +24,5 @@ opt-level = "s"
 
 [patch.crates-io]
 prost = { git = "https://github.com/tokio-rs/prost", rev = "859f2438d955f8613bb7ca37c83bc990f55d6658" }
+prost-derive = { git = "https://github.com/tokio-rs/prost", rev = "859f2438d955f8613bb7ca37c83bc990f55d6658" }
 prost-types = { git = "https://github.com/tokio-rs/prost", rev = "859f2438d955f8613bb7ca37c83bc990f55d6658" }
