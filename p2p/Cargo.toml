@@ -19,6 +19,8 @@ description = """
     The Tendermint P2P stack in Rust.
     """
 
+[lib]
+test = false
 
 [features]
 default = ["std", "eyre_tracer"]
