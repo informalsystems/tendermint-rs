@@ -2,8 +2,8 @@ use crate::chain::Id as ChainId;
 use crate::error::Error;
 use crate::prelude::*;
 use crate::{block, Time};
+use core::convert::{TryFrom, TryInto};
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::CanonicalVote as RawCanonicalVote;
 use tendermint_proto::Protobuf;
 
@@ -91,7 +91,7 @@ mod tests {
     use crate::prelude::*;
     use crate::vote::canonical_vote::CanonicalVote;
     use crate::vote::Type;
-    use std::convert::TryFrom;
+    use core::convert::TryFrom;
     use tendermint_proto::google::protobuf::Timestamp;
     use tendermint_proto::types::CanonicalBlockId as RawCanonicalBlockId;
     use tendermint_proto::types::CanonicalPartSetHeader as RawCanonicalPartSetHeader;

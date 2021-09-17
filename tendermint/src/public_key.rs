@@ -11,10 +11,10 @@ pub use pub_key_response::PubKeyResponse;
 
 use crate::prelude::*;
 use crate::{error::Error, signature::Signature};
+use core::convert::TryFrom;
+use core::{cmp::Ordering, fmt, ops::Deref, str::FromStr};
 use serde::{de, ser, Deserialize, Serialize};
 use signature::Verifier as _;
-use std::convert::TryFrom;
-use std::{cmp::Ordering, fmt, ops::Deref, str::FromStr};
 use subtle_encoding::{base64, bech32, hex};
 use tendermint_proto::crypto::public_key::Sum;
 use tendermint_proto::crypto::PublicKey as RawPublicKey;
@@ -376,7 +376,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
+    use core::convert::TryFrom;
 
     use super::{PublicKey, Signature, TendermintKey};
     use crate::prelude::*;

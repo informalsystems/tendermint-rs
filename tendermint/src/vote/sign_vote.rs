@@ -3,7 +3,7 @@ use crate::error::Error;
 use crate::prelude::*;
 use crate::Vote;
 use bytes::BufMut;
-use std::convert::{TryFrom, TryInto};
+use core::convert::{TryFrom, TryInto};
 use tendermint_proto::privval::SignedVoteResponse as RawSignedVoteResponse;
 use tendermint_proto::privval::{RemoteSignerError, SignVoteRequest as RawSignVoteRequest};
 use tendermint_proto::Error as ProtobufError;
@@ -104,9 +104,9 @@ mod tests {
     use crate::Hash;
     use crate::Vote;
     use chrono::{DateTime, Utc};
-    use std::convert::TryFrom;
+    use core::convert::TryFrom;
+    use core::str::FromStr;
     use std::println;
-    use std::str::FromStr;
     use tendermint_proto::Protobuf;
 
     #[test]

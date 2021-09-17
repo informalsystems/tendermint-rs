@@ -1,6 +1,6 @@
 //! Tendermint node IDs
 
-use std::{
+use core::{
     convert::TryFrom,
     fmt::{self, Debug, Display},
     str::FromStr,

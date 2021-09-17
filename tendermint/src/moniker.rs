@@ -2,11 +2,11 @@
 
 use crate::error::Error;
 use crate::prelude::*;
-use serde::{Deserialize, Serialize};
-use std::{
+use core::{
     fmt::{self, Display},
     str::FromStr,
 };
+use serde::{Deserialize, Serialize};
 
 /// Validator display names
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]

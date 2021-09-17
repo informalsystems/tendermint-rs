@@ -2,14 +2,14 @@
 
 use crate::error::Error;
 use crate::prelude::*;
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use std::convert::TryFrom;
-use std::{
+use core::convert::TryFrom;
+use core::{
     cmp::Ordering,
     fmt::{self, Debug, Display},
     hash::{Hash, Hasher},
     str::{self, FromStr},
 };
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use tendermint_proto::Protobuf;
 
 /// Maximum length of a `chain::Id` name. Matches `MaxChainIDLen` from:

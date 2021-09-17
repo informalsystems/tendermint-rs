@@ -1,6 +1,6 @@
+use core::fmt;
 use serde::de::{Deserialize, Deserializer, Visitor};
 use serde::{Serialize, Serializer};
-use std::fmt;
 
 /// ABCI application response codes.
 ///

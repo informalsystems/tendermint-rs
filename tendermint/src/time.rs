@@ -4,10 +4,11 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
-use std::fmt;
-use std::ops::{Add, Sub};
-use std::str::FromStr;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use core::fmt;
+use core::ops::{Add, Sub};
+use core::str::FromStr;
+use core::time::Duration;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tendermint_proto::google::protobuf::Timestamp;
 use tendermint_proto::serializers::timestamp;
 use tendermint_proto::Protobuf;
@@ -59,7 +60,7 @@ impl Time {
     }
 
     /// Calculate the amount of time which has passed since another [`Time`]
-    /// as a [`std::time::Duration`]
+    /// as a [`core::time::Duration`]
     pub fn duration_since(&self, other: Time) -> Result<Duration, Error> {
         self.0
             .signed_duration_since(other.0)

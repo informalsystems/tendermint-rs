@@ -10,9 +10,9 @@ pub use self::power::Power;
 pub use self::sign_vote::*;
 pub use self::validator_index::ValidatorIndex;
 
-use std::convert::{TryFrom, TryInto};
-use std::fmt;
-use std::str::FromStr;
+use core::convert::{TryFrom, TryInto};
+use core::fmt;
+use core::str::FromStr;
 
 use bytes::BufMut;
 use ed25519::Signature as Ed25519Signature;

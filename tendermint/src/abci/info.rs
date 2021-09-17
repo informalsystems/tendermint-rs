@@ -1,6 +1,6 @@
 use crate::prelude::*;
+use core::fmt::{self, Display};
 use serde::{Deserialize, Serialize};
-use std::fmt::{self, Display};
 
 /// ABCI info
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

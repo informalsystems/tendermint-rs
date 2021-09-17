@@ -6,7 +6,7 @@ use crate::chain::Id as ChainId;
 use crate::error::Error;
 use crate::prelude::*;
 use crate::Time;
-use std::convert::{TryFrom, TryInto};
+use core::convert::{TryFrom, TryInto};
 use tendermint_proto::types::CanonicalProposal as RawCanonicalProposal;
 use tendermint_proto::Protobuf;
 
@@ -100,7 +100,7 @@ mod tests {
     use crate::prelude::*;
     use crate::proposal::canonical_proposal::CanonicalProposal;
     use crate::proposal::Type;
-    use std::convert::TryFrom;
+    use core::convert::TryFrom;
     use tendermint_proto::types::CanonicalBlockId as RawCanonicalBlockId;
     use tendermint_proto::types::CanonicalPartSetHeader as RawCanonicalPartSetHeader;
     use tendermint_proto::types::CanonicalProposal as RawCanonicalProposal;

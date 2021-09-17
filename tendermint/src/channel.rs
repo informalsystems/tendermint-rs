@@ -6,8 +6,8 @@ pub use self::id::Id;
 
 use crate::prelude::*;
 use crate::serializers;
+use core::fmt::{self, Display};
 use serde::{Deserialize, Serialize};
-use std::fmt::{self, Display};
 
 /// Channels
 #[derive(Clone, Debug, Deserialize, Serialize)]
