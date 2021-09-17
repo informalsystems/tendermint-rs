@@ -1,5 +1,6 @@
 //! Evidence of malfeasance by validators (i.e. signing conflicting votes).
 
+use crate::prelude::*;
 use crate::{
     block::signed_header::SignedHeader, error::Error, serializers, vote::Power, Time, Vote,
 };

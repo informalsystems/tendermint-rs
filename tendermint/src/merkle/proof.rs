@@ -6,6 +6,7 @@ use tendermint_proto::crypto::ProofOp as RawProofOp;
 use tendermint_proto::crypto::ProofOps as RawProofOps;
 use tendermint_proto::Protobuf;
 
+use crate::prelude::*;
 use crate::serializers;
 use crate::Error;
 

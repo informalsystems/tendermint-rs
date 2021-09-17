@@ -3,6 +3,7 @@
 mod hash;
 
 pub use self::hash::{Hash, LENGTH as HASH_LENGTH};
+use crate::prelude::*;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{fmt, slice};
 use subtle_encoding::base64;
@@ -124,6 +125,7 @@ impl AsRef<[Transaction]> for Data {
 #[cfg(test)]
 mod tests {
     use super::Transaction;
+    use crate::prelude::*;
 
     #[test]
     fn upper_hex_serialization() {

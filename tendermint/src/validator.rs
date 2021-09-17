@@ -3,6 +3,7 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use subtle_encoding::base64;
 
+use crate::prelude::*;
 use crate::{account, hash::Hash, merkle, vote, Error, PublicKey, Signature};
 
 use std::convert::{TryFrom, TryInto};

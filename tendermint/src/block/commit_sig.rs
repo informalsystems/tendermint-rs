@@ -1,6 +1,7 @@
 //! CommitSig within Commit
 
 use crate::error::Error;
+use crate::prelude::*;
 use crate::{account, Signature, Time};
 use num_traits::ToPrimitive;
 use std::convert::{TryFrom, TryInto};

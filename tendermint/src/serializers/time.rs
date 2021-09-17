@@ -2,6 +2,7 @@
 //! RFC3339-compatible timestamps to that provided by the `tendermint-proto`
 //! crate.
 
+use crate::prelude::*;
 use crate::Time;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 

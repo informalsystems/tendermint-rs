@@ -1,5 +1,6 @@
 //! Remote addresses (`tcp://` or `unix://`)
 
+use crate::prelude::*;
 use crate::{error::Error, node};
 
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};

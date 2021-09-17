@@ -3,6 +3,7 @@
 use std::fmt::{self, Debug, Display};
 
 use crate::error::Error;
+use crate::prelude::*;
 use crate::serializers;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::convert::TryFrom;

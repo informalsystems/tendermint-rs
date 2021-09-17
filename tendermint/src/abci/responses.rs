@@ -1,6 +1,7 @@
 //! ABCI response types used by the `/block_results` RPC endpoint.
 
 use super::{code::Code, data::Data, gas::Gas, info::Info, log::Log, tag::Tag};
+use crate::prelude::*;
 use crate::{consensus, serializers, validator};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt::{self, Display};

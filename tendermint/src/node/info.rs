@@ -1,5 +1,6 @@
 //! Node information (used in RPC responses)
 
+use crate::prelude::*;
 use crate::{chain, channel::Channels, net, node, serializers, Moniker, Version};
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};

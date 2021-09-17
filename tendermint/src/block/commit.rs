@@ -3,6 +3,7 @@
 use crate::block::commit_sig::CommitSig;
 use crate::block::{Height, Id, Round};
 use crate::error::Error;
+use crate::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Commit as RawCommit;

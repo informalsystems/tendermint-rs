@@ -3,6 +3,7 @@
 use crate::error::Error;
 use crate::hash::Algorithm;
 use crate::hash::SHA256_HASH_SIZE;
+use crate::prelude::*;
 use crate::Hash;
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;

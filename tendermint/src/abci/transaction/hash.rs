@@ -1,6 +1,7 @@
 //! Transaction hashes
 
 use crate::error::Error;
+use crate::prelude::*;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     fmt::{self, Debug, Display},

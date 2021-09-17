@@ -4,6 +4,7 @@ use super::Type;
 use crate::block::{Height, Id as BlockId, Round};
 use crate::chain::Id as ChainId;
 use crate::error::Error;
+use crate::prelude::*;
 use crate::Time;
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::CanonicalProposal as RawCanonicalProposal;
@@ -96,6 +97,7 @@ impl CanonicalProposal {
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::*;
     use crate::proposal::canonical_proposal::CanonicalProposal;
     use crate::proposal::Type;
     use std::convert::TryFrom;

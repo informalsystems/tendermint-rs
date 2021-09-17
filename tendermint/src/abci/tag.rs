@@ -1,6 +1,7 @@
 //! Tags
 
 use crate::error::Error;
+use crate::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
 use tendermint_proto::serializers::bytes::base64string;

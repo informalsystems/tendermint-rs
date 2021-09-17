@@ -11,6 +11,7 @@ mod priv_validator_key;
 
 pub use self::{node_key::NodeKey, priv_validator_key::PrivValidatorKey};
 
+use crate::prelude::*;
 use crate::{error::Error, genesis::Genesis, net, node, Moniker, Timeout};
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
 use std::{

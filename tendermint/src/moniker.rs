@@ -1,6 +1,7 @@
 //! Monikers: names associated with validators
 
 use crate::error::Error;
+use crate::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{self, Display},

@@ -12,6 +12,7 @@ use crate::block::{Height, Id as BlockId, Round};
 use crate::chain::Id as ChainId;
 use crate::consensus::State;
 use crate::error::Error;
+use crate::prelude::*;
 use crate::Signature;
 use crate::Time;
 use bytes::BufMut;
@@ -118,6 +119,7 @@ mod tests {
     use crate::block::{Height, Round};
     use crate::chain::Id as ChainId;
     use crate::hash::{Algorithm, Hash};
+    use crate::prelude::*;
     use crate::proposal::SignProposalRequest;
     use crate::signature::{Ed25519Signature, ED25519_SIGNATURE_SIZE};
     use crate::{proposal::Type, Proposal, Signature};

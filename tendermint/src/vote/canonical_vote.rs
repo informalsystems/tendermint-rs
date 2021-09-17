@@ -1,5 +1,6 @@
 use crate::chain::Id as ChainId;
 use crate::error::Error;
+use crate::prelude::*;
 use crate::{block, Time};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
@@ -87,6 +88,7 @@ impl CanonicalVote {
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::*;
     use crate::vote::canonical_vote::CanonicalVote;
     use crate::vote::Type;
     use std::convert::TryFrom;

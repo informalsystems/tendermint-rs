@@ -1,6 +1,7 @@
 //! Tendermint consensus parameters
 
 use crate::error::Error;
+use crate::prelude::*;
 use crate::{block, evidence, public_key};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};

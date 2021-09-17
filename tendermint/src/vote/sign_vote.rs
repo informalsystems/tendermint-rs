@@ -1,5 +1,6 @@
 use crate::chain;
 use crate::error::Error;
+use crate::prelude::*;
 use crate::Vote;
 use bytes::BufMut;
 use std::convert::{TryFrom, TryInto};
@@ -96,6 +97,7 @@ mod tests {
     use crate::block::Round;
     use crate::chain::Id as ChainId;
     use crate::hash::Algorithm;
+    use crate::prelude::*;
     use crate::signature::{Signature, ED25519_SIGNATURE_SIZE};
     use crate::vote::{CanonicalVote, ValidatorIndex};
     use crate::vote::{SignVoteRequest, Type};
@@ -103,6 +105,7 @@ mod tests {
     use crate::Vote;
     use chrono::{DateTime, Utc};
     use std::convert::TryFrom;
+    use std::println;
     use std::str::FromStr;
     use tendermint_proto::Protobuf;
 

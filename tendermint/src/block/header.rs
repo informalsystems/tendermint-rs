@@ -1,6 +1,7 @@
 //! Block headers
 
 use crate::merkle::simple_hash_from_byte_vectors;
+use crate::prelude::*;
 use crate::{account, block, chain, AppHash, Error, Hash, Time};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};

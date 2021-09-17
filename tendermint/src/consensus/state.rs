@@ -1,6 +1,7 @@
 //! Tendermint consensus state
 
 pub use crate::block;
+use crate::prelude::*;
 use serde::{Deserialize, Serialize};
 pub use std::{cmp::Ordering, fmt};
 

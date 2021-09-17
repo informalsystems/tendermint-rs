@@ -2,6 +2,7 @@
 
 pub mod proof;
 
+use crate::prelude::*;
 use sha2::{Digest, Sha256};
 
 /// Size of Merkle root hash

@@ -21,6 +21,7 @@ pub use self::{
     round::*,
     size::Size,
 };
+use crate::prelude::*;
 use crate::{abci::transaction, error::Error, evidence};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};

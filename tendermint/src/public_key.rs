@@ -9,6 +9,7 @@ mod pub_key_response;
 pub use pub_key_request::PubKeyRequest;
 pub use pub_key_response::PubKeyResponse;
 
+use crate::prelude::*;
 use crate::{error::Error, signature::Signature};
 use serde::{de, ser, Deserialize, Serialize};
 use signature::Verifier as _;
@@ -378,6 +379,7 @@ mod tests {
     use std::convert::TryFrom;
 
     use super::{PublicKey, Signature, TendermintKey};
+    use crate::prelude::*;
     use crate::public_key::PubKeyResponse;
     use subtle_encoding::hex;
     use tendermint_proto::Protobuf;

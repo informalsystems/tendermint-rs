@@ -26,6 +26,7 @@ use crate::chain::Id as ChainId;
 use crate::consensus::State;
 use crate::error::Error;
 use crate::hash;
+use crate::prelude::*;
 use crate::{account, block, Signature, Time};
 
 /// Votes are signed messages from validators for a particular block which

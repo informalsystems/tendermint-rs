@@ -1,5 +1,6 @@
 //! Tendermint accounts
 
+use crate::prelude::*;
 use crate::{error::Error, public_key::Ed25519};
 
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
