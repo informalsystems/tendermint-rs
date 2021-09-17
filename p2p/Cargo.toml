@@ -25,7 +25,7 @@ test = false
 [features]
 default = ["std", "eyre_tracer"]
 eyre_tracer = ["flex-error/eyre_tracer"]
-amino = ["prost-amino", "prost-amino-derive"]
+amino = ["prost-derive"]
 std = [
     "flex-error/std"
 ]
@@ -53,5 +53,4 @@ tendermint-proto = { path = "../proto", version = "0.21.0" }
 tendermint-std-ext = { path = "../std-ext", version = "0.21.0" }
 
 # optional dependencies
-prost-amino = { version = "0.6", optional = true }
-prost-amino-derive = { version = "0.6", optional = true }
+prost-derive = { version = "0.7", optional = true }
