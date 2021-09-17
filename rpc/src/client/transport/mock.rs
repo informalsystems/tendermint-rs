@@ -4,11 +4,12 @@ use crate::client::subscription::SubscriptionTx;
 use crate::client::sync::{unbounded, ChannelRx, ChannelTx};
 use crate::client::transport::router::SubscriptionRouter;
 use crate::event::Event;
+use crate::prelude::*;
 use crate::query::Query;
 use crate::utils::uuid_str;
 use crate::{Client, Error, Method, Request, Response, Subscription, SubscriptionClient};
+use alloc::collections::BTreeMap as HashMap;
 use async_trait::async_trait;
-use std::collections::HashMap;
 
 /// A mock client implementation for use in testing.
 ///

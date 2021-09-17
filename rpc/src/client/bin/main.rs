@@ -1,7 +1,7 @@
 //! CLI for performing simple interactions against a Tendermint node's RPC.
 
+use core::str::FromStr;
 use futures::StreamExt;
-use std::str::FromStr;
 use structopt::StructOpt;
 use tendermint::abci::transaction::Hash;
 use tendermint::abci::{Path, Transaction};

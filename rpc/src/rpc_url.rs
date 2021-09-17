@@ -1,11 +1,12 @@
 //! URL representation for RPC clients.
 
 use crate::error::Error;
+use crate::prelude::*;
+use core::convert::TryFrom;
+use core::fmt;
+use core::str::FromStr;
 use serde::de::Error as SerdeError;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::convert::TryFrom;
-use std::fmt;
-use std::str::FromStr;
 
 /// The various schemes supported by Tendermint RPC clients.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

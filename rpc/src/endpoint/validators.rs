@@ -1,5 +1,6 @@
 //! `/validators` endpoint JSON-RPC wrapper
 
+use crate::prelude::*;
 use crate::{PageNumber, PerPage};
 use serde::{Deserialize, Serialize};
 use tendermint::{block, validator};

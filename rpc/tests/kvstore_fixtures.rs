@@ -1,6 +1,6 @@
 //! Tendermint kvstore RPC endpoint testing.
 
-use std::str::FromStr;
+use core::str::FromStr;
 use std::{fs, path::PathBuf};
 use subtle_encoding::{base64, hex};
 use tendermint::abci::transaction::Hash;
@@ -657,7 +657,7 @@ fn incoming_fixtures() {
                 assert_eq!(result.consensus_params.block.time_iota_ms, 500_i64);
                 assert_eq!(
                     result.consensus_params.evidence.max_age_duration,
-                    Duration(std::time::Duration::from_nanos(172800000000000_u64))
+                    Duration(core::time::Duration::from_nanos(172800000000000_u64))
                 );
                 assert_eq!(
                     result.consensus_params.evidence.max_age_num_blocks,

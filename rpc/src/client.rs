@@ -17,10 +17,11 @@ pub use transport::websocket::{
 use crate::endpoint::validators::DEFAULT_VALIDATORS_PER_PAGE;
 use crate::endpoint::*;
 use crate::paging::Paging;
+use crate::prelude::*;
 use crate::query::Query;
 use crate::{Error, Order, SimpleRequest};
 use async_trait::async_trait;
-use std::time::Duration;
+use core::time::Duration;
 use tendermint::abci::{self, Transaction};
 use tendermint::block::Height;
 use tendermint::evidence::Evidence;

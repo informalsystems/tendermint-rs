@@ -1,9 +1,10 @@
 //! `/consensus_state` endpoint JSON-RPC wrapper
 
+use crate::prelude::*;
 use crate::{Error, Method};
+use core::fmt;
+use core::str::FromStr;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::fmt;
-use std::str::FromStr;
 use subtle_encoding::hex;
 use tendermint::block::{Height, Round};
 use tendermint::{account, hash, vote, Hash, Time};
