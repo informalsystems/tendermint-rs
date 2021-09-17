@@ -1,4 +1,4 @@
-use std::convert::TryFrom;
+use core::convert::TryFrom;
 use tendermint_proto::types::BlockId as RawBlockId;
 use tendermint_proto::types::PartSetHeader as RawPartSetHeader;
 use tendermint_proto::Protobuf;

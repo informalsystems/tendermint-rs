@@ -5,9 +5,10 @@
 //! string-quoted integer value into an integer value without quotes in Tendermint Core v0.34.0.
 //! This deserializer allows backwards-compatibility by deserializing both ways.
 //! See also: <https://github.com/informalsystems/tendermint-rs/issues/679>
+use crate::prelude::*;
+use core::convert::TryFrom;
+use core::fmt::Formatter;
 use serde::{de::Error, de::Visitor, Deserializer, Serialize, Serializer};
-use std::convert::TryFrom;
-use std::fmt::Formatter;
 
 struct PartSetHeaderTotalStringOrU32;
 
@@ -30,7 +31,7 @@ where
 impl<'de> Visitor<'de> for PartSetHeaderTotalStringOrU32 {
     type Value = u32;
 
-    fn expecting(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+    fn expecting(&self, formatter: &mut Formatter<'_>) -> core::fmt::Result {
         formatter.write_str("an u32 integer or string between 0 and 2^32")
     }
 
