@@ -1,6 +1,6 @@
 //! Timestamps used by Tendermint blockchains
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
@@ -19,31 +19,21 @@ use crate::error::Error;
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#time>
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(try_from = "Timestamp", into = "Timestamp")]
-pub struct Time(DateTime<Utc>);
+pub struct Time(pub DateTime<Utc>);
 
 impl Protobuf<Timestamp> for Time {}
 
 impl From<Timestamp> for Time {
     fn from(value: Timestamp) -> Self {
-        // prost_types::Timestamp has a SystemTime converter but
-        // tendermint_proto::Timestamp can be JSON-encoded
-        let prost_value = prost_types::Timestamp {
-            seconds: value.seconds,
-            nanos: value.nanos,
-        };
-
-        SystemTime::from(prost_value).into()
+        Time(Utc.timestamp(value.seconds, value.nanos as u32))
     }
 }
 
 impl From<Time> for Timestamp {
     fn from(value: Time) -> Self {
-        // prost_types::Timestamp has a SystemTime converter but
-        // tendermint_proto::Timestamp can be JSON-encoded
-        let prost_value = prost_types::Timestamp::from(SystemTime::from(value));
         Timestamp {
-            seconds: prost_value.seconds,
-            nanos: prost_value.nanos,
+            seconds: value.0.timestamp(),
+            nanos: value.0.timestamp_nanos() as i32,
         }
     }
 }
