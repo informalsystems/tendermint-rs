@@ -138,7 +138,7 @@ impl MockEvidenceReporter {
 }
 
 pub fn verify_single(
-    trusted_state: LightBlock,
+    trusted_block: LightBlock,
     input: LightBlock,
     trust_threshold: TrustThreshold,
     trusting_period: Duration,
@@ -153,7 +153,12 @@ pub fn verify_single(
         clock_drift,
     };
 
-    let result = verifier.verify(&input, &trusted_state, &options, now);
+    let result = verifier.verify(
+        input.as_untrusted_state(),
+        trusted_block.as_trusted_state(),
+        &options,
+        now,
+    );
 
     match result {
         Verdict::Success => Ok(input),

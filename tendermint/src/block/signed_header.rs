@@ -4,7 +4,7 @@
 use crate::{block, Error};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
-use tendermint_proto::types::SignedHeader as RawSignedHeader;
+use tendermint_proto::{types::SignedHeader as RawSignedHeader, Protobuf};
 
 /// Signed block headers
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -41,6 +41,8 @@ impl From<SignedHeader> for RawSignedHeader {
         }
     }
 }
+
+impl Protobuf<RawSignedHeader> for SignedHeader {}
 
 impl SignedHeader {
     /// Constructor.

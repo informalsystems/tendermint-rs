@@ -77,6 +77,28 @@ impl Status {
     }
 }
 
+/// Trusted block parameters needed for light client verification.
+pub struct TrustedBlockState<'a> {
+    pub header_time: Time,
+    pub height: Height,
+    pub next_validators: &'a ValidatorSet,
+    pub next_validators_hash: Hash,
+}
+
+/// Untrusted block parameters needed for light client verification.
+pub struct UntrustedBlockState<'a> {
+    pub signed_header: &'a SignedHeader,
+    pub validators: &'a ValidatorSet,
+    pub next_validators: Option<&'a ValidatorSet>,
+}
+
+impl<'a> UntrustedBlockState<'a> {
+    /// Convenience method to expose the height of the associated header.
+    pub fn height(&self) -> Height {
+        self.signed_header.header.height
+    }
+}
+
 /// A light block is the core data structure used by the light client.
 /// It records everything the light client needs to know about a block.
 #[derive(Clone, Debug, Display, PartialEq, Serialize, Deserialize)]
@@ -116,6 +138,27 @@ impl LightBlock {
     /// This is a shorthand for `block.signed_header.header.height`.
     pub fn height(&self) -> Height {
         self.signed_header.header.height
+    }
+
+    /// Obtain the verification parameters for the light block when using it as
+    /// trusted state.
+    pub fn as_trusted_state(&self) -> TrustedBlockState<'_> {
+        TrustedBlockState {
+            header_time: self.signed_header.header.time,
+            height: self.signed_header.header.height,
+            next_validators: &self.next_validators,
+            next_validators_hash: self.signed_header.header.next_validators_hash,
+        }
+    }
+
+    /// Obtain the verification parameters for the light block when using it as
+    /// untrusted state.
+    pub fn as_untrusted_state(&self) -> UntrustedBlockState<'_> {
+        UntrustedBlockState {
+            signed_header: &self.signed_header,
+            validators: &self.validators,
+            next_validators: Some(&self.next_validators),
+        }
     }
 }
 

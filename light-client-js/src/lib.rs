@@ -32,7 +32,12 @@ pub fn verify(untrusted: &JsValue, trusted: &JsValue, options: &JsValue, now: &J
     let result = deserialize_params(untrusted, trusted, options, now).map(
         |(untrusted, trusted, options, now)| {
             let verifier = ProdVerifier::default();
-            verifier.verify(&untrusted, &trusted, &options, now)
+            verifier.verify(
+                untrusted.as_untrusted_state(),
+                trusted.as_trusted_state(),
+                &options,
+                now,
+            )
         },
     );
     JsValue::from_serde(&result).unwrap()
