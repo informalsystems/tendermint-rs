@@ -48,7 +48,7 @@ fn run_test(tc: LightClientTest<LightBlock>) -> BisectionTestResult {
     };
 
     let provider = tc.primary;
-    let io = MockIo::new(provider.chain_id, provider.lite_blocks);
+    let io = MockIo::new(provider.lite_blocks);
 
     let trusted_height = tc.trust_options.height;
     let trusted_state = io
