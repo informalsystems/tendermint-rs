@@ -69,7 +69,7 @@ fn run_multipeer_test(tc: LightClientTest<LightBlock>) {
         None => false,
     };
 
-    let io = MockIo::new(tc.primary.chain_id, tc.primary.lite_blocks);
+    let io = MockIo::new(tc.primary.lite_blocks);
     let primary_instance = make_instance(primary, tc.trust_options.clone(), io.clone(), tc.now);
 
     let mut peer_list = PeerList::builder();
@@ -78,7 +78,7 @@ fn run_multipeer_test(tc: LightClientTest<LightBlock>) {
     for provider in tc.witnesses.into_iter() {
         let peer_id = provider.value.lite_blocks[0].provider;
         println!("Witness: {}", peer_id);
-        let io = MockIo::new(provider.value.chain_id, provider.value.lite_blocks);
+        let io = MockIo::new(provider.value.lite_blocks);
         let instance = make_instance(peer_id, tc.trust_options.clone(), io.clone(), tc.now);
         peer_list.witness(peer_id, instance);
     }
