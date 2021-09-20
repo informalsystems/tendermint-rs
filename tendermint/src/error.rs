@@ -5,7 +5,6 @@ use crate::vote;
 use alloc::string::String;
 use core::num::TryFromIntError;
 use flex_error::{define_error, DisplayOnly};
-use std::io::Error as IoError;
 use time::OutOfRangeError;
 
 define_error! {
@@ -17,15 +16,6 @@ define_error! {
         InvalidKey
             { detail: String }
             |e| { format_args!("invalid key: {}", e) },
-
-        Io
-            [ DisplayOnly<IoError> ]
-            |_| { format_args!("I/O error") },
-
-        FileIo
-            { path: String }
-            [ DisplayOnly<IoError> ]
-            |e| { format_args!("failed to open file: {}", e.path) },
 
         Length
             |_| { format_args!("length error") },
@@ -185,14 +175,6 @@ define_error! {
         SubtleEncoding
             [ DisplayOnly<subtle_encoding::Error> ]
             |_| { format_args!("subtle encoding error") },
-
-        SerdeJson
-            [ DisplayOnly<serde_json::Error> ]
-            |_| { format_args!("serde json error") },
-
-        Toml
-            [ DisplayOnly<toml::de::Error> ]
-            |_| { format_args!("toml de error") },
 
         Signature
             [ DisplayOnly<signature::Error> ]

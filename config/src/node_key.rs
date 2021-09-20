@@ -2,7 +2,9 @@
 
 use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};
-use tendermint::{error::Error, node, private_key::PrivateKey, public_key::PublicKey};
+use tendermint::{node, private_key::PrivateKey, public_key::PublicKey};
+
+use crate::error::Error;
 
 /// P2P node private keys
 #[derive(Serialize, Deserialize)]
