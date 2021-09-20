@@ -5,6 +5,7 @@
 //! and remote procedure calls (JSON-RPC).
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
+#![allow(dead_code)]
 #![deny(
     warnings,
     trivial_casts,
@@ -28,7 +29,6 @@ pub mod account;
 pub mod block;
 pub mod chain;
 pub mod channel;
-pub mod config;
 pub mod consensus;
 pub mod evidence;
 pub mod genesis;

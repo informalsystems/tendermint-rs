@@ -6,12 +6,8 @@
 //! - `node_key.rs`: `config::node_key::NodeKey`
 //! - `priv_validator_key.rs`: `config::priv_validator_key::PrivValidatorKey`
 
-mod node_key;
-mod priv_validator_key;
+pub use crate::{node_key::NodeKey, priv_validator_key::PrivValidatorKey};
 
-pub use self::{node_key::NodeKey, priv_validator_key::PrivValidatorKey};
-
-use crate::{error::Error, genesis::Genesis, net, node, Moniker, Timeout};
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
@@ -19,6 +15,7 @@ use std::{
     path::{Path, PathBuf},
     str::FromStr,
 };
+use tendermint::{error::Error, genesis::Genesis, net, node, Moniker, Timeout};
 
 /// Tendermint `config.toml` file
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]

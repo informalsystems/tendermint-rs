@@ -2,6 +2,7 @@
 
 members = [
     "abci",
+    "config",
     "light-client",
     "light-client-js",
     "p2p",
