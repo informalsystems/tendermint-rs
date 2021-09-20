@@ -29,10 +29,6 @@ define_error! {
             [ DisplayOnly<std::num::ParseIntError>]
             | e | { format_args!("error parsing int data: {}", e.data) },
 
-        ParseUrl
-            [ DisplayOnly<url::ParseError> ]
-            |_| { format_args!("error parsing url error") },
-
         Protocol
             { detail: String }
             |e| { format_args!("protocol error: {}", e.detail) },

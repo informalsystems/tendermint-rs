@@ -26,6 +26,10 @@ define_error! {
             [ DisplayOnly<toml::de::Error> ]
             |_| { format_args!("toml de error") },
 
+        ParseUrl
+            [ DisplayOnly<url::ParseError> ]
+            |_| { format_args!("error parsing url error") },
+
         Tendermint
             [ TendermintError ]
             |_| { format_args!("tendermint error") },

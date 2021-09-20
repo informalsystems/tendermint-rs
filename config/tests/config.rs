@@ -6,7 +6,7 @@ mod files {
     #[cfg(test)]
     use pretty_assertions::assert_eq;
     use std::{fs, path::PathBuf, time::Duration};
-    use tendermint::{net, node};
+    use tendermint::node;
     use tendermint_config::*;
 
     /// Read a fixture file from the `support/config` directory

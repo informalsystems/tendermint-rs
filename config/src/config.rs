@@ -6,6 +6,7 @@
 //! - `node_key.rs`: `config::node_key::NodeKey`
 //! - `priv_validator_key.rs`: `config::priv_validator_key::PrivValidatorKey`
 
+use crate::net;
 use crate::node_key::NodeKey;
 use crate::Error;
 
@@ -16,7 +17,7 @@ use std::{
     path::{Path, PathBuf},
     str::FromStr,
 };
-use tendermint::{genesis::Genesis, net, node, Moniker, Timeout};
+use tendermint::{genesis::Genesis, node, Moniker, Timeout};
 
 /// Tendermint `config.toml` file
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]

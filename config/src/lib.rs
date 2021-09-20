@@ -1,3 +1,5 @@
+pub mod net;
+
 mod config;
 mod error;
 mod node_key;

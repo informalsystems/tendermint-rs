@@ -35,7 +35,6 @@ pub mod genesis;
 pub mod hash;
 pub mod merkle;
 mod moniker;
-pub mod net;
 pub mod node;
 pub mod private_key;
 pub mod proposal;
