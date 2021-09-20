@@ -24,7 +24,7 @@ use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use std::ops::Add;
 use std::str::FromStr;
-use tendermint::net;
+use tendermint_config::net;
 use tokio::time::{Duration, Instant};
 use tracing::{debug, error};
 
@@ -806,7 +806,7 @@ mod test {
     use std::collections::HashMap;
     use std::path::PathBuf;
     use std::str::FromStr;
-    use tendermint::net;
+    use tendermint_config::net;
     use tokio::fs;
     use tokio::net::{TcpListener, TcpStream};
     use tokio::task::JoinHandle;
