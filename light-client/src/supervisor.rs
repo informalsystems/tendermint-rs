@@ -521,10 +521,7 @@ mod tests {
         let mut peer_list = PeerList::builder();
 
         if let Some(primary) = primary {
-            let io = MockIo::new(
-                primary[0].signed_header.header.chain_id.to_string(),
-                primary.clone(),
-            );
+            let io = MockIo::new(primary.clone());
 
             let primary_instance =
                 make_instance(primary[0].provider, trust_options.clone(), io, now);
@@ -535,10 +532,7 @@ mod tests {
         if let Some(witnesses) = witnesses {
             for provider in witnesses.into_iter() {
                 let peer_id = provider[0].provider;
-                let io = MockIo::new(
-                    provider[0].signed_header.header.chain_id.to_string(),
-                    provider,
-                );
+                let io = MockIo::new(provider);
                 let instance = make_instance(peer_id, trust_options.clone(), io.clone(), now);
                 peer_list.witness(peer_id, instance);
             }
