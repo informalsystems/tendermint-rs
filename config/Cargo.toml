@@ -11,11 +11,9 @@ keywords   = ["blockchain", "bft", "consensus", "cosmos", "tendermint"]
 edition    = "2018"
 
 description = """
-    Tendermint is a high-performance blockchain consensus engine that powers
-    Byzantine fault tolerant applications written in any programming language.
-    This crate provides core types for representing information about Tendermint
-    blockchain networks, including chain information types, secret connections,
-    and remote procedure calls (JSON-RPC).
+    tendermint-config provides functions for loading and validating Tendermint
+    configuration files. It is moved out of the tendermint crate for no_std support
+    in the tendermint crate.
     """
 
 authors = [

@@ -1,3 +1,20 @@
+//! Tendermint Configuration Utilities
+//!
+//! This crate defines the [`TendermintConfig`] type, which is used by
+//! crates such as `tendermint-rpc` to perform operations based on
+//! a common configuration type.
+
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![allow(dead_code)]
+#![deny(
+    warnings,
+    trivial_casts,
+    trivial_numeric_casts,
+    unused_import_braces,
+    unused_qualifications
+)]
+#![forbid(unsafe_code)]
+
 pub mod net;
 
 mod config;
