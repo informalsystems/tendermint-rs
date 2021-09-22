@@ -2,7 +2,7 @@
 
 This release targets numerous issues largely in support of
 [ibc-rs](https://github.com/informalsystems/ibc-rs). The major breaking change
-in this regard is the
+in this regard is in the
 [API](https://github.com/informalsystems/tendermint-rs/blob/dd371372da58921efe1b48a4dd24a2597225df11/light-client/src/components/verifier.rs#L143)
 we use to perform verification in the `tendermint-light-client` crate.
 
