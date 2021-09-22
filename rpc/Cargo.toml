@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint-rpc"
-version    = "0.21.0"
+version    = "0.22.0"
 edition    = "2018"
 license    = "Apache-2.0"
 homepage   = "https://www.tendermint.com/"
@@ -73,8 +73,8 @@ pin-project = "1.0.1"
 serde = { version = "1", features = [ "derive" ] }
 serde_bytes = "0.11"
 serde_json = "1"
-tendermint = { version = "0.21.0", path = "../tendermint" }
-tendermint-proto = { version = "0.21.0", path = "../proto" }
+tendermint = { version = "0.22.0", path = "../tendermint" }
+tendermint-proto = { version = "0.22.0", path = "../proto" }
 thiserror = "1"
 uuid = { version = "0.8", default-features = false }
 subtle-encoding = { version = "0.5", features = ["bech32-preview"] }
