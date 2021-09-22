@@ -2,6 +2,8 @@
 
 ## v0.22.0
 
+*Sep 23, 2021*
+
 This release targets numerous issues largely in support of
 [ibc-rs](https://github.com/informalsystems/ibc-rs). The major breaking change
 in this regard is the
