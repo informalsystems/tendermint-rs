@@ -1,5 +1,85 @@
 # CHANGELOG
 
+## v0.22.0
+
+This release targets numerous issues largely in support of
+[ibc-rs](https://github.com/informalsystems/ibc-rs). The major breaking change
+in this regard is the
+[API](https://github.com/informalsystems/tendermint-rs/blob/dd371372da58921efe1b48a4dd24a2597225df11/light-client/src/components/verifier.rs#L143)
+we use to perform verification in the `tendermint-light-client` crate.
+
+Toward `no_std` compatibility and flexibility in the way we handle error tracing
+and reporting, we have also refactored the entire error handling system in
+`tendermint-rs` to make use of
+[flex-error](https://github.com/informalsystems/flex-error).
+
+Finally, we are also (painfully) aware of the fact that our documentation does
+not build for this release and apologize for this. We currently still depend on
+Prost v0.7.0 and are awaiting a new release of Prost after v0.8.0 that does not
+break our builds. We have
+[\#978](https://github.com/informalsystems/tendermint-rs/pull/978) open in
+preparation for this upgrade and will release a new version of `tendermint-rs`
+as soon as a new Prost release is available.
+
+See below for more specific detail as to what has changed in this release.
+
+### BREAKING CHANGES
+
+- All crates' error handling has been refactored to make use of
+  [`flex-error`](https://github.com/informalsystems/flex-error/). This gives
+  users greater flexibility in terms of the error handling/reporting systems
+  they want to use and is a critical step towards `no_std` support.
+  ([#923](https://github.com/informalsystems/tendermint-rs/pull/923))
+- `[tendermint-rpc]` The `/tx` endpoint's `Request::hash` field has been changed
+  from `String` to `tendermint::abci::transaction::Hash`
+  ([#942](https://github.com/informalsystems/tendermint-rs/issues/942))
+- `[tendermint-light-client]` The light client verification functionality has
+  been refactored (including breaking changes to the API) such that it can be
+  more easily used from both `tendermint_light_client` and `ibc-rs`
+  ([#956](https://github.com/informalsystems/tendermint-rs/issues/956))
+- `[tendermint-light-client]` Disable the `lightstore-sled` feature by default
+  ([#976](https://github.com/informalsystems/tendermint-rs/issues/976))
+
+### BUG FIXES
+
+- `[tendermint-rpc]` The encoding of the `hash` field for requests to the `/tx`
+  endpoint has been changed to base64 (from hex) to accommodate discrepancies in
+  how the Tendermint RPC encodes this field for different RPC interfaces
+  ([#942](https://github.com/informalsystems/tendermint-rs/issues/942))
+
+### FEATURES
+
+- `[tendermint-rpc]` Add support for the `/consensus_params` RPC endpoint. See
+  <https://docs.tendermint.com/master/rpc/\#/Info/consensus_params> for details
+  ([#832](https://github.com/informalsystems/tendermint-rs/issues/832))
+- `[tendermint-rpc]` Runtime query parsing (relevant to the `/subscribe` and
+  `/tx_search` endpoints) has been reintroduced. This allows for client-side
+  validation of queries prior to submitting them to a remote Tendermint node. An
+  example of how to use this is available in the `tendermint-rpc` CLI (see [the
+  README](https://github.com/informalsystems/tendermint-rs/tree/master/rpc#cli)
+  for details).
+  ([#859](https://github.com/informalsystems/tendermint-rs/issues/859))
+- `[tendermint, tendermint-light-client]` Add support for Secp256k1 signatures
+  ([#939](https://github.com/informalsystems/tendermint-rs/issues/939))
+
+### IMPROVEMENTS
+
+- `[tendermint-p2p]` The `SecretConnection` can now be split into two halves to
+  facilitate full-duplex communication (must be facilitated by using each half
+  in a separate thread).
+  ([#938](https://github.com/informalsystems/tendermint-rs/pull/938))
+- `[tendermint-light-client]` Model-based tests are now disabled by default and
+  can be enabled through the `mbt` feature
+  ([#968](https://github.com/informalsystems/tendermint-rs/issues/968))
+- `[tendermint, tendermint-rpc]` Derive `Eq` on `SignedHeader` and `Commit`
+  ([#969](https://github.com/informalsystems/tendermint-rs/issues/969))
+- `[tendermint-light-client]` Add `WebSocketClient::new_with_config` to specify
+  the WebSocket connection settings
+  ([#974](https://github.com/informalsystems/tendermint-rs/issues/974))
+- `[tendermint-p2p]` Amino support is now implemented using the upstream
+  `prost` crate, eliminating a dependency on `prost-amino`
+  ([#979](https://github.com/informalsystems/tendermint-rs/pull/979))
+
 ## v0.21.0
 
 *Jul 20, 2021*
@@ -863,3 +943,4 @@ https://github.com/interchainio/tendermint-rs/commit/566dfb6a9ef9659a504b43fb8cc
 [#90]: https://github.com/interchainio/tendermint-rs/pull/90
 [#83]: https://github.com/interchainio/tendermint-rs/pull/83
 [#91]: https://github.com/interchainio/tendermint-rs/pull/91
+
