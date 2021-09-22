@@ -5,7 +5,6 @@
 //! a common configuration type.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
-#![allow(dead_code)]
 #![deny(
     warnings,
     trivial_casts,

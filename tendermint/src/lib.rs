@@ -5,7 +5,6 @@
 //! and remote procedure calls (JSON-RPC).
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
-#![allow(dead_code)]
 #![deny(
     warnings,
     trivial_casts,
