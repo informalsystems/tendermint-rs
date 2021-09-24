@@ -4,12 +4,6 @@ use flex_error::{define_error, DisplayError, TraceError};
 use prost::DecodeError;
 use signature::Error as SignatureError;
 
-#[cfg(feature = "amino")]
-type AminoDecodeError = TraceError<prost_amino::DecodeError>;
-
-#[cfg(not(feature = "amino"))]
-type AminoDecodeError = flex_error::NoSource;
-
 define_error! {
     Error {
         Crypto
@@ -33,10 +27,6 @@ define_error! {
 
         Decode
             [ TraceError<DecodeError> ]
-            | _ | { "malformed handshake message (protocol version mismatch?)" },
-
-        AminoDecode
-            [ AminoDecodeError ]
             | _ | { "malformed handshake message (protocol version mismatch?)" },
 
         MissingSecret

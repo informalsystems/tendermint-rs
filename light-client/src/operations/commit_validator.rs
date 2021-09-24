@@ -26,17 +26,16 @@ pub trait CommitValidator: Send + Sync {
 }
 
 /// Production-ready implementation of a commit validator
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProdCommitValidator {
-    hasher: Box<dyn Hasher>,
+    hasher: ProdHasher,
 }
 
 impl ProdCommitValidator {
     /// Create a new commit validator using the given [`Hasher`]
     /// to compute the hash of headers and validator sets.
-    pub fn new(hasher: impl Hasher + 'static) -> Self {
-        Self {
-            hasher: Box::new(hasher),
-        }
+    pub fn new(hasher: ProdHasher) -> Self {
+        Self { hasher }
     }
 }
 

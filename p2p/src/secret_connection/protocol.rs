@@ -5,9 +5,6 @@ use std::convert::TryInto;
 use ed25519_dalek as ed25519;
 use prost::Message as _;
 
-#[cfg(feature = "amino")]
-use prost_amino::Message as _;
-
 use x25519_dalek::PublicKey as EphemeralPublic;
 
 use tendermint_proto as proto;
@@ -175,10 +172,7 @@ impl Version {
         signature: &ed25519::Signature,
     ) -> Vec<u8> {
         // Legacy Amino encoded `AuthSigMessage`
-        let msg = amino_types::AuthSigMessage {
-            pub_key: pub_key.as_ref().to_vec(),
-            sig: signature.as_ref().to_vec(),
-        };
+        let msg = amino_types::AuthSigMessage::new(pub_key, signature);
 
         let mut buf = Vec::new();
         msg.encode_length_delimited(&mut buf)
@@ -203,16 +197,10 @@ impl Version {
         bytes: &[u8],
     ) -> Result<proto::p2p::AuthSigMessage, Error> {
         // Legacy Amino encoded `AuthSigMessage`
-        let amino_msg = amino_types::AuthSigMessage::decode_length_delimited(bytes)
-            .map_err(Error::amino_decode)?;
-        let pub_key = proto::crypto::PublicKey {
-            sum: Some(proto::crypto::public_key::Sum::Ed25519(amino_msg.pub_key)),
-        };
+        let amino_msg =
+            amino_types::AuthSigMessage::decode_length_delimited(bytes).map_err(Error::decode)?;
 
-        Ok(proto::p2p::AuthSigMessage {
-            pub_key: Some(pub_key),
-            sig: amino_msg.sig,
-        })
+        amino_msg.try_into()
     }
 
     #[allow(clippy::unused_self)]

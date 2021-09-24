@@ -84,13 +84,12 @@ impl Clock for MockClock {
 
 #[derive(Clone)]
 pub struct MockIo {
-    chain_id: String,
     light_blocks: HashMap<Height, LightBlock>,
     latest_height: Height,
 }
 
 impl MockIo {
-    pub fn new(chain_id: String, light_blocks: Vec<LightBlock>) -> Self {
+    pub fn new(light_blocks: Vec<LightBlock>) -> Self {
         let latest_height = light_blocks.iter().map(|lb| lb.height()).max().unwrap();
 
         let light_blocks = light_blocks
@@ -99,7 +98,6 @@ impl MockIo {
             .collect();
 
         Self {
-            chain_id,
             light_blocks,
             latest_height,
         }
@@ -138,7 +136,7 @@ impl MockEvidenceReporter {
 }
 
 pub fn verify_single(
-    trusted_state: LightBlock,
+    trusted_block: LightBlock,
     input: LightBlock,
     trust_threshold: TrustThreshold,
     trusting_period: Duration,
@@ -153,7 +151,12 @@ pub fn verify_single(
         clock_drift,
     };
 
-    let result = verifier.verify(&input, &trusted_state, &options, now);
+    let result = verifier.verify(
+        input.as_untrusted_state(),
+        trusted_block.as_trusted_state(),
+        &options,
+        now,
+    );
 
     match result {
         Verdict::Success => Ok(input),

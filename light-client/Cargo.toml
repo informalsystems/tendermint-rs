@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint-light-client"
-version    = "0.21.0"
+version    = "0.22.0"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -37,10 +37,12 @@ unstable = []
 std = [
     "flex-error/std"
 ]
+# Enable to execute long-running model-based tests
+mbt = []
 
 [dependencies]
-tendermint = { version = "0.21.0", path = "../tendermint" }
-tendermint-rpc = { version = "0.21.0", path = "../rpc", default-features = false }
+tendermint = { version = "0.22.0", path = "../tendermint" }
+tendermint-rpc = { version = "0.22.0", path = "../rpc", default-features = false }
 
 contracts = "0.4.0"
 crossbeam-channel = "0.4.2"
