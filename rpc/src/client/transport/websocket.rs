@@ -5,12 +5,14 @@ use crate::client::sync::{ChannelRx, ChannelTx};
 use crate::client::transport::router::{PublishResult, SubscriptionRouter};
 use crate::endpoint::{subscribe, unsubscribe};
 use crate::event::Event;
+use crate::prelude::*;
 use crate::query::Query;
 use crate::request::Wrapper;
 use crate::{
     error::Error, response, Client, Id, Request, Response, Scheme, SimpleRequest, Subscription,
     SubscriptionClient, Url,
 };
+use alloc::borrow::Cow;
 use alloc::collections::BTreeMap as HashMap;
 use async_trait::async_trait;
 use async_tungstenite::tokio::ConnectStream;
@@ -18,7 +20,6 @@ use async_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
 use async_tungstenite::tungstenite::protocol::CloseFrame;
 use async_tungstenite::tungstenite::Message;
 use async_tungstenite::WebSocketStream;
-use core::borrow::Cow;
 use core::convert::{TryFrom, TryInto};
 use core::ops::Add;
 use core::str::FromStr;
@@ -257,6 +258,7 @@ mod sealed {
     };
 
     use crate::client::sync::{unbounded, ChannelTx};
+    use crate::prelude::*;
     use crate::query::Query;
     use crate::request::Wrapper;
     use crate::utils::uuid_str;
@@ -806,6 +808,7 @@ mod test {
     use core::str::FromStr;
     use futures::StreamExt;
     use std::path::PathBuf;
+    use std::println;
     use tendermint::net;
     use tokio::fs;
     use tokio::net::{TcpListener, TcpStream};
