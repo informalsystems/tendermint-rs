@@ -1,6 +1,6 @@
 //! Timestamps used by Tendermint blockchains
 
-use chrono::{DateTime, TimeZone, Utc};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
@@ -25,16 +25,27 @@ impl Protobuf<Timestamp> for Time {}
 
 impl From<Timestamp> for Time {
     fn from(value: Timestamp) -> Self {
-        Time(Utc.timestamp(value.seconds, value.nanos as u32))
+        let prost_value = prost_types::Timestamp {
+            seconds: value.seconds,
+            nanos: value.nanos,
+        };
+
+        SystemTime::from(prost_value).into()
+        // Time(Utc.timestamp(value.seconds, value.nanos as u32))
     }
 }
 
 impl From<Time> for Timestamp {
     fn from(value: Time) -> Self {
+        let prost_value = prost_types::Timestamp::from(SystemTime::from(value));
         Timestamp {
-            seconds: value.0.timestamp(),
-            nanos: value.0.timestamp_nanos() as i32,
+            seconds: prost_value.seconds,
+            nanos: prost_value.nanos,
         }
+        // Timestamp {
+        //     seconds: value.0.timestamp(),
+        //     nanos: value.0.timestamp_nanos() as i32,
+        // }
     }
 }
 

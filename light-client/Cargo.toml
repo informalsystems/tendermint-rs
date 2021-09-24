@@ -35,7 +35,8 @@ secp256k1 = ["tendermint/secp256k1", "tendermint-rpc/secp256k1"]
 lightstore-sled = ["sled"]
 unstable = []
 std = [
-    "flex-error/std"
+    "flex-error/std",
+    "tendermint/std",
 ]
 # Enable to execute long-running model-based tests
 mbt = []
