@@ -20,6 +20,10 @@
 )]
 
 extern crate alloc;
+
+// Only allow the use of std in tests. Otherwise the main
+// tendermint crate works with no_std.
+#[cfg(test)]
 extern crate std;
 
 #[macro_use]
