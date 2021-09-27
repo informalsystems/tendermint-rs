@@ -36,7 +36,7 @@ bytes = "1.0"
 prost = "0.7"
 tendermint-proto = { version = "0.22.0", path = "../proto" }
 tracing = "0.1"
-flex-error = { version = "0.4.1", default-features = false }
+flex-error = { version = "0.4.3", default-features = false }
 
 structopt = { version = "0.3", optional = true }
 tracing-subscriber = { version = "0.2", optional = true }
