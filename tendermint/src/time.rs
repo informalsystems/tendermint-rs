@@ -43,7 +43,7 @@ impl From<Time> for Timestamp {
             .unwrap_or(999_999_999);
         Timestamp {
             seconds: value.0.timestamp(),
-            nanos: nanos,
+            nanos,
         }
     }
 }
