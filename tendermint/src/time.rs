@@ -1,14 +1,14 @@
 //! Timestamps used by Tendermint blockchains
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
+use core::convert::TryInto;
 use core::fmt;
 use core::ops::{Add, Sub};
 use core::str::FromStr;
 use core::time::Duration;
-use std::time::{SystemTime, UNIX_EPOCH};
 use tendermint_proto::google::protobuf::Timestamp;
 use tendermint_proto::serializers::timestamp;
 use tendermint_proto::Protobuf;
@@ -25,27 +25,26 @@ impl Protobuf<Timestamp> for Time {}
 
 impl From<Timestamp> for Time {
     fn from(value: Timestamp) -> Self {
-        let prost_value = prost_types::Timestamp {
-            seconds: value.seconds,
-            nanos: value.nanos,
-        };
-
-        SystemTime::from(prost_value).into()
-        // Time(Utc.timestamp(value.seconds, value.nanos as u32))
+        // The only time conversion from i32 to u32 fail is when the value
+        // is negative. This shouldn't happen so we default to 0.
+        let nanos = value.nanos.try_into().unwrap_or(0);
+        Time(Utc.timestamp(value.seconds, nanos))
     }
 }
 
 impl From<Time> for Timestamp {
     fn from(value: Time) -> Self {
-        let prost_value = prost_types::Timestamp::from(SystemTime::from(value));
+        // The only time conversion from i32 to u32 fail is when the value
+        // is > i32::Max. This shouldn't happen so we default to the max nanoseconds.
+        let nanos = value
+            .0
+            .timestamp_subsec_nanos()
+            .try_into()
+            .unwrap_or(999_999_999);
         Timestamp {
-            seconds: prost_value.seconds,
-            nanos: prost_value.nanos,
+            seconds: value.0.timestamp(),
+            nanos: nanos,
         }
-        // Timestamp {
-        //     seconds: value.0.timestamp(),
-        //     nanos: value.0.timestamp_nanos() as i32,
-        // }
     }
 }
 
@@ -55,9 +54,12 @@ impl Time {
         Time(Utc::now())
     }
 
-    /// Get the [`UNIX_EPOCH`] time ("1970-01-01 00:00:00 UTC") as a [`Time`]
     pub fn unix_epoch() -> Self {
-        UNIX_EPOCH.into()
+        Time(Utc.timestamp(0, 0))
+    }
+
+    pub fn from_unix_timestamp(secs: i64, nanos: u32) -> Self {
+        Time(Utc.timestamp(secs, nanos))
     }
 
     /// Calculate the amount of time which has passed since another [`Time`]
@@ -109,33 +111,35 @@ impl From<Time> for DateTime<Utc> {
     }
 }
 
-impl From<SystemTime> for Time {
-    fn from(t: SystemTime) -> Time {
-        Time(t.into())
-    }
-}
-
-impl From<Time> for SystemTime {
-    fn from(t: Time) -> SystemTime {
-        t.0.into()
-    }
-}
-
 impl Add<Duration> for Time {
     type Output = Self;
 
+    // TODO: provide safe addition method returning Result
     fn add(self, rhs: Duration) -> Self::Output {
-        let st: SystemTime = self.into();
-        (st + rhs).into()
+        let duration = chrono::Duration::from_std(rhs).expect("Duration conversion overflow");
+
+        let res = self
+            .0
+            .checked_add_signed(duration)
+            .expect("Duration addition overflow");
+
+        Time(res)
     }
 }
 
 impl Sub<Duration> for Time {
     type Output = Self;
 
+    // TODO: provide safe addition method returning Result
     fn sub(self, rhs: Duration) -> Self::Output {
-        let st: SystemTime = self.into();
-        (st - rhs).into()
+        let duration = chrono::Duration::from_std(rhs).expect("Duration conversion overflow");
+
+        let res = self
+            .0
+            .checked_sub_signed(duration)
+            .expect("Duration addition overflow");
+
+        Time(res)
     }
 }
 

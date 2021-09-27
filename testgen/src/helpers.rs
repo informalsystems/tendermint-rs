@@ -56,5 +56,5 @@ pub fn verify_signature(verifier: &public_key::Ed25519, msg: &[u8], signature: &
 }
 
 pub fn get_time(abs: u64) -> Time {
-    (std::time::UNIX_EPOCH + std::time::Duration::from_secs(abs)).into()
+    Time::from_unix_timestamp(abs as i64, 0)
 }
