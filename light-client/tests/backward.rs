@@ -45,7 +45,6 @@ struct TestCase {
 
 fn make(chain: LightChain, trusted_height: Height) -> (LightClient, State) {
     let primary = default_peer_id();
-    let chain_id = "testchain-1".parse().unwrap();
 
     let clock = MockClock {
         /// Set the current time to be ahead of the latest block in the chain
@@ -65,7 +64,7 @@ fn make(chain: LightChain, trusted_height: Height) -> (LightClient, State) {
         .map(testgen_to_lb)
         .collect();
 
-    let io = MockIo::new(chain_id, light_blocks);
+    let io = MockIo::new(light_blocks);
 
     let trusted_state = io
         .fetch_light_block(AtHeight::At(trusted_height))

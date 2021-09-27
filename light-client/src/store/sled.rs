@@ -23,7 +23,6 @@ pub struct SledStore {
     verified_db: HeightIndexedDb<LightBlock>,
     trusted_db: HeightIndexedDb<LightBlock>,
     failed_db: HeightIndexedDb<LightBlock>,
-    db: sled::Db,
 }
 
 impl SledStore {
@@ -39,7 +38,6 @@ impl SledStore {
             verified_db: HeightIndexedDb::new(db.open_tree(VERIFIED).unwrap()),
             trusted_db: HeightIndexedDb::new(db.open_tree(TRUSTED).unwrap()),
             failed_db: HeightIndexedDb::new(db.open_tree(FAILED).unwrap()),
-            db,
         }
     }
 

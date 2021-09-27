@@ -1,6 +1,6 @@
 [package]
 name        = "tendermint-p2p"
-version     = "0.21.0"
+version     = "0.22.0"
 edition     = "2018"
 license     = "Apache-2.0"
 repository  = "https://github.com/informalsystems/tendermint-rs"
@@ -48,9 +48,9 @@ aead = "0.4.1"
 flex-error = { version = "0.4.1", default-features = false }
 
 # path dependencies
-tendermint = { path = "../tendermint", version = "0.21.0" }
-tendermint-proto = { path = "../proto", version = "0.21.0" }
-tendermint-std-ext = { path = "../std-ext", version = "0.21.0" }
+tendermint = { path = "../tendermint", version = "0.22.0" }
+tendermint-proto = { path = "../proto", version = "0.22.0" }
+tendermint-std-ext = { path = "../std-ext", version = "0.22.0" }
 
 # optional dependencies
 prost-derive = { version = "0.7", optional = true }
