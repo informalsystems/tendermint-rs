@@ -4,7 +4,7 @@ use chrono::{DateTime, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
-use core::convert::TryInto;
+use core::convert::{TryFrom, TryInto};
 use core::fmt;
 use core::ops::{Add, Sub};
 use core::str::FromStr;
@@ -18,33 +18,39 @@ use crate::error::Error;
 /// Tendermint timestamps
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#time>
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
-#[serde(try_from = "Timestamp", into = "Timestamp")]
+#[serde(try_from = "Timestamp")]
 pub struct Time(pub DateTime<Utc>);
 
 impl Protobuf<Timestamp> for Time {}
 
-impl From<Timestamp> for Time {
-    fn from(value: Timestamp) -> Self {
+impl TryFrom<Timestamp> for Time {
+    type Error = Error;
+
+    fn try_from(value: Timestamp) -> Result<Self, Error> {
         // The only time conversion from i32 to u32 fail is when the value
         // is negative. This shouldn't happen so we default to 0.
-        let nanos = value.nanos.try_into().unwrap_or(0);
-        Time(Utc.timestamp(value.seconds, nanos))
+        let nanos = value.nanos.try_into().map_err(Error::timestamp_overflow)?;
+
+        Ok(Time(Utc.timestamp(value.seconds, nanos)))
     }
 }
 
-impl From<Time> for Timestamp {
-    fn from(value: Time) -> Self {
+impl TryFrom<Time> for Timestamp {
+    type Error = Error;
+
+    fn try_from(value: Time) -> Result<Self, Error> {
         // The only time conversion from i32 to u32 fail is when the value
         // is > i32::Max. This shouldn't happen so we default to the max nanoseconds.
         let nanos = value
             .0
             .timestamp_subsec_nanos()
             .try_into()
-            .unwrap_or(999_999_999);
-        Timestamp {
+            .map_err(Error::timestamp_overflow)?;
+
+        Ok(Timestamp {
             seconds: value.0.timestamp(),
             nanos,
-        }
+        })
     }
 }
 

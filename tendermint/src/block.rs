@@ -24,7 +24,7 @@ pub use self::{
 use crate::prelude::*;
 use crate::{abci::transaction, error::Error, evidence};
 use core::convert::{TryFrom, TryInto};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use tendermint_proto::types::Block as RawBlock;
 use tendermint_proto::Protobuf;
 
@@ -33,7 +33,7 @@ use tendermint_proto::Protobuf;
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#block>
 // Default serialization - all fields serialize; used by /block endpoint
-#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
+#[derive(Deserialize, Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub struct Block {
     /// Block header
@@ -85,14 +85,27 @@ impl TryFrom<RawBlock> for Block {
     }
 }
 
-impl From<Block> for RawBlock {
-    fn from(value: Block) -> Self {
-        RawBlock {
-            header: Some(value.header.into()),
+impl TryFrom<Block> for RawBlock {
+    type Error = Error;
+
+    fn try_from(value: Block) -> Result<Self, Error> {
+        Ok(RawBlock {
+            header: Some(value.header.try_into()?),
             data: Some(value.data.into()),
-            evidence: Some(value.evidence.into()),
-            last_commit: value.last_commit.map(Into::into),
-        }
+            evidence: Some(value.evidence.try_into()?),
+            last_commit: value.last_commit.map(|v| v.try_into()).transpose()?,
+        })
+    }
+}
+
+impl Serialize for Block {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let raw: RawBlock = self.clone().try_into().map_err(serde::ser::Error::custom)?;
+
+        raw.serialize(serializer)
     }
 }
 

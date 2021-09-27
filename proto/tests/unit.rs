@@ -64,7 +64,7 @@ pub fn protobuf_struct_example() {
     let new_domain_type = BlockId::decode(wire.as_ref()).unwrap();
     assert_eq!(new_domain_type.hash, "Hello world!".to_string());
     assert!(!new_domain_type.part_set_header_exists);
-    assert_eq!(my_domain_type.encoded_len(), 14);
+    assert_eq!(my_domain_type.encoded_len().unwrap(), 14);
 }
 
 #[test]

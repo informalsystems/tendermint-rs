@@ -4,12 +4,12 @@ use super::{Header, Id};
 use crate::error::Error;
 use crate::prelude::*;
 use core::convert::{TryFrom, TryInto};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use tendermint_proto::types::BlockMeta as RawMeta;
 
 /// Block metadata - Todo: implement constructor and getters
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(try_from = "RawMeta", into = "RawMeta")]
+#[derive(Deserialize, Clone, Debug)]
+#[serde(try_from = "RawMeta")]
 pub struct Meta {
     /// ID of the block
     pub block_id: Id,
@@ -43,13 +43,26 @@ impl TryFrom<RawMeta> for Meta {
     }
 }
 
-impl From<Meta> for RawMeta {
-    fn from(value: Meta) -> Self {
-        RawMeta {
+impl TryFrom<Meta> for RawMeta {
+    type Error = Error;
+
+    fn try_from(value: Meta) -> Result<Self, Error> {
+        Ok(RawMeta {
             block_id: Some(value.block_id.into()),
             block_size: value.block_size,
-            header: Some(value.header.into()),
+            header: Some(value.header.try_into()?),
             num_txs: value.num_txs,
-        }
+        })
+    }
+}
+
+impl Serialize for Meta {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let raw: RawMeta = self.clone().try_into().map_err(serde::ser::Error::custom)?;
+
+        raw.serialize(serializer)
     }
 }

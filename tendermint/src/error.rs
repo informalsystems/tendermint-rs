@@ -93,6 +93,10 @@ define_error! {
             [ DisplayOnly<TryFromIntError> ]
             |_| { format_args!("integer overflow") },
 
+        TimestampOverflow
+            [ DisplayOnly<TryFromIntError> ]
+            |_| { format_args!("timestamp overflow") },
+
         NoVoteFound
             |_| { format_args!("no vote found") },
 

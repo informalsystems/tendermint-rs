@@ -3,13 +3,13 @@ use crate::error::Error;
 use crate::prelude::*;
 use crate::{block, Time};
 use core::convert::{TryFrom, TryInto};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use tendermint_proto::types::CanonicalVote as RawCanonicalVote;
 use tendermint_proto::Protobuf;
 
 /// CanonicalVote is used for protobuf encoding a Vote
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-#[serde(try_from = "RawCanonicalVote", into = "RawCanonicalVote")]
+#[derive(Deserialize, Clone, Debug, PartialEq)]
+#[serde(try_from = "RawCanonicalVote")]
 pub struct CanonicalVote {
     /// Type of vote (prevote or precommit)
     pub vote_type: super::Type,
@@ -50,25 +50,38 @@ impl TryFrom<RawCanonicalVote> for CanonicalVote {
             height: value.height.try_into()?,
             round: (value.round as i32).try_into()?,
             block_id: block_id.map(|b| b.try_into()).transpose()?,
-            timestamp: value.timestamp.map(|t| t.into()),
+            timestamp: value.timestamp.map(|t| t.try_into()).transpose()?,
             chain_id: ChainId::try_from(value.chain_id)?,
         })
     }
 }
 
-impl From<CanonicalVote> for RawCanonicalVote {
-    fn from(value: CanonicalVote) -> Self {
+impl TryFrom<CanonicalVote> for RawCanonicalVote {
+    type Error = Error;
+
+    fn try_from(value: CanonicalVote) -> Result<Self, Error> {
         // If the Hash is empty in BlockId, the BlockId should be empty.
         // See: https://github.com/informalsystems/tendermint-rs/issues/663
         let block_id = value.block_id.filter(|i| i != &block::Id::default());
-        RawCanonicalVote {
+        Ok(RawCanonicalVote {
             r#type: value.vote_type.into(),
             height: value.height.into(),
             round: value.round.value().into(),
             block_id: block_id.map(Into::into),
-            timestamp: value.timestamp.map(Into::into),
+            timestamp: value.timestamp.map(|t| t.try_into()).transpose()?,
             chain_id: value.chain_id.to_string(),
-        }
+        })
+    }
+}
+
+impl Serialize for CanonicalVote {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let raw: RawCanonicalVote = self.clone().try_into().map_err(serde::ser::Error::custom)?;
+
+        raw.serialize(serializer)
     }
 }
 
@@ -91,7 +104,7 @@ mod tests {
     use crate::prelude::*;
     use crate::vote::canonical_vote::CanonicalVote;
     use crate::vote::Type;
-    use core::convert::TryFrom;
+    use core::convert::{TryFrom, TryInto};
     use tendermint_proto::google::protobuf::Timestamp;
     use tendermint_proto::types::CanonicalBlockId as RawCanonicalBlockId;
     use tendermint_proto::types::CanonicalPartSetHeader as RawCanonicalPartSetHeader;
@@ -126,7 +139,7 @@ mod tests {
 
         // No timestamp is not acceptable
         // See: https://github.com/informalsystems/tendermint-rs/issues/649
-        let mut proto_cp: RawCanonicalVote = cp.into();
+        let mut proto_cp: RawCanonicalVote = cp.try_into().unwrap();
         proto_cp.timestamp = None;
         assert!(CanonicalVote::try_from(proto_cp).is_err());
     }

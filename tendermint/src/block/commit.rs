@@ -5,16 +5,16 @@ use crate::block::{Height, Id, Round};
 use crate::error::Error;
 use crate::prelude::*;
 use core::convert::{TryFrom, TryInto};
-use serde::{Deserialize, Serialize};
-use tendermint_proto::types::Commit as RawCommit;
+use serde::{Deserialize, Serialize, Serializer};
+use tendermint_proto::types::{Commit as RawCommit, CommitSig as RawCommitSig};
 
 /// Commit contains the justification (ie. a set of signatures) that a block was committed by a set
 /// of validators.
 /// TODO: Update links below!
 /// <https://github.com/tendermint/tendermint/blob/51dc810d041eaac78320adc6d53ad8b160b06601/types/block.go#L486-L502>
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#lastcommit>
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
-#[serde(try_from = "RawCommit", into = "RawCommit")] // Used by testgen Generator trait
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
+#[serde(try_from = "RawCommit")] // Used by testgen Generator trait
 pub struct Commit {
     /// Block height
     pub height: Height,
@@ -50,14 +50,22 @@ impl TryFrom<RawCommit> for Commit {
     }
 }
 
-impl From<Commit> for RawCommit {
-    fn from(value: Commit) -> Self {
-        RawCommit {
+impl TryFrom<Commit> for RawCommit {
+    type Error = Error;
+
+    fn try_from(value: Commit) -> Result<Self, Error> {
+        let signatures: Vec<RawCommitSig> = value
+            .signatures
+            .into_iter()
+            .map(CommitSig::try_into)
+            .collect::<Result<_, Error>>()?;
+
+        Ok(RawCommit {
             height: value.height.into(),
             round: value.round.into(),
             block_id: Some(value.block_id.into()),
-            signatures: value.signatures.into_iter().map(Into::into).collect(),
-        }
+            signatures,
+        })
     }
 }
 
@@ -70,5 +78,16 @@ impl Default for Commit {
             block_id: Default::default(),
             signatures: vec![],
         }
+    }
+}
+
+impl Serialize for Commit {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let raw: RawCommit = self.clone().try_into().map_err(serde::ser::Error::custom)?;
+
+        raw.serialize(serializer)
     }
 }

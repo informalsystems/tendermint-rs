@@ -32,12 +32,14 @@ impl TryFrom<RawSignVoteRequest> for SignVoteRequest {
     }
 }
 
-impl From<SignVoteRequest> for RawSignVoteRequest {
-    fn from(value: SignVoteRequest) -> Self {
-        RawSignVoteRequest {
-            vote: Some(value.vote.into()),
+impl TryFrom<SignVoteRequest> for RawSignVoteRequest {
+    type Error = Error;
+
+    fn try_from(value: SignVoteRequest) -> Result<Self, Error> {
+        Ok(RawSignVoteRequest {
+            vote: Some(value.vote.try_into()?),
             chain_id: value.chain_id.as_str().to_string(),
-        }
+        })
     }
 }
 
@@ -79,12 +81,14 @@ impl TryFrom<RawSignedVoteResponse> for SignedVoteResponse {
     }
 }
 
-impl From<SignedVoteResponse> for RawSignedVoteResponse {
-    fn from(value: SignedVoteResponse) -> Self {
-        RawSignedVoteResponse {
-            vote: value.vote.map(Into::into),
+impl TryFrom<SignedVoteResponse> for RawSignedVoteResponse {
+    type Error = Error;
+
+    fn try_from(value: SignedVoteResponse) -> Result<Self, Error> {
+        Ok(RawSignedVoteResponse {
+            vote: value.vote.map(|v| v.try_into()).transpose()?,
             error: value.error,
-        }
+        })
     }
 }
 

@@ -17,7 +17,7 @@ use core::str::FromStr;
 use bytes::BufMut;
 use ed25519::Signature as Ed25519Signature;
 use ed25519::SIGNATURE_LENGTH as ED25519_SIGNATURE_LENGTH;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 
 use tendermint_proto::types::Vote as RawVote;
 use tendermint_proto::{Error as ProtobufError, Protobuf};
@@ -33,8 +33,8 @@ use crate::{account, block, Signature, Time};
 /// include information about the validator signing it.
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#vote>
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-#[serde(try_from = "RawVote", into = "RawVote")]
+#[derive(Deserialize, Clone, Debug, PartialEq)]
+#[serde(try_from = "RawVote")]
 pub struct Vote {
     /// Type of vote (prevote or precommit)
     pub vote_type: Type,
@@ -80,7 +80,7 @@ impl TryFrom<RawVote> for Vote {
                 .map(TryInto::try_into)
                 .transpose()?
                 .filter(|i| i != &block::Id::default()),
-            timestamp: value.timestamp.map(|t| t.into()),
+            timestamp: value.timestamp.map(|t| t.try_into()).transpose()?,
             validator_address: value.validator_address.try_into()?,
             validator_index: value.validator_index.try_into()?,
             signature: Signature::new(value.signature)?,
@@ -88,18 +88,31 @@ impl TryFrom<RawVote> for Vote {
     }
 }
 
-impl From<Vote> for RawVote {
-    fn from(value: Vote) -> Self {
-        RawVote {
+impl TryFrom<Vote> for RawVote {
+    type Error = Error;
+
+    fn try_from(value: Vote) -> Result<Self, Error> {
+        Ok(RawVote {
             r#type: value.vote_type.into(),
             height: value.height.into(),
             round: value.round.into(),
             block_id: value.block_id.map(Into::into),
-            timestamp: value.timestamp.map(Into::into),
+            timestamp: value.timestamp.map(|t| t.try_into()).transpose()?,
             validator_address: value.validator_address.into(),
             validator_index: value.validator_index.into(),
             signature: value.signature.map(|s| s.to_bytes()).unwrap_or_default(),
-        }
+        })
+    }
+}
+
+impl Serialize for Vote {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let raw: RawVote = self.clone().try_into().map_err(serde::ser::Error::custom)?;
+
+        raw.serialize(serializer)
     }
 }
 

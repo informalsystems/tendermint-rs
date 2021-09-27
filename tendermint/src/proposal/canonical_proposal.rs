@@ -54,18 +54,20 @@ impl TryFrom<RawCanonicalProposal> for CanonicalProposal {
             round,
             pol_round,
             block_id: block_id.map(TryInto::try_into).transpose()?,
-            timestamp: value.timestamp.map(|t| t.into()),
+            timestamp: value.timestamp.map(|t| t.try_into()).transpose()?,
             chain_id: ChainId::try_from(value.chain_id).unwrap(),
         })
     }
 }
 
-impl From<CanonicalProposal> for RawCanonicalProposal {
-    fn from(value: CanonicalProposal) -> Self {
+impl TryFrom<CanonicalProposal> for RawCanonicalProposal {
+    type Error = Error;
+
+    fn try_from(value: CanonicalProposal) -> Result<Self, Error> {
         // If the Hash is empty in BlockId, the BlockId should be empty.
         // See: https://github.com/informalsystems/tendermint-rs/issues/663
         let block_id = value.block_id.filter(|i| i != &BlockId::default());
-        RawCanonicalProposal {
+        Ok(RawCanonicalProposal {
             r#type: value.msg_type.into(),
             height: value.height.into(),
             round: i32::from(value.round) as i64,
@@ -74,9 +76,9 @@ impl From<CanonicalProposal> for RawCanonicalProposal {
                 Some(p) => i32::from(p) as i64,
             },
             block_id: block_id.map(Into::into),
-            timestamp: value.timestamp.map(Into::into),
+            timestamp: value.timestamp.map(|t| t.try_into()).transpose()?,
             chain_id: value.chain_id.as_str().to_string(),
-        }
+        })
     }
 }
 

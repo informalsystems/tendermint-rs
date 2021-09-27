@@ -101,7 +101,10 @@ impl TryFrom<RawCommitSig> for CommitSig {
                 return Err(Error::invalid_validator_address());
             }
 
-            let timestamp = value.timestamp.ok_or_else(Error::missing_timestamp)?.into();
+            let timestamp = value
+                .timestamp
+                .ok_or_else(Error::missing_timestamp)?
+                .try_into()?;
 
             return Ok(CommitSig::BlockIdFlagCommit {
                 validator_address: value.validator_address.try_into()?,
@@ -120,7 +123,10 @@ impl TryFrom<RawCommitSig> for CommitSig {
             }
             return Ok(CommitSig::BlockIdFlagNil {
                 validator_address: value.validator_address.try_into()?,
-                timestamp: value.timestamp.ok_or_else(Error::missing_timestamp)?.into(),
+                timestamp: value
+                    .timestamp
+                    .ok_or_else(Error::missing_timestamp)?
+                    .try_into()?,
                 signature: Signature::new(value.signature)?,
             });
         }
@@ -128,9 +134,11 @@ impl TryFrom<RawCommitSig> for CommitSig {
     }
 }
 
-impl From<CommitSig> for RawCommitSig {
-    fn from(commit: CommitSig) -> RawCommitSig {
-        match commit {
+impl TryFrom<CommitSig> for RawCommitSig {
+    type Error = Error;
+
+    fn try_from(commit: CommitSig) -> Result<RawCommitSig, Error> {
+        let res = match commit {
             CommitSig::BlockIdFlagAbsent => RawCommitSig {
                 block_id_flag: BlockIdFlag::Absent.to_i32().unwrap(),
                 validator_address: Vec::new(),
@@ -144,7 +152,7 @@ impl From<CommitSig> for RawCommitSig {
             } => RawCommitSig {
                 block_id_flag: BlockIdFlag::Nil.to_i32().unwrap(),
                 validator_address: validator_address.into(),
-                timestamp: Some(timestamp.into()),
+                timestamp: Some(timestamp.try_into()?),
                 signature: signature.map(|s| s.to_bytes()).unwrap_or_default(),
             },
             CommitSig::BlockIdFlagCommit {
@@ -154,9 +162,11 @@ impl From<CommitSig> for RawCommitSig {
             } => RawCommitSig {
                 block_id_flag: BlockIdFlag::Commit.to_i32().unwrap(),
                 validator_address: validator_address.into(),
-                timestamp: Some(timestamp.into()),
+                timestamp: Some(timestamp.try_into()?),
                 signature: signature.map(|s| s.to_bytes()).unwrap_or_default(),
             },
-        }
+        };
+
+        Ok(res)
     }
 }

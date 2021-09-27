@@ -6,7 +6,7 @@ use crate::{
 };
 use core::convert::{TryFrom, TryInto};
 use core::slice;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use tendermint_proto::google::protobuf::Duration as RawDuration;
 use tendermint_proto::types::evidence::Sum as RawSum;
 use tendermint_proto::types::evidence::Sum;
@@ -21,9 +21,9 @@ use tendermint_proto::Protobuf;
 /// evidence: `DuplicateVoteEvidence`.
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#evidence>
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize)]
 //#[serde(tag = "type", content = "value")]
-#[serde(try_from = "RawEvidence", into = "RawEvidence")] // Used by RPC /broadcast_evidence endpoint
+#[serde(try_from = "RawEvidence")] // Used by RPC /broadcast_evidence endpoint
 pub enum Evidence {
     /// Duplicate vote evidence
     //#[serde(rename = "tendermint/DuplicateVoteEvidence")]
@@ -48,15 +48,30 @@ impl TryFrom<RawEvidence> for Evidence {
     }
 }
 
-impl From<Evidence> for RawEvidence {
-    fn from(value: Evidence) -> Self {
-        match value {
+impl TryFrom<Evidence> for RawEvidence {
+    type Error = Error;
+
+    fn try_from(value: Evidence) -> Result<Self, Error> {
+        let res = match value {
             Evidence::DuplicateVote(ev) => RawEvidence {
-                sum: Some(RawSum::DuplicateVoteEvidence(ev.into())),
+                sum: Some(RawSum::DuplicateVoteEvidence(ev.try_into()?)),
             },
             Evidence::ConflictingHeaders(_ev) => RawEvidence { sum: None }, // Todo: implement
             Evidence::LightClientAttackEvidence => RawEvidence { sum: None }, // Todo: implement
-        }
+        };
+
+        Ok(res)
+    }
+}
+
+impl Serialize for Evidence {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let raw: RawEvidence = self.clone().try_into().map_err(serde::ser::Error::custom)?;
+
+        raw.serialize(serializer)
     }
 }
 
@@ -85,20 +100,25 @@ impl TryFrom<RawDuplicateVoteEvidence> for DuplicateVoteEvidence {
                 .try_into()?,
             total_voting_power: value.total_voting_power.try_into()?,
             validator_power: value.validator_power.try_into()?,
-            timestamp: value.timestamp.ok_or_else(Error::missing_timestamp)?.into(),
+            timestamp: value
+                .timestamp
+                .ok_or_else(Error::missing_timestamp)?
+                .try_into()?,
         })
     }
 }
 
-impl From<DuplicateVoteEvidence> for RawDuplicateVoteEvidence {
-    fn from(value: DuplicateVoteEvidence) -> Self {
-        RawDuplicateVoteEvidence {
-            vote_a: Some(value.vote_a.into()),
-            vote_b: Some(value.vote_b.into()),
+impl TryFrom<DuplicateVoteEvidence> for RawDuplicateVoteEvidence {
+    type Error = Error;
+
+    fn try_from(value: DuplicateVoteEvidence) -> Result<Self, Error> {
+        Ok(RawDuplicateVoteEvidence {
+            vote_a: Some(value.vote_a.try_into()?),
+            vote_b: Some(value.vote_b.try_into()?),
             total_voting_power: value.total_voting_power.into(),
             validator_power: value.total_voting_power.into(),
-            timestamp: Some(value.timestamp.into()),
-        }
+            timestamp: Some(value.timestamp.try_into()?),
+        })
     }
 }
 
@@ -143,8 +163,8 @@ impl ConflictingHeadersEvidence {
 /// Evidence data is a wrapper for a list of `Evidence`.
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#evidencedata>
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
-#[serde(try_from = "RawEvidenceList", into = "RawEvidenceList")]
+#[derive(Clone, Debug, Default, PartialEq, Deserialize)]
+#[serde(try_from = "RawEvidenceList")]
 pub struct Data {
     evidence: Option<Vec<Evidence>>,
 }
@@ -163,16 +183,29 @@ impl TryFrom<RawEvidenceList> for Data {
     }
 }
 
-impl From<Data> for RawEvidenceList {
-    fn from(value: Data) -> Self {
-        RawEvidenceList {
+impl TryFrom<Data> for RawEvidenceList {
+    type Error = Error;
+
+    fn try_from(value: Data) -> Result<Self, Error> {
+        Ok(RawEvidenceList {
             evidence: value
                 .evidence
                 .unwrap_or_default()
                 .into_iter()
-                .map(Into::into)
-                .collect(),
-        }
+                .map(|e| e.try_into())
+                .collect::<Result<_, Error>>()?,
+        })
+    }
+}
+
+impl Serialize for Data {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let raw: RawEvidenceList = self.clone().try_into().map_err(serde::ser::Error::custom)?;
+
+        raw.serialize(serializer)
     }
 }
 

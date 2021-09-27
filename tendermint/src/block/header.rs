@@ -4,7 +4,7 @@ use crate::merkle::simple_hash_from_byte_vectors;
 use crate::prelude::*;
 use crate::{account, block, chain, AppHash, Error, Hash, Time};
 use core::convert::{TryFrom, TryInto};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use tendermint_proto::types::Header as RawHeader;
 use tendermint_proto::version::Consensus as RawConsensusVersion;
 use tendermint_proto::Protobuf;
@@ -14,8 +14,8 @@ use tendermint_proto::Protobuf;
 /// previous block, and the results returned by the application.
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#header>
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(try_from = "RawHeader", into = "RawHeader")]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+#[serde(try_from = "RawHeader")]
 pub struct Header {
     /// Header version
     pub version: Version,
@@ -113,7 +113,10 @@ impl TryFrom<RawHeader> for Header {
             version: value.version.ok_or_else(Error::missing_version)?.into(),
             chain_id: value.chain_id.try_into()?,
             height,
-            time: value.time.ok_or_else(Error::missing_timestamp)?.into(),
+            time: value
+                .time
+                .ok_or_else(Error::missing_timestamp)?
+                .try_into()?,
             last_block_id,
             last_commit_hash,
             data_hash: if value.data_hash.is_empty() {
@@ -136,13 +139,15 @@ impl TryFrom<RawHeader> for Header {
     }
 }
 
-impl From<Header> for RawHeader {
-    fn from(value: Header) -> Self {
-        RawHeader {
+impl TryFrom<Header> for RawHeader {
+    type Error = Error;
+
+    fn try_from(value: Header) -> Result<Self, Error> {
+        Ok(RawHeader {
             version: Some(value.version.into()),
             chain_id: value.chain_id.into(),
             height: value.height.into(),
-            time: Some(value.time.into()),
+            time: Some(value.time.try_into()?),
             last_block_id: value.last_block_id.map(Into::into),
             last_commit_hash: value.last_commit_hash.unwrap_or_default().into(),
             data_hash: value.data_hash.unwrap_or_default().into(),
@@ -153,7 +158,18 @@ impl From<Header> for RawHeader {
             last_results_hash: value.last_results_hash.unwrap_or_default().into(),
             evidence_hash: value.evidence_hash.unwrap_or_default().into(),
             proposer_address: value.proposer_address.into(),
-        }
+        })
+    }
+}
+
+impl Serialize for Header {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let raw: RawHeader = self.clone().try_into().map_err(serde::ser::Error::custom)?;
+
+        raw.serialize(serializer)
     }
 }
 

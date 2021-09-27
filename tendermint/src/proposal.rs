@@ -58,23 +58,25 @@ impl TryFrom<RawProposal> for Proposal {
             round: value.round.try_into()?,
             pol_round,
             block_id: value.block_id.map(TryInto::try_into).transpose()?,
-            timestamp: value.timestamp.map(|t| t.into()),
+            timestamp: value.timestamp.map(|t| t.try_into()).transpose()?,
             signature: Signature::new(value.signature)?,
         })
     }
 }
 
-impl From<Proposal> for RawProposal {
-    fn from(value: Proposal) -> Self {
-        RawProposal {
+impl TryFrom<Proposal> for RawProposal {
+    type Error = Error;
+
+    fn try_from(value: Proposal) -> Result<Self, Error> {
+        Ok(RawProposal {
             r#type: value.msg_type.into(),
             height: value.height.into(),
             round: value.round.into(),
             pol_round: value.pol_round.map_or(-1, Into::into),
             block_id: value.block_id.map(Into::into),
-            timestamp: value.timestamp.map(Into::into),
+            timestamp: value.timestamp.map(|t| t.try_into()).transpose()?,
             signature: value.signature.map(|s| s.to_bytes()).unwrap_or_default(),
-        }
+        })
     }
 }
 

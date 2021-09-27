@@ -36,12 +36,14 @@ impl TryFrom<RawSignProposalRequest> for SignProposalRequest {
     }
 }
 
-impl From<SignProposalRequest> for RawSignProposalRequest {
-    fn from(value: SignProposalRequest) -> Self {
-        RawSignProposalRequest {
-            proposal: Some(value.proposal.into()),
+impl TryFrom<SignProposalRequest> for RawSignProposalRequest {
+    type Error = Error;
+
+    fn try_from(value: SignProposalRequest) -> Result<Self, Error> {
+        Ok(RawSignProposalRequest {
+            proposal: Some(value.proposal.try_into()?),
             chain_id: value.chain_id.to_string(),
-        }
+        })
     }
 }
 
@@ -81,11 +83,13 @@ impl TryFrom<RawSignedProposalResponse> for SignedProposalResponse {
     }
 }
 
-impl From<SignedProposalResponse> for RawSignedProposalResponse {
-    fn from(value: SignedProposalResponse) -> Self {
-        RawSignedProposalResponse {
-            proposal: value.proposal.map(Into::into),
+impl TryFrom<SignedProposalResponse> for RawSignedProposalResponse {
+    type Error = Error;
+
+    fn try_from(value: SignedProposalResponse) -> Result<Self, Error> {
+        Ok(RawSignedProposalResponse {
+            proposal: value.proposal.map(|p| p.try_into()).transpose()?,
             error: value.error,
-        }
+        })
     }
 }
