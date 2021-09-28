@@ -9,7 +9,7 @@
 //! have them interact. In practice, the client interaction will be performed
 //! by a full Tendermint node.
 //!
-//! ```ignore
+//! ```
 //! use tendermint_abci::{KeyValueStoreApp, ServerBuilder, ClientBuilder};
 //! use tendermint_proto::abci::{RequestEcho, RequestDeliverTx, RequestQuery};
 //!

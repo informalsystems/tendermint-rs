@@ -33,9 +33,10 @@ impl NodeKey {
 
     /// Get the public key for this keypair
     pub fn public_key(&self) -> PublicKey {
+        #[allow(unreachable_patterns)]
         match &self.priv_key {
             PrivateKey::Ed25519(keypair) => keypair.public.into(),
-            _ => todo!(),
+            _ => unreachable!(),
         }
     }
 
