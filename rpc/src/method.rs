@@ -24,6 +24,9 @@ pub enum Method {
     /// Get ABCI results for a particular block
     BlockResults,
 
+    /// Search for blocks with their results
+    BlockSearch,
+
     /// Get blockchain info
     Blockchain,
 
@@ -84,6 +87,7 @@ impl Method {
             Method::AbciQuery => "abci_query",
             Method::Block => "block",
             Method::BlockResults => "block_results",
+            Method::BlockSearch => "block_search",
             Method::Blockchain => "blockchain",
             Method::BroadcastEvidence => "broadcast_evidence",
             Method::BroadcastTxAsync => "broadcast_tx_async",
@@ -114,6 +118,7 @@ impl FromStr for Method {
             "abci_query" => Method::AbciQuery,
             "block" => Method::Block,
             "block_results" => Method::BlockResults,
+            "block_search" => Method::BlockSearch,
             "blockchain" => Method::Blockchain,
             "broadcast_evidence" => Method::BroadcastEvidence,
             "broadcast_tx_async" => Method::BroadcastTxAsync,

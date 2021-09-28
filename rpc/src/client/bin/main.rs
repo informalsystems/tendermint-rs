@@ -91,6 +91,18 @@ enum ClientRequest {
         /// The height of the block you want.
         height: u32,
     },
+    /// Search for a block by way of a specific query. Uses the same
+    /// query syntax as the `subscribe` endpoint.
+    BlockSearch {
+        /// The query against which blocks should be matched.
+        query: Query,
+        #[structopt(long, default_value = "1")]
+        page: u32,
+        #[structopt(long, default_value = "10")]
+        per_page: u8,
+        #[structopt(long, default_value = "asc")]
+        order: Order,
+    },
     // TODO(thane): Implement evidence broadcast
     /// Broadcast a transaction asynchronously (without waiting for the ABCI
     /// app to check it or for it to be committed).
@@ -311,6 +323,15 @@ where
         }
         ClientRequest::BlockResults { height } => {
             serde_json::to_string_pretty(&client.block_results(height).await?)
+                .map_err(Error::serde)?
+        }
+        ClientRequest::BlockSearch {
+            query,
+            page,
+            per_page,
+            order,
+        } => {
+            serde_json::to_string_pretty(&client.block_search(query, page, per_page, order).await?)
                 .map_err(Error::serde)?
         }
         ClientRequest::BroadcastTxAsync { tx } => serde_json::to_string_pretty(

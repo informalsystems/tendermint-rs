@@ -138,6 +138,20 @@ mod rpc {
         assert!(block_results.txs_results.is_none());
     }
 
+    async fn block_search() {
+        let res = localhost_http_client()
+            .block_search(
+                Query::gt("block.height", "1"),
+                1,
+                1,
+                Order::Ascending,
+            )
+            .await
+            .unwrap();
+        assert!(res.total_count > 0);
+        assert_eq!(res.total_count as usize, res.blocks.len());
+    }
+
     /// `/blockchain` endpoint
     #[tokio::test]
     async fn blockchain() {
