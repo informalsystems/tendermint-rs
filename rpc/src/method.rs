@@ -24,7 +24,7 @@ pub enum Method {
     /// Get ABCI results for a particular block
     BlockResults,
 
-    /// Search for blocks with their results
+    /// Search for blocks by their BeginBlock and EndBlock events
     BlockSearch,
 
     /// Get blockchain info

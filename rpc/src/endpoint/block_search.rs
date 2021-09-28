@@ -5,7 +5,7 @@ pub use super::{block, block_results};
 use crate::{Method, Order};
 use serde::{Deserialize, Serialize};
 
-/// Request for searching for transactions with their results.
+/// Request for searching for blocks by their BeginBlock and EndBlock events.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request {
     pub query: String,
