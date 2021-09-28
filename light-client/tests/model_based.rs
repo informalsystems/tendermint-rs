@@ -184,8 +184,9 @@ mod mbt {
                 .unwrap()
                 .as_secs();
             let rand_secs = rng.gen_range(1, secs);
-            input.block.signed_header.header.time =
-                tendermint::Time::unix_epoch() + std::time::Duration::from_secs(rand_secs);
+            input.block.signed_header.header.time = (tendermint::Time::unix_epoch()
+                + std::time::Duration::from_secs(rand_secs))
+            .unwrap();
             // TODO: the fuzzing below fails with one of:
             //   - 'overflow when adding duration to instant', src/libstd/time.rs:549:31
             //   - 'No such local time',

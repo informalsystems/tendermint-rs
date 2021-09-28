@@ -56,6 +56,7 @@ impl Time {
         Time(Utc::now())
     }
 
+    /// Get the [`UNIX_EPOCH`] time ("1970-01-01 00:00:00 UTC") as a [`Time`]
     pub fn unix_epoch() -> Self {
         Time(Utc.timestamp(0, 0))
     }
@@ -114,34 +115,34 @@ impl From<Time> for DateTime<Utc> {
 }
 
 impl Add<Duration> for Time {
-    type Output = Self;
+    type Output = Result<Self, Error>;
 
-    // TODO: provide safe addition method returning Result
     fn add(self, rhs: Duration) -> Self::Output {
-        let duration = chrono::Duration::from_std(rhs).expect("Duration conversion overflow");
+        let duration =
+            chrono::Duration::from_std(rhs).map_err(|_| Error::duration_out_of_range())?;
 
         let res = self
             .0
             .checked_add_signed(duration)
-            .expect("Duration addition overflow");
+            .ok_or_else(Error::duration_out_of_range)?;
 
-        Time(res)
+        Ok(Time(res))
     }
 }
 
 impl Sub<Duration> for Time {
-    type Output = Self;
+    type Output = Result<Self, Error>;
 
-    // TODO: provide safe addition method returning Result
     fn sub(self, rhs: Duration) -> Self::Output {
-        let duration = chrono::Duration::from_std(rhs).expect("Duration conversion overflow");
+        let duration =
+            chrono::Duration::from_std(rhs).map_err(|_| Error::duration_out_of_range())?;
 
         let res = self
             .0
             .checked_sub_signed(duration)
-            .expect("Duration addition overflow");
+            .ok_or_else(Error::duration_out_of_range)?;
 
-        Time(res)
+        Ok(Time(res))
     }
 }
 

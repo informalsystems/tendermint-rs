@@ -5,10 +5,11 @@ use crate::vote;
 use alloc::string::String;
 use core::num::TryFromIntError;
 use flex_error::{define_error, DisplayOnly};
+use serde::{Deserialize, Serialize};
 use std::io::Error as IoError;
 
 define_error! {
-    #[derive(Debug, Clone, PartialEq, Eq)]
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
     Error {
         Crypto
             |_| { format_args!("cryptographic error") },
@@ -211,5 +212,6 @@ define_error! {
 
         TrustThresholdTooSmall
             |_| { "trust threshold too small (must be >= 1/3)" },
+
     }
 }
