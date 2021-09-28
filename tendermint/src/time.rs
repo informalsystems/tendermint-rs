@@ -27,8 +27,6 @@ impl TryFrom<Timestamp> for Time {
     type Error = Error;
 
     fn try_from(value: Timestamp) -> Result<Self, Error> {
-        // The only time conversion from i32 to u32 fail is when the value
-        // is negative. This shouldn't happen so we default to 0.
         let nanos = value.nanos.try_into().map_err(Error::timestamp_overflow)?;
 
         Ok(Time(Utc.timestamp(value.seconds, nanos)))
@@ -39,8 +37,6 @@ impl TryFrom<Time> for Timestamp {
     type Error = Error;
 
     fn try_from(value: Time) -> Result<Self, Error> {
-        // The only time conversion from i32 to u32 fail is when the value
-        // is > i32::Max. This shouldn't happen so we default to the max nanoseconds.
         let nanos = value
             .0
             .timestamp_subsec_nanos()
