@@ -32,8 +32,7 @@ use async_trait::async_trait;
 ///   }
 /// }"#;
 ///
-/// #[tokio::main]
-/// async fn main() {
+/// tokio_test::block_on(async {
 ///     let matcher = MockRequestMethodMatcher::default()
 ///         .map(Method::AbciInfo, Ok(ABCI_INFO_RESPONSE.to_string()));
 ///     let (client, driver) = MockClient::new(matcher);
@@ -45,7 +44,7 @@ use async_trait::async_trait;
 ///
 ///     client.close();
 ///     driver_hdl.await.unwrap();
-/// }
+/// });
 /// ```
 #[derive(Debug)]
 pub struct MockClient<M: MockRequestMatcher> {

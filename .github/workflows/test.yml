@@ -17,6 +17,18 @@ jobs:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
     if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master'"
 
+  default-features:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+
   # TODO(shonfeder): remove duplication once GitHub addresses one of these
   #  - https://github.community/t/support-for-yaml-anchors/16128/15
   #  - https://github.community/t/reusing-sharing-inheriting-steps-between-jobs-declarations/16851/13
@@ -33,6 +45,7 @@ jobs:
         with:
           command: test-all-features
           args: -p tendermint
+
   tendermint-rpc:
     runs-on: ubuntu-latest
     steps:
@@ -45,6 +58,7 @@ jobs:
         with:
           command: test-all-features
           args: -p tendermint-rpc
+
   tendermint-proto:
     runs-on: ubuntu-latest
     steps:
@@ -57,6 +71,7 @@ jobs:
         with:
           command: test-all-features
           args: -p tendermint-proto
+
   tendermint-light-client:
     runs-on: ubuntu-latest
     steps:
@@ -69,6 +84,7 @@ jobs:
         with:
           command: test-all-features
           args: -p tendermint-light-client
+
   # From https://rustwasm.github.io/docs/wasm-bindgen/wasm-bindgen-test/continuous-integration.html#github-actions
   tendermint-light-client-js:
     runs-on: ubuntu-latest
