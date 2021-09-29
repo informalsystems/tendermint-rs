@@ -128,14 +128,12 @@ where
     ///
     /// - Ensure the latest trusted header hasn't expired
     /// - Ensure the header validator hashes match the given validators
-    /// - Ensure the header next validator hashes match the given next
-    ///   validators
+    /// - Ensure the header next validator hashes match the given next validators
     /// - Additional implementation specific validation via `commit_validator`
     /// - Check that the untrusted block is more recent than the trusted state
-    /// - If the untrusted block is the very next block after the trusted block,
-    ///   check that their (next) validator sets hashes match.
-    /// - Otherwise, ensure that the untrusted block has a greater height than
-    ///   the trusted block.
+    /// - If the untrusted block is the very next block after the trusted block, check that their
+    ///   (next) validator sets hashes match.
+    /// - Otherwise, ensure that the untrusted block has a greater height than the trusted block.
     ///
     /// **NOTE**: If the untrusted state's `next_validators` field is `None`,
     /// this will not (and will not be able to) check whether the untrusted

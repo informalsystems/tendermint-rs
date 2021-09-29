@@ -1,5 +1,6 @@
 //! Node keys
 
+use crate::prelude::*;
 use crate::{error::Error, node, private_key::PrivateKey, public_key::PublicKey};
 use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};

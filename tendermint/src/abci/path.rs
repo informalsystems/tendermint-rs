@@ -1,11 +1,12 @@
 //! Paths to ABCI data
 
 use crate::error::Error;
-use serde::{Deserialize, Serialize};
-use std::{
+use crate::prelude::*;
+use core::{
     fmt::{self, Display},
     str::FromStr,
 };
+use serde::{Deserialize, Serialize};
 
 /// Path to ABCI data
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]

@@ -25,6 +25,13 @@
 //! [Tendermint RPC]: https://docs.tendermint.com/master/rpc/
 //! [`/subscribe` endpoint]: https://docs.tendermint.com/master/rpc/#/Websocket/subscribe
 
+#![no_std]
+
+extern crate alloc;
+extern crate std;
+
+mod prelude;
+
 #[cfg(any(feature = "http-client", feature = "websocket-client"))]
 mod client;
 #[cfg(any(feature = "http-client", feature = "websocket-client"))]

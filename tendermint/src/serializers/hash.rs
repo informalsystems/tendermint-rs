@@ -1,5 +1,6 @@
 //! Hash serialization with validation
 
+use crate::prelude::*;
 use crate::{hash::Algorithm, Hash};
 use serde::{Deserialize, Deserializer, Serializer};
 use subtle_encoding::hex;

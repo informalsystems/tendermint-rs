@@ -1,11 +1,12 @@
 //! Transaction hashes
 
 use crate::error::Error;
-use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-use std::{
+use crate::prelude::*;
+use core::{
     fmt::{self, Debug, Display},
     str::FromStr,
 };
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
 
@@ -44,7 +45,7 @@ impl ConstantTimeEq for Hash {
 impl core::hash::Hash for Hash {
     fn hash<H>(&self, hasher: &mut H)
     where
-        H: std::hash::Hasher,
+        H: core::hash::Hasher,
     {
         self.0.hash(hasher)
     }

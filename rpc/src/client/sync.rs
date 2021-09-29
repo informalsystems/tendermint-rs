@@ -4,7 +4,7 @@
 //! convenience methods. We also only implement unbounded channels at present.
 //! In future, if RPC consumers need it, we will implement bounded channels.
 
-use std::pin::Pin;
+use core::pin::Pin;
 
 use futures::task::{Context, Poll};
 use futures::Stream;

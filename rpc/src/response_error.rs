@@ -1,5 +1,6 @@
+use crate::prelude::*;
+use core::fmt::Display;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::fmt::Display;
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct ResponseError {
@@ -107,7 +108,7 @@ impl From<Code> for i32 {
 }
 
 impl Display for ResponseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match &self.data {
             Some(data) => write!(
                 f,

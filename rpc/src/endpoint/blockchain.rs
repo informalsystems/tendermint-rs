@@ -1,9 +1,11 @@
 //! `/block` endpoint JSON-RPC wrapper
 
+use core::ops::Range;
 use serde::{Deserialize, Serialize};
-use std::ops::Range;
 
 use tendermint::block;
+
+use crate::prelude::*;
 
 /// Get information about a specific block
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

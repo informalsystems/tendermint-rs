@@ -21,9 +21,10 @@ pub use self::{
     round::*,
     size::Size,
 };
+use crate::prelude::*;
 use crate::{abci::transaction, error::Error, evidence};
+use core::convert::{TryFrom, TryInto};
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Block as RawBlock;
 use tendermint_proto::Protobuf;
 
@@ -32,7 +33,7 @@ use tendermint_proto::Protobuf;
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#block>
 // Default serialization - all fields serialize; used by /block endpoint
-#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub struct Block {
     /// Block header

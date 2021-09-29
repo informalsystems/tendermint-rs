@@ -5,25 +5,26 @@ use crate::client::sync::{ChannelRx, ChannelTx};
 use crate::client::transport::router::{PublishResult, SubscriptionRouter};
 use crate::endpoint::{subscribe, unsubscribe};
 use crate::event::Event;
+use crate::prelude::*;
 use crate::query::Query;
 use crate::request::Wrapper;
 use crate::{
     error::Error, response, Client, Id, Request, Response, Scheme, SimpleRequest, Subscription,
     SubscriptionClient, Url,
 };
+use alloc::borrow::Cow;
+use alloc::collections::BTreeMap as HashMap;
 use async_trait::async_trait;
 use async_tungstenite::tokio::ConnectStream;
 use async_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
 use async_tungstenite::tungstenite::protocol::CloseFrame;
 use async_tungstenite::tungstenite::Message;
 use async_tungstenite::WebSocketStream;
+use core::convert::{TryFrom, TryInto};
+use core::ops::Add;
+use core::str::FromStr;
 use futures::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
-use std::collections::HashMap;
-use std::convert::{TryFrom, TryInto};
-use std::ops::Add;
-use std::str::FromStr;
 use tendermint::net;
 use tokio::time::{Duration, Instant};
 use tracing::{debug, error};
@@ -257,6 +258,7 @@ mod sealed {
     };
 
     use crate::client::sync::{unbounded, ChannelTx};
+    use crate::prelude::*;
     use crate::query::Query;
     use crate::request::Wrapper;
     use crate::utils::uuid_str;
@@ -288,7 +290,7 @@ mod sealed {
     #[derive(Debug, Clone)]
     pub struct AsyncTungsteniteClient<C> {
         cmd_tx: ChannelTx<DriverCommand>,
-        _client_type: std::marker::PhantomData<C>,
+        _client_type: core::marker::PhantomData<C>,
     }
 
     impl AsyncTungsteniteClient<Unsecure> {
@@ -801,11 +803,12 @@ mod test {
     use crate::client::sync::unbounded;
     use crate::query::EventType;
     use crate::{request, Id, Method};
+    use alloc::collections::BTreeMap as HashMap;
     use async_tungstenite::tokio::{accept_async, TokioAdapter};
+    use core::str::FromStr;
     use futures::StreamExt;
-    use std::collections::HashMap;
     use std::path::PathBuf;
-    use std::str::FromStr;
+    use std::println;
     use tendermint::net;
     use tokio::fs;
     use tokio::net::{TcpListener, TcpStream};

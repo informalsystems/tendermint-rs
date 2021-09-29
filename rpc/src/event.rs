@@ -1,10 +1,11 @@
 //! RPC subscription event-related data structures.
 
+use alloc::collections::BTreeMap as HashMap;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use tendermint::abci::responses::{BeginBlock, EndBlock};
 use tendermint::Block;
 
+use crate::prelude::*;
 use crate::query::EventType;
 use crate::{response::Wrapper, Response};
 

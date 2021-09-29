@@ -1,11 +1,12 @@
 //! Voting power
 
-use std::convert::{TryFrom, TryInto};
-use std::fmt;
+use core::convert::{TryFrom, TryInto};
+use core::fmt;
 
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::error::Error;
+use crate::prelude::*;
 
 /// Voting power
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Default)]

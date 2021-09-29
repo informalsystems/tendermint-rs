@@ -1,9 +1,9 @@
 //! Pagination-related data structures for the Tendermint RPC.
 
 use crate::Error;
+use core::convert::TryInto;
+use core::str::FromStr;
 use serde::{Deserialize, Serialize};
-use std::convert::TryInto;
-use std::str::FromStr;
 
 /// Pagination control for those RPC client methods supporting pagination.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -35,8 +35,8 @@ impl FromStr for PageNumber {
     }
 }
 
-impl std::fmt::Display for PageNumber {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for PageNumber {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
@@ -61,8 +61,8 @@ impl FromStr for PerPage {
     }
 }
 
-impl std::fmt::Display for PerPage {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for PerPage {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
