@@ -3,6 +3,7 @@
 use std::time::Duration;
 
 use flex_error::{define_error, TraceError};
+
 use tendermint_rpc as rpc;
 #[cfg(feature = "rpc-client")]
 use tendermint_rpc::Client;
@@ -37,7 +38,7 @@ define_error! {
     #[derive(Debug)]
     IoError {
         Rpc
-            [ rpc::Error ]
+            [ tendermint_rpc::Error ]
             | _ | { "rpc error" },
 
         InvalidHeight
@@ -90,9 +91,10 @@ where
 }
 
 #[cfg(feature = "rpc-client")]
-pub use self::prod::ProdIo;
+pub use self::rpc::RpcIo;
 
 #[cfg(feature = "rpc-client")]
+<<<<<<< HEAD
 mod prod {
     use std::time::Duration;
 
@@ -107,14 +109,31 @@ mod prod {
 
     /// Production implementation of the Io component, which fetches
     /// light blocks from full nodes via RPC.
+=======
+mod rpc {
+    use super::*;
+
+    use std::time::Duration;
+
+    use crate::utils::block_on;
+    use crate::verifier::types::PeerId;
+
+    use tendermint::account::Id as TMAccountId;
+    use tendermint::block::signed_header::SignedHeader as TMSignedHeader;
+    use tendermint::validator::Set as TMValidatorSet;
+    use tendermint_rpc::{Client as _, Paging};
+
+    /// Implementation of the Io component backed by an RPC client, which fetches
+    /// light blocks from full nodes.
+>>>>>>> 790bcdba (light-client: Rename ProdIo to RpcIo)
     #[derive(Clone, Debug)]
-    pub struct ProdIo {
+    pub struct RpcIo {
         peer_id: PeerId,
-        rpc_client: rpc::HttpClient,
+        rpc_client: tendermint_rpc::HttpClient,
         timeout: Option<Duration>,
     }
 
-    impl Io for ProdIo {
+    impl Io for RpcIo {
         fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
             let signed_header = self.fetch_signed_header(height)?;
             let height = signed_header.header.height;
@@ -134,14 +153,14 @@ mod prod {
         }
     }
 
-    impl ProdIo {
-        /// Constructs a new ProdIo component.
+    impl RpcIo {
+        /// Constructs a new RpcIo component.
         ///
         /// A peer map which maps peer IDS to their network address must be supplied.
         pub fn new(
             peer_id: PeerId,
-            rpc_client: rpc::HttpClient, /* TODO(thane): Generalize over client transport
-                                          * (instead of using HttpClient directly) */
+            rpc_client: tendermint_rpc::HttpClient, /* TODO(thane): Generalize over client transport
+                                                     * (instead of using HttpClient directly) */
             timeout: Option<Duration>,
         ) -> Self {
             Self {

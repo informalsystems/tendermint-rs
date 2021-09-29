@@ -4,7 +4,7 @@ use tendermint::{block::Height, Hash};
 #[cfg(feature = "rpc-client")]
 use {
     crate::components::clock::SystemClock,
-    crate::components::io::ProdIo,
+    crate::components::io::RpcIo,
     crate::components::scheduler,
     crate::verifier::{operations::ProdHasher, predicates::ProdPredicates, ProdVerifier},
     core::time::Duration,
@@ -86,7 +86,7 @@ impl LightClientBuilder<NoTrustedState> {
             peer_id,
             options,
             light_store,
-            Box::new(ProdIo::new(peer_id, rpc_client, timeout)),
+            Box::new(RpcIo::new(peer_id, rpc_client, timeout)),
             Box::new(ProdHasher),
             Box::new(SystemClock),
             Box::new(ProdVerifier::default()),
