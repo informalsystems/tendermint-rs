@@ -138,18 +138,14 @@ mod rpc {
         assert!(block_results.txs_results.is_none());
     }
 
+    /// `/block_search` endpoint
+    #[tokio::test]
     async fn block_search() {
         let res = localhost_http_client()
-            .block_search(
-                Query::gt("block.height", "1"),
-                1,
-                1,
-                Order::Ascending,
-            )
+            .block_search(Query::gt("block.height", 1), 1, 1, Order::Ascending)
             .await
             .unwrap();
         assert!(res.total_count > 0);
-        assert_eq!(res.total_count as usize, res.blocks.len());
     }
 
     /// `/blockchain` endpoint
@@ -264,15 +260,21 @@ mod rpc {
     }
 
     async fn transaction_by_hash() {
+        let rpc_client = localhost_http_client();
+        let (mut subs_client, driver) = localhost_websocket_client().await;
+        let driver_handle = tokio::spawn(async move { driver.run().await });
+
         let tx = Transaction::from(String::from("txtest=value").into_bytes());
-        let r = localhost_http_client()
-            .broadcast_tx_commit(tx.clone())
+        let (hash, _) = broadcast_tx(&rpc_client, &mut subs_client, tx.clone())
             .await
             .unwrap();
-        let hash = r.hash;
+        tokio::time::sleep(Duration::from_secs(1)).await;
         let r = localhost_http_client().tx(hash, false).await.unwrap();
         assert_eq!(r.hash, hash);
         assert_eq!(r.tx, tx);
+
+        subs_client.close().unwrap();
+        let _ = driver_handle.await.unwrap();
     }
 
     async fn simple_transaction_subscription() {
@@ -409,7 +411,7 @@ mod rpc {
         let driver_handle = tokio::spawn(async move { driver.run().await });
 
         let tx = "tx_search_key=tx_search_value".to_string();
-        let tx_info = broadcast_tx(
+        let (_, tx_info) = broadcast_tx(
             &rpc_client,
             &mut subs_client,
             Transaction::from(tx.into_bytes()),
@@ -418,9 +420,8 @@ mod rpc {
         .unwrap();
         println!("Got tx_info: {:?}", tx_info);
 
-        // TODO(thane): Find a better way of accomplishing this. This might
-        //              still be nondeterministic.
-        tokio::time::sleep(Duration::from_millis(500)).await;
+        // Give the indexer time to catch up
+        tokio::time::sleep(Duration::from_secs(1)).await;
 
         let res = rpc_client
             .tx_search(
@@ -455,6 +456,8 @@ mod rpc {
         let r = client.broadcast_tx_commit(tx).await.unwrap();
         let hash = r.hash;
 
+        tokio::time::sleep(Duration::from_secs(1)).await;
+
         let r = client
             .tx_search(
                 Query::from(EventType::Tx).and_eq("tx.hash", hash.to_string()),
@@ -472,9 +475,9 @@ mod rpc {
         http_client: &HttpClient,
         websocket_client: &mut WebSocketClient,
         tx: Transaction,
-    ) -> Result<TxInfo, tendermint_rpc::Error> {
+    ) -> Result<(tendermint::abci::transaction::Hash, TxInfo), tendermint_rpc::Error> {
         let mut subs = websocket_client.subscribe(EventType::Tx.into()).await?;
-        let _ = http_client.broadcast_tx_async(tx.clone()).await?;
+        let r = http_client.broadcast_tx_async(tx.clone()).await?;
 
         let timeout = tokio::time::sleep(Duration::from_secs(3));
         tokio::pin!(timeout);
@@ -487,7 +490,7 @@ mod rpc {
                         let tx_result_bytes: &[u8] = tx_result.tx.as_ref();
                         // Make sure we have the right transaction here
                         assert_eq!(tx.as_bytes(), tx_result_bytes);
-                        Ok(tx_result)
+                        Ok((r.hash, tx_result))
                     },
                     _ => panic!("Unexpected event: {:?}", ev),
                 }
