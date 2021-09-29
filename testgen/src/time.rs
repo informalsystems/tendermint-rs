@@ -39,7 +39,7 @@ impl Generator<tendermint::Time> for Time {
             None => bail!("time is missing"),
             Some(secs) => *secs,
         };
-        Ok(get_time(time)?)
+        get_time(time)
     }
 }
 
