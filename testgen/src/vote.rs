@@ -114,7 +114,7 @@ impl Generator<vote::Vote> for Vote {
             }
         };
         let timestamp = if let Some(t) = self.time {
-            get_time(t)
+            get_time(t)?
         } else {
             block_header.time
         };

@@ -100,7 +100,10 @@ impl TryFrom<RawCommitSig> for CommitSig {
                 return Err(Error::invalid_validator_address());
             }
 
-            let timestamp = value.timestamp.ok_or_else(Error::missing_timestamp)?.into();
+            let timestamp = value
+                .timestamp
+                .ok_or_else(Error::missing_timestamp)?
+                .try_into()?;
 
             return Ok(CommitSig::BlockIdFlagCommit {
                 validator_address: value.validator_address.try_into()?,
@@ -119,7 +122,10 @@ impl TryFrom<RawCommitSig> for CommitSig {
             }
             return Ok(CommitSig::BlockIdFlagNil {
                 validator_address: value.validator_address.try_into()?,
-                timestamp: value.timestamp.ok_or_else(Error::missing_timestamp)?.into(),
+                timestamp: value
+                    .timestamp
+                    .ok_or_else(Error::missing_timestamp)?
+                    .try_into()?,
                 signature: Signature::new(value.signature)?,
             });
         }

@@ -48,7 +48,7 @@ fn make(chain: LightChain, trusted_height: Height) -> (LightClient, State) {
 
     let clock = MockClock {
         /// Set the current time to be ahead of the latest block in the chain
-        now: tendermint_testgen::helpers::get_time(chain.light_blocks.len() as u64 + 1),
+        now: tendermint_testgen::helpers::get_time(chain.light_blocks.len() as u64 + 1).unwrap(),
     };
 
     let options = Options {

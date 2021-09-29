@@ -25,7 +25,10 @@ pub fn is_within_trust_period(
     now: Time,
 ) -> bool {
     let header_time = light_block.signed_header.header.time;
-    header_time > now - trusting_period
+    match now - trusting_period {
+        Ok(start) => header_time > start,
+        Err(_) => false,
+    }
 }
 
 /// Whether or not the given light store contains a trusted block

@@ -49,7 +49,7 @@ impl TryFrom<RawCanonicalVote> for CanonicalVote {
             height: value.height.try_into()?,
             round: (value.round as i32).try_into()?,
             block_id: block_id.map(|b| b.try_into()).transpose()?,
-            timestamp: value.timestamp.map(|t| t.into()),
+            timestamp: value.timestamp.map(|t| t.try_into()).transpose()?,
             chain_id: ChainId::try_from(value.chain_id)?,
         })
     }

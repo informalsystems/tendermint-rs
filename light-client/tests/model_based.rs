@@ -125,8 +125,8 @@ mod mbt {
     impl SingleStepTestFuzzer for HeaderVersionFuzzer {
         // TODO: rehash the header and re-compute commit with it
         // TODO: Unlike in tendermint-go, we don't assert for a particular version in rust
-        // TODO: Either add this check in verification or remove this test because otherwise there's no
-        // point of it
+        // TODO: Either add this check in verification or remove this test because otherwise there's
+        // no point of it
         fn fuzz_input(input: &mut BlockVerdict) -> (String, LiteVerdict) {
             let mut rng = rand::thread_rng();
 
@@ -184,8 +184,9 @@ mod mbt {
                 .unwrap()
                 .as_secs();
             let rand_secs = rng.gen_range(1, secs);
-            input.block.signed_header.header.time =
-                tendermint::Time::unix_epoch() + std::time::Duration::from_secs(rand_secs);
+            input.block.signed_header.header.time = (tendermint::Time::unix_epoch()
+                + std::time::Duration::from_secs(rand_secs))
+            .unwrap();
             // TODO: the fuzzing below fails with one of:
             //   - 'overflow when adding duration to instant', src/libstd/time.rs:549:31
             //   - 'No such local time',
