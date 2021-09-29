@@ -170,8 +170,8 @@ impl Supervisor {
     }
 
     /// Verify to the highest block.
-    pub fn verify_to_highest(&mut self) -> Result<LightBlock, Error> {
-        self.verify(None)
+    pub async fn verify_to_highest(&mut self) -> Result<LightBlock, Error> {
+        self.verify(None).await
     }
 
     /// Return latest trusted status summary.
@@ -193,21 +193,30 @@ impl Supervisor {
     }
 
     /// Verify to the block at the given height.
-    pub fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error> {
-        self.verify(Some(height))
+    pub async fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error> {
+        self.verify(Some(height)).await
     }
 
     /// Verify either to the latest block (if `height == None`) or to a given block (if `height ==
     /// Some(height)`).
-    fn verify(&mut self, height: Option<Height>) -> Result<LightBlock, Error> {
+    #[async_recursion::async_recursion]
+    async fn verify(&mut self, height: Option<Height>) -> Result<LightBlock, Error> {
         let primary = self.peers.primary_mut();
 
         // Perform light client core verification for the given height (or highest).
         let verdict = match height {
-            None => primary.light_client.verify_to_highest(&mut primary.state),
-            Some(height) => primary
-                .light_client
-                .verify_to_target(height, &mut primary.state),
+            None => {
+                primary
+                    .light_client
+                    .verify_to_highest(&mut primary.state)
+                    .await
+            },
+            Some(height) => {
+                primary
+                    .light_client
+                    .verify_to_target(height, &mut primary.state)
+                    .await
+            },
         };
 
         match verdict {
@@ -218,19 +227,19 @@ impl Supervisor {
                     .ok_or_else(|| Error::no_trusted_state(Status::Trusted))?;
 
                 // Perform fork detection with the highest verified block and the trusted block.
-                let outcome = self.detect_forks(&verified_block, &trusted_block)?;
+                let outcome = self.detect_forks(&verified_block, &trusted_block).await?;
 
                 match outcome {
                     // There was a fork or a faulty peer
                     ForkDetection::Detected(forks) => {
-                        let forked = self.process_forks(forks)?;
+                        let forked = self.process_forks(forks).await?;
                         if !forked.is_empty() {
                             // Fork detected, exiting
                             return Err(Error::fork_detected(forked));
                         }
 
                         // If there were no hard forks, perform verification again
-                        self.verify(height)
+                        self.verify(height).await
                     },
                     ForkDetection::NotDetected => {
                         // We need to re-ask for the primary here as the compiler
@@ -249,12 +258,12 @@ impl Supervisor {
             Err(err) => {
                 // Swap primary, and continue with new primary, if there is any witness left.
                 self.peers.replace_faulty_primary(Some(err))?;
-                self.verify(height)
+                self.verify(height).await
             },
         }
     }
 
-    fn process_forks(&mut self, forks: Vec<Fork>) -> Result<Vec<PeerId>, Error> {
+    async fn process_forks(&mut self, forks: Vec<Fork>) -> Result<Vec<PeerId>, Error> {
         let mut forked = Vec::with_capacity(forks.len());
 
         for fork in forks {
@@ -263,7 +272,7 @@ impl Supervisor {
                 // TODO: also report to primary
                 Fork::Forked { primary, witness } => {
                     let provider = witness.provider;
-                    self.report_evidence(provider, &primary, &witness)?;
+                    self.report_evidence(provider, &primary, &witness).await?;
 
                     forked.push(provider);
                 },
@@ -284,7 +293,7 @@ impl Supervisor {
     }
 
     /// Report the given evidence of a fork.
-    fn report_evidence(
+    async fn report_evidence(
         &mut self,
         provider: PeerId,
         primary: &LightBlock,
@@ -297,13 +306,14 @@ impl Supervisor {
 
         self.evidence_reporter
             .report(Evidence::ConflictingHeaders(Box::new(evidence)), provider)
+            .await
             .map_err(Error::io)?;
 
         Ok(())
     }
 
     /// Perform fork detection with the given verified block and trusted block.
-    fn detect_forks(
+    async fn detect_forks(
         &self,
         verified_block: &LightBlock,
         trusted_block: &LightBlock,
@@ -321,12 +331,13 @@ impl Supervisor {
 
         self.fork_detector
             .detect_forks(verified_block, trusted_block, witnesses)
+            .await
     }
 
     /// Run the supervisor event loop in the same thread.
     ///
     /// This method should typically be called within a new thread with `std::thread::spawn`.
-    pub fn run(mut self) -> Result<(), Error> {
+    pub async fn run(mut self) -> Result<(), Error> {
         loop {
             let event = self.receiver.recv().map_err(Error::recv)?;
 
@@ -340,11 +351,11 @@ impl Supervisor {
                     return Ok(());
                 },
                 HandleInput::VerifyToTarget(height, sender) => {
-                    let outcome = self.verify_to_target(height);
+                    let outcome = self.verify_to_target(height).await;
                     sender.send(outcome).map_err(Error::send)?;
                 },
                 HandleInput::VerifyToHighest(sender) => {
-                    let outcome = self.verify_to_highest();
+                    let outcome = self.verify_to_highest().await;
                     sender.send(outcome).map_err(Error::send)?;
                 },
                 HandleInput::GetStatus(sender) => {
@@ -429,6 +440,7 @@ mod tests {
     };
     use std::collections::HashMap;
 
+    use futures::executor::block_on;
     use tendermint::{
         block::Height, evidence::Duration as DurationStr, trust_threshold::TrustThresholdFraction,
     };
@@ -444,7 +456,7 @@ mod tests {
     use super::*;
     use crate::{
         components::{
-            io::{self, AtHeight, Io},
+            io::{self, AsyncIo as _, AtHeight},
             scheduler,
         },
         errors::{Error, ErrorDetail},
@@ -476,8 +488,7 @@ mod tests {
         now: Time,
     ) -> Instance {
         let trusted_height = trust_options.height;
-        let trusted_state = io
-            .fetch_light_block(AtHeight::At(trusted_height))
+        let trusted_state = block_on(io.fetch_light_block(AtHeight::At(trusted_height)))
             .expect("could not 'request' light block");
 
         let mut light_store = MemoryStore::new();
@@ -516,7 +527,7 @@ mod tests {
         );
 
         let handle = supervisor.handle();
-        std::thread::spawn(|| supervisor.run());
+        std::thread::spawn(|| block_on(supervisor.run()));
 
         let target_height = Height::try_from(height_to_verify).expect("Error while making height");
 

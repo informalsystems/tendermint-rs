@@ -6,7 +6,7 @@ use proptest::{prelude::*, test_runner::TestRng};
 use tendermint::{hash::Algorithm, Hash, Time};
 use tendermint_light_client::{
     components::{
-        io::{AtHeight, Io},
+        io::{AsyncIo as _, AtHeight},
         scheduler,
     },
     errors::Error,
@@ -66,8 +66,7 @@ fn make(chain: LightChain, trusted_height: Height) -> (LightClient, State) {
 
     let io = MockIo::new(light_blocks);
 
-    let trusted_state = io
-        .fetch_light_block(AtHeight::At(trusted_height))
+    let trusted_state = block_on(io.fetch_light_block(AtHeight::At(trusted_height)))
         .expect("could not find trusted light block");
 
     let mut light_store = MemoryStore::new();
@@ -96,7 +95,7 @@ fn make(chain: LightChain, trusted_height: Height) -> (LightClient, State) {
 
 fn verify(tc: TestCase) -> Result<LightBlock, Error> {
     let (light_client, mut state) = make(tc.chain, tc.trusted_height);
-    light_client.verify_to_target(tc.target_height, &mut state)
+    block_on(light_client.verify_to_target(tc.target_height, &mut state))
 }
 
 fn ok_test(tc: TestCase) -> Result<(), TestCaseError> {

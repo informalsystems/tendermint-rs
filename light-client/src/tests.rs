@@ -2,7 +2,6 @@
 
 use std::{collections::HashMap, time::Duration};
 
-use contracts::contract_trait;
 use serde::{Deserialize, Serialize};
 use tendermint::{
     block::Height as HeightStr,
@@ -12,10 +11,8 @@ use tendermint_rpc as rpc;
 use tendermint_rpc::abci::transaction::Hash;
 
 use crate::{
-    components::{
-        clock::Clock,
-        io::{AtHeight, Io, IoError},
-    },
+    components::clock::Clock,
+    components::io::{AsyncIo, AtHeight, IoError},
     errors::Error,
     evidence::EvidenceReporter,
     light_client::LightClient,
@@ -112,8 +109,9 @@ impl MockIo {
     }
 }
 
-impl Io for MockIo {
-    fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
+#[async_trait::async_trait]
+impl AsyncIo for MockIo {
+    async fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
         let height = match height {
             AtHeight::Highest => self.latest_height,
             AtHeight::At(height) => height,
@@ -130,9 +128,9 @@ impl Io for MockIo {
 #[derive(Clone, Debug, Default)]
 pub struct MockEvidenceReporter;
 
-#[contract_trait]
+#[async_trait::async_trait]
 impl EvidenceReporter for MockEvidenceReporter {
-    fn report(&self, _e: Evidence, _peer: PeerId) -> Result<Hash, IoError> {
+    async fn report(&self, _e: Evidence, _peer: PeerId) -> Result<Hash, IoError> {
         Ok(Hash::new([0; 32]))
     }
 }
@@ -172,12 +170,13 @@ pub fn verify_single(
     }
 }
 
-pub fn verify_bisection(
+pub async fn verify_bisection(
     untrusted_height: Height,
     light_client: &mut LightClient,
     state: &mut State,
 ) -> Result<Vec<LightBlock>, Error> {
     light_client
         .verify_to_target(untrusted_height, state)
+        .await
         .map(|_| state.get_trace(untrusted_height))
 }

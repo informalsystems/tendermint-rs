@@ -127,10 +127,7 @@ pub fn fmt_as_rfc3339_nanos(t: OffsetDateTime, f: &mut impl fmt::Write) -> fmt::
 #[allow(warnings)]
 #[cfg(test)]
 mod test {
-    use serde::{Deserialize, Serialize};
-
     use super::*;
-    use crate::google::protobuf::Timestamp;
 
     // The Go code with which the following timestamps
     // were tested is as follows:
