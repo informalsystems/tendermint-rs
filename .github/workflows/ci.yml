@@ -156,8 +156,10 @@ jobs:
     name: test tendermint-light-client-js on ${{ matrix.os }
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Install wasm-pack
+      - name: Checkout repository
         uses: actions/checkout@v2
+
+      - name: Install wasm-pack
         run: |
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
           wasm-pack test --headless --chrome ./light-client-js/
