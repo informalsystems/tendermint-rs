@@ -27,7 +27,7 @@ jobs:
           override: true
       - uses: actions-rs/cargo@v1
         with:
-          command: build-all
+          command: compile-workspace
 
   build-light-client-wasm:
     runs-on: ubuntu-latest

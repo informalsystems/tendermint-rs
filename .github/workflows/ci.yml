@@ -13,7 +13,8 @@ env:
   CARGO_INCREMENTAL: 0
   CARGO_NET_RETRY: 10
   RUST_BACKTRACE: short
-  RUSTFLAGS: "-Dwarnings -Drust-2018-idioms - Wunreachable-pub -Wrust-2021-compatibility"
+  # RUSTFLAGS: "-Dwarnings -Drust-2018-idioms -Wunreachable-pub -Wrust-2021-compatibility"
+  RUSTFLAGS: "-Dwarnings -Drust-2018-idioms -Wrust-2021-compatibility"
   RUSTUP_MAX_RETRIES: 10
 
 jobs:
@@ -25,7 +26,7 @@ jobs:
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
-  workspace:
+  root:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -43,11 +44,11 @@ jobs:
           override: true
           components: rust-src
 
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v1
+
       - name: Compile Workspace
         run: cargo compile-workspace
-
-      - name: Compile Tools
-        run: cargo compile-tools
 
   light-client-wasm:
     runs-on: ${{ matrix.os }}
@@ -68,5 +69,32 @@ jobs:
           components: rust-src
           target: cargo wasm32-unknown-unknown
 
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v1
+
       - name: Compile Light Client WASM
-        run: compile-light-client-wasm
+        run: cargo compile-wasm-light-client
+
+  tools:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+          components: rust-src
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v1
+
+      - name: Compile Workspace
+        run: cargo compile-tools
