@@ -37,12 +37,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Cache toolchain
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.rustup/settings.toml
+            ~/.rustup/toolchains/${{ matrix.toolchain }}-*
+            ~/.rustup/update-hashes/${{ matrix.toolchain }}-*
+          key: compile-rust-toolchain_${{ matrix.os }}-${{ matrix.toolchain }}
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: ${{ matrix.toolchain }}
-          components: rust-src
+          components: cargo rust-src
           override: true
 
       - name: Cache dependencies
@@ -62,6 +71,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Cache toolchain
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.rustup/settings.toml
+            ~/.rustup/toolchains/${{ matrix.toolchain }}-*
+            ~/.rustup/update-hashes/${{ matrix.toolchain }}-*
+          key: compile-rust-toolchain_${{ matrix.os }}-${{ matrix.toolchain }}
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -73,7 +91,7 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v1
 
-      - name: Compile Workspace
+      - name: Compile Tools
         run: cargo compile-tools
 
   wasm:
@@ -86,6 +104,15 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+
+      - name: Cache toolchain
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.rustup/settings.toml
+            ~/.rustup/toolchains/${{ matrix.toolchain }}-*
+            ~/.rustup/update-hashes/${{ matrix.toolchain }}-*
+          key: compile-rust-toolchain_${{ matrix.os }}-${{ matrix.toolchain }}
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
