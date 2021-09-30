@@ -51,7 +51,7 @@ jobs:
         with:
           profile: minimal
           toolchain: ${{ matrix.toolchain }}
-          components: cargo rust-src
+          components: cargo, rust-src
           override: true
 
       - name: Cache dependencies
@@ -85,7 +85,7 @@ jobs:
         with:
           profile: minimal
           toolchain: ${{ matrix.toolchain }}
-          components: rust-src
+          components: cargo, rust-src
           override: true
 
       - name: Cache dependencies
@@ -120,7 +120,7 @@ jobs:
           profile: minimal
           toolchain: stable
           target: wasm32-unknown-unknown
-          components: rustc
+          components: cargo, rustc
           override: true
 
       - name: Cache dependencies
