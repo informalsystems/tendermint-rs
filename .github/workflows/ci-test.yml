@@ -18,8 +18,7 @@ env:
   CARGO_INCREMENTAL: 0
   CARGO_NET_RETRY: 10
   RUST_BACKTRACE: short
-  # RUSTFLAGS: "-Dwarnings -Drust-2018-idioms -Wunreachable-pub -Wrust-2021-compatibility"
-  RUSTFLAGS: "-Dwarnings -Drust-2018-idioms -Wrust-2021-compatibility"
+  RUSTFLAGS: "-Dwarnings -Drust-2018-idioms -Wunreachable-pub -Wrust-2021-compatibility"
   RUSTUP_MAX_RETRIES: 10
 
 jobs:
@@ -52,7 +51,7 @@ jobs:
             ~/.rustup/settings.toml
             ~/.rustup/toolchains/${{ matrix.toolchain }}-*
             ~/.rustup/update-hashes/${{ matrix.toolchain }}-*
-          key: rust-toolchain_${{ matrix.os }}-${{ matrix.toolchain }}-${{ matrix.crate }}
+          key: rust-toolchain_${{ matrix.os }}-${{ matrix.toolchain }}
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -88,7 +87,7 @@ jobs:
             ~/.rustup/settings.toml
             ~/.rustup/toolchains/${{ matrix.toolchain }}-*
             ~/.rustup/update-hashes/${{ matrix.toolchain }}-*
-          key: rust-toolchain_${{ matrix.os }}-${{ matrix.toolchain }}-${{ matrix.crate }}
+          key: rust-toolchain_${{ matrix.os }}-${{ matrix.toolchain }}
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -118,7 +117,7 @@ jobs:
           - 26657:26657
           - 26660:26660
 
-    name: test kvstore on ${{ matrix.os }} with ${{ matrix.toolchain }}
+    name: kvstore on ${{ matrix.os }} with ${{ matrix.toolchain }}
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
@@ -131,7 +130,7 @@ jobs:
             ~/.rustup/settings.toml
             ~/.rustup/toolchains/${{ matrix.toolchain }}-*
             ~/.rustup/update-hashes/${{ matrix.toolchain }}-*
-          key: rust-toolchain_${{ matrix.os }}-${{ matrix.toolchain }}-${{ matrix.crate }}
+          key: rust-toolchain_${{ matrix.os }}-${{ matrix.toolchain }}
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -157,7 +156,7 @@ jobs:
         os: [macos-latest, ubuntu-latest, windows-latest]
         toolchain: [stable, nightly]
 
-    name: test tendermint-light-client-js on ${{ matrix.os }} with ${{ matrix.toolchain }}
+    name: tendermint-light-client-js on ${{ matrix.os }} with ${{ matrix.toolchain }}
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
@@ -170,7 +169,7 @@ jobs:
             ~/.rustup/settings.toml
             ~/.rustup/toolchains/${{ matrix.toolchain }}-*
             ~/.rustup/update-hashes/${{ matrix.toolchain }}-*
-          key: rust-toolchain_${{ matrix.os }}-${{ matrix.toolchain }}-${{ matrix.crate }}
+          key: rust-toolchain_${{ matrix.os }}-${{ matrix.toolchain }}
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
