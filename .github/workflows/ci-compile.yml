@@ -1,13 +1,13 @@
-name: CI
+name: CI Compile
 on:
   pull_request:
     paths-ignore:
       - "docs/**"
   push:
-    paths-ignore:
-      - "docs/**"
     branches:
       - master
+    paths-ignore:
+      - "docs/**"
 
 env:
   CARGO_INCREMENTAL: 0
