@@ -127,7 +127,7 @@ impl Generator<block::Header> for Header {
         };
 
         let time = if let Some(t) = self.time {
-            get_time(t)
+            get_time(t)?
         } else {
             tendermint::Time::now()
         };
