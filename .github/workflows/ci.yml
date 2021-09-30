@@ -34,6 +34,7 @@ jobs:
         task: [root, tools, wasm-light-client, wasm-tendermint]
         toolchain: [stable, nightly]
 
+    name: Compile ${{ matrix.task }}
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
@@ -71,6 +72,7 @@ jobs:
         os: [macos-latest, ubuntu-latest, windows-latest]
         toolchain: [stable, nightly]
 
+    name: Test ${{ matrix.crate }}
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
