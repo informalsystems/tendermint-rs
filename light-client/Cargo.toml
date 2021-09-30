@@ -43,7 +43,7 @@ mbt = []
 
 [dependencies]
 tendermint = { version = "0.22.0", path = "../tendermint", default-features = false }
-tendermint-rpc = { version = "0.22.0", path = "../rpc", default-features = false, features = ["http-client"] }
+tendermint-rpc = { version = "0.22.0", path = "../rpc", default-features = false }
 
 contracts = { version = "0.4.0", default-features = false }
 crossbeam-channel = { version = "0.4.2", default-features = false }
@@ -68,4 +68,4 @@ proptest = { version = "0.10.1", default-features = false, features = ["std"] }
 
 [[example]]
 name = "light_client"
-required-features = ["rpc-client"]
+required-features = ["rpc-client", "tendermint-rpc/http-client"]
