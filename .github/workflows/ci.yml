@@ -69,47 +69,11 @@ jobs:
       - name: Compile ${{ matrix.task }}
         run: cargo compile-${{ matrix.task }}
 
-  test-crate:
+  test:
     strategy:
       fail-fast: false
       matrix:
         crate: [tendermint, tendermint-light-client, tendermint-proto, tendermint-rpc, tendermint-test, tendermint-testgen]
-        os: [macos-latest, ubuntu-latest, windows-latest]
-        toolchain: [stable, nightly]
-
-    name: test ${{ matrix.crate }} on ${{ matrix.os }} with ${{ matrix.toolchain }}
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Cache toolchain
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.rustup/settings.toml
-            ~/.rustup/toolchains/${{ matrix.toolchain }}-*
-            ~/.rustup/update-hashes/${{ matrix.toolchain }}-*
-          key: rust-toolchain_${{ matrix.os }}-${{ matrix.toolchain }}-${{ matrix.crate }}
-
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{ matrix.toolchain }}
-          components: cargo, rust-src
-          override: true
-
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v1
-
-      - name: Test ${{ matrix.crate }}
-        run: cargo test --all-features --all-targets --no-fail-fast -p ${{ matrix.crate }}
-
-  test-kvstore:
-    strategy:
-      fail-fast: false
-      matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
         toolchain: [stable, nightly]
     services:
@@ -120,7 +84,7 @@ jobs:
           - 26657:26657
           - 26660:26660
 
-    name: test kvstore on ${{ matrix.os }} with ${{ matrix.toolchain }}
+    name: Test ${{ matrix.os }} with ${{ matrix.toolchain }}
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
@@ -145,6 +109,12 @@ jobs:
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v1
+
+      - name: Test default features
+        run: cargo test
+
+      - name: Test ${{ matrix.crate }} crate
+        run: cargo test --all-features --all-targets --no-fail-fast -p ${{ matrix.crate }}
 
       - name: Test kvstore
         env:
@@ -157,8 +127,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
-        # toolchain: [stable, nightly]
-        toolchain: [stable]
+        toolchain: [stable, nightly]
 
     name: test tendermint-light-client-js on ${{ matrix.os }} with ${{ matrix.toolchain }}
     runs-on: ${{ matrix.os }}
