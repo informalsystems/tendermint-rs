@@ -1,9 +1,11 @@
 //! Fork evidence data structures and interfaces.
 
+use futures::future::FutureExt as _;
+
 pub use tendermint::evidence::Evidence;
 use tendermint_rpc::abci::transaction::Hash;
 
-use crate::{components::io::IoError, verifier::types::PeerId};
+use crate::{components::io::IoError, types::PeerId, utils::time::timeout};
 
 /// Interface for reporting evidence to full nodes, typically via the RPC client.
 #[allow(missing_docs)] // This is required because of the `contracts` crate (TODO: open/link issue)
@@ -32,7 +34,7 @@ mod prod {
     #[derive(Clone, Debug)]
     pub struct ProdEvidenceReporter {
         peer_map: HashMap<PeerId, tendermint_rpc::Url>,
-        timeout: Option<Duration>,
+        timeout: Duration,
     }
 
     #[async_trait::async_trait]
@@ -40,7 +42,10 @@ mod prod {
         async fn report(&self, e: Evidence, peer: PeerId) -> Result<Hash, IoError> {
             let client = self.rpc_client_for(peer)?;
 
-            let response = client.broadcast_evidence(e).await.map_err(IoError::rpc)?;
+            let response = timeout(self.timeout, client.broadcast_evidence(e).fuse())
+                .await
+                .map_err(IoError::time)?
+                .map_err(IoError::rpc)?;
 
             Ok(response.hash)
         }
@@ -54,7 +59,10 @@ mod prod {
             peer_map: HashMap<PeerId, tendermint_rpc::Url>,
             timeout: Option<Duration>,
         ) -> Self {
-            Self { peer_map, timeout }
+            Self {
+                peer_map,
+                timeout: timeout.unwrap_or_else(|| Duration::from_secs(5)),
+            }
         }
 
         #[requires(self.peer_map.contains_key(&peer))]
