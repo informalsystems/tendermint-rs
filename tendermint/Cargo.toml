@@ -69,5 +69,5 @@ std = [
 
 [dev-dependencies]
 pretty_assertions = { version = "0.7.2", default-features = false }
-proptest = { version = "0.10.1", default-features = false }
+proptest = { version = "0.10.1", default-features = false, features = ["std"] }
 tendermint-pbt-gen = { path = "../pbt-gen", default-features = false, features = ["time"] }
