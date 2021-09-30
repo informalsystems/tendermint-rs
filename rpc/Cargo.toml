@@ -85,18 +85,18 @@ walkdir = { version = "2.3", default-features = false }
 flex-error = { version = "0.4.3", default-features = false }
 
 # Optional dependencies
-async-trait = { version = "0.1", optional = true }
-async-tungstenite = { version = "0.12", features = ["tokio-runtime", "tokio-rustls"], optional = true }
-futures = { version = "0.3", optional = true }
-http = { version = "0.2", optional = true }
-hyper = { version = "0.14", optional = true, features = ["client", "http1", "http2", "tcp"] }
-hyper-proxy = { version = "0.9", optional = true }
-hyper-rustls = { version = "0.22.1", optional = true }
-structopt = { version = "0.3", optional = true }
-tokio = { version = "1.0", optional = true, features = ["rt-multi-thread"] }
-tracing = { version = "0.1", optional = true }
-tracing-subscriber = { version = "0.2", optional = true }
+async-trait = { version = "0.1", optional = true, default-features = false }
+async-tungstenite = { version = "0.12", default-features = false, features = ["tokio-runtime", "tokio-rustls"], optional = true }
+futures = { version = "0.3", optional = true, default-features = false }
+http = { version = "0.2", optional = true, default-features = false }
+hyper = { version = "0.14", optional = true, default-features = false, features = ["client", "http1", "http2", "tcp"] }
+hyper-proxy = { version = "0.9", optional = true, default-features = false, features = ["tls"] }
+hyper-rustls = { version = "0.22.1", optional = true, default-features = false, features = ["rustls-native-certs", "webpki-roots", "tokio-runtime"] }
+structopt = { version = "0.3", optional = true, default-features = false }
+tokio = { version = "1.0", optional = true, default-features = false, features = ["rt-multi-thread"] }
+tracing = { version = "0.1", optional = true, default-features = false }
+tracing-subscriber = { version = "0.2", optional = true, default-features = false, features = ["fmt"] }
 
 [dev-dependencies]
-lazy_static = "1.4.0"
-tokio-test = "0.4"
+lazy_static = { version = "1.4.0", default-features = false }
+tokio-test = { version = "0.4", default-features = false }

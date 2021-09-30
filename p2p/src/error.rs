@@ -36,7 +36,7 @@ define_error! {
             | _ | { "public key missing" },
 
         Signature
-            [ TraceError<SignatureError> ]
+            [ DisplayError<SignatureError> ]
             | _ | { "signature error" },
 
         UnsupportedKey
