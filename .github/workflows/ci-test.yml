@@ -8,6 +8,15 @@ on:
       - "docs/**"
     branches:
       - master
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  RUST_BACKTRACE: short
+  # RUSTFLAGS: "-Dwarnings -Drust-2018-idioms -Wunreachable-pub -Wrust-2021-compatibility"
+  RUSTFLAGS: "-Dwarnings -Drust-2018-idioms -Wrust-2021-compatibility"
+  RUSTUP_MAX_RETRIES: 10
+
 jobs:
   cleanup-runs:
     if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master'"
@@ -28,47 +37,6 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-
-  crate:
-    strategy:
-      fail-fast: false
-      matrix:
-        crate: [tendermint, tendermint-light-client, tendermint-proto, tendermint-rpc, tendermint-test, tendermint-testgen]
-        os: [macos-latest, ubuntu-latest, windows-latest]
-        toolchain: [stable, nightly]
-
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Cache toolchain
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.rustup/settings.toml
-            ~/.rustup/toolchains/${{ matrix.toolchain }}-*
-            ~/.rustup/update-hashes/${{ matrix.toolchain }}-*
-          key: test-rust-toolchain_${{ matrix.os }}-${{ matrix.toolchain }}-${{ matrix.crate }}
-
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{ matrix.toolchain }}
-          components: cargo, rust-src
-          override: true
-
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v1
-
-      - name: Test ${{ matrix.crate }}
-        run: cargo test --all-features --all-targets -p ${{ matrix.crate }}
-
-  # TODO(shonfeder): remove duplication once GitHub addresses one of these
-  #  - https://github.community/t/support-for-yaml-anchors/16128/15
-  #  - https://github.community/t/reusing-sharing-inheriting-steps-between-jobs-declarations/16851/13
-  #  - https://github.community/t/using-matrix-variable-in-docker-image-name/17296
 
   # From https://rustwasm.github.io/docs/wasm-bindgen/wasm-bindgen-test/continuous-integration.html#github-actions
   tendermint-light-client-js:

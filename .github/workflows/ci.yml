@@ -1,4 +1,4 @@
-name: CI Compile
+name: CI
 on:
   pull_request:
     paths-ignore:
@@ -26,11 +26,12 @@ jobs:
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
-  root:
+  compile:
     strategy:
       fail-fast: false
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
+        task: [root, tools, wasm-light-client, wasm-tendermint]
         toolchain: [stable, nightly]
 
     runs-on: ${{ matrix.os }}
@@ -53,84 +54,47 @@ jobs:
           profile: minimal
           toolchain: ${{ matrix.toolchain }}
           components: cargo, rust-src
-          override: true
-
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v1
-
-      - name: Compile Root
-        run: cargo compile-root
-
-  tools:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
-        toolchain: [stable, nightly]
-
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Cache toolchain
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.rustup/settings.toml
-            ~/.rustup/toolchains/${{ matrix.toolchain }}-*
-            ~/.rustup/update-hashes/${{ matrix.toolchain }}-*
-          key: compile-rust-toolchain_${{ matrix.os }}-${{ matrix.toolchain }}
-
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{ matrix.toolchain }}
-          components: cargo, rust-src
-          override: true
-
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v1
-
-      - name: Compile Tools
-        run: cargo compile-tools
-
-  wasm:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
-        toolchain: [stable, nightly]
-
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Cache toolchain
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.rustup/settings.toml
-            ~/.rustup/toolchains/${{ matrix.toolchain }}-*
-            ~/.rustup/update-hashes/${{ matrix.toolchain }}-*
-          key: compile-rust-toolchain_${{ matrix.os }}-${{ matrix.toolchain }}
-
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
           target: wasm32-unknown-unknown
-          components: cargo, rustc
           override: true
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v1
 
-      - name: Compile Light Client WASM
-        run: cargo compile-wasm-light-client
+      - name: Compile ${{ matrix.task }
+        run: cargo compile-${{ matrix.task }}
 
-      - name: Compile Tendermint WASM
-        run: cargo compile-wasm-tendermint
+  test-crate:
+    strategy:
+      fail-fast: false
+      matrix:
+        crate: [tendermint, tendermint-light-client, tendermint-proto, tendermint-rpc, tendermint-test, tendermint-testgen]
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        toolchain: [stable, nightly]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Cache toolchain
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.rustup/settings.toml
+            ~/.rustup/toolchains/${{ matrix.toolchain }}-*
+            ~/.rustup/update-hashes/${{ matrix.toolchain }}-*
+          key: test-rust-toolchain_${{ matrix.os }}-${{ matrix.toolchain }}-${{ matrix.crate }}
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          components: cargo, rust-src
+          override: true
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v1
+
+      - name: Test ${{ matrix.crate }}
+        run: cargo test --all-features --all-targets --no-fail-fast -p ${{ matrix.crate }}
