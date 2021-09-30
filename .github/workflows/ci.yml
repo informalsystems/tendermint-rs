@@ -60,7 +60,7 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v1
 
-      - name: Compile ${{ matrix.task }
+      - name: Compile ${{ matrix.task }}
         run: cargo compile-${{ matrix.task }}
 
   test-crate:
