@@ -38,38 +38,6 @@ jobs:
         with:
           command: test
 
-  # From https://rustwasm.github.io/docs/wasm-bindgen/wasm-bindgen-test/continuous-integration.html#github-actions
-  tendermint-light-client-js:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-      - run: wasm-pack test --headless --chrome ./light-client-js/
-      - run: wasm-pack test --headless --firefox ./light-client-js/
-
-  kvstore-integration-stable:
-    runs-on: ubuntu-latest
-    services:
-      tendermint:
-        image: informaldev/tendermint:0.34.13
-        ports:
-          - 26656:26656
-          - 26657:26657
-          - 26660:26660
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test-all-features
-          args: --manifest-path tools/kvstore-test/Cargo.toml -- --nocapture
-        env:
-          RUST_LOG: debug
-
   nightly-coverage:
     runs-on: ubuntu-latest
     steps:

@@ -34,7 +34,7 @@ jobs:
         task: [root, tools, wasm-light-client, wasm-tendermint]
         toolchain: [stable, nightly]
 
-    name: TEST ${{ matrix.task }} ON ${{ matrix.os }} WITH ${{ matrix.toolchain }}
+    name: test ${{ matrix.task }} on ${{ matrix.os }} with ${{ matrix.toolchain }}
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
@@ -72,7 +72,7 @@ jobs:
         os: [macos-latest, ubuntu-latest, windows-latest]
         toolchain: [stable, nightly]
 
-    name: TEST ${{ matrix.crate }} ON ${{ matrix.os }} WITH ${{ matrix.toolchain }}
+    name: test ${{ matrix.crate }} on ${{ matrix.os }} with ${{ matrix.toolchain }}
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
@@ -100,3 +100,65 @@ jobs:
 
       - name: Test ${{ matrix.crate }}
         run: cargo test --all-features --all-targets --no-fail-fast -p ${{ matrix.crate }}
+
+  test-kvstore:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        toolchain: [stable, nightly]
+    services:
+      tendermint:
+        image: informaldev/tendermint:0.34.13
+        ports:
+          - 26656:26656
+          - 26657:26657
+          - 26660:26660
+
+    name: test kvstore on ${{ matrix.os } with ${{ matrix.toolchain }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Cache toolchain
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.rustup/settings.toml
+            ~/.rustup/toolchains/${{ matrix.toolchain }}-*
+            ~/.rustup/update-hashes/${{ matrix.toolchain }}-*
+          key: test-rust-toolchain_${{ matrix.os }}-${{ matrix.toolchain }}-${{ matrix.crate }}
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          components: cargo, rust-src
+          override: true
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v1
+
+      - name: Test kvstore
+        env:
+          RUST_LOG: debug
+        run: cargo test --all-features --all-targets --no-fail-fast --manifest-path tools/kvstore-test/Cargo.toml -- --nocapture
+
+  # From https://rustwasm.github.io/docs/wasm-bindgen/wasm-bindgen-test/continuous-integration.html#github-actions
+  test-tendermint-light-client-js:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
+    name: test tendermint-light-client-js on ${{ matrix.os }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install wasm-pack
+        uses: actions/checkout@v2
+        run: |
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+          wasm-pack test --headless --chrome ./light-client-js/
+          wasm-pack test --headless --firefox ./light-client-js/
