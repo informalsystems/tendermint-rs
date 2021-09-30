@@ -1,13 +1,18 @@
-name: CI Test
+# TODO(shonfeder): remove duplication once GitHub addresses one of these
+#  - https://github.community/t/support-for-yaml-anchors/16128/15
+#  - https://github.community/t/reusing-sharing-inheriting-steps-between-jobs-declarations/16851/13
+#  - https://github.community/t/using-matrix-variable-in-docker-image-name/17296
+
+name: TEST
 on:
   pull_request:
     paths-ignore:
       - "docs/**"
   push:
-    paths-ignore:
-      - "docs/**"
     branches:
       - master
+    paths-ignore:
+      - "docs/**"
 
 env:
   CARGO_INCREMENTAL: 0
@@ -26,28 +31,157 @@ jobs:
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
-  nightly-coverage:
-    runs-on: ubuntu-latest
+  crate:
+    strategy:
+      fail-fast: false
+      matrix:
+        crate: [tendermint-abci, tendermint, tendermint-light-client, tendermint-proto, tendermint-rpc, tendermint-test, tendermint-testgen]
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        toolchain: [stable, nightly]
+
+    name: ${{ matrix.crate }} on ${{ matrix.os }} with ${{ matrix.toolchain }}
+    runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Cache toolchain
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.rustup/settings.toml
+            ~/.rustup/toolchains/${{ matrix.toolchain }}-*
+            ~/.rustup/update-hashes/${{ matrix.toolchain }}-*
+          key: rust-toolchain_${{ matrix.os }}-${{ matrix.toolchain }}-${{ matrix.crate }}
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: nightly-2021-03-25
+          toolchain: ${{ matrix.toolchain }}
+          components: cargo, rust-src
           override: true
-      - uses: actions-rs/cargo@v1
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v1
+
+      - name: Run ${{ matrix.crate }} crate tests
+        run: cargo test --all-features --all-targets --no-fail-fast -p ${{ matrix.crate }}
+
+  default:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        toolchain: [stable, nightly]
+
+    name: Default features on ${{ matrix.os }} with ${{ matrix.toolchain }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Cache toolchain
+        uses: actions/cache@v2
         with:
-          command: test-all-features
+          path: |
+            ~/.rustup/settings.toml
+            ~/.rustup/toolchains/${{ matrix.toolchain }}-*
+            ~/.rustup/update-hashes/${{ matrix.toolchain }}-*
+          key: rust-toolchain_${{ matrix.os }}-${{ matrix.toolchain }}-${{ matrix.crate }}
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          components: cargo, rust-src
+          override: true
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v1
+
+      - name: Run tests with default features
+        run: cargo test --all-features --all-targets --no-fail-fast -p ${{ matrix.crate }}
+
+  kvstore:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        toolchain: [stable, nightly]
+    services:
+      tendermint:
+        image: informaldev/tendermint:0.34.13
+        ports:
+          - 26656:26656
+          - 26657:26657
+          - 26660:26660
+
+    name: test kvstore on ${{ matrix.os }} with ${{ matrix.toolchain }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Cache toolchain
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.rustup/settings.toml
+            ~/.rustup/toolchains/${{ matrix.toolchain }}-*
+            ~/.rustup/update-hashes/${{ matrix.toolchain }}-*
+          key: rust-toolchain_${{ matrix.os }}-${{ matrix.toolchain }}-${{ matrix.crate }}
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          components: cargo, rust-src
+          override: true
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v1
+
+      - name: Run kvstore tests
         env:
-          RUSTFLAGS: '-Zinstrument-coverage'
-          LLVM_PROFILE_FILE: '%p-%m.profraw'
-      - name: Install grcov
-        run: |
-          rustup component add llvm-tools-preview
-          curl -L https://github.com/mozilla/grcov/releases/download/v0.8.0/grcov-linux-x86_64.tar.bz2 | tar jxf -
-      - name: Run grcov
-        run: |
-          ./grcov . --source-dir . --binary-path ./target/debug/ --output-type lcov --output-path ./lcov.info --branch --ignore-not-existing
-      - name: Upload to Codecov
-        run: |
-          bash <(curl -s https://codecov.io/bash) -f ./lcov.info
+          RUST_LOG: debug
+        run: cargo test --all-features --all-targets --no-fail-fast --manifest-path tools/kvstore-test/Cargo.toml -- --nocapture
+
+  # From https://rustwasm.github.io/docs/wasm-bindgen/wasm-bindgen-test/continuous-integration.html#github-actions
+  tendermint-light-client-js:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        toolchain: [stable, nightly]
+
+    name: test tendermint-light-client-js on ${{ matrix.os }} with ${{ matrix.toolchain }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Cache toolchain
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.rustup/settings.toml
+            ~/.rustup/toolchains/${{ matrix.toolchain }}-*
+            ~/.rustup/update-hashes/${{ matrix.toolchain }}-*
+          key: rust-toolchain_${{ matrix.os }}-${{ matrix.toolchain }}-${{ matrix.crate }}
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          override: true
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Run headless tests
+          wasm-pack test --headless --chrome ./light-client-js/
+          wasm-pack test --headless --firefox ./light-client-js/
