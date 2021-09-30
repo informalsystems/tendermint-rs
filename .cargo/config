@@ -1,8 +1,8 @@
 [alias]
-build-wasm-tendermint = "build -p tendermint --manifest-path tendermint/Cargo.toml --target wasm32-unknown-unknown --release --no-default-features --"
 build-abci = "build --manifest-path abci/Cargo.toml --bin kvstore-rs --features binary,kvstore-app"
 build-tools = "build --manifest-path tools/Cargo.toml --all-features --all-targets --workspace"
-compile-light-client-wasm = "test --no-run -p tendermint-light-client --manifest-path light-client/Cargo.toml --target wasm32-unknown-unknown --release --no-default-features --"
+compile-root = "test --no-run --all-features --all-targets --workspace --"
 compile-tools = "test --no-run --manifest-path tools/Cargo.toml --all-features --all-targets --workspace --"
-compile-workspace = "test --no-run --all-features --all-targets --workspace --"
+compile-wasm-light-client = "test --no-run -p tendermint-light-client --manifest-path light-client/Cargo.toml --target wasm32-unknown-unknown --release --no-default-features --"
+compile-wasm-tendermint = "test --no-run -p tendermint --manifest-path tendermint/Cargo.toml --target wasm32-unknown-unknown --release --no-default-features --"
 test-all-features = "test --all-features --no-fail-fast"

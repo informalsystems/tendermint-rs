@@ -1,4 +1,4 @@
-name: Compile
+name: CI
 on:
   pull_request:
     paths-ignore:
@@ -32,6 +32,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
+        toolchain: [stable, nightly]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -39,41 +40,16 @@ jobs:
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
           profile: minimal
-          override: true
+          toolchain: ${{ matrix.toolchain }}
           components: rust-src
+          override: true
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v1
 
-      - name: Compile Workspace
-        run: cargo compile-workspace
-
-  light-client-wasm:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
-          components: rust-src
-          target: cargo wasm32-unknown-unknown
-
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v1
-
-      - name: Compile Light Client WASM
-        run: cargo compile-wasm-light-client
+      - name: Compile Root
+        run: cargo compile-root
 
   tools:
     runs-on: ${{ matrix.os }}
@@ -81,6 +57,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
+        toolchain: [stable, nightly]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -88,13 +65,42 @@ jobs:
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
           profile: minimal
-          override: true
+          toolchain: ${{ matrix.toolchain }}
           components: rust-src
+          override: true
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v1
 
       - name: Compile Workspace
         run: cargo compile-tools
+
+  wasm:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        toolchain: [stable, nightly]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          components: rustc
+          override: true
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v1
+
+      - name: Compile Light Client WASM
+        run: cargo compile-wasm-light-client
+
+      - name: Compile Tendermint WASM
+        run: cargo compile-wasm-tendermint
