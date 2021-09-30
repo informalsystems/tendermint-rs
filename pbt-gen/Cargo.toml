@@ -21,4 +21,4 @@ time = ["chrono"]
 
 [dependencies]
 chrono = { version = "0.4", default-features = false, features = ["serde"], optional = true}
-proptest = "0.10.1"
+proptest = { version = "0.10.1", default-features = false }
