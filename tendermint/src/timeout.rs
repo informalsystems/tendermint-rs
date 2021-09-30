@@ -1,7 +1,8 @@
 use crate::error::Error;
+use crate::prelude::*;
 
+use core::{fmt, ops::Deref, str::FromStr, time::Duration};
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
-use std::{fmt, ops::Deref, str::FromStr, time::Duration};
 
 /// Timeout durations
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]

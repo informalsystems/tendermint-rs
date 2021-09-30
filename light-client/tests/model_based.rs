@@ -125,8 +125,8 @@ mod mbt {
     impl SingleStepTestFuzzer for HeaderVersionFuzzer {
         // TODO: rehash the header and re-compute commit with it
         // TODO: Unlike in tendermint-go, we don't assert for a particular version in rust
-        // TODO: Either add this check in verification or remove this test because otherwise there's no
-        // point of it
+        // TODO: Either add this check in verification or remove this test because otherwise there's
+        // no point of it
         fn fuzz_input(input: &mut BlockVerdict) -> (String, LiteVerdict) {
             let mut rng = rand::thread_rng();
 

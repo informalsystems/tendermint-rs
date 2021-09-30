@@ -11,14 +11,13 @@ mod priv_validator_key;
 
 pub use self::{node_key::NodeKey, priv_validator_key::PrivValidatorKey};
 
+use crate::prelude::*;
 use crate::{error::Error, genesis::Genesis, net, node, Moniker, Timeout};
+use alloc::collections::{btree_map, BTreeMap};
+use core::{fmt, str::FromStr};
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
-use std::{
-    collections::BTreeMap,
-    fmt, fs,
-    path::{Path, PathBuf},
-    str::FromStr,
-};
+use std::fs;
+use std::path::{Path, PathBuf};
 
 /// Tendermint `config.toml` file
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -189,7 +188,7 @@ impl LogLevel {
 }
 
 /// Iterator over log levels
-pub type LogLevelIter<'a> = std::collections::btree_map::Iter<'a, String, String>;
+pub type LogLevelIter<'a> = btree_map::Iter<'a, String, String>;
 
 impl FromStr for LogLevel {
     type Err = Error;

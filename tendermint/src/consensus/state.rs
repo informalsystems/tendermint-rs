@@ -1,8 +1,9 @@
 //! Tendermint consensus state
 
 pub use crate::block;
+use crate::prelude::*;
+pub use core::{cmp::Ordering, fmt};
 use serde::{Deserialize, Serialize};
-pub use std::{cmp::Ordering, fmt};
 
 /// Placeholder string to show when block ID is absent. Syntax from:
 /// <https://tendermint.com/docs/spec/consensus/consensus.html>
@@ -68,7 +69,7 @@ mod tests {
     use super::State;
     use crate::block;
     use crate::Hash;
-    use std::str::FromStr;
+    use core::str::FromStr;
 
     #[test]
     fn state_ord_test() {

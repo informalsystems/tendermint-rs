@@ -2,8 +2,9 @@
 
 use super::{Header, Id};
 use crate::error::Error;
+use crate::prelude::*;
+use core::convert::{TryFrom, TryInto};
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::BlockMeta as RawMeta;
 
 /// Block metadata - Todo: implement constructor and getters

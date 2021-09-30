@@ -1,5 +1,6 @@
 //! Validator private keys
 
+use crate::prelude::*;
 use crate::public_key::TendermintKey;
 use crate::{account, error::Error, private_key::PrivateKey, public_key::PublicKey};
 use serde::{Deserialize, Serialize};

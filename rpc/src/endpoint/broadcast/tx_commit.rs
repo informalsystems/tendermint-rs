@@ -10,6 +10,8 @@ use tendermint::{
     block,
 };
 
+use crate::prelude::*;
+
 /// `/broadcast_tx_commit`: only returns error if `mempool.CheckTx()` errs or
 /// if we timeout waiting for tx to commit.
 ///

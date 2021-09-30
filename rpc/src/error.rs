@@ -1,8 +1,9 @@
 //! JSON-RPC error types
 
+use core::time::Duration;
 use flex_error::{define_error, DefaultTracer, DisplayError, DisplayOnly, ErrorMessageTracer};
-use std::time::Duration;
 
+use crate::prelude::*;
 use crate::response_error::ResponseError;
 use crate::rpc_url::Url;
 
@@ -145,11 +146,11 @@ define_error! {
             | _ | { "tendermint error" },
 
         ParseInt
-            [ DisplayOnly<std::num::ParseIntError> ]
+            [ DisplayOnly<core::num::ParseIntError> ]
             | _ | { "error parsing integer" },
 
         OutOfRange
-            [ DisplayOnly<std::num::TryFromIntError> ]
+            [ DisplayOnly<core::num::TryFromIntError> ]
             | _ | { "number out of range" },
 
         InvalidNetworkAddress

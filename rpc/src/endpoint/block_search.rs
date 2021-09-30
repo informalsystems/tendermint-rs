@@ -2,6 +2,7 @@
 
 pub use super::{block, block_results};
 
+use crate::prelude::*;
 use crate::{Method, Order};
 use serde::{Deserialize, Serialize};
 

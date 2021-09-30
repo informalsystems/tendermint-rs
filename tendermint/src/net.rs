@@ -1,13 +1,14 @@
 //! Remote addresses (`tcp://` or `unix://`)
 
+use crate::prelude::*;
 use crate::{error::Error, node};
 
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use std::{
+use core::{
     fmt::{self, Display},
-    path::PathBuf,
     str::{self, FromStr},
 };
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+use std::path::PathBuf;
 use url::Url;
 
 /// URI prefix for TCP connections

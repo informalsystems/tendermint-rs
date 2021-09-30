@@ -2,6 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::prelude::*;
+
 /// Subscription request for events.
 ///
 /// A subscription request is not a [`SimpleRequest`], because it does not

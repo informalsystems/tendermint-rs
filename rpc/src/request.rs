@@ -1,8 +1,9 @@
 //! JSON-RPC requests
 
 use super::{Id, Method, Version};
+use crate::prelude::*;
+use core::fmt::Debug;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::fmt::Debug;
 
 /// JSON-RPC requests
 pub trait Request: Debug + DeserializeOwned + Serialize + Sized + Send {

@@ -6,7 +6,8 @@ pub use signature::{Signer, Verifier};
 #[cfg(feature = "secp256k1")]
 pub use k256::ecdsa::Signature as Secp256k1Signature;
 
-use std::convert::TryFrom;
+use crate::prelude::*;
+use core::convert::TryFrom;
 use tendermint_proto::Protobuf;
 
 use crate::error::Error;

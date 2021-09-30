@@ -1,5 +1,6 @@
 //! AppHash serialization with validation
 
+use crate::prelude::*;
 use crate::AppHash;
 use serde::{Deserialize, Deserializer, Serializer};
 use subtle_encoding::hex;

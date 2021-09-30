@@ -3,9 +3,10 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use subtle_encoding::base64;
 
+use crate::prelude::*;
 use crate::{account, hash::Hash, merkle, vote, Error, PublicKey, Signature};
 
-use std::convert::{TryFrom, TryInto};
+use core::convert::{TryFrom, TryInto};
 use tendermint_proto::types::SimpleValidator as RawSimpleValidator;
 use tendermint_proto::types::Validator as RawValidator;
 use tendermint_proto::types::ValidatorSet as RawValidatorSet;
@@ -117,7 +118,7 @@ impl Set {
     /// Sort the validators according to the current Tendermint requirements
     /// (v. 0.34 -> first by validator power, descending, then by address, ascending)
     fn sort_validators(vals: &mut Vec<Info>) {
-        vals.sort_by_key(|v| (std::cmp::Reverse(v.power), v.address));
+        vals.sort_by_key(|v| (core::cmp::Reverse(v.power), v.address));
     }
 
     /// Returns the validator with the given Id if its in the Set.

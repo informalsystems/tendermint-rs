@@ -1,12 +1,14 @@
 //! Event routing for subscriptions.
 
-use std::collections::{HashMap, HashSet};
+use alloc::collections::BTreeMap as HashMap;
+use alloc::collections::BTreeSet as HashSet;
 
 use tracing::debug;
 
 use crate::client::subscription::SubscriptionTx;
 use crate::error::Error;
 use crate::event::Event;
+use crate::prelude::*;
 
 pub type SubscriptionQuery = String;
 pub type SubscriptionId = String;
@@ -175,7 +177,7 @@ mod test {
 
     async fn must_not_recv<T>(ch: &mut ChannelRx<T>, timeout_ms: u64)
     where
-        T: std::fmt::Debug,
+        T: core::fmt::Debug,
     {
         let delay = time::sleep(Duration::from_millis(timeout_ms));
         tokio::select! {
