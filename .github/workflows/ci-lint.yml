@@ -13,7 +13,7 @@ env:
   CARGO_INCREMENTAL: 0
   CARGO_NET_RETRY: 10
   RUST_BACKTRACE: short
-  RUSTFLAGS: "-Dwarnings -Drust-2018-idioms -Wrust-2021-compatibility"
+  RUSTFLAGS: "-Dwarnings -Dnonstandard-style -Drust-2018-idioms -Dunused -Wrust-2021-compatibility"
   RUSTUP_MAX_RETRIES: 10
 
 jobs:
