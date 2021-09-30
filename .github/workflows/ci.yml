@@ -115,7 +115,7 @@ jobs:
           - 26657:26657
           - 26660:26660
 
-    name: test kvstore on ${{ matrix.os } with ${{ matrix.toolchain }}
+    name: test kvstore on ${{ matrix.os }} with ${{ matrix.toolchain }}
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
