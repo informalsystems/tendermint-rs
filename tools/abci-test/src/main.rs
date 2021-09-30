@@ -3,7 +3,7 @@
 use futures::StreamExt;
 use structopt::StructOpt;
 use tendermint::abci::Transaction;
-use tendermint::net::Address;
+use tendermint_config::net::Address;
 use tendermint_rpc::event::EventData;
 use tendermint_rpc::query::EventType;
 use tendermint_rpc::{Client, SubscriptionClient, WebSocketClient};

@@ -6,6 +6,7 @@ use subtle_encoding::{base64, hex};
 use tendermint::abci::transaction::Hash;
 use tendermint::evidence::Duration;
 use tendermint::public_key;
+use tendermint_config::net::Address;
 use tendermint_rpc::{
     endpoint,
     error::{Error, ErrorDetail},
@@ -793,14 +794,14 @@ fn incoming_fixtures() {
             "status" => {
                 let result = endpoint::status::Response::from_string(content).unwrap();
                 assert_eq!(
-                    result.node_info.listen_addr.to_net_address().unwrap(),
-                    tendermint::net::Address::from_str("tcp://0.0.0.0:26656").unwrap()
+                    Address::from_listen_address(&result.node_info.listen_addr).unwrap(),
+                    Address::from_str("tcp://0.0.0.0:26656").unwrap()
                 );
                 assert_eq!(result.node_info.moniker.to_string(), "dockernode");
                 assert_eq!(result.node_info.network.to_string(), CHAIN_ID);
                 assert_eq!(
                     result.node_info.other.rpc_address,
-                    tendermint::net::Address::from_str("tcp://0.0.0.0:26657").unwrap()
+                    format!("{}", Address::from_str("tcp://0.0.0.0:26657").unwrap())
                 );
                 assert_eq!(
                     result.node_info.other.tx_index,

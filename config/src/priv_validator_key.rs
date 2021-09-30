@@ -1,10 +1,12 @@
 //! Validator private keys
 
 use crate::prelude::*;
-use crate::public_key::TendermintKey;
-use crate::{account, error::Error, private_key::PrivateKey, public_key::PublicKey};
 use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};
+use tendermint::public_key::TendermintKey;
+use tendermint::{account, private_key::PrivateKey, public_key::PublicKey};
+
+use crate::error::Error;
 
 /// Validator private key
 #[derive(Serialize, Deserialize)] // JSON custom serialization for priv_validator_key.json
@@ -26,7 +28,8 @@ impl PrivValidatorKey {
             serde_json::from_str::<Self>(json_string.as_ref()).map_err(Error::serde_json)?;
 
         // Validate that the parsed key type is usable as a consensus key
-        TendermintKey::new_consensus_key(result.priv_key.public_key())?;
+        TendermintKey::new_consensus_key(result.priv_key.public_key())
+            .map_err(Error::tendermint)?;
 
         Ok(result)
     }

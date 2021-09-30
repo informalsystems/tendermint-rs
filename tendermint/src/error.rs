@@ -6,7 +6,6 @@ use alloc::string::String;
 use core::num::TryFromIntError;
 use flex_error::{define_error, DisplayOnly};
 use serde::{Deserialize, Serialize};
-use std::io::Error as IoError;
 
 define_error! {
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -17,15 +16,6 @@ define_error! {
         InvalidKey
             { detail: String }
             |e| { format_args!("invalid key: {}", e) },
-
-        Io
-            [ DisplayOnly<IoError> ]
-            |_| { format_args!("I/O error") },
-
-        FileIo
-            { path: String }
-            [ DisplayOnly<IoError> ]
-            |e| { format_args!("failed to open file: {}", e.path) },
 
         Length
             |_| { format_args!("length error") },
@@ -38,10 +28,6 @@ define_error! {
             { data: String }
             [ DisplayOnly<core::num::ParseIntError>]
             | e | { format_args!("error parsing int data: {}", e.data) },
-
-        ParseUrl
-            [ DisplayOnly<url::ParseError> ]
-            |_| { format_args!("error parsing url error") },
 
         Protocol
             { detail: String }
@@ -187,14 +173,6 @@ define_error! {
         SubtleEncoding
             [ DisplayOnly<subtle_encoding::Error> ]
             |_| { format_args!("subtle encoding error") },
-
-        SerdeJson
-            [ DisplayOnly<serde_json::Error> ]
-            |_| { format_args!("serde json error") },
-
-        Toml
-            [ DisplayOnly<toml::de::Error> ]
-            |_| { format_args!("toml de error") },
 
         Signature
             [ DisplayOnly<signature::Error> ]
