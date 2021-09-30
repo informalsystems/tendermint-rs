@@ -1,3 +1,8 @@
+# TODO(shonfeder): remove duplication once GitHub addresses one of these
+#  - https://github.community/t/support-for-yaml-anchors/16128/15
+#  - https://github.community/t/reusing-sharing-inheriting-steps-between-jobs-declarations/16851/13
+#  - https://github.community/t/using-matrix-variable-in-docker-image-name/17296
+
 name: CI
 on:
   pull_request:
@@ -152,7 +157,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
-        toolchain: [stable, nightly]
+        # toolchain: [stable, nightly]
+        toolchain: [stable]
 
     name: test tendermint-light-client-js on ${{ matrix.os }} with ${{ matrix.toolchain }}
     runs-on: ${{ matrix.os }}

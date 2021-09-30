@@ -1,5 +1,6 @@
 //! Test suite for the Web and headless browsers.
 
+#![allow(unused_extern_crates)]
 #![cfg(target_arch = "wasm32")]
 
 extern crate wasm_bindgen_test;
