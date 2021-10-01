@@ -34,7 +34,8 @@ jobs:
     name: Fmt
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
       - name: Cache toolchain
         uses: actions/cache@v2
@@ -66,7 +67,8 @@ jobs:
     name: Clippy
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
       - name: Cache toolchain
         uses: actions/cache@v2
@@ -100,7 +102,8 @@ jobs:
     name: Clippy Tools
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
       - name: Cache toolchain
         uses: actions/cache@v2
@@ -157,29 +160,3 @@ jobs:
         with:
           command: doc
           args: --all-features
-
-  nightly-coverage:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly-2021-03-25
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test-all-features
-        env:
-          RUSTFLAGS: '-Zinstrument-coverage'
-          LLVM_PROFILE_FILE: '%p-%m.profraw'
-      - name: Install grcov
-        run: |
-          rustup component add llvm-tools-preview
-          curl -L https://github.com/mozilla/grcov/releases/download/v0.8.0/grcov-linux-x86_64.tar.bz2 | tar jxf -
-      - name: Run grcov
-        run: |
-          ./grcov . --source-dir . --binary-path ./target/debug/ --output-type lcov --output-path ./lcov.info --branch --ignore-not-existing
-      - name: Upload to Codecov
-        run: |
-          bash <(curl -s https://codecov.io/bash) -f ./lcov.info

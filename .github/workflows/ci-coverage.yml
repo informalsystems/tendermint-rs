@@ -1,0 +1,57 @@
+name: COVERAGE
+on:
+  pull_request:
+    paths-ignore:
+      - "docs/**"
+  push:
+    paths-ignore:
+      - "docs/**"
+    branches:
+      - master
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  RUST_BACKTRACE: short
+  RUSTFLAGS: "-Dwarnings -Dnonstandard-style -Drust-2018-idioms -Dunused -Wrust-2021-compatibility"
+  RUSTUP_MAX_RETRIES: 10
+
+
+jobs:
+  cleanup-runs:
+    if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master'"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: rokroskar/workflow-run-cleanup-action@master
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+
+  nightly-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-features --all-targets --no-fail-fast
+        env:
+          RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
+          RUSTDOCFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
+            
+      - id: coverage  
+        uses: actions-rs/grcov@v0.1
+
+      - name: Upload Coverage
+        uses: codecov/codecov-action@v2
+        with:
+          files: ${{ steps.coverage.outputs.report }}
+          fail_ci_if_error: true
+          verbose: true
