@@ -93,8 +93,6 @@ pub fn as_rfc3339_nanos(t: &DateTime<Utc>) -> String {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::google::protobuf::Timestamp;
-    use serde::{Deserialize, Serialize};
 
     // The Go code with which the following timestamps
     // were tested is as follows:
