@@ -61,7 +61,7 @@ jobs:
   clippy:
     strategy:
       matrix:
-        os: [ubuntu-lates]
+        os: [ubuntu-latest]
         toolchain: [stable]
 
     name: Clippy
