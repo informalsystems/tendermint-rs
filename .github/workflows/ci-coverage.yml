@@ -38,11 +38,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - uses: actions-rs/toolchain@v1
+      - name: Cache toolchain
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.rustup/settings.toml
+            ~/.rustup/toolchains/${{ matrix.toolchain }}-*
+            ~/.rustup/update-hashes/${{ matrix.toolchain }}-*
+          key: rust-toolchain_${{ matrix.os }}-${{ matrix.toolchain }}
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: ${{ matrix.toolchain }}
+          components: cargo
           override: true
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v1
 
       - uses: actions-rs/cargo@v1
         with:
