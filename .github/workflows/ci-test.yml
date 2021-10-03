@@ -101,7 +101,7 @@ jobs:
         uses: Swatinem/rust-cache@v1
 
       - name: Run tests with default features
-        run: cargo test --all-features --all-targets --no-fail-fast -p ${{ matrix.crate }}
+        run: cargo test --all-features --all-targets --no-fail-fast
 
   kvstore:
     strategy:
