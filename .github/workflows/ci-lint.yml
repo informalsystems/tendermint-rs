@@ -28,7 +28,7 @@ jobs:
   fmt:
     strategy:
       matrix:
-        os: [ubuntu-lates]
+        os: [ubuntu-latest]
         toolchain: [stable]
 
     name: Fmt
@@ -96,7 +96,7 @@ jobs:
   clippy-tools:
     strategy:
       matrix:
-        os: [ubuntu-lates]
+        os: [ubuntu-latest]
         toolchain: [stable]
 
     name: Clippy Tools
@@ -130,7 +130,7 @@ jobs:
   docs:
     strategy:
       matrix:
-        os: [ubuntu-lates]
+        os: [ubuntu-latest]
         toolchain: [nightly]
 
     name: Docs

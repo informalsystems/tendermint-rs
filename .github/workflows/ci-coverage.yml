@@ -26,8 +26,14 @@ jobs:
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
-  nightly-coverage:
-    runs-on: ubuntu-latest
+  grcov:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        toolchain: [nightly]
+
+    name: GRCOV
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -35,7 +41,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: nightly
+          toolchain: ${{ matrix.toolchain }}
           override: true
 
       - uses: actions-rs/cargo@v1
