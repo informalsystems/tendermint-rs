@@ -46,6 +46,7 @@ tendermint = { version = "0.22.0", path = "../tendermint", default-features = fa
 tendermint-rpc = { version = "0.22.0", path = "../rpc", default-features = false }
 
 contracts = { version = "0.4.0", default-features = false }
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
 crossbeam-channel = { version = "0.4.2", default-features = false }
 derive_more = { version = "0.99.5", default-features = false, features = ["display"] }
 futures = { version = "0.3.4", default-features = false }

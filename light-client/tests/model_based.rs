@@ -1,5 +1,6 @@
 #[cfg(feature = "mbt")]
 mod mbt {
+    use chrono::Utc;
     use rand::Rng;
     use serde::de::DeserializeOwned;
     use serde::{Deserialize, Serialize};
@@ -179,7 +180,7 @@ mod mbt {
     impl SingleStepTestFuzzer for HeaderTimeFuzzer {
         fn fuzz_input(input: &mut BlockVerdict) -> (String, LiteVerdict) {
             let mut rng = rand::thread_rng();
-            let secs = tendermint::Time::now()
+            let secs = tendermint::Time(Utc::now())
                 .duration_since(tendermint::Time::unix_epoch())
                 .unwrap()
                 .as_secs();

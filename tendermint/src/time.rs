@@ -48,11 +48,6 @@ impl From<Time> for Timestamp {
 }
 
 impl Time {
-    /// Get [`Time`] value representing the current wall clock time
-    pub fn now() -> Self {
-        Time(Utc::now())
-    }
-
     /// Get the [`UNIX_EPOCH`] time ("1970-01-01 00:00:00 UTC") as a [`Time`]
     pub fn unix_epoch() -> Self {
         Time(Utc.timestamp(0, 0))

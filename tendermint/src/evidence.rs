@@ -117,7 +117,7 @@ impl DuplicateVoteEvidence {
             vote_b,
             total_voting_power: Default::default(),
             validator_power: Default::default(),
-            timestamp: Time::now(),
+            timestamp: Time::unix_epoch(),
         })
     }
     /// Get votes

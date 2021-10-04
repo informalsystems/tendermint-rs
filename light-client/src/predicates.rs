@@ -205,6 +205,7 @@ pub trait VerificationPredicates: Send + Sync {
 
 #[cfg(test)]
 mod tests {
+    use chrono::Utc;
     use std::ops::Sub;
     use std::time::Duration;
     use tendermint::Time;
@@ -293,7 +294,7 @@ mod tests {
 
         // 1. ensure valid header verifies
         let mut trusting_period = Duration::new(1000, 0);
-        let now = Time::now();
+        let now = Time(Utc::now());
 
         let result_ok = vp.is_within_trust_period(header.time, trusting_period, now);
         assert!(result_ok.is_ok());
@@ -322,12 +323,12 @@ mod tests {
         let one_second = Duration::new(1, 0);
 
         // 1. ensure valid header verifies
-        let result_ok = vp.is_header_from_past(header.time, one_second, Time::now());
+        let result_ok = vp.is_header_from_past(header.time, one_second, Time(Utc::now()));
 
         assert!(result_ok.is_ok());
 
         // 2. ensure it fails if header is from a future time
-        let now = Time::now().sub(one_second * 15).unwrap();
+        let now = Time(Utc::now()).sub(one_second * 15).unwrap();
         let result_err = vp.is_header_from_past(header.time, one_second, now);
 
         match result_err {
