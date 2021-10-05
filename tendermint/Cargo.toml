@@ -57,8 +57,8 @@ url = { version = "2.2", default-features = false }
 zeroize = { version = "1.1", default-features = false, features = ["zeroize_derive", "alloc"] }
 flex-error = { version = "0.4.3", default-features = false }
 time = { version = "0.1.40", default-features = false }
-k256 = { version = "0.9", optional = true, default-features = false , features = ["ecdsa", "sha256"] }
-ripemd160 = { version = "0.9", default-features = false , optional = true }
+k256 = { version = "0.9", optional = true, default-features = false, features = ["ecdsa", "sha256"] }
+ripemd160 = { version = "0.9", default-features = false, optional = true }
 
 [features]
 default = ["std", "eyre_tracer"]
