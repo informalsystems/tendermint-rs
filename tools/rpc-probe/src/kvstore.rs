@@ -108,10 +108,6 @@ pub fn block_results(height: u64) -> PlannedInteraction {
     .into()
 }
 
-pub fn block_search(query: &str, page: u32, per_page: u8, order: &str) -> PlannedInteraction {
-    todo!()
-}
-
 pub fn blockchain(min_height: u64, max_height: u64) -> PlannedInteraction {
     Request::new(
         "blockchain",

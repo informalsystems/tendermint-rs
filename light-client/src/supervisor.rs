@@ -1,5 +1,6 @@
 //! Supervisor and Handle implementation.
 
+use async_recursion::async_recursion;
 use crossbeam_channel as channel;
 use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
 
@@ -199,7 +200,7 @@ impl Supervisor {
 
     /// Verify either to the latest block (if `height == None`) or to a given block (if `height ==
     /// Some(height)`).
-    #[async_recursion::async_recursion]
+    #[async_recursion]
     async fn verify(&mut self, height: Option<Height>) -> Result<LightBlock, Error> {
         let primary = self.peers.primary_mut();
 

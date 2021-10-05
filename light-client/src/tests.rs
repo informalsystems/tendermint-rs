@@ -2,11 +2,13 @@
 
 use std::{collections::HashMap, time::Duration};
 
+use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use tendermint::{
     block::Height as HeightStr,
     evidence::{Duration as DurationStr, Evidence},
 };
+
 use tendermint_rpc as rpc;
 use tendermint_rpc::abci::transaction::Hash;
 
@@ -109,7 +111,7 @@ impl MockIo {
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait]
 impl AsyncIo for MockIo {
     async fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
         let height = match height {
@@ -128,7 +130,7 @@ impl AsyncIo for MockIo {
 #[derive(Clone, Debug, Default)]
 pub struct MockEvidenceReporter;
 
-#[async_trait::async_trait]
+#[async_trait]
 impl EvidenceReporter for MockEvidenceReporter {
     async fn report(&self, _e: Evidence, _peer: PeerId) -> Result<Hash, IoError> {
         Ok(Hash::new([0; 32]))

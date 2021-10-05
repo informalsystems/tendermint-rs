@@ -1,15 +1,15 @@
 //! Fork evidence data structures and interfaces.
 
-use futures::future::FutureExt as _;
+use async_trait::async_trait;
 
 pub use tendermint::evidence::Evidence;
 use tendermint_rpc::abci::transaction::Hash;
 
-use crate::{components::io::IoError, types::PeerId, utils::time::timeout};
+use crate::{components::io::IoError, types::PeerId};
 
 /// Interface for reporting evidence to full nodes, typically via the RPC client.
 #[allow(missing_docs)] // This is required because of the `contracts` crate (TODO: open/link issue)
-#[async_trait::async_trait]
+#[async_trait]
 pub trait EvidenceReporter: Send + Sync {
     /// Report evidence to all connected full nodes.
     async fn report(&self, e: Evidence, peer: PeerId) -> Result<Hash, IoError>;
@@ -23,11 +23,14 @@ mod prod {
     use std::{collections::HashMap, time::Duration};
 
     use contracts::requires;
+    use futures::future::FutureExt as _;
 
     use tendermint_rpc as rpc;
     use tendermint_rpc::Client;
 
     use super::*;
+
+    use crate::utils::time::timeout;
 
     /// Production implementation of the EvidenceReporter component, which reports evidence to full
     /// nodes via RPC.
@@ -37,7 +40,7 @@ mod prod {
         timeout: Duration,
     }
 
-    #[async_trait::async_trait]
+    #[async_trait]
     impl EvidenceReporter for ProdEvidenceReporter {
         async fn report(&self, e: Evidence, peer: PeerId) -> Result<Hash, IoError> {
             let client = self.rpc_client_for(peer)?;

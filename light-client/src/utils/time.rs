@@ -1,7 +1,10 @@
 use std::time::Duration;
 
 use flex_error::define_error;
+
+#[cfg(feature = "rpc-client")]
 use futures::future::{FusedFuture, FutureExt as _};
+#[cfg(feature = "rpc-client")]
 use futures_timer::Delay;
 
 define_error! {
@@ -25,6 +28,7 @@ impl TimeErrorDetail {
     }
 }
 
+#[cfg(feature = "rpc-client")]
 pub async fn timeout<T>(duration: Duration, task: T) -> Result<T::Output, TimeError>
 where
     T: FusedFuture,
