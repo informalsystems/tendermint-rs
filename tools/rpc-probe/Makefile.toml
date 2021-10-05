@@ -1,6 +1,6 @@
 [env]
 CONTAINER_NAME = "kvstore-rpc-probe"
-DOCKER_IMAGE = "informaldev/tendermint:0.34.9"
+DOCKER_IMAGE = "informaldev/tendermint:0.34.13"
 HOST_RPC_PORT = 26657
 CARGO_MAKE_WAIT_MILLISECONDS = 3500
 
