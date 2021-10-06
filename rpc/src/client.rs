@@ -85,6 +85,18 @@ pub trait Client {
         self.perform(block_results::Request::default()).await
     }
 
+    /// `/block_search`: search for blocks by BeginBlock and EndBlock events.
+    async fn block_search(
+        &self,
+        query: Query,
+        page: u32,
+        per_page: u8,
+        order: Order,
+    ) -> Result<block_search::Response, Error> {
+        self.perform(block_search::Request::new(query, page, per_page, order))
+            .await
+    }
+
     /// `/blockchain`: get block headers for `min` <= `height` <= `max`.
     ///
     /// Block headers are returned in descending order (highest first).

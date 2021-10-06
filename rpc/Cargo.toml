@@ -98,3 +98,4 @@ tracing-subscriber = { version = "0.2", optional = true }
 
 [dev-dependencies]
 lazy_static = "1.4.0"
+tokio-test = "0.4"

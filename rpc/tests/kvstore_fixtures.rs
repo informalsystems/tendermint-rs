@@ -97,6 +97,17 @@ fn outgoing_fixtures() {
                 .unwrap();
                 assert_eq!(wrapped.params().height.unwrap().value(), 10);
             }
+            "block_search" => {
+                let wrapped =
+                    serde_json::from_str::<RequestWrapper<endpoint::block_search::Request>>(
+                        &content,
+                    )
+                    .unwrap();
+                assert_eq!(wrapped.params().query, "block.height > 1");
+                assert_eq!(wrapped.params().page, 1);
+                assert_eq!(wrapped.params().per_page, 10);
+                assert_eq!(wrapped.params().order_by, Order::Ascending);
+            }
             "blockchain_from_1_to_10" => {
                 let wrapped =
                     serde_json::from_str::<RequestWrapper<endpoint::blockchain::Request>>(&content)
@@ -447,6 +458,48 @@ fn incoming_fixtures() {
                 assert_eq!(result.height.value(), 10);
                 assert!(result.txs_results.is_none());
                 assert!(result.validator_updates.is_empty());
+            }
+            "block_search" => {
+                let result = endpoint::block_search::Response::from_string(content).unwrap();
+                assert_eq!(result.total_count as usize, result.blocks.len());
+                // Test a few selected attributes of the results.
+                for block in result.blocks {
+                    assert!(block.block.data.iter().next().is_none());
+                    assert!(block.block.evidence.iter().next().is_none());
+                    assert_eq!(block.block.header.app_hash.value(), [0u8; 8]);
+                    assert_eq!(block.block.header.chain_id.as_str(), CHAIN_ID);
+                    assert!(!block.block.header.consensus_hash.is_empty());
+                    assert!(block.block.header.data_hash.is_none());
+                    assert!(block.block.header.evidence_hash.is_none());
+                    assert_eq!(block.block.header.height.value(), 10);
+                    assert!(block.block.header.last_block_id.is_some());
+                    assert_eq!(block.block.header.last_commit_hash, empty_merkle_root_hash);
+                    assert_eq!(block.block.header.last_results_hash, empty_merkle_root_hash);
+                    assert!(!block.block.header.next_validators_hash.is_empty());
+                    assert_ne!(
+                        block.block.header.proposer_address.as_bytes(),
+                        [0u8; tendermint::account::LENGTH]
+                    );
+                    assert!(
+                        block
+                            .block
+                            .header
+                            .time
+                            .duration_since(informal_epoch)
+                            .unwrap()
+                            .as_secs()
+                            > 0
+                    );
+                    assert!(!block.block.header.validators_hash.is_empty());
+                    assert_eq!(
+                        block.block.header.version,
+                        tendermint::block::header::Version { block: 10, app: 1 }
+                    );
+                    assert!(block.block.last_commit.is_some());
+                    assert!(!block.block_id.hash.is_empty());
+                    assert!(!block.block_id.part_set_header.hash.is_empty());
+                    assert_eq!(block.block_id.part_set_header.total, 1);
+                }
             }
             "blockchain_from_1_to_10" => {
                 let result = endpoint::blockchain::Response::from_string(content).unwrap();
