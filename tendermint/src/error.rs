@@ -5,10 +5,10 @@ use crate::vote;
 use alloc::string::String;
 use core::num::TryFromIntError;
 use flex_error::{define_error, DisplayOnly};
-use time::OutOfRangeError;
+use serde::{Deserialize, Serialize};
 
 define_error! {
-    #[derive(Debug, Clone, PartialEq, Eq)]
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
     Error {
         Crypto
             |_| { format_args!("cryptographic error") },
@@ -33,9 +33,11 @@ define_error! {
             { detail: String }
             |e| { format_args!("protocol error: {}", e.detail) },
 
-        OutOfRange
-            [ DisplayOnly<OutOfRangeError> ]
-            |_| { format_args!("value out of range") },
+        // When the oldtime feature is disabled, the chrono::oldtime::OutOfRangeError
+        // type is private and cannot be referred:
+        // https://github.com/chronotope/chrono/pull/541
+        DurationOutOfRange
+            |_| { format_args!("duration value out of range") },
 
         EmptySignature
             |_| { format_args!("empty signature") },
@@ -77,6 +79,13 @@ define_error! {
         IntegerOverflow
             [ DisplayOnly<TryFromIntError> ]
             |_| { format_args!("integer overflow") },
+
+        TimestampOverflow
+            [ DisplayOnly<TryFromIntError> ]
+            |_| { format_args!("timestamp overflow") },
+
+        TimestampConversion
+            |_| { format_args!("timestamp conversion error") },
 
         NoVoteFound
             |_| { format_args!("no vote found") },

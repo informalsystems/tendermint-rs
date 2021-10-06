@@ -8,10 +8,15 @@ use crate::errors::ErrorExt;
 use crate::operations::voting_power::VotingPowerTally;
 use crate::types::{Hash, Height, Time, Validator, ValidatorAddress};
 use tendermint::account::Id;
+use tendermint::Error as TendermintError;
 
 define_error! {
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
     VerificationError {
+        Tendermint
+            [ TendermintError ]
+            | _ | { "tendermint error" },
+
         HeaderFromTheFuture
             {
                 header_time: Time,
