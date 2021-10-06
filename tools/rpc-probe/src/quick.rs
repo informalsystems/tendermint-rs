@@ -6,11 +6,9 @@ use crate::plan::{in_parallel, in_series, Plan};
 use std::path::Path;
 use tokio::time::Duration;
 
-pub fn quick_probe_plan(output_path: &Path, request_wait: Duration) -> Result<Plan> {
+pub fn quick_probe_plan(output_path: &Path) -> Result<Plan> {
     Plan::new(
-        "quick-probe",
         output_path,
-        request_wait,
         vec![
             in_series(vec![
                 abci_info(),

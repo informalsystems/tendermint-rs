@@ -20,15 +20,10 @@ pub const DEFAULT_SUBSCRIPTION_MAX_EVENTS: usize = 5;
 
 #[derive(Debug, Clone)]
 struct PlanConfig {
-    // A short, descriptive name for this plan.
-    name: String,
     // Where to store all the raw JSON outgoing messages.
     out_path: PathBuf,
     // Where to store all the raw JSON incoming messages.
     in_path: PathBuf,
-    // Default period to wait before executing a request, in milliseconds. Can
-    // be overridden by individual interactions.
-    request_wait: Duration,
 }
 
 /// A structured, sequential execution plan for interactions we would like to
@@ -44,9 +39,7 @@ pub struct Plan {
 impl Plan {
     /// Create a new plan with the given configuration.
     pub fn new(
-        name: &str,
         output_path: &Path,
-        request_wait: Duration,
         interactions: impl Into<Vec<CoordinatedInteractions>>,
     ) -> Result<Self> {
         info!(
@@ -69,12 +62,7 @@ impl Plan {
             }
         }
         Ok(Self {
-            config: PlanConfig {
-                name: name.to_owned(),
-                out_path,
-                in_path,
-                request_wait,
-            },
+            config: PlanConfig { out_path, in_path },
             interactions: interactions.into(),
         })
     }
@@ -316,6 +304,7 @@ async fn execute_interaction(
 ) -> Result<()> {
     let inner_interaction = interaction.clone();
     let f = async {
+        let _ = &inner_interaction;
         info!("Executing interaction \"{}\"", inner_interaction.name);
         if let Some(wait) = inner_interaction.pre_wait {
             debug!("Sleeping for {} seconds", wait.as_secs_f64());
@@ -373,9 +362,7 @@ async fn execute_request(
         Err(e) => match e {
             Error::Failed(_, r) => {
                 if !expect_error {
-                    return Err(Error::UnexpectedError(
-                        serde_json::to_string_pretty(&r).unwrap(),
-                    ));
+                    return Err(Error::Unexpected(serde_json::to_string_pretty(&r).unwrap()));
                 }
                 r
             }
@@ -408,9 +395,7 @@ async fn execute_subscription(
                 // queries).
                 Error::Failed(_, r) => {
                     if !expect_error {
-                        return Err(Error::UnexpectedError(
-                            serde_json::to_string_pretty(&r).unwrap(),
-                        ));
+                        return Err(Error::Unexpected(serde_json::to_string_pretty(&r).unwrap()));
                     }
                     return write_json(&config.in_path, name, &r).await;
                 }

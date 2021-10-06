@@ -13,7 +13,6 @@ use simple_logger::SimpleLogger;
 use std::path::PathBuf;
 use std::str::FromStr;
 use structopt::StructOpt;
-use tokio::time::Duration;
 
 // Set default value of `--output` to rpc crate test folder
 #[derive(Debug)]
@@ -60,10 +59,6 @@ struct Opts {
     #[structopt(default_value, short, long)]
     pub output: OutputPathBuf,
 
-    /// How long to wait between requests, in milliseconds.
-    #[structopt(default_value = "1000", long)]
-    pub request_wait: u64,
-
     /// Increase output logging verbosity.
     #[structopt(short, long)]
     pub verbose: bool,
@@ -79,7 +74,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     SimpleLogger::new().with_level(log_level).init().unwrap();
 
-    quick_probe_plan(&opts.output.0, Duration::from_millis(opts.request_wait))?
+    quick_probe_plan(&opts.output.0)?
         .execute(&opts.addr)
         .await?;
     Ok(())
