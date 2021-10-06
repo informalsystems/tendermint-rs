@@ -37,7 +37,7 @@ eyre = "0.6"
 flume = "0.10.7"
 hkdf = "0.10.0"
 merlin = "2"
-prost = "0.7"
+prost = { package = "informalsystems-prost", version = "0.8.1" }
 rand_core = { version = "0.5", features = ["std"] }
 sha2 = "0.9"
 subtle = "2"
@@ -53,4 +53,4 @@ tendermint-proto = { path = "../proto", version = "0.22.0" }
 tendermint-std-ext = { path = "../std-ext", version = "0.22.0" }
 
 # optional dependencies
-prost-derive = { version = "0.7", optional = true }
+prost-derive = { package = "informalsystems-prost-derive", version = "0.8.1", optional = true }
