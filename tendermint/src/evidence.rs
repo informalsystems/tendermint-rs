@@ -84,7 +84,10 @@ impl TryFrom<RawDuplicateVoteEvidence> for DuplicateVoteEvidence {
                 .try_into()?,
             total_voting_power: value.total_voting_power.try_into()?,
             validator_power: value.validator_power.try_into()?,
-            timestamp: value.timestamp.ok_or_else(Error::missing_timestamp)?.into(),
+            timestamp: value
+                .timestamp
+                .ok_or_else(Error::missing_timestamp)?
+                .try_into()?,
         })
     }
 }
@@ -113,7 +116,7 @@ impl DuplicateVoteEvidence {
             vote_b,
             total_voting_power: Default::default(),
             validator_power: Default::default(),
-            timestamp: Time::now(),
+            timestamp: Time::unix_epoch(),
         })
     }
     /// Get votes

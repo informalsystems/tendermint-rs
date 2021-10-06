@@ -10,7 +10,7 @@ repository  = "https://github.com/informalsystems/tendermint-rs/tree/master/test
 keywords    = ["blockchain", "tendermint", "testing"]
 categories  = ["cryptography::cryptocurrencies", "development-tools"]
 description = """
-    tendermint-testgen is a library and a small binary utility for generating 
+    tendermint-testgen is a library and a small binary utility for generating
     tendermint datastructures from minimal input (for testing purposes only).
     The library also contains some functionality to simplify running test batches.
     """
@@ -23,6 +23,7 @@ ed25519-dalek = "1"
 gumdrop = "0.8.0"
 simple-error = "0.2.1"
 tempfile = "3.1.0"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
 
 [[bin]]
 name = "tendermint-testgen"
