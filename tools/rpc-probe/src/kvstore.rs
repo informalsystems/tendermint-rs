@@ -30,6 +30,19 @@ pub fn block(height: u64) -> PlannedInteraction {
     .into()
 }
 
+pub fn block_search(query: &str, page: u32, per_page: u32, order_by: &str) -> PlannedInteraction {
+    Request::new(
+        "block_search",
+        json!({
+            "query": query,
+            "page": format!("{}", page),
+            "per_page": format!("{}", per_page),
+            "order_by": order_by,
+        }),
+    )
+    .into()
+}
+
 pub fn block_results(height: u64) -> PlannedInteraction {
     Request::new(
         "block_results",

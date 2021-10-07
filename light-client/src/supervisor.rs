@@ -592,7 +592,11 @@ mod tests {
 
         let witness = change_provider(primary.clone(), None);
 
-        let peer_list = make_peer_list(Some(primary.clone()), Some(vec![witness]), get_time(11));
+        let peer_list = make_peer_list(
+            Some(primary.clone()),
+            Some(vec![witness]),
+            get_time(11).unwrap(),
+        );
 
         let (result, _) = run_bisection_test(peer_list, 10);
 
@@ -611,7 +615,7 @@ mod tests {
             .map(|lb| lb.generate().unwrap().into())
             .collect::<Vec<LightBlock>>();
 
-        let peer_list = make_peer_list(Some(primary), None, get_time(11));
+        let peer_list = make_peer_list(Some(primary), None, get_time(11).unwrap());
 
         let (result, _) = run_bisection_test(peer_list, 10);
 
@@ -634,7 +638,7 @@ mod tests {
         light_blocks.truncate(9);
         let witness = change_provider(light_blocks, None);
 
-        let peer_list = make_peer_list(Some(primary), Some(vec![witness]), get_time(11));
+        let peer_list = make_peer_list(Some(primary), Some(vec![witness]), get_time(11).unwrap());
 
         let (result, _) = run_bisection_test(peer_list, 10);
 
@@ -663,7 +667,7 @@ mod tests {
 
         let witness = make_conflicting_witness(5, None, None, None);
 
-        let peer_list = make_peer_list(Some(primary), Some(vec![witness]), get_time(11));
+        let peer_list = make_peer_list(Some(primary), Some(vec![witness]), get_time(11).unwrap());
 
         let (result, _) = run_bisection_test(peer_list, 10);
 
@@ -714,7 +718,7 @@ mod tests {
             None,
         );
 
-        let peer_list = make_peer_list(Some(primary), Some(vec![witness]), get_time(11));
+        let peer_list = make_peer_list(Some(primary), Some(vec![witness]), get_time(11).unwrap());
 
         let (result, _) = run_bisection_test(peer_list, 5);
 
@@ -742,7 +746,7 @@ mod tests {
         let mut peer_list = make_peer_list(
             Some(primary.clone()),
             Some(vec![witness1.clone(), witness2]),
-            get_time(11),
+            get_time(11).unwrap(),
         );
         peer_list
             .get_mut(&primary[0].provider)
@@ -783,8 +787,11 @@ mod tests {
 
         let witness = change_provider(primary.clone(), None);
 
-        let peer_list =
-            make_peer_list(Some(primary.clone()), Some(vec![witness]), get_time(604801));
+        let peer_list = make_peer_list(
+            Some(primary.clone()),
+            Some(vec![witness]),
+            get_time(604801).unwrap(),
+        );
 
         let (_, latest_status) = run_bisection_test(peer_list, 2);
 
@@ -812,7 +819,11 @@ mod tests {
 
         let witness = change_provider(primary.clone(), None);
 
-        let peer_list = make_peer_list(Some(primary.clone()), Some(vec![witness]), get_time(11));
+        let peer_list = make_peer_list(
+            Some(primary.clone()),
+            Some(vec![witness]),
+            get_time(11).unwrap(),
+        );
 
         let (_, latest_status) = run_bisection_test(peer_list, 10);
 

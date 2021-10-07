@@ -1,4 +1,5 @@
 use crate::{helpers::*, validator::generate_validators, Generator, Validator};
+use chrono::Utc;
 use gumdrop::Options;
 use serde::{Deserialize, Serialize};
 use simple_error::*;
@@ -127,9 +128,9 @@ impl Generator<block::Header> for Header {
         };
 
         let time = if let Some(t) = self.time {
-            get_time(t)
+            get_time(t)?
         } else {
-            tendermint::Time::now()
+            tendermint::Time(Utc::now())
         };
 
         let last_block_id = self.last_block_id_hash.map(|hash| block::Id {
