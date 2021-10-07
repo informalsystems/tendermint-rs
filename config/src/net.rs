@@ -1,14 +1,14 @@
 //! Remote addresses (`tcp://` or `unix://`)
 
+use crate::error::Error;
 use crate::prelude::*;
-use crate::{error::Error, node};
 
 use core::{
     fmt::{self, Display},
     str::{self, FromStr},
 };
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use std::path::PathBuf;
+use tendermint::node::{self, info::ListenAddress};
 use url::Url;
 
 /// URI prefix for TCP connections
@@ -41,8 +41,21 @@ pub enum Address {
     /// UNIX domain sockets
     Unix {
         /// Path to a UNIX domain socket path
-        path: PathBuf,
+        path: String,
     },
+}
+
+impl Address {
+    /// Convert `ListenAddress` to a `net::Address`
+    pub fn from_listen_address(address: &ListenAddress) -> Option<Self> {
+        let raw_address = address.as_str();
+        // TODO(tarcieri): validate these and handle them better at parse time
+        if raw_address.starts_with("tcp://") {
+            raw_address.parse().ok()
+        } else {
+            format!("tcp://{}", raw_address).parse().ok()
+        }
+    }
 }
 
 impl<'de> Deserialize<'de> for Address {
@@ -65,7 +78,7 @@ impl Display for Address {
                 host,
                 port,
             } => write!(f, "{}{}@{}:{}", TCP_PREFIX, peer_id, host, port),
-            Address::Unix { path } => write!(f, "{}{}", UNIX_PREFIX, path.display()),
+            Address::Unix { path } => write!(f, "{}{}", UNIX_PREFIX, path),
         }
     }
 }
@@ -84,7 +97,8 @@ impl FromStr for Address {
         match url.scheme() {
             "tcp" => Ok(Self::Tcp {
                 peer_id: if !url.username().is_empty() {
-                    Some(url.username().parse()?)
+                    let username = url.username().parse().map_err(Error::tendermint)?;
+                    Some(username)
                 } else {
                     None
                 },
@@ -99,7 +113,7 @@ impl FromStr for Address {
                 })?,
             }),
             "unix" => Ok(Self::Unix {
-                path: PathBuf::from(url.path()),
+                path: url.path().to_string(),
             }),
             _ => Err(Error::parse(format!("invalid address scheme: {:?}", addr))),
         }
@@ -115,7 +129,7 @@ impl Serialize for Address {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::node;
+    use tendermint::node;
 
     const EXAMPLE_TCP_ADDR: &str =
         "tcp://abd636b766dcefb5322d8ca40011ec2cb35efbc2@35.192.61.41:26656";
@@ -176,7 +190,7 @@ mod tests {
         let addr = EXAMPLE_UNIX_ADDR.parse::<Address>().unwrap();
         match addr {
             Address::Unix { path } => {
-                assert_eq!(path.to_str().unwrap(), "/tmp/node.sock");
+                assert_eq!(path, "/tmp/node.sock");
             }
             other => panic!("unexpected address type: {:?}", other),
         }

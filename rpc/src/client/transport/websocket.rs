@@ -25,7 +25,7 @@ use core::ops::Add;
 use core::str::FromStr;
 use futures::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
-use tendermint::net;
+use tendermint_config::net;
 use tokio::time::{Duration, Instant};
 use tracing::{debug, error};
 
@@ -809,7 +809,7 @@ mod test {
     use futures::StreamExt;
     use std::path::PathBuf;
     use std::println;
-    use tendermint::net;
+    use tendermint_config::net;
     use tokio::fs;
     use tokio::net::{TcpListener, TcpStream};
     use tokio::task::JoinHandle;
