@@ -3,6 +3,7 @@
 use chrono::{DateTime, LocalResult, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 
+use crate::prelude::*;
 use core::convert::{TryFrom, TryInto};
 use core::fmt;
 use core::ops::{Add, Sub};
@@ -13,7 +14,6 @@ use tendermint_proto::serializers::timestamp;
 use tendermint_proto::Protobuf;
 
 use crate::error::Error;
-use crate::prelude::*;
 
 /// Tendermint timestamps
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#time>
