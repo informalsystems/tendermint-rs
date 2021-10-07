@@ -1,6 +1,6 @@
 //! Error types
 
-use flex_error::{define_error, DisplayError, TraceError};
+use flex_error::{define_error, DisplayOnly};
 use prost::DecodeError;
 use signature::Error as SignatureError;
 
@@ -22,11 +22,11 @@ define_error! {
             | _ | { "malformed handshake message (protocol version mismatch?)" },
 
         Io
-            [ TraceError<std::io::Error> ]
+            [ DisplayOnly<std::io::Error> ]
             | _ | { "io error" },
 
         Decode
-            [ TraceError<DecodeError> ]
+            [ DisplayOnly<DecodeError> ]
             | _ | { "malformed handshake message (protocol version mismatch?)" },
 
         MissingSecret
@@ -36,14 +36,14 @@ define_error! {
             | _ | { "public key missing" },
 
         Signature
-            [ TraceError<SignatureError> ]
+            [ DisplayOnly<SignatureError> ]
             | _ | { "signature error" },
 
         UnsupportedKey
             | _ | { "secp256k1 is not supported" },
 
         Aead
-            [ DisplayError<aead::Error> ]
+            [ DisplayOnly<aead::Error> ]
             | _ | { "aead error" },
 
         ShortCiphertext

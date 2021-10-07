@@ -17,16 +17,16 @@ description = """
 all-features = true
 
 [dependencies]
-prost = { package = "informalsystems-prost", version = "0.8.1" }
-prost-types = { package = "informalsystems-prost-types", version = "0.8.1" }
-bytes = "1.0"
-serde = { version = "1.0", features = ["derive"] }
-subtle-encoding = "0.5"
-serde_bytes = "0.11"
-num-traits = "0.2"
-num-derive = "0.3"
+prost = { package = "informalsystems-prost", version = "0.8.1", default-features = false }
+prost-types = { package = "informalsystems-prost-types", version = "0.8.1", default-features = false }
+bytes = { version = "1.0", default-features = false }
+serde = { version = "1.0", default-features = false, features = ["derive"] }
+serde_bytes = { version = "0.11", default-features = false, features = ["alloc"] }
+subtle-encoding = { version = "0.5", default-features = false, features = ["hex", "base64", "alloc"] }
+num-traits = { version = "0.2", default-features = false }
+num-derive = { version = "0.3", default-features = false }
 chrono = { version = "0.4", default-features = false, features = ["serde", "alloc"] }
-flex-error = { version = "0.4.1", default-features = false }
+flex-error = { version = "0.4.3", default-features = false }
 
 [dev-dependencies]
 serde_json = "1.0"
