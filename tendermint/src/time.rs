@@ -48,7 +48,7 @@ impl From<Time> for Timestamp {
 }
 
 impl Time {
-    /// Get the [`UNIX_EPOCH`] time ("1970-01-01 00:00:00 UTC") as a [`Time`]
+    /// Get the unix epoch ("1970-01-01 00:00:00 UTC") as a [`Time`]
     pub fn unix_epoch() -> Self {
         Time(Utc.timestamp(0, 0))
     }
