@@ -1,6 +1,6 @@
 //! Node information (used in RPC responses)
 
-use crate::{chain, channel::Channels, net, node, serializers, Moniker, Version};
+use crate::{chain, channel::Channels, node, serializers, Moniker, Version};
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};
 
@@ -58,14 +58,8 @@ impl ListenAddress {
         ListenAddress(s)
     }
 
-    /// Convert `ListenAddress` to a `net::Address`
-    pub fn to_net_address(&self) -> Option<net::Address> {
-        // TODO(tarcieri): validate these and handle them better at parse time
-        if self.0.starts_with("tcp://") {
-            self.0.parse().ok()
-        } else {
-            format!("tcp://{}", self.0).parse().ok()
-        }
+    pub fn as_str(&self) -> &str {
+        &self.0
     }
 }
 
@@ -82,7 +76,7 @@ pub struct OtherInfo {
     pub tx_index: TxIndexStatus,
 
     /// RPC address
-    pub rpc_address: net::Address,
+    pub rpc_address: String,
 }
 
 /// Transaction index status

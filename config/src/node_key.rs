@@ -1,8 +1,10 @@
 //! Node keys
 
-use crate::{error::Error, node, private_key::PrivateKey, public_key::PublicKey};
 use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};
+use tendermint::{node, private_key::PrivateKey, public_key::PublicKey};
+
+use crate::error::Error;
 
 /// P2P node private keys
 #[derive(Serialize, Deserialize)]
@@ -31,8 +33,10 @@ impl NodeKey {
 
     /// Get the public key for this keypair
     pub fn public_key(&self) -> PublicKey {
+        #[allow(unreachable_patterns)]
         match &self.priv_key {
             PrivateKey::Ed25519(keypair) => keypair.public.into(),
+            _ => unreachable!(),
         }
     }
 

@@ -5,7 +5,7 @@ use crate::{Error, Scheme, SimpleRequest, Url};
 use async_trait::async_trait;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
-use tendermint::net;
+use tendermint_config::net;
 
 /// A JSON-RPC/HTTP Tendermint RPC client (implements [`crate::Client`]).
 ///

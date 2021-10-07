@@ -32,11 +32,10 @@ std = [
 ]
 
 [dependencies]
-bytes = "1.0"
-prost = { package = "informalsystems-prost", version = "0.8.1" }
-tendermint-proto = { version = "0.22.0", path = "../proto" }
-tracing = "0.1"
-flex-error = { version = "0.4.1", default-features = false }
-
-structopt = { version = "0.3", optional = true }
-tracing-subscriber = { version = "0.2", optional = true }
+bytes = { version = "1.0", default-features = false }
+prost = { package = "informalsystems-prost", version = "0.8.1", default-features = false }
+tendermint-proto = { version = "0.22.0", default-features = false, path = "../proto" }
+tracing = { version = "0.1", default-features = false }
+flex-error = { version = "0.4.3", default-features = false }
+structopt = { version = "0.3", optional = true, default-features = false }
+tracing-subscriber = { version = "0.2", optional = true, default-features = false }
