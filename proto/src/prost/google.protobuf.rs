@@ -331,7 +331,7 @@ pub struct MethodDescriptorProto {
 //   extension number. You can declare multiple options with only one extension
 //   number by putting them in a sub-message. See the Custom Options section of
 //   the docs for examples:
-//   https://developers.google.com/protocol-buffers/docs/proto#options
+//   <https://developers.google.com/protocol-buffers/docs/proto#options>
 //   If this turns out to be popular, a web service will be set up
 //   to automatically assign option numbers.
 

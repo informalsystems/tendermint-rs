@@ -1,6 +1,6 @@
-// This file is copied from http://github.com/tendermint/abci
+// This file is copied from <http://github.com/tendermint/abci>
 // NOTE: When using custom types, mind the warnings.
-// https://github.com/gogo/protobuf/blob/master/custom_types.md#warnings-and-issues
+// <https://github.com/gogo/protobuf/blob/master/custom_types.md#warnings-and-issues>
 
 //----------------------------------------
 // Request types
@@ -490,7 +490,7 @@ pub struct Validator {
     /// The first 20 bytes of SHA256(public key)
     #[prost(bytes="vec", tag="1")]
     pub address: ::prost::alloc::vec::Vec<u8>,
-    /// PubKey pub_key = 2 [(gogoproto.nullable)=false];
+    /// PubKey pub_key = 2 \[(gogoproto.nullable)=false\];
     ///
     /// The voting power
     #[prost(int64, tag="3")]
@@ -527,7 +527,7 @@ pub struct Evidence {
     pub time: ::core::option::Option<super::super::google::protobuf::Timestamp>,
     /// Total voting power of the validator set in case the ABCI application does
     /// not store historical validators.
-    /// https://github.com/tendermint/tendermint/issues/4581
+    /// <https://github.com/tendermint/tendermint/issues/4581>
     #[prost(int64, tag="5")]
     pub total_voting_power: i64,
 }
