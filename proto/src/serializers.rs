@@ -30,12 +30,12 @@
 //! ```
 //!
 //! Available serializers:
-//! i64                  <-> string:               #[serde(with="serializers::from_str")]
-//! u64                  <-> string:               #[serde(with="serializers::from_str")]
+//! i64                   <-> string:               #[serde(with="serializers::from_str")]
+//! u64                   <-> string:               #[serde(with="serializers::from_str")]
 //! core::time::Duration  <-> nanoseconds as string #[serde(with="serializers::time_duration")]
-//! Vec<u8>              <-> HexString:            #[serde(with="serializers::bytes::hexstring")]
-//! Vec<u8>              <-> Base64String:         #[serde(with="serializers::bytes::base64string")]
-//! Vec<u8>              <-> String:               #[serde(with="serializers::bytes::string")]
+//! Vec<u8>               <-> HexString:            #[serde(with="serializers::bytes::hexstring")]
+//! Vec<u8>               <-> Base64String:         #[serde(with="serializers::bytes::base64string")]
+//! Vec<u8>               <-> String:               #[serde(with="serializers::bytes::string")]
 //!
 //! Notes:
 //! * Any type that has the "FromStr" trait can be serialized into a string with
