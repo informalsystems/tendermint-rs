@@ -1,7 +1,7 @@
 [package]
 name       = "tendermint"
-version    = "0.22.0" # Also update `html_root_url` in lib.rs and
-                      # depending crates (rpc, light-node, ..) when bumping this
+version    = "0.23.0-internal" # Also update `html_root_url` in lib.rs and
+                               # depending crates (rpc, light-node, ..) when bumping this
 license    = "Apache-2.0"
 homepage   = "https://www.tendermint.com/"
 repository = "https://github.com/informalsystems/tendermint-rs/tree/master/tendermint"
@@ -51,7 +51,7 @@ sha2 = { version = "0.9", default-features = false }
 signature = { version = "1.2", default-features = false }
 subtle = { version = "2", default-features = false }
 subtle-encoding = { version = "0.5", default-features = false, features = ["bech32-preview"] }
-tendermint-proto = { version = "0.22.0", default-features = false, path = "../proto" }
+tendermint-proto = { version = "0.23.0-internal", default-features = false, path = "../proto" }
 zeroize = { version = "1.1", default-features = false, features = ["zeroize_derive", "alloc"] }
 flex-error = { version = "0.4.3", default-features = false }
 k256 = { version = "0.9", optional = true, default-features = false, features = ["ecdsa", "sha256"] }
