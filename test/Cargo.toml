@@ -15,7 +15,7 @@ test = true
 
 [dev-dependencies]
 ed25519-dalek = { version = "1", default-features = false, features = ["rand"] }
-flex-error = { version = "0.4.3", default-features = false }
+flex-error = { version = "0.4.4", default-features = false }
 flume = { version = "0.10", default-features = false }
 rand_core = { version = "0.5", default-features = false, features = ["std"] }
 readwrite = { version = "^0.1.1", default-features = false }

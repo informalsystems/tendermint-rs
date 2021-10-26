@@ -51,7 +51,7 @@ serde_derive = { version = "1.0.106", default-features = false }
 sled = { version = "0.34.3", optional = true, default-features = false }
 static_assertions = { version = "1.1.0", default-features = false }
 tokio = { version = "1.0", default-features = false, features = ["rt"], optional = true }
-flex-error = { version = "0.4.3", default-features = false }
+flex-error = { version = "0.4.4", default-features = false }
 
 [dev-dependencies]
 tendermint-testgen = { path = "../testgen", default-features = false }
@@ -64,4 +64,4 @@ proptest = { version = "0.10.1", default-features = false, features = ["std"] }
 
 [[example]]
 name = "light_client"
-required-features = ["rpc-client", "tendermint-rpc/http-client"]
+required-features = ["rpc-client", "tendermint-rpc/http-client", "flex-error/std"]
