@@ -69,7 +69,7 @@ pin-project = { version = "1.0.1", default-features = false }
 serde = { version = "1", default-features = false, features = [ "derive" ] }
 serde_bytes = { version = "0.11", default-features = false }
 serde_json = { version = "1", default-features = false, features = ["std"] }
-tendermint-config = { version = "0.23.0-internal", path = "../config" }
+tendermint-config = { version = "0.23.0-internal", path = "../config", default-features = false }
 tendermint = { version = "0.23.0-internal", default-features = false, path = "../tendermint" }
 tendermint-proto = { version = "0.23.0-internal", default-features = false, path = "../proto" }
 thiserror = { version = "1", default-features = false }
