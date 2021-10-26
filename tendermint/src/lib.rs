@@ -20,6 +20,8 @@
 )]
 
 extern crate alloc;
+
+#[cfg(test)]
 extern crate std;
 
 #[macro_use]

@@ -8,9 +8,6 @@
 
 extern crate alloc;
 
-#[cfg(feature = "std")]
-extern crate std;
-
 mod prelude;
 
 /// Built-in prost_types with slight customization to enable JSON-encoding
