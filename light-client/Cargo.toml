@@ -28,16 +28,11 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["std", "eyre_tracer", "rpc-client"]
-eyre_tracer = ["flex-error/eyre_tracer"]
+default = ["rpc-client"]
 rpc-client = ["tokio", "tendermint-rpc/http-client"]
 secp256k1 = ["tendermint/secp256k1", "tendermint-rpc/secp256k1"]
 lightstore-sled = ["sled"]
 unstable = []
-std = [
-    "flex-error/std",
-    "tendermint/std",
-]
 # Enable to execute long-running model-based tests
 mbt = []
 

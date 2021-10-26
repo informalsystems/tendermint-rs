@@ -29,8 +29,7 @@ path = "src/client/bin/main.rs"
 required-features = [ "cli" ]
 
 [features]
-default = ["std", "eyre_tracer"]
-eyre_tracer = ["flex-error/eyre_tracer"]
+default = []
 cli = [
   "http-client",
   "structopt",
@@ -59,11 +58,6 @@ websocket-client = [
   "tokio/sync",
   "tokio/time",
   "tracing"
-]
-std = [
-    "flex-error/std",
-    "tendermint/std",
-    "tendermint-proto/std",
 ]
 
 [dependencies]

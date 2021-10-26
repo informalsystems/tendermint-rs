@@ -23,12 +23,8 @@ description = """
 test = false
 
 [features]
-default = ["std", "eyre_tracer"]
-eyre_tracer = ["flex-error/eyre_tracer"]
+default = []
 amino = ["prost-derive"]
-std = [
-    "flex-error/std"
-]
 
 [dependencies]
 chacha20poly1305 = { version = "0.8", default-features = false, features = ["reduced-round"] }

@@ -30,10 +30,3 @@ flex-error = { version = "0.4.3", default-features = false }
 
 [dev-dependencies]
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
-
-[features]
-default = ["std", "eyre_tracer"]
-eyre_tracer = ["flex-error/eyre_tracer"]
-std = [
-    "flex-error/std"
-]

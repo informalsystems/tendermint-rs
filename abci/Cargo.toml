@@ -21,15 +21,11 @@ path = "src/application/kvstore/main.rs"
 required-features = [ "binary", "kvstore-app" ]
 
 [features]
-default = ["std", "eyre_tracer"]
-eyre_tracer = ["flex-error/eyre_tracer"]
+default = []
 client = []
 echo-app = []
 kvstore-app = []
 binary = [ "structopt", "tracing-subscriber" ]
-std = [
-    "flex-error/std"
-]
 
 [dependencies]
 bytes = { version = "1.0", default-features = false }

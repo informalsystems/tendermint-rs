@@ -58,13 +58,8 @@ k256 = { version = "0.9", optional = true, default-features = false, features = 
 ripemd160 = { version = "0.9", default-features = false, optional = true }
 
 [features]
-default = ["std", "eyre_tracer"]
-eyre_tracer = ["flex-error/eyre_tracer"]
+default = []
 secp256k1 = ["k256", "ripemd160"]
-std = [
-    "flex-error/std",
-    "tendermint-proto/std",
-]
 
 [dev-dependencies]
 pretty_assertions = { version = "0.7.2", default-features = false }
