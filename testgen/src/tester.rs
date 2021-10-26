@@ -460,9 +460,7 @@ impl Tester {
                             let path = format!("{}", entry.path().display());
                             let rel_path = self.env().unwrap().rel_path(&path).unwrap();
                             if kind.is_file() || kind.is_symlink() {
-                                if !rel_path.ends_with(".json") {
-                                    return;
-                                } else {
+                                if rel_path.ends_with(".json") {
                                     self.run_for_file(&rel_path);
                                 }
                             } else if kind.is_dir() {
