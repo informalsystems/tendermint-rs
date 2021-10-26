@@ -30,18 +30,25 @@
 //! ```
 //!
 //! Available serializers:
-//! i64                   <-> string:               #[serde(with="serializers::from_str")]
-//! u64                   <-> string:               #[serde(with="serializers::from_str")]
-//! core::time::Duration  <-> nanoseconds as string #[serde(with="serializers::time_duration")]
-//! Vec<u8>               <-> HexString:            #[serde(with="serializers::bytes::hexstring")]
-//! Vec<u8>               <-> Base64String:
-//! #[serde(with="serializers::bytes::base64string")] Vec<u8>               <-> String:
-//! #[serde(with="serializers::bytes::string")]
+//!
+//! | Field Type   | String Format                 | Serializer        |
+//! |--------------|-------------------------------|-------------------|
+//! | `i64`        | e.g. `-5`                     | [`from_str`]      |
+//! | `u64`        | e.g. `100`                    | [`from_str`]      |
+//! | [`Duration`] | Nanoseconds (e.g. `100`)      | [`time_duration`] |
+//! | `Vec<u8>`    | Hexadecimal (e.g. `1AF2B3C4`) | [`hexstring`]     |
+//! | `Vec<u8>`    | Base64-encoded                | [`base64string`]  |
+//! | `Vec<u8>`    | Raw bytes in string           | [`string`]        |
 //!
 //! Notes:
 //! * Any type that has the "FromStr" trait can be serialized into a string with
 //!   serializers::primitives::string.
 //! * serializers::bytes::* deserializes a null value into an empty vec![].
+//!
+//! [`Duration`]: core::time::Duration
+//! [`hexstring`]: bytes::hexstring
+//! [`base64string`]: bytes::base64string
+//! [`string`]: bytes::string
 
 // Todo: remove dead_code allowance as soon as more types are implemented
 #![allow(dead_code)]
