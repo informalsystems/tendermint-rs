@@ -1,14 +1,15 @@
-//! Serialize and deserialize any `T` that implements [[std::str::FromStr]]
-//! and [[std::fmt::Display]] from or into string. Note this can be used for
+//! Serialize and deserialize any `T` that implements [[core::str::FromStr]]
+//! and [[core::fmt::Display]] from or into string. Note this can be used for
 //! all primitive data types.
+use crate::prelude::*;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
 /// Deserialize string into T
 pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
 where
     D: Deserializer<'de>,
-    T: std::str::FromStr,
-    <T as std::str::FromStr>::Err: std::fmt::Display,
+    T: core::str::FromStr,
+    <T as core::str::FromStr>::Err: core::fmt::Display,
 {
     String::deserialize(deserializer)?
         .parse::<T>()
@@ -19,7 +20,7 @@ where
 pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
-    T: std::fmt::Display,
+    T: core::fmt::Display,
 {
     format!("{}", value).serialize(serializer)
 }

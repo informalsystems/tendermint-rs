@@ -10,9 +10,9 @@ pub use self::power::Power;
 pub use self::sign_vote::*;
 pub use self::validator_index::ValidatorIndex;
 
-use std::convert::{TryFrom, TryInto};
-use std::fmt;
-use std::str::FromStr;
+use core::convert::{TryFrom, TryInto};
+use core::fmt;
+use core::str::FromStr;
 
 use bytes::BufMut;
 use ed25519::Signature as Ed25519Signature;
@@ -26,6 +26,7 @@ use crate::chain::Id as ChainId;
 use crate::consensus::State;
 use crate::error::Error;
 use crate::hash;
+use crate::prelude::*;
 use crate::{account, block, Signature, Time};
 
 /// Votes are signed messages from validators for a particular block which

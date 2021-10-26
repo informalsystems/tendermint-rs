@@ -28,40 +28,40 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["std", "eyre_tracer", "rpc-client"]
-eyre_tracer = ["flex-error/eyre_tracer"]
+default = ["rpc-client", "flex-error/std", "flex-error/eyre_tracer"]
 rpc-client = ["tokio", "tendermint-rpc/http-client"]
 secp256k1 = ["tendermint/secp256k1", "tendermint-rpc/secp256k1"]
 lightstore-sled = ["sled"]
 unstable = []
-std = [
-    "flex-error/std"
-]
 # Enable to execute long-running model-based tests
 mbt = []
 
 [dependencies]
-tendermint = { version = "0.23.0-internal", path = "../tendermint" }
+tendermint = { version = "0.23.0-internal", path = "../tendermint", default-features = false }
 tendermint-rpc = { version = "0.23.0-internal", path = "../rpc", default-features = false }
 
+contracts = { version = "0.4.0", default-features = false }
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
-contracts = "0.4.0"
-crossbeam-channel = "0.4.2"
-derive_more = "0.99.5"
-futures = "0.3.4"
-serde = "1.0.106"
-serde_cbor = "0.11.1"
-serde_derive = "1.0.106"
-sled = { version = "0.34.3", optional = true }
-static_assertions = "1.1.0"
-tokio = { version = "1.0", features = ["rt"], optional = true }
-flex-error = { version = "0.4.1", default-features = false }
+crossbeam-channel = { version = "0.4.2", default-features = false }
+derive_more = { version = "0.99.5", default-features = false, features = ["display"] }
+futures = { version = "0.3.4", default-features = false }
+serde = { version = "1.0.106", default-features = false }
+serde_cbor = { version = "0.11.1", default-features = false, features = ["alloc", "std"] }
+serde_derive = { version = "1.0.106", default-features = false }
+sled = { version = "0.34.3", optional = true, default-features = false }
+static_assertions = { version = "1.1.0", default-features = false }
+tokio = { version = "1.0", default-features = false, features = ["rt"], optional = true }
+flex-error = { version = "0.4.4", default-features = false }
 
 [dev-dependencies]
-tendermint-testgen = { path = "../testgen" }
+tendermint-testgen = { path = "../testgen", default-features = false }
 
-serde_json = "1.0.51"
-gumdrop = "0.8.0"
-rand = "0.7.3"
-tempfile = "3.2.0"
-proptest = "0.10.1"
+serde_json = { version = "1.0.51", default-features = false }
+gumdrop = { version = "0.8.0", default-features = false }
+rand = { version = "0.7.3", default-features = false }
+tempfile = { version = "3.2.0", default-features = false }
+proptest = { version = "0.10.1", default-features = false, features = ["std"] }
+
+[[example]]
+name = "light_client"
+required-features = ["rpc-client", "tendermint-rpc/http-client", "flex-error/std"]

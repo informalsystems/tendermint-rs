@@ -1,10 +1,11 @@
 //! HTTP-based transport for Tendermint RPC Client.
 
 use crate::client::Client;
+use crate::prelude::*;
 use crate::{Error, Scheme, SimpleRequest, Url};
 use async_trait::async_trait;
-use std::convert::{TryFrom, TryInto};
-use std::str::FromStr;
+use core::convert::{TryFrom, TryInto};
+use core::str::FromStr;
 use tendermint_config::net;
 
 /// A JSON-RPC/HTTP Tendermint RPC client (implements [`crate::Client`]).
@@ -153,6 +154,7 @@ impl TryFrom<HttpClientUrl> for hyper::Uri {
 }
 
 mod sealed {
+    use crate::prelude::*;
     use crate::{Error, Response, SimpleRequest};
     use hyper::body::Buf;
     use hyper::client::connect::Connect;

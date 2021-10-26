@@ -7,6 +7,8 @@ use tendermint::block;
 use tendermint::merkle::proof::Proof;
 use tendermint::serializers;
 
+use crate::prelude::*;
+
 /// Query the ABCI application for information
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Request {

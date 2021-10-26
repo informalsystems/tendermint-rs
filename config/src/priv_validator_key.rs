@@ -1,5 +1,6 @@
 //! Validator private keys
 
+use crate::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};
 use tendermint::public_key::TendermintKey;

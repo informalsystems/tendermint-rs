@@ -2,13 +2,14 @@
 
 use crate::client::sync::{ChannelRx, ChannelTx};
 use crate::event::Event;
+use crate::prelude::*;
 use crate::query::Query;
 use crate::Error;
 use async_trait::async_trait;
+use core::pin::Pin;
 use futures::task::{Context, Poll};
 use futures::Stream;
 use pin_project::pin_project;
-use std::pin::Pin;
 
 /// A client that exclusively provides [`Event`] subscription capabilities,
 /// without any other RPC method support.

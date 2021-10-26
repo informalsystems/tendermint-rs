@@ -4,6 +4,7 @@
 //! blockchain networks, including chain information types, secret connections,
 //! and remote procedure calls (JSON-RPC).
 
+#![no_std]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![deny(
     warnings,
@@ -20,6 +21,9 @@
 
 extern crate alloc;
 
+#[cfg(test)]
+extern crate std;
+
 #[macro_use]
 pub mod error;
 
@@ -35,6 +39,7 @@ pub mod hash;
 pub mod merkle;
 mod moniker;
 pub mod node;
+mod prelude;
 pub mod private_key;
 pub mod proposal;
 pub mod public_key;

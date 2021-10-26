@@ -1,5 +1,6 @@
 //! Node keys
 
+use crate::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};
 use tendermint::{node, private_key::PrivateKey, public_key::PublicKey};

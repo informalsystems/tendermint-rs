@@ -1,7 +1,7 @@
 use crate::error::Error;
-use std::convert::TryInto;
-use std::{
-    convert::TryFrom,
+use crate::prelude::*;
+use core::{
+    convert::{TryFrom, TryInto},
     fmt::{self, Debug, Display},
     str::FromStr,
 };

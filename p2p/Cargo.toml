@@ -23,12 +23,8 @@ description = """
 test = false
 
 [features]
-default = ["std", "eyre_tracer"]
-eyre_tracer = ["flex-error/eyre_tracer"]
+default = ["flex-error/std", "flex-error/eyre_tracer"]
 amino = ["prost-derive"]
-std = [
-    "flex-error/std"
-]
 
 [dependencies]
 chacha20poly1305 = { version = "0.8", default-features = false, features = ["reduced-round"] }
@@ -45,12 +41,12 @@ x25519-dalek = { version = "1.1", default-features = false }
 zeroize = { version = "1", default-features = false }
 signature = { version = "1.3.0", default-features = false }
 aead = { version = "0.4.1", default-features = false }
-flex-error = { version = "0.4.3", default-features = false }
+flex-error = { version = "0.4.4", default-features = false }
 
 # path dependencies
-tendermint = { path = "../tendermint", version = "0.23.0-internal" }
-tendermint-proto = { path = "../proto", version = "0.23.0-internal" }
-tendermint-std-ext = { path = "../std-ext", version = "0.23.0-internal" }
+tendermint = { path = "../tendermint", version = "0.23.0-internal", default-features = false }
+tendermint-proto = { path = "../proto", version = "0.23.0-internal", default-features = false }
+tendermint-std-ext = { path = "../std-ext", version = "0.23.0-internal", default-features = false }
 
 # optional dependencies
 prost-derive = { version = "0.9", optional = true }

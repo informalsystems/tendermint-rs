@@ -10,13 +10,12 @@ use crate::net;
 use crate::node_key::NodeKey;
 use crate::Error;
 
+use crate::prelude::*;
+use alloc::collections::{btree_map, BTreeMap};
+use core::{fmt, str::FromStr};
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
-use std::{
-    collections::BTreeMap,
-    fmt, fs,
-    path::{Path, PathBuf},
-    str::FromStr,
-};
+use std::fs;
+use std::path::{Path, PathBuf};
 use tendermint::{genesis::Genesis, node, Moniker, Timeout};
 
 /// Tendermint `config.toml` file
@@ -188,7 +187,7 @@ impl LogLevel {
 }
 
 /// Iterator over log levels
-pub type LogLevelIter<'a> = std::collections::btree_map::Iter<'a, String, String>;
+pub type LogLevelIter<'a> = btree_map::Iter<'a, String, String>;
 
 impl FromStr for LogLevel {
     type Err = Error;

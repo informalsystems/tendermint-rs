@@ -1,6 +1,7 @@
 use crate::chain::Id as ChainId;
+use crate::prelude::*;
 use crate::Error;
-use std::convert::TryFrom;
+use core::convert::TryFrom;
 use tendermint_proto::privval::PubKeyRequest as RawPubKeyRequest;
 use tendermint_proto::Protobuf;
 
@@ -35,7 +36,8 @@ impl From<PubKeyRequest> for RawPubKeyRequest {
 mod tests {
     use super::PubKeyRequest;
     use crate::chain::Id as ChainId;
-    use std::str::FromStr;
+    use crate::prelude::*;
+    use core::str::FromStr;
     use tendermint_proto::Protobuf;
 
     #[test]

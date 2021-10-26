@@ -4,10 +4,11 @@
 //!
 //! [`Query`]: struct.Query.html
 
+use crate::prelude::*;
 use crate::Error;
 use chrono::{Date, DateTime, FixedOffset, NaiveDate, Utc};
-use std::fmt;
-use std::str::FromStr;
+use core::fmt;
+use core::str::FromStr;
 
 /// A structured query for use in interacting with the Tendermint RPC event
 /// subscription system.
@@ -828,7 +829,7 @@ mod test {
                 assert_eq!(tag, "short.pi");
                 match op {
                     Operand::Float(f) => {
-                        assert!(floats_eq(*f, std::f64::consts::PI, 5));
+                        assert!(floats_eq(*f, core::f64::consts::PI, 5));
                     }
                     _ => panic!("unexpected operand: {:?}", op),
                 }
@@ -844,7 +845,7 @@ mod test {
                 assert_eq!(tag, "short.pi");
                 match op {
                     Operand::Float(f) => {
-                        assert!(floats_eq(*f, -std::f64::consts::PI, 5));
+                        assert!(floats_eq(*f, -core::f64::consts::PI, 5));
                     }
                     _ => panic!("unexpected operand: {:?}", op),
                 }

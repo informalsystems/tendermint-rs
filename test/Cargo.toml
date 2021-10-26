@@ -14,14 +14,14 @@ authors     = ["Alexander Simmerl <a.simmerl@gmail.com>"]
 test = true
 
 [dev-dependencies]
-ed25519-dalek = "1"
-flex-error = "0.4.2"
-flume = "0.10"
-rand_core = { version = "0.5", features = ["std"] }
-readwrite = "^0.1.1"
-subtle-encoding = { version = "0.5" }
-x25519-dalek = "1.1"
+ed25519-dalek = { version = "1", default-features = false, features = ["rand"] }
+flex-error = { version = "0.4.4", default-features = false }
+flume = { version = "0.10", default-features = false }
+rand_core = { version = "0.5", default-features = false, features = ["std"] }
+readwrite = { version = "^0.1.1", default-features = false }
+subtle-encoding = { version = "0.5", default-features = false }
+x25519-dalek = { version = "1.1", default-features = false }
 
-tendermint = { path = "../tendermint" }
-tendermint-p2p = { path = "../p2p" }
-tendermint-proto = { path = "../proto" }
+tendermint = { path = "../tendermint", default-features = false }
+tendermint-p2p = { path = "../p2p", default-features = false }
+tendermint-proto = { path = "../proto", default-features = false }

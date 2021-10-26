@@ -1,5 +1,6 @@
 //! Genesis data
 
+use crate::prelude::*;
 use crate::serializers;
 use crate::{chain, consensus, validator, Time};
 use serde::{Deserialize, Serialize};

@@ -12,10 +12,11 @@ use crate::block::{Height, Id as BlockId, Round};
 use crate::chain::Id as ChainId;
 use crate::consensus::State;
 use crate::error::Error;
+use crate::prelude::*;
 use crate::Signature;
 use crate::Time;
 use bytes::BufMut;
-use std::convert::{TryFrom, TryInto};
+use core::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Proposal as RawProposal;
 use tendermint_proto::{Error as ProtobufError, Protobuf};
 
@@ -118,11 +119,12 @@ mod tests {
     use crate::block::{Height, Round};
     use crate::chain::Id as ChainId;
     use crate::hash::{Algorithm, Hash};
+    use crate::prelude::*;
     use crate::proposal::SignProposalRequest;
     use crate::signature::{Ed25519Signature, ED25519_SIGNATURE_SIZE};
     use crate::{proposal::Type, Proposal, Signature};
     use chrono::{DateTime, Utc};
-    use std::str::FromStr;
+    use core::str::FromStr;
     use tendermint_proto::Protobuf;
 
     #[test]

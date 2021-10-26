@@ -14,11 +14,14 @@
 )]
 #![forbid(unsafe_code)]
 
+extern crate alloc;
+
 pub mod net;
 
 mod config;
 mod error;
 mod node_key;
+mod prelude;
 mod priv_validator_key;
 
 pub use config::*;

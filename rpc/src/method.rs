@@ -1,16 +1,17 @@
 //! JSON-RPC request methods
 
+use crate::prelude::*;
 use crate::Error;
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use std::{
+use core::{
     fmt::{self, Display},
     str::FromStr,
 };
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
 /// JSON-RPC request methods.
 ///
 /// Serialized as the "method" field of JSON-RPC/HTTP requests.
-#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Method {
     /// Get ABCI info
     AbciInfo,

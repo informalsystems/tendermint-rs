@@ -1,6 +1,7 @@
 //! Encoding/decoding ABCI transaction hashes to/from base64.
 
 use crate::abci::transaction::{Hash, HASH_LENGTH};
+use crate::prelude::*;
 use serde::{Deserialize, Deserializer, Serializer};
 use subtle_encoding::base64;
 
