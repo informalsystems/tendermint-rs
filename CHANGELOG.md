@@ -1,5 +1,42 @@
 # CHANGELOG
 
+## v0.23.0
+
+*Oct 27, 2021*
+
+The main changes in this release involve upgrading to [Prost
+v0.9](https://github.com/tokio-rs/prost/releases/tag/v0.9.0) and some
+foundational changes to prepare for `no_std` support for some of our crates.
+
+One of the main `no_std`-related changes in this release was to break out
+configuration-related data structures from the `tendermint` crate into their own
+crate (`tendermint-config`) as these structures depend on other crates which do
+not yet support `no_std`.
+
+### BREAKING CHANGES
+
+- Upgraded Prost to the official v0.9 release to finally resolve the security
+  issue introduced by v0.7
+  ([#925](https://github.com/informalsystems/tendermint-rs/issues/925))
+- `[tendermint, tendermint-config]` The `tendermint::config`
+  module has now been broken out into its own crate (`tendermint-
+  config`) to help towards facilitating `no_std` compatibility
+  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
+- `[tendermint]` The `tendermint::node::info::OtherInfo::rpc_address`
+  field type has been changed from `tendermint::net::Address`
+  to `String` toward facilitating `no_std` compatibility
+  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
+- `[tendermint]` The `tendermint::node::info::ListenAddress::to_net_address`
+  method was replaced with a simple `as_str` method toward facilitating
+  `no_std` compatibility ([#983](https://github.com/informalsystems/tendermint-
+  rs/issues/983))
+
+### FEATURES
+
+- `[tendermint-rpc]` Add support for the `/block_search` RPC endpoint. See
+  <https://docs.tendermint.com/master/rpc/\#/Info/block_search> for details
+  ([#832](https://github.com/informalsystems/tendermint-rs/issues/832))
+
 ## v0.22.0
 
 *Sep 23, 2021*
