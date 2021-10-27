@@ -1,15 +1,8 @@
 #!/bin/bash
 
 # release.sh will hopefully allow us to publish all of the necessary crates in
-# this repo in the right order, along with a few checks and balances to try to
-# avoid mistakes. It is assumed that only one person will be releasing all
-# crates at the same time.
-#
-# For each crate, it will:
-# 1. Run `cargo publish --dry-run` for that crate
-# 2. List all files in the package with `cargo package --list`
-# 3. Prompt the user as to whether to publish or not
-# 4. Publish the package with `cargo publish` (no dry run)
+# this repo in the right order. It is assumed that only one person will be
+# releasing all crates at the same time.
 #
 # It has a default set of crates it will publish, which can be overridden by
 # way of command line arguments:
@@ -19,17 +12,6 @@
 #
 #   # Just release the proto and tendermint crates, but nothing else
 #   ./release.sh proto tendermint
-#
-# Once it publishes a crate, it will create a file at
-# /tmp/tendermint-rs-release/${TODAY}/${CRATE}, where ${TODAY} is today's date
-# and ${CRATE} is the name of the crate that was successfully published.
-#
-# Prior to publishing a crate, it checks whether this file is present before
-# attempting to publish it. If it's present, it will ask if you really want to
-# publish it again. Of course, this is pretty dumb, and doesn't cater for
-# instances where multiple people could publish the crates on the same day, and
-# instances where someone reboots their machine or wipes their /tmp folder
-# between runs.
 
 set -e
 
@@ -59,15 +41,6 @@ publish() {
   echo ""
 }
 
-publish_dry_run() {
-  echo "Attempting dry run of publishing crate $1..."
-  cargo publish --dry-run --manifest-path "$(get_manifest_path "${1}")"
-}
-
-list_package_files() {
-  cargo package --list --manifest-path "$(get_manifest_path "${1}")"
-}
-
 wait_until_available() {
   echo "Waiting for crate ${1} to become available via crates.io..."
   for retry in {1..5}; do
@@ -85,6 +58,8 @@ wait_until_available() {
       fi
     fi
   done
+  echo "Waiting an additional 10 seconds for crate to propagate through CDN..."
+  sleep 10
 }
 
 echo "Attempting to publish crate(s): ${CRATES}"
@@ -94,22 +69,10 @@ for crate in ${CRATES}; do
   ONLINE_DATE="$(check_version_online "${crate}" "${VERSION}")"
   echo "${crate} version number: ${VERSION}"
   if [ -n "${ONLINE_DATE}" ]; then
-    echo "${crate} ${VERSION} has already been published at ${ONLINE_DATE}."
-    read -rp "Do you want to publish again? (type YES to publish, anything else to skip) " answer
-    case $answer in
-      YES ) ;;
-      * ) echo "Skipping"; continue;;
-    esac
+    echo "${crate} ${VERSION} has already been published at ${ONLINE_DATE}, skipping"
+    continue
   fi
 
-  publish_dry_run "${crate}"
-  list_package_files "${crate}"
-  echo ""
-  read -rp "Are you sure you want to publish crate \"${crate}\"? (type YES to publish, anything else to exit) " answer
-  case $answer in
-    YES ) publish "${crate}";;
-    * ) echo "Terminating"; exit;;
-  esac
-
+  publish "${crate}"
   wait_until_available "${crate}" "${VERSION}"
 done
