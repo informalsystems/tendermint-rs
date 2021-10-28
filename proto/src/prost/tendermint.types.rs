@@ -276,62 +276,6 @@ pub enum SignedMsgType {
     /// Proposals
     Proposal = 32,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CanonicalBlockId {
-    #[prost(bytes="vec", tag="1")]
-    pub hash: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag="2")]
-    #[serde(alias = "parts")]
-    pub part_set_header: ::core::option::Option<CanonicalPartSetHeader>,
-}
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CanonicalPartSetHeader {
-    #[prost(uint32, tag="1")]
-    pub total: u32,
-    #[prost(bytes="vec", tag="2")]
-    pub hash: ::prost::alloc::vec::Vec<u8>,
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CanonicalProposal {
-    /// type alias for byte
-    #[prost(enumeration="SignedMsgType", tag="1")]
-    pub r#type: i32,
-    /// canonicalization requires fixed size encoding here
-    #[prost(sfixed64, tag="2")]
-    pub height: i64,
-    /// canonicalization requires fixed size encoding here
-    #[prost(sfixed64, tag="3")]
-    pub round: i64,
-    #[prost(int64, tag="4")]
-    pub pol_round: i64,
-    #[prost(message, optional, tag="5")]
-    pub block_id: ::core::option::Option<CanonicalBlockId>,
-    #[prost(message, optional, tag="6")]
-    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
-    #[prost(string, tag="7")]
-    pub chain_id: ::prost::alloc::string::String,
-}
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CanonicalVote {
-    /// type alias for byte
-    #[prost(enumeration="SignedMsgType", tag="1")]
-    pub r#type: i32,
-    /// canonicalization requires fixed size encoding here
-    #[prost(sfixed64, tag="2")]
-    pub height: i64,
-    /// canonicalization requires fixed size encoding here
-    #[prost(sfixed64, tag="3")]
-    pub round: i64,
-    #[prost(message, optional, tag="4")]
-    pub block_id: ::core::option::Option<CanonicalBlockId>,
-    #[prost(message, optional, tag="5")]
-    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
-    #[prost(string, tag="6")]
-    pub chain_id: ::prost::alloc::string::String,
-}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventDataRoundState {
     #[prost(int64, tag="1")]
@@ -477,6 +421,62 @@ pub struct EvidenceList {
     #[prost(message, repeated, tag="1")]
     #[serde(with = "crate::serializers::nullable")]
     pub evidence: ::prost::alloc::vec::Vec<Evidence>,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CanonicalBlockId {
+    #[prost(bytes="vec", tag="1")]
+    pub hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag="2")]
+    #[serde(alias = "parts")]
+    pub part_set_header: ::core::option::Option<CanonicalPartSetHeader>,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CanonicalPartSetHeader {
+    #[prost(uint32, tag="1")]
+    pub total: u32,
+    #[prost(bytes="vec", tag="2")]
+    pub hash: ::prost::alloc::vec::Vec<u8>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CanonicalProposal {
+    /// type alias for byte
+    #[prost(enumeration="SignedMsgType", tag="1")]
+    pub r#type: i32,
+    /// canonicalization requires fixed size encoding here
+    #[prost(sfixed64, tag="2")]
+    pub height: i64,
+    /// canonicalization requires fixed size encoding here
+    #[prost(sfixed64, tag="3")]
+    pub round: i64,
+    #[prost(int64, tag="4")]
+    pub pol_round: i64,
+    #[prost(message, optional, tag="5")]
+    pub block_id: ::core::option::Option<CanonicalBlockId>,
+    #[prost(message, optional, tag="6")]
+    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
+    #[prost(string, tag="7")]
+    pub chain_id: ::prost::alloc::string::String,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CanonicalVote {
+    /// type alias for byte
+    #[prost(enumeration="SignedMsgType", tag="1")]
+    pub r#type: i32,
+    /// canonicalization requires fixed size encoding here
+    #[prost(sfixed64, tag="2")]
+    pub height: i64,
+    /// canonicalization requires fixed size encoding here
+    #[prost(sfixed64, tag="3")]
+    pub round: i64,
+    #[prost(message, optional, tag="4")]
+    pub block_id: ::core::option::Option<CanonicalBlockId>,
+    #[prost(message, optional, tag="5")]
+    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
+    #[prost(string, tag="6")]
+    pub chain_id: ::prost::alloc::string::String,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
