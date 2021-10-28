@@ -8,10 +8,6 @@ pub mod abci {
     include!("prost/tendermint.abci.rs");
 }
 
-pub mod store {
-    include!("prost/tendermint.store.rs");
-}
-
 pub mod version {
     include!("prost/tendermint.version.rs");
 }
@@ -32,16 +28,16 @@ pub mod privval {
     include!("prost/tendermint.privval.rs");
 }
 
-pub mod blockchain {
-    include!("prost/tendermint.blockchain.rs");
-}
-
 pub mod crypto {
     include!("prost/tendermint.crypto.rs");
 }
 
 pub mod mempool {
     include!("prost/tendermint.mempool.rs");
+}
+
+pub mod blocksync {
+    include!("prost/tendermint.blocksync.rs");
 }
 
 pub mod state {
@@ -62,5 +58,5 @@ pub mod rpc {
 
 pub mod meta {
     pub const REPOSITORY: &str = "https://github.com/tendermint/tendermint";
-    pub const COMMITISH: &str = "v0.34.9";
+    pub const COMMITISH: &str = "v0.35.0-rc3";
 }

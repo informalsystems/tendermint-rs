@@ -54,7 +54,7 @@ pub struct ProofOps {
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PublicKey {
-    #[prost(oneof="public_key::Sum", tags="1, 2")]
+    #[prost(oneof="public_key::Sum", tags="1, 2, 3")]
     pub sum: ::core::option::Option<public_key::Sum>,
 }
 /// Nested message and enum types in `PublicKey`.
@@ -69,5 +69,7 @@ pub mod public_key {
         #[prost(bytes, tag="2")]
         #[serde(rename = "tendermint/PubKeySecp256k1", with = "crate::serializers::bytes::base64string")]
         Secp256k1(::prost::alloc::vec::Vec<u8>),
+        #[prost(bytes, tag="3")]
+        Sr25519(::prost::alloc::vec::Vec<u8>),
     }
 }

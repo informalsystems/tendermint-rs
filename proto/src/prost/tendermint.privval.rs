@@ -86,6 +86,16 @@ pub mod message {
         PingResponse(super::PingResponse),
     }
 }
+/// AuthSigMessage is duplicated from p2p prior to the P2P refactor.
+/// It is used for the SecretConnection until we migrate privval to gRPC.
+/// <https://github.com/tendermint/tendermint/issues/4698>
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AuthSigMessage {
+    #[prost(message, optional, tag="1")]
+    pub pub_key: ::core::option::Option<super::crypto::PublicKey>,
+    #[prost(bytes="vec", tag="2")]
+    pub sig: ::prost::alloc::vec::Vec<u8>,
+}
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum Errors {

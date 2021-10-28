@@ -6,7 +6,7 @@ pub const TENDERMINT_REPO: &str = "https://github.com/tendermint/tendermint";
 // Tag: v0.34.0-rc4
 // Branch: master
 // Commit ID (full length): d7d0ffea13c60c98b812d243ba5a2c375f341c15
-pub const TENDERMINT_COMMITISH: &str = "v0.34.9";
+pub const TENDERMINT_COMMITISH: &str = "v0.35.0-rc3";
 
 /// Predefined custom attributes for message annotations
 const PRIMITIVE_ENUM: &str = r#"#[derive(::num_derive::FromPrimitive, ::num_derive::ToPrimitive)]"#;
