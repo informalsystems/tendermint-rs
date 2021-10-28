@@ -236,7 +236,7 @@ pub struct ResponseInfo {
     #[serde(with = "crate::serializers::from_str")]
     pub last_block_height: i64,
     #[prost(bytes="vec", tag="5")]
-    #[serde(skip_serializing_if = "Vec::is_empty", with = "serde_bytes")]
+    #[serde(skip_serializing_if = "::prost::alloc::vec::Vec::is_empty", with = "serde_bytes")]
     pub last_block_app_hash: ::prost::alloc::vec::Vec<u8>,
 }
 /// nondeterministic

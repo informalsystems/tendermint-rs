@@ -53,7 +53,6 @@ pub mod p2p {
 }
 
 pub mod abci {
-    use crate::prelude::*;
     include!("prost/tendermint.abci.rs");
 }
 
