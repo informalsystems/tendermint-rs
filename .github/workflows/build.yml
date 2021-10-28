@@ -66,12 +66,10 @@ jobs:
         with:
           toolchain: stable
           override: true
-      # Regenerate proto definitions
-      - uses: actions-rs/cargo@v1
+      - name: Regenerate proto definitions
         working-directory: ./tools/proto-compiler/
-        with:
-          command: run
-      # Ensure that generated proto definitions compile
-      - uses: actions-rs/cargo@v1
+        run: cargo run
+      - name: Ensure that generated proto definitions compile
+        uses: actions-rs/cargo@v1
         with:
           command: build-all
