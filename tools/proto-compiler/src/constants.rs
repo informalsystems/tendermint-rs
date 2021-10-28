@@ -21,7 +21,7 @@ const BASE64STRING: &str = r#"#[serde(with = "crate::serializers::bytes::base64s
 const VEC_BASE64STRING: &str = r#"#[serde(with = "crate::serializers::bytes::vec_base64string")]"#;
 const OPTIONAL: &str = r#"#[serde(with = "crate::serializers::optional")]"#;
 const VEC_SKIP_IF_EMPTY: &str =
-    r#"#[serde(skip_serializing_if = "Vec::is_empty", with = "serde_bytes")]"#;
+    r#"#[serde(skip_serializing_if = "::prost::alloc::vec::Vec::is_empty", with = "serde_bytes")]"#;
 const NULLABLEVECARRAY: &str = r#"#[serde(with = "crate::serializers::txs")]"#;
 const NULLABLE: &str = r#"#[serde(with = "crate::serializers::nullable")]"#;
 const ALIAS_POWER_QUOTED: &str =
