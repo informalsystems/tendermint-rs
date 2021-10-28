@@ -56,3 +56,22 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: build-tools
+
+  # As per https://github.com/informalsystems/tendermint-rs/issues/1014
+  generated-protos-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      # Regenerate proto definitions
+      - uses: actions-rs/cargo@v1
+        working-directory: ./tools/proto-compiler/
+        with:
+          command: run
+      # Ensure that generated proto definitions compile
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build-all
