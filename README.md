@@ -1,4 +1,4 @@
-# tendermint.rs
+# tendermint-rs
 
 [![Crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
@@ -16,7 +16,15 @@ tolerant applications written in any programming language.
 
 Tested against the latest stable version of Rust. May work with older versions.
 
-Compatible with the v0.34 series of [Tendermint Core][Tendermint].
+## Versioning
+
+Each of the following branches targets a specific version of [Tendermint
+Core][Tendermint]:
+
+- `master` targets the latest official release of Tendermint Core (currently
+  v0.35.x)
+- `v0.23.x` targets v0.34.x
+- `dev` will be targeting v0.36.x
 
 ## Documentation
 
@@ -25,9 +33,19 @@ See each component for the relevant documentation.
 Libraries:
 
 - [tendermint](./tendermint) - Tendermint data structures and serialization
+- [tendermint-abci](./abci) - A lightweight, low-level framework for building
+  Tendermint ABCI applications in Rust
+- [tendermint-light-client](./light-client) - Tendermint light client library
+  for verifying signed headers, tracking validator set changes, and detecting
+    forks
+- [tendermint-light-client-js](./light-client-js) - Low-level WASM interface for
+  interacting with the Tendermint light client verification functionality
+- [tendermint-p2p](./p2p) - At present this primarily provides the ability to
+  connect to Tendermint nodes via Tendermint's [secret
+  connection](tendermint-secret-conn).
+- [tendermint-proto](./proto) - Protobuf data structures (generated using Prost)
+  for wire-level interaction with Tendermint
 - [tendermint-rpc](./rpc) - Tendermint RPC client and response types
-- [light-client](./light-client) - Tendermint light client library for verifying
-  signed headers, tracking validator set changes, and detecting forks
 
 ## Releases
 
@@ -110,4 +128,5 @@ limitations under the License.
 [tendermint-rpc-docs-link]: https://docs.rs/tendermint-rpc/
 [Tendermint]: https://github.com/tendermint/tendermint
 [tendermint-light-client-docs-link]: https://docs.rs/tendermint-light-client/
+[tendermint-secret-conn]: https://docs.tendermint.com/master/spec/p2p/peer.html#authenticated-encryption-handshake
 [contributing]: ./CONTRIBUTING.md
