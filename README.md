@@ -9,8 +9,8 @@
 
 [Tendermint] in Rust with [TLA+ specifications](/docs/spec).
 
-Tendermint is a high-performance blockchain consensus engine 
-for Byzantine fault tolerant applications written in any programming language.
+Tendermint is a high-performance blockchain consensus engine for Byzantine fault
+tolerant applications written in any programming language.
 
 ## Requirements
 
@@ -24,27 +24,26 @@ See each component for the relevant documentation.
 
 Libraries:
 
-- [tendermint](./tendermint) - Tendermint data structures and
-  serialization
-- [tendermint-rpc](./rpc) - Tendermint RPC client and
-  response types
+- [tendermint](./tendermint) - Tendermint data structures and serialization
+- [tendermint-rpc](./rpc) - Tendermint RPC client and response types
 - [light-client](./light-client) - Tendermint light client library for verifying
   signed headers, tracking validator set changes, and detecting forks
 
 ## Releases
 
-Release tags can be found on [Github](https://github.com/informalsystems/tendermint-rs/releases).
+Release tags can be found on
+[Github](https://github.com/informalsystems/tendermint-rs/releases).
 
 Crates are released on crates.io.
 
 ## Contributing
 
-The Tendermint protocols are specified in English in the
-[tendermint/spec repo](https://github.com/tendermint/spec).
-Any protocol changes or clarifications should be contributed there.
+The Tendermint protocols are specified in English in the [tendermint/spec
+repo](https://github.com/tendermint/spec).  Any protocol changes or
+clarifications should be contributed there.
 
-This repo contains the TLA+ specifications and Rust implementations for
-various components of Tendermint. See the [CONTRIBUTING.md][contributing] to start
+This repo contains the TLA+ specifications and Rust implementations for various
+components of Tendermint. See the [CONTRIBUTING.md][contributing] to start
 contributing.
 
 ## Versioning
