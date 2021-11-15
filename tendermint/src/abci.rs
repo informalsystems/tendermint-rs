@@ -39,7 +39,6 @@
 mod event;
 mod kind;
 
-pub mod params;
 pub mod request;
 pub mod response;
 pub mod types;

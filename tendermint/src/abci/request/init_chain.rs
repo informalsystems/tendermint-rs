@@ -1,9 +1,9 @@
-use crate::prelude::*;
-
 use bytes::Bytes;
 use chrono::{DateTime, Utc};
 
-use super::super::{params::ConsensusParams, types::ValidatorUpdate};
+use crate::{consensus, prelude::*};
+
+use super::super::types::ValidatorUpdate;
 
 /// Called on genesis to initialize chain state.
 ///
@@ -15,7 +15,7 @@ pub struct InitChain {
     /// The ID of the blockchain.
     pub chain_id: String,
     /// Initial consensus-critical parameters.
-    pub consensus_params: ConsensusParams,
+    pub consensus_params: consensus::Params,
     /// Initial genesis validators, sorted by voting power.
     pub validators: Vec<ValidatorUpdate>,
     /// Serialized JSON bytes containing the initial application state.

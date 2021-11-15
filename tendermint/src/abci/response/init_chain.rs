@@ -1,14 +1,14 @@
-use crate::prelude::*;
-
 use bytes::Bytes;
 
-use super::super::{params::ConsensusParams, types::ValidatorUpdate};
+use crate::{consensus, prelude::*};
+
+use super::super::types::ValidatorUpdate;
 
 #[doc = include_str!("../doc/response-initchain.md")]
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct InitChain {
     /// Initial consensus-critical parameters (optional).
-    pub consensus_params: Option<ConsensusParams>,
+    pub consensus_params: Option<consensus::Params>,
     /// Initial validator set (optional).
     ///
     /// If this list is empty, the initial validator set will be the one given in
