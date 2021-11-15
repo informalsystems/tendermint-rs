@@ -98,7 +98,7 @@ pub struct LastCommitInfo {
     ///
     /// Reflects the total number of rounds it took to come to consensus for the
     /// current block.
-    pub round: i32,
+    pub round: block::Round,
     /// The list of validator addresses in the last validator set, with their
     /// voting power and whether or not they signed a vote.
     pub votes: Vec<VoteInfo>,
@@ -252,7 +252,7 @@ impl Protobuf<pb::Evidence> for Evidence {}
 impl From<LastCommitInfo> for pb::LastCommitInfo {
     fn from(lci: LastCommitInfo) -> Self {
         Self {
-            round: lci.round,
+            round: lci.round.into(),
             votes: lci.votes.into_iter().map(Into::into).collect(),
         }
     }
@@ -263,7 +263,7 @@ impl TryFrom<pb::LastCommitInfo> for LastCommitInfo {
 
     fn try_from(lci: pb::LastCommitInfo) -> Result<Self, Self::Error> {
         Ok(Self {
-            round: lci.round,
+            round: lci.round.try_into()?,
             votes: lci
                 .votes
                 .into_iter()
