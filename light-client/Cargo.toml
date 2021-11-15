@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint-light-client"
-version    = "0.23.0"
+version    = "0.23.1"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -37,8 +37,8 @@ unstable = []
 mbt = []
 
 [dependencies]
-tendermint = { version = "0.23.0", path = "../tendermint", default-features = false }
-tendermint-rpc = { version = "0.23.0", path = "../rpc", default-features = false }
+tendermint = { version = "0.23.1", path = "../tendermint", default-features = false }
+tendermint-rpc = { version = "0.23.1", path = "../rpc", default-features = false }
 
 contracts = { version = "0.4.0", default-features = false }
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
