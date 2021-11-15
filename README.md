@@ -23,8 +23,8 @@ Core][Tendermint]:
 
 - `master` targets the latest official release of Tendermint Core (currently
   v0.35.x)
-- `v0.23.x` targets v0.34.x
-- `dev` will be targeting v0.36.x
+- `v0.23.x` targets Tendermint Core v0.34.x
+- `dev` will target Tendermint Core v0.36.x
 
 ## Documentation
 
