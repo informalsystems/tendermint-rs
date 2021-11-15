@@ -37,7 +37,7 @@ Libraries:
   Tendermint ABCI applications in Rust
 - [tendermint-light-client](./light-client) - Tendermint light client library
   for verifying signed headers, tracking validator set changes, and detecting
-    forks
+  forks
 - [tendermint-light-client-js](./light-client-js) - Low-level WASM interface for
   interacting with the Tendermint light client verification functionality
 - [tendermint-p2p](./p2p) - At present this primarily provides the ability to
@@ -52,7 +52,7 @@ Libraries:
 Release tags can be found on
 [Github](https://github.com/informalsystems/tendermint-rs/releases).
 
-Crates are released on crates.io.
+Crates are released on [crates.io](https://crates.io).
 
 ## Contributing
 
