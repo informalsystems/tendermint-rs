@@ -5,14 +5,12 @@
 //!
 //! [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#data-types)
 
-use crate::prelude::*;
-
 use core::convert::{TryFrom, TryInto};
 
 use bytes::Bytes;
 use chrono::{DateTime, Utc};
 
-use crate::{Error, PublicKey};
+use crate::{block, prelude::*, vote, Error, PublicKey};
 
 /// A validator address with voting power.
 ///
@@ -22,7 +20,7 @@ pub struct Validator {
     /// The validator's address (the first 20 bytes of `SHA256(public_key)`).
     pub address: [u8; 20],
     /// The voting power of the validator.
-    pub power: i64,
+    pub power: vote::Power,
 }
 
 /// A change to the validator set.
@@ -35,7 +33,7 @@ pub struct ValidatorUpdate {
     /// The validator's public key.
     pub pub_key: PublicKey,
     /// The validator's voting power.
-    pub power: i64,
+    pub power: vote::Power,
 }
 
 /// Information about a whether a validator signed the last block.
@@ -80,7 +78,7 @@ pub struct Evidence {
     /// The offending validator.
     pub validator: Validator,
     /// The height when the offense occurred.
-    pub height: i64,
+    pub height: block::Height,
     /// The corresponding time when the offense occurred.
     pub time: DateTime<Utc>,
     /// Total voting power of the validator set at `height`.
@@ -88,7 +86,7 @@ pub struct Evidence {
     /// This is included in case the ABCI application does not store historical
     /// validators, cf.
     /// [#4581](https://github.com/tendermint/tendermint/issues/4581)
-    pub total_voting_power: i64,
+    pub total_voting_power: vote::Power,
 }
 
 /// Information on the last block commit.
@@ -114,7 +112,7 @@ pub struct LastCommitInfo {
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Snapshot {
     /// The height at which the snapshot was taken
-    pub height: u64,
+    pub height: block::Height,
     /// The application-specific snapshot format identifier.
     ///
     /// This allows applications to version their snapshot data format and make
@@ -143,7 +141,7 @@ impl From<Validator> for pb::Validator {
     fn from(v: Validator) -> Self {
         Self {
             address: Bytes::copy_from_slice(&v.address[..]),
-            power: v.power,
+            power: v.power.into(),
         }
     }
 }
@@ -162,7 +160,7 @@ impl TryFrom<pb::Validator> for Validator {
 
         Ok(Self {
             address,
-            power: vu.power,
+            power: vu.power.try_into()?,
         })
     }
 }
@@ -173,7 +171,7 @@ impl From<ValidatorUpdate> for pb::ValidatorUpdate {
     fn from(vu: ValidatorUpdate) -> Self {
         Self {
             pub_key: Some(vu.pub_key.into()),
-            power: vu.power,
+            power: vu.power.into(),
         }
     }
 }
@@ -184,7 +182,7 @@ impl TryFrom<pb::ValidatorUpdate> for ValidatorUpdate {
     fn try_from(vu: pb::ValidatorUpdate) -> Result<Self, Self::Error> {
         Ok(Self {
             pub_key: vu.pub_key.ok_or(Error::missing_public_key())?.try_into()?,
-            power: vu.power,
+            power: vu.power.try_into()?,
         })
     }
 }
@@ -218,9 +216,9 @@ impl From<Evidence> for pb::Evidence {
         Self {
             r#type: evidence.kind as i32,
             validator: Some(evidence.validator.into()),
-            height: evidence.height,
+            height: evidence.height.into(),
             time: Some(evidence.time.into()),
-            total_voting_power: evidence.total_voting_power,
+            total_voting_power: evidence.total_voting_power.into(),
         }
     }
 }
@@ -244,7 +242,7 @@ impl TryFrom<pb::Evidence> for Evidence {
                 .try_into()?,
             height: evidence.height.try_into()?,
             time: evidence.time.ok_or(Error::missing_timestamp())?.into(),
-            total_voting_power: evidence.total_voting_power,
+            total_voting_power: evidence.total_voting_power.try_into()?,
         })
     }
 }
@@ -280,7 +278,7 @@ impl Protobuf<pb::LastCommitInfo> for LastCommitInfo {}
 impl From<Snapshot> for pb::Snapshot {
     fn from(snapshot: Snapshot) -> Self {
         Self {
-            height: snapshot.height,
+            height: snapshot.height.into(),
             format: snapshot.format,
             chunks: snapshot.chunks,
             hash: snapshot.hash,
@@ -294,7 +292,7 @@ impl TryFrom<pb::Snapshot> for Snapshot {
 
     fn try_from(snapshot: pb::Snapshot) -> Result<Self, Self::Error> {
         Ok(Self {
-            height: snapshot.height,
+            height: snapshot.height.try_into()?,
             format: snapshot.format,
             chunks: snapshot.chunks,
             hash: snapshot.hash,

@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use chrono::{DateTime, Utc};
 
-use crate::{consensus, prelude::*};
+use crate::{block, consensus, prelude::*};
 
 use super::super::types::ValidatorUpdate;
 
@@ -21,7 +21,7 @@ pub struct InitChain {
     /// Serialized JSON bytes containing the initial application state.
     pub app_state_bytes: Bytes,
     /// Height of the initial block (typically `1`).
-    pub initial_height: i64,
+    pub initial_height: block::Height,
 }
 
 // =============================================================================
@@ -41,7 +41,7 @@ impl From<InitChain> for pb::RequestInitChain {
             consensus_params: Some(init_chain.consensus_params.into()),
             validators: init_chain.validators.into_iter().map(Into::into).collect(),
             app_state_bytes: init_chain.app_state_bytes,
-            initial_height: init_chain.initial_height,
+            initial_height: init_chain.initial_height.into(),
         }
     }
 }
@@ -66,7 +66,7 @@ impl TryFrom<pb::RequestInitChain> for InitChain {
                 .map(TryInto::try_into)
                 .collect::<Result<_, _>>()?,
             app_state_bytes: init_chain.app_state_bytes,
-            initial_height: init_chain.initial_height,
+            initial_height: init_chain.initial_height.try_into()?,
         })
     }
 }

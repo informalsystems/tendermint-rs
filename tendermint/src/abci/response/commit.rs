@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::{block, prelude::*};
 
 use bytes::Bytes;
 
@@ -11,7 +11,7 @@ pub struct Commit {
     /// XXX(hdevalence) - rename to app_hash ?
     pub data: Bytes,
     /// Blocks below this height may be removed.
-    pub retain_height: i64,
+    pub retain_height: block::Height,
 }
 
 // =============================================================================
@@ -26,7 +26,7 @@ impl From<Commit> for pb::ResponseCommit {
     fn from(commit: Commit) -> Self {
         Self {
             data: commit.data,
-            retain_height: commit.retain_height,
+            retain_height: commit.retain_height.into(),
         }
     }
 }
@@ -37,7 +37,7 @@ impl TryFrom<pb::ResponseCommit> for Commit {
     fn try_from(commit: pb::ResponseCommit) -> Result<Self, Self::Error> {
         Ok(Self {
             data: commit.data,
-            retain_height: commit.retain_height,
+            retain_height: commit.retain_height.try_into()?,
         })
     }
 }

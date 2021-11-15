@@ -1,6 +1,6 @@
-use crate::prelude::*;
-
 use bytes::Bytes;
+
+use crate::{block, prelude::*};
 
 #[doc = include_str!("../doc/request-query.md")]
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -23,7 +23,7 @@ pub struct Query {
     /// this is the height of the block containing the application's Merkle root
     /// hash, which represents the state as it was after committing the block at
     /// `height - 1`.
-    pub height: i64,
+    pub height: block::Height,
     /// Whether to return a Merkle proof with the response, if possible.
     pub prove: bool,
 }
@@ -41,7 +41,7 @@ impl From<Query> for pb::RequestQuery {
         Self {
             data: query.data,
             path: query.path,
-            height: query.height,
+            height: query.height.into(),
             prove: query.prove,
         }
     }
@@ -54,7 +54,7 @@ impl TryFrom<pb::RequestQuery> for Query {
         Ok(Self {
             data: query.data,
             path: query.path,
-            height: query.height,
+            height: query.height.try_into()?,
             prove: query.prove,
         })
     }

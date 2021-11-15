@@ -1,9 +1,8 @@
-use crate::prelude::*;
-
 use bytes::Bytes;
 
 /// XXX(hdevalence): hide merkle::proof and re-export its contents from merkle?
 use crate::merkle::proof as merkle;
+use crate::{block, prelude::*};
 
 #[doc = include_str!("../doc/response-query.md")]
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
@@ -32,7 +31,7 @@ pub struct Query {
     /// Note that this is the height of the block containing the application's
     /// Merkle root hash, which represents the state as it was after committing
     /// the block at `height - 1`.
-    pub height: i64,
+    pub height: block::Height,
     /// The namespace for the `code`.
     pub codespace: String,
 }
@@ -55,7 +54,7 @@ impl From<Query> for pb::ResponseQuery {
             key: query.key,
             value: query.value,
             proof_ops: query.proof.map(Into::into),
-            height: query.height,
+            height: query.height.into(),
             codespace: query.codespace,
         }
     }
@@ -73,7 +72,7 @@ impl TryFrom<pb::ResponseQuery> for Query {
             key: query.key,
             value: query.value,
             proof: query.proof_ops.map(TryInto::try_into).transpose()?,
-            height: query.height,
+            height: query.height.try_into()?,
             codespace: query.codespace,
         })
     }
