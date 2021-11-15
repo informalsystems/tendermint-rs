@@ -6,7 +6,11 @@ Tendermint.
 
 All work on the code base should be motivated by a Github Issue. Search is a
 good place start when looking for places to contribute. If you would like to
-work on an issue which already exists, please indicate so by leaving a comment.
+work on an issue which already exists, please *assign yourself* to the issue if
+nobody else is already assigned to it. If someone else is already assigned to an
+issue, leave a comment on the issue to indicate that you'd like to work on it,
+or contact the assignee directly.
+
 If you'd like to work on something else, open an Issue to start the discussion.
 
 The rest of this document outlines the best practices for contributing to this
