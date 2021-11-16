@@ -50,7 +50,7 @@ Libraries:
 ## Releases
 
 Release tags can be found on
-[Github](https://github.com/informalsystems/tendermint-rs/releases).
+[GitHub](https://github.com/informalsystems/tendermint-rs/releases).
 
 Crates are released on [crates.io](https://crates.io).
 
