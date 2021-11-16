@@ -195,3 +195,9 @@ define_error! {
             |_| { "trust threshold too small (must be >= 1/3)" },
     }
 }
+
+impl From<core::convert::Infallible> for Error {
+    fn from(_never: core::convert::Infallible) -> Error {
+        unreachable!("Infallible can never be constructed")
+    }
+}
