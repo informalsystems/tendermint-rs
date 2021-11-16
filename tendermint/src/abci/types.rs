@@ -12,7 +12,7 @@ use core::convert::{TryFrom, TryInto};
 use bytes::Bytes;
 use chrono::{DateTime, Utc};
 
-use crate::PublicKey;
+use crate::{Error, PublicKey};
 
 /// A validator address with voting power.
 ///
@@ -136,9 +136,6 @@ pub struct Snapshot {
 // Protobuf conversions
 // =============================================================================
 
-// XXX(hdevalence): these all use &'static str for now, this should be fixed
-// to align with the crate's error-handling strategy.
-
 use tendermint_proto::abci as pb;
 use tendermint_proto::Protobuf;
 
@@ -152,7 +149,7 @@ impl From<Validator> for pb::Validator {
 }
 
 impl TryFrom<pb::Validator> for Validator {
-    type Error = crate::Error;
+    type Error = Error;
 
     fn try_from(vu: pb::Validator) -> Result<Self, Self::Error> {
         let address = if vu.address.len() == 20 {
@@ -160,7 +157,7 @@ impl TryFrom<pb::Validator> for Validator {
             bytes.copy_from_slice(&vu.address);
             bytes
         } else {
-            return Err("wrong address length".into());
+            return Err(Error::invalid_account_id_length());
         };
 
         Ok(Self {
@@ -182,11 +179,11 @@ impl From<ValidatorUpdate> for pb::ValidatorUpdate {
 }
 
 impl TryFrom<pb::ValidatorUpdate> for ValidatorUpdate {
-    type Error = crate::Error;
+    type Error = Error;
 
     fn try_from(vu: pb::ValidatorUpdate) -> Result<Self, Self::Error> {
         Ok(Self {
-            pub_key: vu.pub_key.ok_or("missing public key")?.try_into()?,
+            pub_key: vu.pub_key.ok_or(Error::missing_public_key())?.try_into()?,
             power: vu.power,
         })
     }
@@ -204,11 +201,11 @@ impl From<VoteInfo> for pb::VoteInfo {
 }
 
 impl TryFrom<pb::VoteInfo> for VoteInfo {
-    type Error = crate::Error;
+    type Error = Error;
 
     fn try_from(vi: pb::VoteInfo) -> Result<Self, Self::Error> {
         Ok(Self {
-            validator: vi.validator.ok_or("missing validator")?.try_into()?,
+            validator: vi.validator.ok_or(Error::missing_validator())?.try_into()?,
             signed_last_block: vi.signed_last_block,
         })
     }
@@ -229,21 +226,24 @@ impl From<Evidence> for pb::Evidence {
 }
 
 impl TryFrom<pb::Evidence> for Evidence {
-    type Error = crate::Error;
+    type Error = Error;
 
     fn try_from(evidence: pb::Evidence) -> Result<Self, Self::Error> {
         let kind = match evidence.r#type {
             0 => EvidenceKind::Unknown,
             1 => EvidenceKind::DuplicateVote,
             2 => EvidenceKind::LightClientAttack,
-            _ => Err("unknown evidence kind")?,
+            _ => Err(Error::invalid_evidence())?,
         };
 
         Ok(Self {
             kind,
-            validator: evidence.validator.ok_or("missing validator")?.try_into()?,
-            height: evidence.height,
-            time: evidence.time.ok_or("missing time")?.into(),
+            validator: evidence
+                .validator
+                .ok_or(Error::missing_validator())?
+                .try_into()?,
+            height: evidence.height.try_into()?,
+            time: evidence.time.ok_or(Error::missing_timestamp())?.into(),
             total_voting_power: evidence.total_voting_power,
         })
     }
@@ -261,7 +261,7 @@ impl From<LastCommitInfo> for pb::LastCommitInfo {
 }
 
 impl TryFrom<pb::LastCommitInfo> for LastCommitInfo {
-    type Error = crate::Error;
+    type Error = Error;
 
     fn try_from(lci: pb::LastCommitInfo) -> Result<Self, Self::Error> {
         Ok(Self {
@@ -290,7 +290,7 @@ impl From<Snapshot> for pb::Snapshot {
 }
 
 impl TryFrom<pb::Snapshot> for Snapshot {
-    type Error = crate::Error;
+    type Error = Error;
 
     fn try_from(snapshot: pb::Snapshot) -> Result<Self, Self::Error> {
         Ok(Self {

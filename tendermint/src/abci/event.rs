@@ -127,9 +127,6 @@ impl<K: Into<String>, V: Into<String>> From<(K, V)> for EventAttribute {
 // Protobuf conversions
 // =============================================================================
 
-// XXX(hdevalence): these all use &'static str for now, this should be fixed
-// to align with the crate's error-handling strategy.
-
 use core::convert::{TryFrom, TryInto};
 
 use tendermint_proto::abci as pb;

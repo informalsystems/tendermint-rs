@@ -39,9 +39,6 @@ impl Default for CheckTxKind {
 // Protobuf conversions
 // =============================================================================
 
-// XXX(hdevalence): these all use &'static str for now, this should be fixed
-// to align with the crate's error-handling strategy.
-
 use core::convert::TryFrom;
 use tendermint_proto::abci as pb;
 use tendermint_proto::Protobuf;
@@ -62,7 +59,7 @@ impl TryFrom<pb::RequestCheckTx> for CheckTx {
         let kind = match check_tx.r#type {
             0 => CheckTxKind::New,
             1 => CheckTxKind::Recheck,
-            _ => Err("unknown checktx type")?,
+            _ => Err(crate::Error::unsupported_check_tx_type())?,
         };
         Ok(Self {
             tx: check_tx.tx,

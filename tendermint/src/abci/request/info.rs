@@ -17,9 +17,6 @@ pub struct Info {
 // Protobuf conversions
 // =============================================================================
 
-// XXX(hdevalence): these all use &'static str for now, this should be fixed
-// to align with the crate's error-handling strategy.
-
 use core::convert::TryFrom;
 use tendermint_proto::abci as pb;
 use tendermint_proto::Protobuf;
@@ -36,7 +33,7 @@ impl From<Info> for pb::RequestInfo {
 }
 
 impl TryFrom<pb::RequestInfo> for Info {
-    type Error = &'static str;
+    type Error = crate::Error;
 
     fn try_from(info: pb::RequestInfo) -> Result<Self, Self::Error> {
         Ok(Self {

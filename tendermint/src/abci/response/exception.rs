@@ -11,9 +11,6 @@ pub struct Exception {
 // Protobuf conversions
 // =============================================================================
 
-// XXX(hdevalence): these all use &'static str for now, this should be fixed
-// to align with the crate's error-handling strategy.
-
 use core::convert::TryFrom;
 use tendermint_proto::abci as pb;
 use tendermint_proto::Protobuf;
@@ -27,7 +24,7 @@ impl From<Exception> for pb::ResponseException {
 }
 
 impl TryFrom<pb::ResponseException> for Exception {
-    type Error = &'static str;
+    type Error = crate::Error;
 
     fn try_from(exception: pb::ResponseException) -> Result<Self, Self::Error> {
         Ok(Self {

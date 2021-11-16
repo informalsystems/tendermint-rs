@@ -32,9 +32,6 @@ impl Default for OfferSnapshot {
 // Protobuf conversions
 // =============================================================================
 
-// XXX(hdevalence): these all use &'static str for now, this should be fixed
-// to align with the crate's error-handling strategy.
-
 use core::convert::TryFrom;
 use tendermint_proto::abci as pb;
 use tendermint_proto::Protobuf;
@@ -58,7 +55,7 @@ impl TryFrom<pb::ResponseOfferSnapshot> for OfferSnapshot {
             3 => OfferSnapshot::Reject,
             4 => OfferSnapshot::RejectFormat,
             5 => OfferSnapshot::RejectSender,
-            _ => Err("unknown offer snapshot result code")?,
+            _ => Err(crate::Error::unsupported_offer_snapshot_chunk_result())?,
         })
     }
 }

@@ -23,6 +23,7 @@ use crate::prelude::*;
 
 use core::convert::{TryFrom, TryInto};
 
+use crate::Error;
 // bring into scope for doc links
 #[allow(unused)]
 use super::types::Snapshot;
@@ -120,7 +121,7 @@ impl From<ConsensusResponse> for Response {
 }
 
 impl TryFrom<Response> for ConsensusResponse {
-    type Error = &'static str;
+    type Error = Error;
     fn try_from(req: Response) -> Result<Self, Self::Error> {
         match req {
             Response::InitChain(x) => Ok(Self::InitChain(x)),
@@ -128,7 +129,7 @@ impl TryFrom<Response> for ConsensusResponse {
             Response::DeliverTx(x) => Ok(Self::DeliverTx(x)),
             Response::EndBlock(x) => Ok(Self::EndBlock(x)),
             Response::Commit(x) => Ok(Self::Commit(x)),
-            _ => Err("wrong request type"),
+            _ => Err(Error::invalid_abci_response_type()),
         }
     }
 }
@@ -149,11 +150,11 @@ impl From<MempoolResponse> for Response {
 }
 
 impl TryFrom<Response> for MempoolResponse {
-    type Error = &'static str;
+    type Error = Error;
     fn try_from(req: Response) -> Result<Self, Self::Error> {
         match req {
             Response::CheckTx(x) => Ok(Self::CheckTx(x)),
-            _ => Err("wrong request type"),
+            _ => Err(Error::invalid_abci_response_type()),
         }
     }
 }
@@ -180,13 +181,13 @@ impl From<InfoResponse> for Response {
 }
 
 impl TryFrom<Response> for InfoResponse {
-    type Error = &'static str;
+    type Error = Error;
     fn try_from(req: Response) -> Result<Self, Self::Error> {
         match req {
             Response::Echo(x) => Ok(Self::Echo(x)),
             Response::Info(x) => Ok(Self::Info(x)),
             Response::Query(x) => Ok(Self::Query(x)),
-            _ => Err("wrong request type"),
+            _ => Err(Error::invalid_abci_response_type()),
         }
     }
 }
@@ -216,14 +217,14 @@ impl From<SnapshotResponse> for Response {
 }
 
 impl TryFrom<Response> for SnapshotResponse {
-    type Error = &'static str;
+    type Error = Error;
     fn try_from(req: Response) -> Result<Self, Self::Error> {
         match req {
             Response::ListSnapshots(x) => Ok(Self::ListSnapshots(x)),
             Response::OfferSnapshot(x) => Ok(Self::OfferSnapshot(x)),
             Response::LoadSnapshotChunk(x) => Ok(Self::LoadSnapshotChunk(x)),
             Response::ApplySnapshotChunk(x) => Ok(Self::ApplySnapshotChunk(x)),
-            _ => Err("wrong request type"),
+            _ => Err(Error::invalid_abci_response_type()),
         }
     }
 }
@@ -231,9 +232,6 @@ impl TryFrom<Response> for SnapshotResponse {
 // =============================================================================
 // Protobuf conversions
 // =============================================================================
-
-// XXX(hdevalence): these all use &'static str for now, this should be fixed
-// to align with the crate's error-handling strategy.
 
 use tendermint_proto::abci as pb;
 use tendermint_proto::Protobuf;
@@ -263,7 +261,7 @@ impl From<Response> for pb::Response {
 }
 
 impl TryFrom<pb::Response> for Response {
-    type Error = crate::Error;
+    type Error = Error;
 
     fn try_from(response: pb::Response) -> Result<Self, Self::Error> {
         use pb::response::Value;
@@ -283,7 +281,7 @@ impl TryFrom<pb::Response> for Response {
             Some(Value::OfferSnapshot(x)) => Ok(Response::OfferSnapshot(x.try_into()?)),
             Some(Value::LoadSnapshotChunk(x)) => Ok(Response::LoadSnapshotChunk(x.try_into()?)),
             Some(Value::ApplySnapshotChunk(x)) => Ok(Response::ApplySnapshotChunk(x.try_into()?)),
-            None => Err("no response in proto".into()),
+            None => Err(crate::Error::missing_data()),
         }
     }
 }

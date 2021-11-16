@@ -1,7 +1,6 @@
 use crate::prelude::*;
 
-// XXX(hdevalence): fix this import
-use super::super::event::Event;
+use super::super::Event;
 
 #[doc = include_str!("../doc/response-beginblock.md")]
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
@@ -13,9 +12,6 @@ pub struct BeginBlock {
 // =============================================================================
 // Protobuf conversions
 // =============================================================================
-
-// XXX(hdevalence): these all use &'static str for now, this should be fixed
-// to align with the crate's error-handling strategy.
 
 use core::convert::{TryFrom, TryInto};
 use tendermint_proto::abci as pb;

@@ -5,6 +5,7 @@ use bytes::Bytes;
 use crate::block;
 
 use super::super::types::{Evidence, LastCommitInfo};
+use crate::Error;
 
 // bring into scope for doc links
 #[allow(unused)]
@@ -32,9 +33,6 @@ pub struct BeginBlock {
 // Protobuf conversions
 // =============================================================================
 
-// XXX(hdevalence): these all use &'static str for now, this should be fixed
-// to align with the crate's error-handling strategy.
-
 use core::convert::{TryFrom, TryInto};
 use tendermint_proto::abci as pb;
 use tendermint_proto::Protobuf;
@@ -55,15 +53,18 @@ impl From<BeginBlock> for pb::RequestBeginBlock {
 }
 
 impl TryFrom<pb::RequestBeginBlock> for BeginBlock {
-    type Error = crate::Error;
+    type Error = Error;
 
     fn try_from(begin_block: pb::RequestBeginBlock) -> Result<Self, Self::Error> {
         Ok(Self {
             hash: begin_block.hash,
-            header: begin_block.header.ok_or("missing header")?.try_into()?,
+            header: begin_block
+                .header
+                .ok_or(Error::missing_header())?
+                .try_into()?,
             last_commit_info: begin_block
                 .last_commit_info
-                .ok_or("missing last commit info")?
+                .ok_or(Error::missing_last_commit_info())?
                 .try_into()?,
             byzantine_validators: begin_block
                 .byzantine_validators

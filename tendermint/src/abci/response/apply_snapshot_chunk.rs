@@ -50,9 +50,6 @@ impl Default for ApplySnapshotChunkResult {
 // Protobuf conversions
 // =============================================================================
 
-// XXX(hdevalence): these all use &'static str for now, this should be fixed
-// to align with the crate's error-handling strategy.
-
 use core::convert::TryFrom;
 use tendermint_proto::abci as pb;
 use tendermint_proto::Protobuf;
@@ -78,7 +75,7 @@ impl TryFrom<pb::ResponseApplySnapshotChunk> for ApplySnapshotChunk {
             3 => ApplySnapshotChunkResult::Retry,
             4 => ApplySnapshotChunkResult::RetrySnapshot,
             5 => ApplySnapshotChunkResult::RejectSnapshot,
-            _ => Err("unknown snapshot chunk result")?,
+            _ => Err(crate::Error::unsupported_apply_snapshot_chunk_result())?,
         };
         Ok(Self {
             result,

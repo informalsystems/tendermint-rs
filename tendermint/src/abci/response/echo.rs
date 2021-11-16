@@ -11,9 +11,6 @@ pub struct Echo {
 // Protobuf conversions
 // =============================================================================
 
-// XXX(hdevalence): these all use &'static str for now, this should be fixed
-// to align with the crate's error-handling strategy.
-
 use core::convert::TryFrom;
 use tendermint_proto::abci as pb;
 use tendermint_proto::Protobuf;
@@ -27,7 +24,7 @@ impl From<Echo> for pb::ResponseEcho {
 }
 
 impl TryFrom<pb::ResponseEcho> for Echo {
-    type Error = &'static str;
+    type Error = crate::Error;
 
     fn try_from(echo: pb::ResponseEcho) -> Result<Self, Self::Error> {
         Ok(Self {

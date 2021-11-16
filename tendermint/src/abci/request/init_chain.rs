@@ -28,9 +28,7 @@ pub struct InitChain {
 // Protobuf conversions
 // =============================================================================
 
-// XXX(hdevalence): these all use &'static str for now, this should be fixed
-// to align with the crate's error-handling strategy.
-
+use crate::Error;
 use core::convert::{TryFrom, TryInto};
 use tendermint_proto::abci as pb;
 use tendermint_proto::Protobuf;
@@ -49,15 +47,18 @@ impl From<InitChain> for pb::RequestInitChain {
 }
 
 impl TryFrom<pb::RequestInitChain> for InitChain {
-    type Error = crate::Error;
+    type Error = Error;
 
     fn try_from(init_chain: pb::RequestInitChain) -> Result<Self, Self::Error> {
         Ok(Self {
-            time: init_chain.time.ok_or("missing genesis time")?.try_into()?,
+            time: init_chain
+                .time
+                .ok_or(Error::missing_genesis_time())?
+                .try_into()?,
             chain_id: init_chain.chain_id,
             consensus_params: init_chain
                 .consensus_params
-                .ok_or("missing consensus params")?
+                .ok_or(Error::missing_consensus_params())?
                 .try_into()?,
             validators: init_chain
                 .validators

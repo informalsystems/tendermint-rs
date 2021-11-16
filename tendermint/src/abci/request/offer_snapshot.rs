@@ -22,9 +22,6 @@ pub struct OfferSnapshot {
 // Protobuf conversions
 // =============================================================================
 
-// XXX(hdevalence): these all use &'static str for now, this should be fixed
-// to align with the crate's error-handling strategy.
-
 use core::convert::{TryFrom, TryInto};
 use tendermint_proto::abci as pb;
 use tendermint_proto::Protobuf;
@@ -45,7 +42,7 @@ impl TryFrom<pb::RequestOfferSnapshot> for OfferSnapshot {
         Ok(Self {
             snapshot: offer_snapshot
                 .snapshot
-                .ok_or("missing snapshot")?
+                .ok_or(crate::Error::missing_data())?
                 .try_into()?,
             app_hash: offer_snapshot.app_hash,
         })
