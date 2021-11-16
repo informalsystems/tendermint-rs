@@ -1,76 +1,67 @@
 # Contributing
 
 Thank you for your interest in contributing to tendermint-rs! The goal of
-tendermint-rs is to provide a high quality, formally verified implementation of
-Tendermint.
+tendermint-rs is to provide a high quality, formally verified interface to
+[Tendermint].
 
-All work on the code base should be motivated by a Github Issue. Search is a
-good place start when looking for places to contribute. If you would like to
-work on an issue which already exists, please *assign yourself* to the issue if
-nobody else is already assigned to it. If someone else is already assigned to an
-issue, leave a comment on the issue to indicate that you'd like to work on it,
-or contact the assignee directly.
+This document outlines the best practices for contributing to this repository:
 
-If you'd like to work on something else, open an Issue to start the discussion.
-
-The rest of this document outlines the best practices for contributing to this
-repository:
-
-- [Decision Making](#decision-making) - process for agreeing to changes
+- [Proposing Changes](#proposing-changes) - process for agreeing to changes
 - [Forking](#forking) - fork the repo to make pull requests
 - [Changelog](#changelog) - changes must be recorded in the changelog
 - [Pull Requests](#pull-requests) - what makes a good pull request
 - [Releases](#releases) - how our release process looks
 
-## Decision Making
+## Proposing Changes
 
-When contributing to the project, the following process leads to the best chance
-of landing the changes in master.
+When contributing to the project, adhering to the following guidelines will
+dramatically increase the likelihood of changes being accepted quickly.
 
-All new contributions should start with a Github Issue. The issue helps capture
-the problem you're trying to solve and allows for early feedback. Once the issue
-is created, maintainers may request more detailed documentation be written in
-the form of a Request for Comment (RFC) or Architectural Decision Record
-([ADR](https://github.com/informalsystems/tendermint-rs/blob/master/docs/architecture/README.md)).
+### Create/locate and assign yourself to an issue
 
-Discussion at the RFC stage will build collective understanding of the
-dimensions of the problems and help structure conversations around trade-offs.
+1. A good place to start is to search through the [existing
+   issues](https://github.com/informalsystems/tendermint-rs/issues) for the
+   problem you're encountering.
+2. If no relevant issues exist, submit one describing the *problem* you're
+   facing, as well as a *definition of done*. A definition of done, which tells
+   us how to know when the issue can be closed, helps us to scope the problem
+   and give it definite boundaries. Without a definition of done, issues can
+   become vague, amorphous changesets that never really come to a satisfactory
+   conclusion.
+3. Once the issue exists, *assign yourself to it*. If there's already someone
+   assigned to the issue, comment on the issue to ask if you can take it over,
+   or reach out directly to the current assignee.
 
-When the problem is well understood but the solution leads to large structural
-changes to the code base, these changes should be proposed in the form of an
-[Architectural Decision Record (ADR)](./docs/architecture/). The ADR will help
-build consensus on an overall strategy to ensure the code base maintains
-coherence in the larger context. If you are not comfortable with writing an ADR,
-you can open a less-formal issue and the maintainers will help you turn it into
-an ADR.
+### Small PRs
 
-When the problem as well as proposed solution are well understood, changes
-should start with a [draft pull
-request](https://github.blog/2019-02-14-introducing-draft-pull-requests/)
-against master. The draft signals that work is underway. When the work is ready
-for feedback, hitting "Ready for Review" will signal to the maintainers to take
-a look.
+We consider a PR to be "small" if it's under 100 lines' worth of meaningful code
+changes, but we will accommodate PRs of up to about 300 lines. Only in
+exceptional circumstances will we review larger PRs.
 
-Implementation trajectories should aim to proceed where possible as a series of
-smaller incremental changes, in the form of small PRs that can be merged
-quickly. This helps manage the load for reviewers and reduces the likelihood
-that PRs will sit open for longer.
+Keeping PRs small helps reduce maintainers' workloads, increases speed of
+getting feedback, and prevents PRs from standing open for long periods of time.
+If you need to make bigger changes, it's recommended that you plan out your
+changes in smaller, more manageable chunks (e.g. one issue may take several PRs
+to address).
 
-![Contributing
-flow](https://github.com/tendermint/tendermint/blob/v0.33.6/docs/imgs/contributing.png)
+### ADRs
 
-Each stage of the process is aimed at creating feedback cycles which align
-contributors and maintainers to make sure:
+If your proposed changes are large, complex, or involve substantial changes to
+the architecture of one or more components, a maintainer may ask that you first
+submit an [ADR](./docs/architecture/README.md) (architecture decision record)
+before you start coding your solution.
 
-- Contributors don’t waste their time implementing/proposing features which
-  won’t land in `master`.
-- Maintainers have the necessary context in order to support and review
-  contributions.
+ADRs are a way for us to keep track of *why* we've made specific architectural
+changes over time. This is intended to help newcomers to the codebase understand
+our current architecture and how it has evolved, as well as to help us not
+repeat past mistakes.
+
+If you need help with developing an ADR, feel free to ask us.
 
 ## Forking
 
 If you do not have write access to the repository, your contribution should be
-made through a fork on Github. Fork the repository, contribute to your fork, and
+made through a fork on GitHub. Fork the repository, contribute to your fork, and
 make a pull request back upstream.
 
 When forking, add your fork's URL as a new git remote in your local copy of the
@@ -79,7 +70,7 @@ repo. For instance, to create a fork and work on a branch of it:
 - Create the fork on GitHub, using the fork button.
 - `cd` to the original clone of the repo on your machine
 - `git remote rename origin upstream`
-- `git remote add origin git@github.com:<location of fork>
+- `git remote add origin git@github.com:<location of fork>`
 
 Now `origin` refers to your fork and `upstream` refers to this version.
 
@@ -128,7 +119,7 @@ Changelog entries should be formatted as follows:
 ```
 
 Here, `pkg` is the part of the code that changed, and `xxx` is the issue or
-pull-request number.
+pull request number.
 
 Changelog entries should be ordered alphabetically according to the `pkg`, and
 numerically according to the issue/pull-request number.
@@ -144,11 +135,20 @@ core data structures are exposed.
 
 ## Pull Requests
 
-The master development branch is `master`. 
-Branch names should be prefixed with the author, eg. `name/feature-x`. 
+Pull requests are squash-merged into one of the following primary development
+branches:
 
-Pull requests are made against `master`
-and are squash merged into master.
+- `master` - targeting compatibility with the [latest official release of
+  Tendermint](https://github.com/tendermint/tendermint/releases).
+- tendermint-rs version-specific branches, e.g. `v0.23.x` - targeting patches to
+  older versions of tendermint-rs.
+- `dev` - targeting the latest pre-release of Tendermint.
+
+Indicate in your pull request which version of Tendermint/tendermint-rs you are
+targeting with your changes. Changes to multiple versions will require separate
+PRs.
+
+Branch names should be prefixed with the author, eg. `name/feature-x`.
 
 PRs must:
 
@@ -156,10 +156,17 @@ PRs must:
 - update any relevant documentation and include tests.
 - update the [changelog](#changelog) with a description of the change
 
-Pull requests should aim to be small and self contained to facilitate quick
-review and merging. Larger change sets should be broken up across multiple PRs.
-Commits should be concise but informative, and moderately clean. Commits will be squashed into a
-single commit for the PR with all the commit messages.
+Commits should be concise but informative, and moderately clean. Commits will be
+squashed into a single commit for the PR with all the commit messages.
+
+### Draft PRs
+
+When the problem as well as proposed solution are well understood, changes
+should start with a [draft pull
+request](https://github.blog/2019-02-14-introducing-draft-pull-requests/)
+against master. The draft signals that work is underway. When the work is ready
+for feedback, hitting "Ready for Review" will signal to the maintainers to take
+a look. Maintainers will not review draft PRs.
 
 ## Releases
 
@@ -171,8 +178,8 @@ Our release process is as follows:
       in this release.
    2. Running `unclog build > CHANGELOG.md` to update the changelog.
    3. Committing this updated `CHANGELOG.md` file to the repo.
-2. Push this to a branch `release/vX.Y.Z` according to the version number of
-   the anticipated release (e.g. `release/v0.17.0`) and open a **draft PR**.
+2. Push this to a branch `release/vX.Y.Z` according to the version number of the
+   anticipated release (e.g. `release/v0.17.0`) and open a **draft PR**.
 3. Bump all relevant versions in the codebase to the new version and push these
    changes to the release PR. This includes:
    1. All `Cargo.toml` files (making sure dependencies' versions are updated
@@ -183,13 +190,14 @@ Our release process is as follows:
    documentation compiles and seems up-to-date and coherent. Fix any potential
    issues here and push them to the release PR.
 5. Mark the PR as **Ready for Review** and incorporate feedback on the release.
-6. Once approved, run the [`release.sh`] script. Fix any problems that may
-   arise during this process and push the changes to the release PR.
-   This step requires the appropriate privileges to push crates to [crates.io].
-7. Once all crates have been successfully released, merge the PR to `master`
-   and tag the repo at the new version (e.g. `v0.17.0`).
+6. Once approved, run the [`release.sh`] script. Fix any problems that may arise
+   during this process and push the changes to the release PR.  This step
+   requires the appropriate privileges to push crates to [crates.io].
+7. Once all crates have been successfully released, merge the PR to `master` and
+   tag the repo at the new version (e.g. `v0.17.0`).
 
 [CHANGELOG.md]: https://github.com/informalsystems/tendermint-rs/blob/master/CHANGELOG.md
 [`release.sh`]: https://github.com/informalsystems/tendermint-rs/blob/master/release.sh
 [crates.io]: https://crates.io
 [unclog]: https://github.com/informalsystems/unclog
+[Tendermint]: https://tendermint.com
