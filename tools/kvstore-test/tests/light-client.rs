@@ -23,7 +23,6 @@ use tendermint_light_client::{
     types::{Height, PeerId, Status, TrustThreshold},
 };
 
-use tendermint::abci::transaction::Hash as TxHash;
 use tendermint_rpc as rpc;
 
 use std::convert::TryFrom;
@@ -33,7 +32,11 @@ struct TestEvidenceReporter;
 
 #[contracts::contract_trait]
 impl EvidenceReporter for TestEvidenceReporter {
-    fn report(&self, evidence: Evidence, peer: PeerId) -> Result<TxHash, IoError> {
+    fn report(
+        &self,
+        evidence: Evidence,
+        peer: PeerId,
+    ) -> Result<rpc::abci::transaction::Hash, IoError> {
         panic!(
             "unexpected fork detected for peer {} with evidence: {:?}",
             peer, evidence

@@ -23,10 +23,10 @@ mod rpc {
     use futures::StreamExt;
     use std::convert::TryFrom;
     use std::sync::atomic::{AtomicU8, Ordering};
-    use tendermint::abci::Log;
-    use tendermint::abci::{Code, Transaction};
     use tendermint::block::Height;
     use tendermint::merkle::simple_hash_from_byte_vectors;
+    use tendermint_rpc::abci::Log;
+    use tendermint_rpc::abci::{Code, Transaction};
     use tendermint_rpc::endpoint::tx::Response as ResultTx;
     use tendermint_rpc::event::{Event, EventData, TxInfo};
     use tendermint_rpc::query::{EventType, Query};
@@ -475,7 +475,7 @@ mod rpc {
         http_client: &HttpClient,
         websocket_client: &mut WebSocketClient,
         tx: Transaction,
-    ) -> Result<(tendermint::abci::transaction::Hash, TxInfo), tendermint_rpc::Error> {
+    ) -> Result<(tendermint_rpc::abci::transaction::Hash, TxInfo), tendermint_rpc::Error> {
         let mut subs = websocket_client.subscribe(EventType::Tx.into()).await?;
         let r = http_client.broadcast_tx_async(tx.clone()).await?;
 
