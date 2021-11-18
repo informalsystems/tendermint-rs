@@ -184,7 +184,7 @@ impl Application for KeyValueStoreApp {
         let (key, value) = if tx_parts.len() == 2 {
             (tx_parts[0], tx_parts[1])
         } else {
-            (tx.as_ref(), tx.as_ref())
+            (tx, tx)
         };
         let _ = self.set(key, value).unwrap();
         ResponseDeliverTx {
