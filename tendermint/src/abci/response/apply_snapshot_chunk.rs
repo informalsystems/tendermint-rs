@@ -75,7 +75,7 @@ impl TryFrom<pb::ResponseApplySnapshotChunk> for ApplySnapshotChunk {
             3 => ApplySnapshotChunkResult::Retry,
             4 => ApplySnapshotChunkResult::RetrySnapshot,
             5 => ApplySnapshotChunkResult::RejectSnapshot,
-            _ => Err(crate::Error::unsupported_apply_snapshot_chunk_result())?,
+            _ => return Err(crate::Error::unsupported_apply_snapshot_chunk_result()),
         };
         Ok(Self {
             result,

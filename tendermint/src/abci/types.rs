@@ -181,7 +181,10 @@ impl TryFrom<pb::ValidatorUpdate> for ValidatorUpdate {
 
     fn try_from(vu: pb::ValidatorUpdate) -> Result<Self, Self::Error> {
         Ok(Self {
-            pub_key: vu.pub_key.ok_or(Error::missing_public_key())?.try_into()?,
+            pub_key: vu
+                .pub_key
+                .ok_or_else(Error::missing_public_key)?
+                .try_into()?,
             power: vu.power.try_into()?,
         })
     }
@@ -203,7 +206,10 @@ impl TryFrom<pb::VoteInfo> for VoteInfo {
 
     fn try_from(vi: pb::VoteInfo) -> Result<Self, Self::Error> {
         Ok(Self {
-            validator: vi.validator.ok_or(Error::missing_validator())?.try_into()?,
+            validator: vi
+                .validator
+                .ok_or_else(Error::missing_validator)?
+                .try_into()?,
             signed_last_block: vi.signed_last_block,
         })
     }
@@ -231,17 +237,17 @@ impl TryFrom<pb::Evidence> for Evidence {
             0 => EvidenceKind::Unknown,
             1 => EvidenceKind::DuplicateVote,
             2 => EvidenceKind::LightClientAttack,
-            _ => Err(Error::invalid_evidence())?,
+            _ => return Err(Error::invalid_evidence()),
         };
 
         Ok(Self {
             kind,
             validator: evidence
                 .validator
-                .ok_or(Error::missing_validator())?
+                .ok_or_else(Error::missing_validator)?
                 .try_into()?,
             height: evidence.height.try_into()?,
-            time: evidence.time.ok_or(Error::missing_timestamp())?.into(),
+            time: evidence.time.ok_or_else(Error::missing_timestamp)?.into(),
             total_voting_power: evidence.total_voting_power.try_into()?,
         })
     }

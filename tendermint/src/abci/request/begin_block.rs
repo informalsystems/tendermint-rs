@@ -60,11 +60,11 @@ impl TryFrom<pb::RequestBeginBlock> for BeginBlock {
             hash: begin_block.hash,
             header: begin_block
                 .header
-                .ok_or(Error::missing_header())?
+                .ok_or_else(Error::missing_header)?
                 .try_into()?,
             last_commit_info: begin_block
                 .last_commit_info
-                .ok_or(Error::missing_last_commit_info())?
+                .ok_or_else(Error::missing_last_commit_info)?
                 .try_into()?,
             byzantine_validators: begin_block
                 .byzantine_validators

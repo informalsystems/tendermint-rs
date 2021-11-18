@@ -53,12 +53,12 @@ impl TryFrom<pb::RequestInitChain> for InitChain {
         Ok(Self {
             time: init_chain
                 .time
-                .ok_or(Error::missing_genesis_time())?
+                .ok_or_else(Error::missing_genesis_time)?
                 .try_into()?,
             chain_id: init_chain.chain_id,
             consensus_params: init_chain
                 .consensus_params
-                .ok_or(Error::missing_consensus_params())?
+                .ok_or_else(Error::missing_consensus_params)?
                 .try_into()?,
             validators: init_chain
                 .validators

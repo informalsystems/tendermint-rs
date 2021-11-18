@@ -59,7 +59,7 @@ impl TryFrom<pb::RequestCheckTx> for CheckTx {
         let kind = match check_tx.r#type {
             0 => CheckTxKind::New,
             1 => CheckTxKind::Recheck,
-            _ => Err(crate::Error::unsupported_check_tx_type())?,
+            _ => return Err(crate::Error::unsupported_check_tx_type()),
         };
         Ok(Self {
             tx: check_tx.tx,

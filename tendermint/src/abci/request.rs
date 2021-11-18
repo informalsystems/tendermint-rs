@@ -55,6 +55,7 @@ pub use offer_snapshot::OfferSnapshot;
 pub use query::Query;
 
 /// All possible ABCI requests.
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Request {
     #[doc = include_str!("doc/request-echo.md")]
@@ -111,6 +112,7 @@ impl Request {
 }
 
 /// The consensus category of ABCI requests.
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ConsensusRequest {
     #[doc = include_str!("doc/request-initchain.md")]
