@@ -107,12 +107,7 @@ mod rpc {
         // Check for empty merkle root.
         // See: https://github.com/informalsystems/tendermint-rs/issues/562
         let computed_data_hash = simple_hash_from_byte_vectors(
-            block_info
-                .block
-                .data
-                .iter()
-                .map(|t| t.to_owned().into())
-                .collect(),
+            block_info.block.data.iter().map(|t| t.to_owned()).collect(),
         );
         assert_eq!(
             computed_data_hash,
