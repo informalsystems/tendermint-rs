@@ -16,7 +16,6 @@ use core::str::FromStr;
 
 use bytes::BufMut;
 use ed25519::Signature as Ed25519Signature;
-use ed25519::SIGNATURE_LENGTH as ED25519_SIGNATURE_LENGTH;
 use serde::{Deserialize, Serialize};
 
 use tendermint_proto::types::Vote as RawVote;
@@ -169,9 +168,10 @@ impl Default for Vote {
             timestamp: Some(Time::unix_epoch()),
             validator_address: account::Id::new([0; account::LENGTH]),
             validator_index: ValidatorIndex::try_from(0_i32).unwrap(),
-            signature: Some(Signature::from(Ed25519Signature::new(
-                [0; ED25519_SIGNATURE_LENGTH],
-            ))),
+            // Unwrap is safe since this is only used in tests.
+            signature: Some(Signature::from(
+                Ed25519Signature::from_bytes(&[0; Ed25519Signature::BYTE_SIZE]).unwrap(),
+            )),
         }
     }
 }

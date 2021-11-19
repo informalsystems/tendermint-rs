@@ -121,7 +121,7 @@ mod tests {
     use crate::hash::{Algorithm, Hash};
     use crate::prelude::*;
     use crate::proposal::SignProposalRequest;
-    use crate::signature::{Ed25519Signature, ED25519_SIGNATURE_SIZE};
+    use crate::signature::Ed25519Signature;
     use crate::{proposal::Type, Proposal, Signature};
     use chrono::{DateTime, Utc};
     use core::str::FromStr;
@@ -152,9 +152,9 @@ mod tests {
                 .unwrap(),
             }),
             timestamp: Some(dt.into()),
-            signature: Some(Signature::from(Ed25519Signature::new(
-                [0; ED25519_SIGNATURE_SIZE],
-            ))),
+            signature: Some(Signature::from(
+                Ed25519Signature::from_bytes(&[0; Ed25519Signature::BYTE_SIZE]).unwrap(),
+            )),
         };
 
         let mut got = vec![];
@@ -236,9 +236,9 @@ mod tests {
                 .unwrap(),
             }),
             timestamp: Some(dt.into()),
-            signature: Some(Signature::from(Ed25519Signature::new(
-                [0; ED25519_SIGNATURE_SIZE],
-            ))),
+            signature: Some(Signature::from(
+                Ed25519Signature::from_bytes(&[0; Ed25519Signature::BYTE_SIZE]).unwrap(),
+            )),
         };
 
         let mut got = vec![];
@@ -322,9 +322,9 @@ mod tests {
                 )
                 .unwrap(),
             }),
-            signature: Some(Signature::from(Ed25519Signature::new(
-                [0; ED25519_SIGNATURE_SIZE],
-            ))),
+            signature: Some(Signature::from(
+                Ed25519Signature::from_bytes(&[0; Ed25519Signature::BYTE_SIZE]).unwrap(),
+            )),
         };
         let want = SignProposalRequest {
             proposal,
