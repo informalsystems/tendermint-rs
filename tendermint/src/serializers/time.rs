@@ -11,7 +11,7 @@ pub fn serialize<S>(value: &Time, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    value.as_rfc3339().serialize(serializer)
+    value.to_rfc3339().serialize(serializer)
 }
 
 /// Deserialize `String` into `Time`

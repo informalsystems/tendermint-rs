@@ -3,104 +3,166 @@
 
 use std::convert::TryInto;
 
-use chrono::{DateTime, NaiveDate, TimeZone, Timelike, Utc};
 use proptest::prelude::*;
+use time::format_description::well_known::Rfc3339;
+use time::macros::{datetime, offset};
+use time::{Date, OffsetDateTime, UtcOffset};
 
 /// Any higher, and we're at seconds
 pub const MAX_NANO_SECS: u32 = 999_999_999u32;
 
-/// The most distant time in the past for which chrono produces correct
-/// times from [Utc.timestamp](chrono::Utc.timestamp).
-///
-/// See <https://github.com/chronotope/chrono/issues/537>.
+/// The most distant time in the past for which `time` produces correct
+/// times with [`OffsetDateTime::from_unix_timestamp`].
 ///
 /// ```
 /// use tendermint_pbt_gen as pbt_gen;
+/// use time::OffsetDateTime;
 ///
-/// assert_eq!(pbt_gen::time::min_time().to_string(), "1653-02-10 06:13:21 UTC".to_string());
+/// let timestamp = pbt_gen::time::min_time().unix_timestamp_nanos();
+/// assert!(OffsetDateTime::from_unix_timestamp_nanos(timestamp).is_ok());
+/// assert!(OffsetDateTime::from_unix_timestamp_nanos(timestamp - 1).is_err());
+///
 /// ```
-pub fn min_time() -> DateTime<Utc> {
-    Utc.timestamp(-9999999999, 0)
+pub fn min_time() -> OffsetDateTime {
+    Date::MIN.midnight().assume_utc()
 }
 
-/// The most distant time in the future for which chrono produces correct
-/// times from [Utc.timestamp](chrono::Utc.timestamp).
-///
-/// See <https://github.com/chronotope/chrono/issues/537>.
+/// The most distant time in the future for which `time` produces correct
+/// times with [`OffsetDateTime::from_unix_timestamp`].
 ///
 /// ```
 /// use tendermint_pbt_gen as pbt_gen;
+/// use time::OffsetDateTime;
 ///
-/// assert_eq!(pbt_gen::time::max_time().to_string(), "5138-11-16 09:46:39 UTC".to_string());
+/// let timestamp = pbt_gen::time::max_time().unix_timestamp_nanos();
+/// assert!(OffsetDateTime::from_unix_timestamp_nanos(timestamp).is_ok());
+/// assert!(OffsetDateTime::from_unix_timestamp_nanos(timestamp + 1).is_err());
 /// ```
-pub fn max_time() -> DateTime<Utc> {
-    Utc.timestamp(99999999999, 0)
-}
-
-fn num_days_in_month(year: i32, month: u32) -> u32 {
-    // Using chrono, we get the duration beteween this month and the next,
-    // then count the number of days in that duration.  See
-    // https://stackoverflow.com/a/58188385/1187277
-    let given_month = NaiveDate::from_ymd(year, month, 1);
-    let next_month = NaiveDate::from_ymd(
-        if month == 12 { year + 1 } else { year },
-        if month == 12 { 1 } else { month + 1 },
-        1,
-    );
-    next_month
-        .signed_duration_since(given_month)
-        .num_days()
-        .try_into()
+pub fn max_time() -> OffsetDateTime {
+    Date::MAX
+        .with_hms_nano(23, 59, 59, MAX_NANO_SECS)
         .unwrap()
+        .assume_utc()
+}
+
+/// The most distant time in the past that has a valid representation in
+/// Google's well-known [`Timestamp`] protobuf message format.
+///
+/// [`Timestamp`]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
+///
+pub const fn min_protobuf_time() -> OffsetDateTime {
+    datetime!(0001-01-01 00:00:00 UTC)
+}
+
+/// The most distant time in the future that has a valid representation in
+/// Google's well-known [`Timestamp`] protobuf message format.
+///
+/// [`Timestamp`]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
+///
+pub const fn max_protobuf_time() -> OffsetDateTime {
+    datetime!(9999-12-31 23:59:59.999999999 UTC)
+}
+
+fn num_days_in_month(year: i32, month: u8) -> u8 {
+    let month = month.try_into().unwrap();
+    time::util::days_in_year_month(year, month)
 }
 
 prop_compose! {
-    /// An abitrary [chrono::DateTime] that is between the given `min`
-    /// and `max`.
+    /// An abitrary [`OffsetDateTime`], offset in UTC,
+    /// that is between the given `min` and `max`.
     ///
     /// # Examples
     ///
     /// ```
-    /// use chrono::{TimeZone, Utc};
+    /// use time::macros::datetime;
     /// use tendermint_pbt_gen as pbt_gen;
     /// use proptest::prelude::*;
     ///
     /// proptest!{
     ///     fn rosa_luxemburg_and_octavia_butler_were_not_alive_at_the_same_time(
     ///        time_in_luxemburgs_lifespan in pbt_gen::time::arb_datetime_in_range(
-    ///          Utc.ymd(1871, 3, 5).and_hms(0,0,0), // DOB
-    ///          Utc.ymd(1919, 1, 15).and_hms(0,0,0), // DOD
+    ///          datetime!(1871-03-05 00:00 UTC), // DOB
+    ///          datetime!(1919-01-15 00:00 UTC), // DOD
     ///        ),
     ///        time_in_butlers_lifespan in pbt_gen::time::arb_datetime_in_range(
-    ///          Utc.ymd(1947, 6, 22).and_hms(0,0,0), // DOB
-    ///          Utc.ymd(2006, 2, 24).and_hms(0,0,0), // DOD
+    ///          datetime!(1947-06-22 00:00 UTC), // DOB
+    ///          datetime!(2006-02-24 00:00 UTC), // DOD
     ///        ),
     ///     ) {
     ///       prop_assert!(time_in_luxemburgs_lifespan != time_in_butlers_lifespan)
     ///     }
     /// }
     /// ```
-    pub fn arb_datetime_in_range(min: DateTime<Utc>, max: DateTime<Utc>)(
-        secs in min.timestamp()..max.timestamp()
-    )(
-        // min mano secods is only relevant if we happen to hit the minimum
-        // seconds on the nose.
-        nano in (if secs == min.timestamp() { min.nanosecond() } else { 0 })..MAX_NANO_SECS,
-        // Make secs in scope
-        secs in Just(secs),
-    ) -> DateTime<Utc> {
-        println!(">> Secs {:?}", secs);
-        Utc.timestamp(secs, nano)
+    pub fn arb_datetime_in_range(min: OffsetDateTime, max: OffsetDateTime)(
+        nanos in min.unix_timestamp_nanos()..max.unix_timestamp_nanos()
+    ) -> OffsetDateTime {
+        OffsetDateTime::from_unix_timestamp_nanos(nanos).unwrap()
     }
 }
 
 prop_compose! {
-    /// An abitrary [chrono::DateTime] (between [min_time] and [max_time]).
+    /// An abitrary [`OffsetDateTime`], offset in UTC (between [min_time] and [max_time]).
     pub fn arb_datetime()
         (
             d in arb_datetime_in_range(min_time(), max_time())
-        ) -> DateTime<Utc> {
+        ) -> OffsetDateTime {
             d
+        }
+}
+
+prop_compose! {
+    /// An abitrary [`OffsetDateTime`] ((between [min_time] and [max_time])),
+    /// with an arbitrary time zone offset from UTC.
+    pub fn arb_datetime_with_offset()
+        (
+            d in arb_datetime_in_range(min_time(), max_time()),
+            off in arb_utc_offset(),
+        ) -> OffsetDateTime {
+            d.to_offset(off)
+        }
+}
+
+prop_compose! {
+    /// An abitrary [`OffsetDateTime`], offset in UTC, that can be represented
+    /// as an RFC 3339 timestamp. Values with year 0 are further excluded
+    /// due to the validity requirements on
+    /// Google's well-known [`Timestamp`] protobuf message format.
+    ///
+    /// [`Timestamp`]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
+    pub fn arb_protobuf_safe_datetime()
+        (
+            d in arb_datetime_in_range(
+                min_protobuf_time(),
+                max_protobuf_time(),
+            )
+        ) -> OffsetDateTime {
+            d
+        }
+}
+
+prop_compose! {
+    fn arb_utc_offset_hms()
+        (
+            h in 0..=23i8,
+            m in 0..=59i8,
+            s in 0..=59i8,
+        ) -> UtcOffset {
+            UtcOffset::from_hms(h, m, s).unwrap()
+        }
+}
+
+prop_compose! {
+    /// An abitrary [`UtcOffset`].
+    pub fn arb_utc_offset()
+        (
+            off in prop_oneof![
+                Just(offset!(UTC)),
+                arb_utc_offset_hms(),
+                arb_utc_offset_hms().prop_map(|off| -off),
+            ]
+        ) -> UtcOffset {
+            off
         }
 }
 
@@ -147,16 +209,16 @@ prop_compose! {
 }
 
 prop_compose! {
-    fn arb_rfc3339_day_of_year_and_month(year: i32, month: u32)
+    fn arb_rfc3339_day_of_year_and_month(year: i32, month: u8)
         (
             d in 1..num_days_in_month(year, month)
-        ) -> u32 {
+        ) -> u8 {
             d
         }
 }
 
 prop_compose! {
-    fn arb_rfc3339_full_date()(year in 0..9999i32, month in 1..12u32)
+    fn arb_rfc3339_full_date()(year in 0..9999i32, month in 1..12u8)
         (
             day in arb_rfc3339_day_of_year_and_month(year, month),
             year in Just(year),
@@ -179,4 +241,17 @@ prop_compose! {
     ) -> String {
         format!("{:}T{:}", date, time)
     }
+}
+
+/// Like `[arb_rfc3339_timestamp]`, but restricted to produce timestamps
+/// that have a valid representation in
+/// Google's well-known [`Timestamp`] protobuf message format.
+///
+/// [`Timestamp`]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
+///
+pub fn arb_protobuf_safe_rfc3339_timestamp() -> impl Strategy<Value = String> {
+    arb_rfc3339_timestamp().prop_filter("timestamp out of protobuf range", |ts| {
+        let t = OffsetDateTime::parse(ts, &Rfc3339).unwrap();
+        (min_protobuf_time()..=max_protobuf_time()).contains(&t)
+    })
 }
