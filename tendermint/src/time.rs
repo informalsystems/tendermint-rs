@@ -1,6 +1,5 @@
 //! Timestamps used by Tendermint blockchains
 
-use chrono::{DateTime, LocalResult, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
@@ -12,14 +11,17 @@ use core::time::Duration;
 use tendermint_proto::google::protobuf::Timestamp;
 use tendermint_proto::serializers::timestamp;
 use tendermint_proto::Protobuf;
+use time::format_description::well_known::Rfc3339;
+use time::macros::{datetime, offset};
+use time::{OffsetDateTime, PrimitiveDateTime};
 
 use crate::error::Error;
 
 /// Tendermint timestamps
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#time>
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
-#[serde(try_from = "Timestamp")]
-pub struct Time(pub DateTime<Utc>);
+#[serde(try_from = "Timestamp", into = "Timestamp")]
+pub struct Time(PrimitiveDateTime);
 
 impl Protobuf<Timestamp> for Time {}
 
@@ -34,28 +36,29 @@ impl TryFrom<Timestamp> for Time {
 
 impl From<Time> for Timestamp {
     fn from(value: Time) -> Self {
-        // Subsecond nanoseconds returned by timestamp_subsec_nanos should have a value
-        // between 0 and 999,999,999. So that shouldn't cause an overflow when converting
-        // from u32 to i32. However in case there is an unexpected conversion error,
-        // we default to 0, and hopefully does not cause any undefined behavior.
-        let nanos = value.0.timestamp_subsec_nanos().try_into().unwrap_or(0);
-
+        let total_nanos = value.0.assume_utc().unix_timestamp_nanos();
         Timestamp {
-            seconds: value.0.timestamp(),
-            nanos,
+            seconds: total_nanos.div_euclid(1_000_000_000) as _,
+            nanos: total_nanos.rem_euclid(1_000_000_000) as _,
         }
     }
 }
 
 impl Time {
+    fn from_utc(odt: OffsetDateTime) -> Self {
+        assert_eq!(odt.offset(), offset!(UTC));
+        Time(PrimitiveDateTime::new(odt.date(), odt.time()))
+    }
+
     /// Get the unix epoch ("1970-01-01 00:00:00 UTC") as a [`Time`]
     pub fn unix_epoch() -> Self {
-        Time(Utc.timestamp(0, 0))
+        Time(datetime!(1970-01-01 00:00:00))
     }
 
     pub fn from_unix_timestamp(secs: i64, nanos: u32) -> Result<Self, Error> {
-        match Utc.timestamp_opt(secs, nanos) {
-            LocalResult::Single(time) => Ok(Time(time)),
+        let total_nanos = secs as i128 * 1_000_000_000 + nanos as i128;
+        match OffsetDateTime::from_unix_timestamp_nanos(total_nanos) {
+            Ok(odt) => Ok(Self::from_utc(odt)),
             _ => Err(Error::timestamp_conversion()),
         }
     }
@@ -63,29 +66,30 @@ impl Time {
     /// Calculate the amount of time which has passed since another [`Time`]
     /// as a [`core::time::Duration`]
     pub fn duration_since(&self, other: Time) -> Result<Duration, Error> {
-        self.0
-            .signed_duration_since(other.0)
-            .to_std()
-            .map_err(|_| Error::duration_out_of_range())
+        let duration = self.0.assume_utc() - other.0.assume_utc();
+        let duration = duration
+            .try_into()
+            .map_err(|_| Error::duration_out_of_range())?;
+        Ok(duration)
     }
 
     /// Parse [`Time`] from an RFC 3339 date
     pub fn parse_from_rfc3339(s: &str) -> Result<Time, Error> {
-        let date = DateTime::parse_from_rfc3339(s)
-            .map_err(Error::chrono_parse)?
-            .with_timezone(&Utc);
-        Ok(Time(date))
+        let date = OffsetDateTime::parse(s, &Rfc3339)
+            .map_err(Error::time_parse)?
+            .to_offset(offset!(UTC));
+        Ok(Time::from_utc(date))
     }
 
-    /// Return an RFC 3339 and ISO 8601 date and time string with 6 subseconds digits and Z.
-    pub fn as_rfc3339(&self) -> String {
-        timestamp::as_rfc3339_nanos(&self.0)
+    /// Return an RFC 3339 and ISO 8601 date and time string with subseconds (if nonzero) and Z.
+    pub fn to_rfc3339(&self) -> String {
+        timestamp::to_rfc3339_nanos(self.0.assume_utc())
     }
 }
 
 impl fmt::Display for Time {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.as_rfc3339())
+        write!(f, "{}", self.to_rfc3339())
     }
 }
 
@@ -97,47 +101,31 @@ impl FromStr for Time {
     }
 }
 
-impl From<DateTime<Utc>> for Time {
-    fn from(t: DateTime<Utc>) -> Time {
-        Time(t)
+impl From<OffsetDateTime> for Time {
+    fn from(t: OffsetDateTime) -> Time {
+        Time::from_utc(t.to_offset(offset!(UTC)))
     }
 }
 
-impl From<Time> for DateTime<Utc> {
-    fn from(t: Time) -> DateTime<Utc> {
-        t.0
+impl From<Time> for OffsetDateTime {
+    fn from(t: Time) -> OffsetDateTime {
+        t.0.assume_utc()
     }
 }
 
 impl Add<Duration> for Time {
-    type Output = Result<Self, Error>;
+    type Output = Self;
 
-    fn add(self, rhs: Duration) -> Self::Output {
-        let duration =
-            chrono::Duration::from_std(rhs).map_err(|_| Error::duration_out_of_range())?;
-
-        let res = self
-            .0
-            .checked_add_signed(duration)
-            .ok_or_else(Error::duration_out_of_range)?;
-
-        Ok(Time(res))
+    fn add(self, rhs: Duration) -> Self {
+        Time(self.0 + rhs)
     }
 }
 
 impl Sub<Duration> for Time {
-    type Output = Result<Self, Error>;
+    type Output = Self;
 
     fn sub(self, rhs: Duration) -> Self::Output {
-        let duration =
-            chrono::Duration::from_std(rhs).map_err(|_| Error::duration_out_of_range())?;
-
-        let res = self
-            .0
-            .checked_sub_signed(duration)
-            .ok_or_else(Error::duration_out_of_range)?;
-
-        Ok(Time(res))
+        Time(self.0 - rhs)
     }
 }
 

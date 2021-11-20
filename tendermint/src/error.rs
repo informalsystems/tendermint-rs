@@ -173,9 +173,9 @@ define_error! {
             { account: account::Id }
             |e| { format_args!("proposer with address '{0}' no found in validator set", e.account) },
 
-        ChronoParse
-            [ DisplayOnly<chrono::ParseError> ]
-            |_| { format_args!("chrono parse error") },
+        TimeParse
+            [ DisplayOnly<time::error::Parse> ]
+            |_| { format_args!("time parsing error") },
 
         SubtleEncoding
             [ DisplayOnly<subtle_encoding::Error> ]

@@ -1,7 +1,6 @@
 //! Provides an interface and a default implementation of the `Clock` component
 
 use crate::types::Time;
-use chrono::Utc;
 
 /// Abstracts over the current time.
 pub trait Clock: Send + Sync {
