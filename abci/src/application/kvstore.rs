@@ -44,7 +44,7 @@ use tracing::{debug, info};
 /// // Deliver a transaction and then commit the transaction
 /// client
 ///     .deliver_tx(RequestDeliverTx {
-///         tx: "test-key=test-value".as_bytes().to_owned(),
+///         tx: "test-key=test-value".into(),
 ///     })
 ///     .unwrap();
 /// client.commit().unwrap();
@@ -52,7 +52,7 @@ use tracing::{debug, info};
 /// // We should be able to query for the data we just delivered above
 /// let res = client
 ///     .query(RequestQuery {
-///         data: "test-key".as_bytes().to_owned(),
+///         data: "test-key".into(),
 ///         path: "".to_string(),
 ///         height: 0,
 ///         prove: false,

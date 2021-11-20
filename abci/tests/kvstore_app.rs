@@ -24,14 +24,14 @@ mod kvstore_app_integration {
 
         client
             .deliver_tx(RequestDeliverTx {
-                tx: "test-key=test-value".as_bytes().into(),
+                tx: "test-key=test-value".into(),
             })
             .unwrap();
         client.commit().unwrap();
 
         let res = client
             .query(RequestQuery {
-                data: "test-key".as_bytes().into(),
+                data: "test-key".into(),
                 path: "".to_string(),
                 height: 0,
                 prove: false,
