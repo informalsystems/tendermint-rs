@@ -121,8 +121,8 @@ mod tests {
     use crate::hash::{Algorithm, Hash};
     use crate::prelude::*;
     use crate::proposal::SignProposalRequest;
-    use crate::signature::{Ed25519Signature, ED25519_SIGNATURE_SIZE};
-    use crate::{proposal::Type, Proposal, Signature};
+    use crate::test::dummy_signature;
+    use crate::{proposal::Type, Proposal};
     use chrono::{DateTime, Utc};
     use core::str::FromStr;
     use tendermint_proto::Protobuf;
@@ -152,9 +152,7 @@ mod tests {
                 .unwrap(),
             }),
             timestamp: Some(dt.into()),
-            signature: Some(Signature::from(Ed25519Signature::new(
-                [0; ED25519_SIGNATURE_SIZE],
-            ))),
+            signature: Some(dummy_signature()),
         };
 
         let mut got = vec![];
@@ -236,9 +234,7 @@ mod tests {
                 .unwrap(),
             }),
             timestamp: Some(dt.into()),
-            signature: Some(Signature::from(Ed25519Signature::new(
-                [0; ED25519_SIGNATURE_SIZE],
-            ))),
+            signature: Some(dummy_signature()),
         };
 
         let mut got = vec![];
@@ -322,9 +318,7 @@ mod tests {
                 )
                 .unwrap(),
             }),
-            signature: Some(Signature::from(Ed25519Signature::new(
-                [0; ED25519_SIGNATURE_SIZE],
-            ))),
+            signature: Some(dummy_signature()),
         };
         let want = SignProposalRequest {
             proposal,
