@@ -85,6 +85,18 @@ impl Time {
     pub fn to_rfc3339(&self) -> String {
         timestamp::to_rfc3339_nanos(self.0.assume_utc())
     }
+
+    /// Computes `self + duration`, returning `None` if an overflow occurred.
+    pub fn checked_add(self, duration: Duration) -> Option<Self> {
+        let duration = duration.try_into().ok()?;
+        self.0.checked_add(duration).map(Time)
+    }
+
+    /// Computes `self - duration`, returning `None` if an overflow occurred.
+    pub fn checked_sub(self, duration: Duration) -> Option<Self> {
+        let duration = duration.try_into().ok()?;
+        self.0.checked_sub(duration).map(Time)
+    }
 }
 
 impl fmt::Display for Time {
