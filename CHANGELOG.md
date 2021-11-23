@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## v0.23.1
+
+*Nov 15, 2021*
+
+Minor bug fixes.
+
+### BUG FIXES
+
+- `[tools/proto-compiler]` Fixed our proto-compiler, which was producing
+  protos that did not compile due to an incorrect Prost field annotation
+  ([#1014](https://github.com/informalsystems/tendermint-rs/issues/1014))
+- `[tendermint]` The `tendermint::node::Id` `Display` implementation now prints
+  the hexadecimal string in lowercase
+  ([#971](https://github.com/informalsystems/tendermint-rs/issues/971))
+
 ## v0.23.0
 
 *Oct 27, 2021*
