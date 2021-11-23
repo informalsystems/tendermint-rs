@@ -8,9 +8,9 @@
 
 use crate::net;
 use crate::node_key::NodeKey;
+use crate::prelude::*;
 use crate::Error;
 
-use crate::prelude::*;
 use alloc::collections::{btree_map, BTreeMap};
 use core::{fmt, str::FromStr};
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
