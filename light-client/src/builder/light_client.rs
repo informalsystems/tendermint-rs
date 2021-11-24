@@ -10,6 +10,7 @@ use crate::components::verifier::Verifier;
 use crate::light_client::{LightClient, Options};
 use crate::operations::Hasher;
 use crate::predicates::VerificationPredicates;
+use crate::prelude::*;
 use crate::state::{State, VerificationTrace};
 use crate::store::LightStore;
 use crate::supervisor::Instance;

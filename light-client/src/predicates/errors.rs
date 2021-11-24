@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use crate::errors::ErrorExt;
 use crate::operations::voting_power::VotingPowerTally;
+use crate::prelude::*;
 use crate::types::{Hash, Height, Time, Validator, ValidatorAddress};
 use tendermint::account::Id;
 use tendermint::Error as TendermintError;

@@ -9,6 +9,7 @@ use crate::evidence::EvidenceReporter;
 use crate::fork_detector::{Fork, ForkDetection, ForkDetector};
 use crate::light_client::LightClient;
 use crate::peer_list::PeerList;
+use crate::prelude::*;
 use crate::state::State;
 use crate::types::{Height, LatestStatus, LightBlock, PeerId, Status};
 

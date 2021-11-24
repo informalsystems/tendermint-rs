@@ -14,6 +14,8 @@ use tendermint::{
     validator::Set as TMValidatorSet,
 };
 
+use crate::prelude::*;
+
 pub use tendermint::{block::Height, hash::Hash, time::Time};
 
 /// Peer ID (public key) of a full node
@@ -201,6 +203,7 @@ impl LatestStatus {
 mod tests {
 
     mod status {
+        use crate::prelude::*;
         use crate::types::Status;
         use Status::*;
 

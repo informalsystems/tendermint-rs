@@ -1,5 +1,6 @@
 //! Predicates for light block validation and verification.
 
+use crate::prelude::*;
 use crate::{
     operations::{CommitValidator, Hasher, VotingPowerCalculator},
     types::{Header, SignedHeader, Time, TrustThreshold, ValidatorSet},
@@ -219,6 +220,7 @@ mod tests {
         errors::{VerificationError, VerificationErrorDetail},
         ProdPredicates, VerificationPredicates,
     };
+    use crate::prelude::*;
 
     use crate::operations::{
         Hasher, ProdCommitValidator, ProdHasher, ProdVotingPowerCalculator, VotingPowerTally,

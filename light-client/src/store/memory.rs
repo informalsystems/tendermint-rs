@@ -1,5 +1,6 @@
 //! Transient in-memory store
 
+use crate::prelude::*;
 use crate::{
     store::{LightStore, Status},
     types::{Height, LightBlock},

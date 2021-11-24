@@ -1,5 +1,6 @@
 //! Provides an interface and default implementation for the `VotingPower` operation
 
+use crate::prelude::*;
 use crate::{
     predicates::errors::VerificationError,
     types::{Commit, SignedHeader, TrustThreshold, ValidatorSet},

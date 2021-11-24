@@ -11,6 +11,7 @@ use crate::components::verifier::{ProdVerifier, Verdict, Verifier};
 use crate::errors::Error;
 use crate::evidence::EvidenceReporter;
 use crate::light_client::{LightClient, Options};
+use crate::prelude::*;
 use crate::state::State;
 use contracts::contract_trait;
 use std::collections::HashMap;

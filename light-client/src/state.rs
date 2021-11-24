@@ -1,5 +1,6 @@
 //! State maintained by the light client.
 
+use crate::prelude::*;
 use crate::{
     store::LightStore,
     types::{Height, LightBlock, Status},

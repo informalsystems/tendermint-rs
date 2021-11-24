@@ -1,3 +1,4 @@
+#![no_std]
 #![forbid(unsafe_code)]
 #![deny(
     warnings,
@@ -15,6 +16,13 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 //! See the `light_client` module for the main documentation.
+
+extern crate alloc;
+
+// #[cfg(any(test, feature = "std", feature = "rpc-client"))]
+extern crate std;
+
+mod prelude;
 
 pub mod builder;
 pub mod components;

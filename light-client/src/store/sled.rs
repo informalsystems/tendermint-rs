@@ -4,6 +4,7 @@ pub mod utils;
 
 use std::path::Path;
 
+use crate::prelude::*;
 use crate::{
     store::sled::utils::HeightIndexedDb,
     types::{Height, LightBlock},

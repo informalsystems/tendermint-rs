@@ -1,5 +1,6 @@
 //! Fork detection data structures and implementation.
 
+use crate::prelude::*;
 use crate::{
     errors::{Error, ErrorDetail, ErrorExt},
     operations::{Hasher, ProdHasher},

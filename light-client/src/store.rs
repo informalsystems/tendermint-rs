@@ -7,6 +7,7 @@
 
 use std::fmt::Debug;
 
+use crate::prelude::*;
 use crate::types::{Height, LightBlock, Status};
 use crate::utils::std_ext;
 

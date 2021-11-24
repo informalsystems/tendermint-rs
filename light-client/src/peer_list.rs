@@ -1,5 +1,6 @@
 //! Provides a peer list for use within the `Supervisor`
 
+use crate::prelude::*;
 use crate::{errors::Error, types::PeerId};
 
 use contracts::{post, pre};
