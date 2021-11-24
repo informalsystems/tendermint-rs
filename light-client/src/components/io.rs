@@ -6,6 +6,7 @@ use std::time::Duration;
 #[cfg(feature = "rpc-client")]
 use tendermint_rpc::Client;
 
+#[cfg(feature = "rpc-client")]
 use tendermint_rpc as rpc;
 
 use crate::types::{Height, LightBlock};
@@ -15,6 +16,12 @@ type TimeoutError = flex_error::DisplayOnly<tokio::time::error::Elapsed>;
 
 #[cfg(not(feature = "tokio"))]
 type TimeoutError = flex_error::NoSource;
+
+#[cfg(feature = "rpc-client")]
+type RpcError = rpc::Error;
+
+#[cfg(not(feature = "rpc-client"))]
+type RpcError = flex_error::NoSource;
 
 /// Type for selecting either a specific height or the latest one
 pub enum AtHeight {
@@ -38,7 +45,7 @@ define_error! {
     #[derive(Debug)]
     IoError {
         Rpc
-            [ rpc::Error ]
+            [ RpcError ]
             | _ | { "rpc error" },
 
         InvalidHeight

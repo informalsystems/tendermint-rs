@@ -4,10 +4,9 @@ use crate::types::{Height, LightBlock, PeerId, SignedHeader, Time, TrustThreshol
 
 use serde::{Deserialize, Serialize};
 use tendermint::abci::transaction::Hash;
-use tendermint_rpc as rpc;
 
 use crate::components::clock::Clock;
-use crate::components::io::{AtHeight, Io, IoError};
+use crate::components::io::IoError;
 use crate::components::verifier::{ProdVerifier, Verdict, Verifier};
 use crate::errors::Error;
 use crate::evidence::EvidenceReporter;
@@ -104,8 +103,15 @@ impl MockIo {
     }
 }
 
-impl Io for MockIo {
-    fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
+#[cfg(feature = "rpc-client")]
+impl crate::components::io::Io for MockIo {
+    fn fetch_light_block(
+        &self,
+        height: crate::components::io::AtHeight,
+    ) -> Result<LightBlock, IoError> {
+        use crate::components::io::AtHeight;
+        use tendermint_rpc as rpc;
+
         let height = match height {
             AtHeight::Highest => self.latest_height,
             AtHeight::At(height) => height,

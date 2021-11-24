@@ -28,8 +28,9 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["rpc-client", "flex-error/std", "flex-error/eyre_tracer"]
-rpc-client = ["tokio", "tendermint-rpc/http-client"]
+default = ["std"]
+std = ["rpc-client", "flex-error/std", "flex-error/eyre_tracer"]
+rpc-client = ["tokio", "tendermint-rpc", "tendermint-rpc/http-client"]
 secp256k1 = ["tendermint/secp256k1", "tendermint-rpc/secp256k1"]
 lightstore-sled = ["sled"]
 unstable = []
@@ -38,7 +39,7 @@ mbt = []
 
 [dependencies]
 tendermint = { version = "0.23.1", path = "../tendermint", default-features = false }
-tendermint-rpc = { version = "0.23.1", path = "../rpc", default-features = false }
+tendermint-rpc = { version = "0.23.1", path = "../rpc", default-features = false, optional = true }
 
 contracts = { version = "0.4.0", default-features = false }
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
@@ -55,7 +56,6 @@ flex-error = { version = "0.4.4", default-features = false }
 
 [dev-dependencies]
 tendermint-testgen = { path = "../testgen", default-features = false }
-
 serde_json = { version = "1.0.51", default-features = false }
 gumdrop = { version = "0.8.0", default-features = false }
 rand = { version = "0.7.3", default-features = false }

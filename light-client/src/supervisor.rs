@@ -420,7 +420,7 @@ impl Handle for SupervisorHandle {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "rpc-client"))]
 mod tests {
     use super::*;
     use crate::errors::{Error, ErrorDetail};
