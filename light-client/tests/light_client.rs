@@ -1,5 +1,7 @@
-use std::collections::HashMap;
-use std::time::Duration;
+extern crate alloc;
+
+use alloc::collections::BTreeMap as HashMap;
+use core::time::Duration;
 
 use tendermint_light_client::{
     components::{

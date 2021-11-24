@@ -2,7 +2,7 @@
 //!
 //! [1]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification/verification.md
 
-use std::{fmt, time::Duration};
+use core::{fmt, time::Duration};
 
 use contracts::*;
 use derive_more::Display;
@@ -317,7 +317,7 @@ impl LightClient {
         target_height: Height,
         state: &mut State,
     ) -> Result<LightBlock, Error> {
-        use std::convert::TryFrom;
+        use core::convert::TryFrom;
 
         let root = state
             .light_store

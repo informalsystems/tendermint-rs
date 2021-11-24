@@ -1,3 +1,5 @@
+extern crate alloc;
+
 use tendermint_light_client::{
     components::{
         io::{AtHeight, Io},
@@ -14,8 +16,8 @@ use tendermint_light_client::{
     types::{LightBlock, PeerId, Status, Time},
 };
 
-use std::collections::HashMap;
-use std::time::Duration;
+use alloc::collections::BTreeMap as HashMap;
+use core::time::Duration;
 
 use tendermint_light_client::store::memory::MemoryStore;
 use tendermint_light_client::tests::{

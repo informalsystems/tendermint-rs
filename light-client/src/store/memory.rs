@@ -6,8 +6,8 @@ use crate::{
     types::{Height, LightBlock},
 };
 
-use std::collections::btree_map::Entry::*;
-use std::collections::BTreeMap;
+use alloc::collections::btree_map::Entry::*;
+use alloc::collections::BTreeMap;
 
 /// Internal entry for the memory store
 #[derive(Clone, Debug, PartialEq)]

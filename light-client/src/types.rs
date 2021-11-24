@@ -75,7 +75,7 @@ impl Status {
     ///
     /// From least to most trusted: `Failed`, `Unverified`, `Verified`, `Trusted`.
     pub fn most_trusted(a: Self, b: Self) -> Self {
-        std::cmp::max(a, b)
+        core::cmp::max(a, b)
     }
 }
 

@@ -1,8 +1,8 @@
 //! Errors which may be raised when verifying a `LightBlock`
 
+use core::time::Duration;
 use flex_error::define_error;
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
 
 use crate::errors::ErrorExt;
 use crate::operations::voting_power::VotingPowerTally;

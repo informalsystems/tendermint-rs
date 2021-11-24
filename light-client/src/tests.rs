@@ -13,9 +13,9 @@ use crate::evidence::EvidenceReporter;
 use crate::light_client::{LightClient, Options};
 use crate::prelude::*;
 use crate::state::State;
+use alloc::collections::BTreeMap as HashMap;
 use contracts::contract_trait;
-use std::collections::HashMap;
-use std::time::Duration;
+use core::time::Duration;
 use tendermint::block::Height as HeightStr;
 use tendermint::evidence::{Duration as DurationStr, Evidence};
 

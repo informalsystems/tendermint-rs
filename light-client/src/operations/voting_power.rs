@@ -6,11 +6,10 @@ use crate::{
     types::{Commit, SignedHeader, TrustThreshold, ValidatorSet},
 };
 
+use alloc::collections::BTreeSet as HashSet;
+use core::convert::TryFrom;
+use core::fmt;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
-use std::fmt;
-
-use std::convert::TryFrom;
 use tendermint::block::CommitSig;
 use tendermint::trust_threshold::TrustThreshold as _;
 use tendermint::vote::{SignedVote, ValidatorIndex, Vote};

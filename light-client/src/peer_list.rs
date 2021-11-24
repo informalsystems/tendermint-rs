@@ -3,8 +3,8 @@
 use crate::prelude::*;
 use crate::{errors::Error, types::PeerId};
 
+use alloc::collections::{BTreeMap as HashMap, BTreeSet};
 use contracts::{post, pre};
-use std::collections::{BTreeSet, HashMap};
 
 /// A generic container mapping `PeerId`s to some type `T`,
 /// which keeps track of the primary peer, witnesses, full nodes,

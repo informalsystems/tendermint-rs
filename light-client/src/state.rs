@@ -6,8 +6,9 @@ use crate::{
     types::{Height, LightBlock, Status},
 };
 
+use alloc::collections::BTreeMap as HashMap;
+use alloc::collections::BTreeSet as HashSet;
 use contracts::*;
-use std::collections::{HashMap, HashSet};
 
 /// Records which blocks were needed to verify a target block, eg. during bisection.
 pub type VerificationTrace = HashMap<Height, HashSet<Height>>;

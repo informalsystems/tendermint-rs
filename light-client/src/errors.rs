@@ -1,7 +1,7 @@
 //! Toplevel errors raised by the light client.
 
-use std::fmt::Debug;
-use std::time::Duration;
+use core::fmt::Debug;
+use core::time::Duration;
 
 use crate::operations::voting_power::VotingPowerTally;
 use crate::prelude::*;

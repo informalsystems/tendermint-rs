@@ -2,7 +2,7 @@
 //! by taking care of (de)serializing keys and values with the
 //! CBOR binary encoding.
 
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 use serde::{de::DeserializeOwned, Serialize};
 

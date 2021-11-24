@@ -2,8 +2,6 @@
 
 pub mod utils;
 
-use std::path::Path;
-
 use crate::prelude::*;
 use crate::{
     store::sled::utils::HeightIndexedDb,
@@ -28,7 +26,7 @@ pub struct SledStore {
 
 impl SledStore {
     /// Open a sled database and create a new persistent store from it.
-    pub fn open(db: impl AsRef<Path>) -> Result<Self, sled::Error> {
+    pub fn open(db: &str) -> Result<Self, sled::Error> {
         Ok(Self::new(sled::open(db)?))
     }
 
@@ -124,7 +122,7 @@ mod tests {
 
     fn with_blocks(height: u64, f: impl FnOnce(SledStore, Vec<LightBlock>)) {
         let tmp_dir = tempdir().unwrap();
-        let db = SledStore::open(tmp_dir).unwrap();
+        let db = SledStore::open(&format!("{}", tmp_dir.path().display())).unwrap();
 
         let chain = LightChain::default_with_length(height);
         let blocks = chain

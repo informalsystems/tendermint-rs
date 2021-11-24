@@ -130,8 +130,8 @@ pub struct Supervisor {
     receiver: channel::Receiver<HandleInput>,
 }
 
-impl std::fmt::Debug for Supervisor {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Debug for Supervisor {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Supervisor")
             .field("peers", &self.peers)
             .finish()
@@ -438,7 +438,8 @@ mod tests {
         tests::{MockClock, MockEvidenceReporter, MockIo, TrustOptions},
         types::Time,
     };
-    use std::{collections::HashMap, convert::TryFrom, time::Duration};
+    use alloc::collections::BTreeMap as HashMap;
+    use core::{convert::TryFrom, time::Duration};
     use tendermint::block::Height;
     use tendermint::evidence::Duration as DurationStr;
     use tendermint::trust_threshold::TrustThresholdFraction;

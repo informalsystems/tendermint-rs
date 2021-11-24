@@ -19,7 +19,7 @@
 
 extern crate alloc;
 
-// #[cfg(any(test, feature = "std", feature = "rpc-client"))]
+#[cfg(any(test, feature = "std", feature = "rpc-client"))]
 extern crate std;
 
 mod prelude;

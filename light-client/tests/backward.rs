@@ -1,6 +1,9 @@
 #![cfg(feature = "unstable")]
 
-use std::{collections::HashMap, time::Duration};
+extern crate alloc;
+
+use alloc::collections::BTreeMap as HashMap;
+use core::time::Duration;
 
 use tendermint::{hash::Algorithm, Hash};
 

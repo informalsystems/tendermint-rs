@@ -1,7 +1,7 @@
 //! Provides an interface and a default implementation of the `Io` component
 
-use flex_error::{define_error, TraceError};
-use std::time::Duration;
+use core::time::Duration;
+use flex_error::define_error;
 
 #[cfg(feature = "rpc-client")]
 use tendermint_rpc::Client;
@@ -22,6 +22,12 @@ type RpcError = rpc::Error;
 
 #[cfg(not(feature = "rpc-client"))]
 type RpcError = flex_error::NoSource;
+
+#[cfg(feature = "std")]
+type StdIoError = flex_error::DisplayOnly<std::io::Error>;
+
+#[cfg(not(feature = "std"))]
+type StdIoError = flex_error::NoSource;
 
 /// Type for selecting either a specific height or the latest one
 pub enum AtHeight {
@@ -66,7 +72,7 @@ define_error! {
             },
 
         Runtime
-            [ TraceError<std::io::Error> ]
+            [ StdIoError ]
             | _ | { "failed to initialize runtime" },
 
     }
@@ -104,7 +110,7 @@ pub use self::prod::ProdIo;
 mod prod {
     use super::*;
 
-    use std::time::Duration;
+    use core::time::Duration;
 
     use crate::types::PeerId;
     use crate::utils::block_on;

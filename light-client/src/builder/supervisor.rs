@@ -1,4 +1,4 @@
-use std::time::Duration;
+use core::time::Duration;
 
 use crate::builder::error::Error;
 use crate::peer_list::{PeerList, PeerListBuilder};

@@ -6,8 +6,8 @@ use crate::{
     types::{Header, SignedHeader, Time, TrustThreshold, ValidatorSet},
 };
 
+use core::time::Duration;
 use errors::VerificationError;
-use std::time::Duration;
 use tendermint::{block::Height, hash::Hash};
 
 pub mod errors;
@@ -207,8 +207,8 @@ pub trait VerificationPredicates: Send + Sync {
 #[cfg(test)]
 mod tests {
     use chrono::Utc;
-    use std::ops::Sub;
-    use std::time::Duration;
+    use core::ops::Sub;
+    use core::time::Duration;
     use tendermint::Time;
 
     use tendermint_testgen::{

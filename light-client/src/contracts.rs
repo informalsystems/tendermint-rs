@@ -5,7 +5,7 @@ use crate::{
     types::{Height, LightBlock, Status, Time},
 };
 
-use std::time::Duration;
+use core::time::Duration;
 
 /// Whether or not the given light store contains a verified or
 /// trusted block at the given target height.

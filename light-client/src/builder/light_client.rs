@@ -20,7 +20,7 @@ use crate::types::{LightBlock, PeerId, Status};
 use {
     crate::components::clock::SystemClock, crate::components::io::ProdIo,
     crate::components::scheduler, crate::components::verifier::ProdVerifier,
-    crate::operations::ProdHasher, crate::predicates::ProdPredicates, std::time::Duration,
+    crate::operations::ProdHasher, crate::predicates::ProdPredicates, core::time::Duration,
     tendermint_rpc as rpc,
 };
 

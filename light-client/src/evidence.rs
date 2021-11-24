@@ -25,8 +25,9 @@ mod prod {
     use super::*;
     use crate::utils::block_on;
 
+    use alloc::collections::BTreeMap as HashMap;
     use contracts::pre;
-    use std::{collections::HashMap, time::Duration};
+    use core::time::Duration;
 
     use tendermint_rpc as rpc;
     use tendermint_rpc::Client;

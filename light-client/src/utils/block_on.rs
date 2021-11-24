@@ -1,10 +1,11 @@
-use std::{future::Future, time::Duration};
+use core::{future::Future, time::Duration};
 
 use crate::components::io::IoError;
 
 /// Run a future to completion on a new thread, with the given timeout.
 ///
 /// This function will block the caller until the given future has completed.
+#[cfg(feature = "std")]
 pub fn block_on<F>(timeout: Option<Duration>, f: F) -> Result<F::Output, IoError>
 where
     F: Future + Send + 'static,

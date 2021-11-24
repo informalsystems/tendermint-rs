@@ -5,7 +5,7 @@
 //! - a transient, in-memory implementation for testing purposes
 //! - a persistent, on-disk, sled-backed implementation for production
 
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use crate::prelude::*;
 use crate::types::{Height, LightBlock, Status};
