@@ -6,8 +6,8 @@
 
 #![no_std]
 #![cfg_attr(docsrs, feature(doc_cfg))]
+#![allow(deprecated)]
 #![deny(
-    warnings,
     trivial_casts,
     trivial_numeric_casts,
     unused_import_braces,

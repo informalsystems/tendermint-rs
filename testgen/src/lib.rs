@@ -5,6 +5,8 @@
 //!
 //! [repository]: https://github.com/informalsystems/tendermint-rs/tree/master/testgen
 
+#![allow(deprecated)]
+
 #[macro_use]
 pub mod helpers;
 
