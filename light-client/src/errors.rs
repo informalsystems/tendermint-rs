@@ -13,10 +13,10 @@ use crate::{
     predicates::errors::VerificationErrorDetail,
     types::{Hash, Height, LightBlock, PeerId, Status},
 };
-use flex_error::{define_error, DisplayError, TraceError};
+use flex_error::{define_error, DisplayError, DisplayOnly};
 
 #[cfg(feature = "sled")]
-type SledError = TraceError<sled::Error>;
+type SledError = DisplayOnly<sled::Error>;
 
 #[cfg(not(feature = "sled"))]
 type SledError = flex_error::NoSource;
@@ -112,7 +112,7 @@ define_error! {
             | _ | { "sled error" },
 
         SerdeCbor
-            [ TraceError<serde_cbor::Error> ]
+            [ DisplayOnly<serde_cbor::Error> ]
             | _ | { "serde cbor error" },
 
     }

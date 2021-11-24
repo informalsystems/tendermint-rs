@@ -15,9 +15,7 @@ pub trait Generator<Output: Serialize>: FromStr<Err = SimpleError> + Clone {
     /// Generate and serialize the complex object
     fn encode(&self) -> Result<String, SimpleError> {
         let res = self.generate()?;
-        Ok(try_with!(
-            serde_json::to_string_pretty(&res),
-            "failed to serialize into JSON"
-        ))
+        serde_json::to_string_pretty(&res)
+            .map_err(|_| SimpleError::new("failed to serialize into JSON".to_string()))
     }
 }

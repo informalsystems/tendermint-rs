@@ -29,7 +29,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 default = ["std"]
-std = ["rpc-client", "flex-error/std", "flex-error/eyre_tracer"]
+std = ["rpc-client", "chrono/clock", "flex-error/std", "flex-error/eyre_tracer"]
 rpc-client = ["tokio", "tendermint-rpc", "tendermint-rpc/http-client"]
 secp256k1 = ["tendermint/secp256k1", "tendermint-rpc/secp256k1"]
 lightstore-sled = ["sled"]
@@ -40,18 +40,18 @@ mbt = []
 [dependencies]
 tendermint = { version = "0.23.1", path = "../tendermint", default-features = false }
 tendermint-rpc = { version = "0.23.1", path = "../rpc", default-features = false, optional = true }
+tokio = { version = "1.0", default-features = false, features = ["rt"], optional = true }
 
 contracts = { version = "0.4.0", default-features = false }
-chrono = { version = "0.4", default-features = false, features = ["clock"] }
+chrono = { version = "0.4", default-features = false }
 crossbeam-channel = { version = "0.4.2", default-features = false }
 derive_more = { version = "0.99.5", default-features = false, features = ["display"] }
 futures = { version = "0.3.4", default-features = false }
-serde = { version = "1.0.106", default-features = false }
-serde_cbor = { version = "0.11.1", default-features = false, features = ["alloc", "std"] }
+serde = { version = "1.0.106", default-features = false, features = ["derive"] }
+serde_cbor = { version = "0.11.2", default-features = false, features = ["alloc"] }
 serde_derive = { version = "1.0.106", default-features = false }
 sled = { version = "0.34.3", optional = true, default-features = false }
 static_assertions = { version = "1.1.0", default-features = false }
-tokio = { version = "1.0", default-features = false, features = ["rt"], optional = true }
 flex-error = { version = "0.4.4", default-features = false }
 
 [dev-dependencies]
@@ -60,8 +60,8 @@ serde_json = { version = "1.0.51", default-features = false }
 gumdrop = { version = "0.8.0", default-features = false }
 rand = { version = "0.7.3", default-features = false }
 tempfile = { version = "3.2.0", default-features = false }
-proptest = { version = "0.10.1", default-features = false, features = ["std"] }
+proptest = { version = "0.10.1", default-features = false }
 
 [[example]]
 name = "light_client"
-required-features = ["rpc-client", "tendermint-rpc/http-client", "flex-error/std"]
+# required-features = ["rpc-client", "tendermint-rpc/http-client", "flex-error/std"]
