@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+set -euo pipefail
+
+if [ ! -d "${TM_HOME}/config" ]; then
+
+	echo "Running tendermint init to create configuration."
+	/usr/bin/tendermint init validator
+
+  sconfig -s ${TM_HOME}/config/config.toml \
+    proxy-app=${PROXY_APP:-kvstore} \
+    moniker=${MONIKER:-dockernode} \
+    consensus.timeout-commit=500ms \
+    rpc.laddr=tcp://0.0.0.0:26657 \
+    p2p.addr-book-strict=false \
+    instrumentation.prometheus=true
+
+  sconfig -s ${TM_HOME}/config/genesis.json \
+    chain_id=${CHAIN_ID:-dockerchain}
+
+fi
+
+exec /usr/bin/tendermint "$@"
