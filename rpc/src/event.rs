@@ -1,7 +1,6 @@
 //! RPC subscription event-related data structures.
 
 use crate::abci::responses::{BeginBlock, EndBlock};
-use alloc::collections::BTreeMap as HashMap;
 use serde::{Deserialize, Serialize};
 use tendermint::Block;
 
@@ -18,8 +17,8 @@ pub struct Event {
     pub query: String,
     /// The data associated with the event.
     pub data: EventData,
-    /// Event type and attributes map.
-    pub events: Option<HashMap<String, Vec<String>>>,
+    /// Event type and attributes list.
+    pub events: Option<Vec<crate::abci::Event>>,
 }
 impl Response for Event {}
 
