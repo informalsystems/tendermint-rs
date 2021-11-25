@@ -1,0 +1,39 @@
+#!/usr/bin/env sh
+set -euo pipefail
+
+ABCI_PATH="/abci/${ABCI_APP:-kvstore-rs}"
+
+if [ ! -x "${ABCI_PATH}" ]; then
+  echo "Could not find executable ABCI app at ${ABCI_PATH} ."
+  echo "Add a volume with the file and use the ABCI_APP environment variable to point to a different file."
+  exit 1
+else
+  FILE_TYPE="$(file -b "${ABCI_PATH}")"
+  if [ -n "${FILE_TYPE##ELF 64-bit*}" ]; then
+    echo "File is not an ELF 64-bit binary (${FILE_TYPE})."
+    echo "Build the ABCI application for Linux using Docker:"
+    echo "docker run -it --rm --user \"\$(id -u)\":\"\$(id -g)\" -v \"\$PWD\":/usr/src/myapp -w /usr/src/myapp rust:latest cargo build-abci"
+    exit 1
+  fi
+fi
+
+if [ ! -d "${TM_HOME}/config" ]; then
+
+  echo "Running tendermint init to create configuration."
+  /usr/bin/tendermint init validator
+
+  sconfig -s ${TM_HOME}/config/config.toml \
+    moniker=${MONIKER:-dockernode} \
+    consensus.timeout-commit=500ms \
+    rpc.laddr=tcp://0.0.0.0:26657 \
+    p2p.addr-book-strict=false \
+    instrumentation.prometheus=true
+
+  sconfig -s ${TM_HOME}/config/genesis.json \
+    chain_id=${CHAIN_ID:-dockerchain}
+
+fi
+
+exec /usr/bin/tendermint node 2>&1 > /var/log/abci/tendermint.log &
+
+exec "${ABCI_PATH}" "$@" 2>&1 | tee /var/log/abci/abci-app.log
