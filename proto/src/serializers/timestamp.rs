@@ -2,11 +2,12 @@
 
 use crate::google::protobuf::Timestamp;
 use crate::prelude::*;
+
 use serde::de::Error as _;
 use serde::ser::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use time::format_description::well_known::Rfc3339 as Rfc3339Format;
-use time::macros::{format_description, offset};
+use time::macros::offset;
 use time::OffsetDateTime;
 
 /// Helper struct to serialize and deserialize Timestamp into an RFC3339-compatible string
@@ -63,13 +64,29 @@ where
 ///     trailing zeros and no trailing dot.
 pub fn to_rfc3339_nanos(t: OffsetDateTime) -> String {
     let t = t.to_offset(offset!(UTC));
-    let format = if t.nanosecond() == 0 {
-        format_description!("[year]-[month]-[day]T[hour]:[minute]:[second]Z")
+
+    // Can't use OffsetDateTime::format because the feature enabling it
+    // currently requires std (https://github.com/time-rs/time/issues/400)
+
+    let ns = t.nanosecond();
+    let mut nanos_buf = String::new();
+    let nanos = if ns == 0 {
+        &nanos_buf
     } else {
-        format_description!("[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond]Z")
+        nanos_buf = format!(".{:09}", ns);
+        nanos_buf.trim_end_matches('0')
     };
 
-    t.format(format).unwrap()
+    format!(
+        "{year:04}-{month:02}-{day:02}T{hour:02}:{minute:02}:{second:02}{nanos}Z",
+        year = t.year(),
+        month = t.month() as u8,
+        day = t.day(),
+        hour = t.hour(),
+        minute = t.minute(),
+        second = t.second(),
+        nanos = nanos,
+    )
 }
 
 #[allow(warnings)]
