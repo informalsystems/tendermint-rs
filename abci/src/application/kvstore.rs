@@ -1,6 +1,6 @@
 //! In-memory key/value store ABCI application.
 
-use crate::codec::{encode_varint, MAX_VARINT_LENGTH};
+use crate::codec::MAX_VARINT_LENGTH;
 use crate::{Application, Error};
 use bytes::BytesMut;
 use std::collections::HashMap;
@@ -281,7 +281,7 @@ impl KeyValueStoreDriver {
         // As in the Go-based key/value store, simply encode the number of
         // items as the "app hash"
         let mut app_hash = BytesMut::with_capacity(MAX_VARINT_LENGTH);
-        encode_varint(self.store.len() as u64, &mut app_hash);
+        prost::encoding::encode_varint(self.store.len() as u64, &mut app_hash);
         self.app_hash = app_hash.to_vec();
         self.height += 1;
         channel_send(&result_tx, (self.height, self.app_hash.clone()))
