@@ -352,11 +352,11 @@ fn incoming_fixtures() {
                 match res {
                     Err(Error(ErrorDetail::Response(e), _)) => {
                         let response = e.source;
-                        assert_eq!(response.code(), Code::InternalError);
-                        assert_eq!(response.message(), "Internal error");
+                        assert_eq!(response.code(), Code::InvalidRequest);
+                        assert_eq!(response.message(), "Invalid Request");
                         assert_eq!(
                             response.data(),
-                            Some("height must be greater than 0, but got 0")
+                            Some("height must be greater than zero (requested height: 0)")
                         );
                     }
                     _ => panic!("expected Response error"),
@@ -462,43 +462,8 @@ fn incoming_fixtures() {
             "block_search" => {
                 let result = endpoint::block_search::Response::from_string(content).unwrap();
                 assert_eq!(result.total_count as usize, result.blocks.len());
-                // Test a few selected attributes of the results.
-                for block in result.blocks {
-                    assert!(block.block.data.get(0).is_none());
-                    assert!(block.block.evidence.iter().next().is_none());
-                    assert_eq!(block.block.header.app_hash.value(), [0u8; 8]);
-                    assert_eq!(block.block.header.chain_id.as_str(), CHAIN_ID);
-                    assert!(!block.block.header.consensus_hash.is_empty());
-                    assert!(block.block.header.data_hash.is_none());
-                    assert!(block.block.header.evidence_hash.is_none());
-                    assert_eq!(block.block.header.height.value(), 10);
-                    assert!(block.block.header.last_block_id.is_some());
-                    assert_eq!(block.block.header.last_commit_hash, empty_merkle_root_hash);
-                    assert_eq!(block.block.header.last_results_hash, empty_merkle_root_hash);
-                    assert!(!block.block.header.next_validators_hash.is_empty());
-                    assert_ne!(
-                        block.block.header.proposer_address.as_bytes(),
-                        [0u8; tendermint::account::LENGTH]
-                    );
-                    assert!(
-                        block
-                            .block
-                            .header
-                            .time
-                            .duration_since(informal_epoch)
-                            .unwrap()
-                            .as_secs()
-                            > 0
-                    );
-                    assert!(!block.block.header.validators_hash.is_empty());
-                    assert_eq!(
-                        block.block.header.version,
-                        tendermint::block::header::Version { block: 10, app: 1 }
-                    );
-                    assert!(block.block.last_commit.is_some());
-                    assert!(!block.block_id.hash.is_empty());
-                    assert!(!block.block_id.part_set_header.hash.is_empty());
-                    assert_eq!(block.block_id.part_set_header.total, 1);
+                for response in result.blocks {
+                    assert!(response.block.header.height.value() > 1);
                 }
             }
             "blockchain_from_1_to_10" => {
@@ -708,7 +673,7 @@ fn incoming_fixtures() {
                 assert_eq!(u64::from(result.block_height), 10_u64);
                 assert_eq!(result.consensus_params.block.max_bytes, 22020096_u64);
                 assert_eq!(result.consensus_params.block.max_gas, -1_i64);
-                assert_eq!(result.consensus_params.block.time_iota_ms, 500_i64);
+                assert_eq!(result.consensus_params.block.time_iota_ms, 1000_i64);
                 assert_eq!(
                     result.consensus_params.evidence.max_age_duration,
                     Duration(core::time::Duration::from_nanos(172800000000000_u64))
@@ -789,7 +754,7 @@ fn incoming_fixtures() {
                 assert_eq!(result.listeners[0].to_string(), "Listener(@)");
                 assert!(result.listening);
                 assert_eq!(result.n_peers, 0);
-                assert!(result.peers.is_empty());
+                assert!(result.peers.is_none());
             }
             "status" => {
                 let result = endpoint::status::Response::from_string(content).unwrap();
@@ -815,9 +780,12 @@ fn incoming_fixtures() {
                         app: 1
                     }
                 );
-                assert_eq!(result.node_info.version.to_string(), "v0.34.9");
+                assert_eq!(result.node_info.version.to_string(), "0.35.0-unreleased");
                 assert!(!result.sync_info.catching_up);
-                assert_eq!(result.sync_info.latest_app_hash.value(), [0; 8]);
+                assert_eq!(
+                    result.sync_info.latest_app_hash.value(),
+                    [6, 0, 0, 0, 0, 0, 0, 0]
+                );
                 assert!(!result.sync_info.latest_block_hash.is_empty());
                 assert!(
                     result
@@ -1160,19 +1128,7 @@ fn incoming_fixtures() {
                 } else {
                     panic!("not a tx");
                 }
-                for (k, v) in result.events.unwrap() {
-                    assert_eq!(v.len(), 1);
-                    match k.as_str() {
-                        "app.creator" => assert_eq!(v[0], "Cosmoshi Netowoko"),
-                        "app.index_key" => assert_eq!(v[0], "index is working"),
-                        "app.key" => assert_eq!(v[0], "tx0"),
-                        "app.noindex_key" => assert_eq!(v[0], "index is working"),
-                        "tm.event" => assert_eq!(v[0], "Tx"),
-                        "tx.hash" => assert_eq!(v[0].len(), 64),
-                        "tx.height" => assert_eq!(v[0], height.to_string()),
-                        _ => panic!("unknown event found {}", k),
-                    }
-                }
+                check_event_attrs(&result.events.unwrap(), "tx0", height);
                 assert_eq!(result.query, "tm.event = 'Tx'");
             }
             "subscribe_txs_1" => {
@@ -1204,19 +1160,8 @@ fn incoming_fixtures() {
                 } else {
                     panic!("not a tx");
                 }
-                for (k, v) in result.events.unwrap() {
-                    assert_eq!(v.len(), 1);
-                    match k.as_str() {
-                        "app.creator" => assert_eq!(v[0], "Cosmoshi Netowoko"),
-                        "app.index_key" => assert_eq!(v[0], "index is working"),
-                        "app.key" => assert_eq!(v[0], "tx1"),
-                        "app.noindex_key" => assert_eq!(v[0], "index is working"),
-                        "tm.event" => assert_eq!(v[0], "Tx"),
-                        "tx.hash" => assert_eq!(v[0].len(), 64),
-                        "tx.height" => assert_eq!(v[0], height.to_string()),
-                        _ => panic!("unknown event found {}", k),
-                    }
-                }
+
+                check_event_attrs(&result.events.unwrap(), "tx1", height);
                 assert_eq!(result.query, "tm.event = 'Tx'");
             }
             "subscribe_txs_2" => {
@@ -1248,19 +1193,7 @@ fn incoming_fixtures() {
                 } else {
                     panic!("not a tx");
                 }
-                for (k, v) in result.events.unwrap() {
-                    assert_eq!(v.len(), 1);
-                    match k.as_str() {
-                        "app.creator" => assert_eq!(v[0], "Cosmoshi Netowoko"),
-                        "app.index_key" => assert_eq!(v[0], "index is working"),
-                        "app.key" => assert_eq!(v[0], "tx2"),
-                        "app.noindex_key" => assert_eq!(v[0], "index is working"),
-                        "tm.event" => assert_eq!(v[0], "Tx"),
-                        "tx.hash" => assert_eq!(v[0].len(), 64),
-                        "tx.height" => assert_eq!(v[0], height.to_string()),
-                        _ => panic!("unknown event found {}", k),
-                    }
-                }
+                check_event_attrs(&result.events.unwrap(), "tx2", height);
                 assert_eq!(result.query, "tm.event = 'Tx'");
             }
             "subscribe_txs_3" => {
@@ -1292,19 +1225,7 @@ fn incoming_fixtures() {
                 } else {
                     panic!("not a tx");
                 }
-                for (k, v) in result.events.unwrap() {
-                    assert_eq!(v.len(), 1);
-                    match k.as_str() {
-                        "app.creator" => assert_eq!(v[0], "Cosmoshi Netowoko"),
-                        "app.index_key" => assert_eq!(v[0], "index is working"),
-                        "app.key" => assert_eq!(v[0], "tx3"),
-                        "app.noindex_key" => assert_eq!(v[0], "index is working"),
-                        "tm.event" => assert_eq!(v[0], "Tx"),
-                        "tx.hash" => assert_eq!(v[0].len(), 64),
-                        "tx.height" => assert_eq!(v[0], height.to_string()),
-                        _ => panic!("unknown event found {}", k),
-                    }
-                }
+                check_event_attrs(&result.events.unwrap(), "tx3", height);
                 assert_eq!(result.query, "tm.event = 'Tx'");
             }
             "subscribe_txs_4" => {
@@ -1336,19 +1257,7 @@ fn incoming_fixtures() {
                 } else {
                     panic!("not a tx");
                 }
-                for (k, v) in result.events.unwrap() {
-                    assert_eq!(v.len(), 1);
-                    match k.as_str() {
-                        "app.creator" => assert_eq!(v[0], "Cosmoshi Netowoko"),
-                        "app.index_key" => assert_eq!(v[0], "index is working"),
-                        "app.key" => assert_eq!(v[0], "tx4"),
-                        "app.noindex_key" => assert_eq!(v[0], "index is working"),
-                        "tm.event" => assert_eq!(v[0], "Tx"),
-                        "tx.hash" => assert_eq!(v[0].len(), 64),
-                        "tx.height" => assert_eq!(v[0], height.to_string()),
-                        _ => panic!("unknown event found {}", k),
-                    }
-                }
+                check_event_attrs(&result.events.unwrap(), "tx4", height);
                 assert_eq!(result.query, "tm.event = 'Tx'");
             }
             "subscribe_txs_broadcast_tx_0" => {
@@ -1459,6 +1368,32 @@ fn incoming_fixtures() {
             }
             _ => {
                 panic!("cannot parse file name: {}", file_name);
+            }
+        }
+    }
+}
+
+fn check_event_attrs(events: &[tendermint_rpc::abci::Event], app_key: &str, height: i64) {
+    for event in events {
+        for attr in &event.attributes {
+            match event.type_str.as_ref() {
+                "app" => match attr.key.as_ref() {
+                    "creator" => assert_eq!(attr.value.as_ref(), "Cosmoshi Netowoko"),
+                    "index_key" => assert_eq!(attr.value.as_ref(), "index is working"),
+                    "key" => assert_eq!(attr.value.as_ref(), app_key),
+                    "noindex_key" => assert_eq!(attr.value.as_ref(), "index is working"),
+                    _ => panic!("unrecognized app attribute found \"{}\"", attr.key),
+                },
+                "tx" => match attr.key.as_ref() {
+                    "hash" => assert_eq!(attr.value.as_ref().len(), 64),
+                    "height" => assert_eq!(attr.value.as_ref(), height.to_string()),
+                    _ => panic!("unrecognized tx attribute found \"{}\"", attr.key),
+                },
+                "tm" => match attr.key.as_ref() {
+                    "event" => assert_eq!(attr.value.as_ref(), "Tx"),
+                    _ => panic!("unrecognized tm attribute found \"{}\"", attr.key),
+                },
+                _ => panic!("unrecognized event type found \"{}\"", event.type_str),
             }
         }
     }
