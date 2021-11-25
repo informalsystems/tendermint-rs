@@ -1,11 +1,12 @@
 {
-  "id": "eceb3ffc-0324-4897-8ccd-eea89ae80fd2",
+  "id": "674400fc-5e82-4a74-8f14-c47d7696e091",
   "jsonrpc": "2.0",
   "result": {
     "code": 0,
     "codespace": "",
     "data": "",
     "hash": "CC4AC5C231481DD2ED2EA15789483B94565BF41612B6FEDE5BE7694F882CC202",
-    "log": ""
+    "log": "",
+    "mempool_error": ""
   }
 }

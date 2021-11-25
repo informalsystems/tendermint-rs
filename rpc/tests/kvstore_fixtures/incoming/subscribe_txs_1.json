@@ -1,12 +1,12 @@
 {
-  "id": "5cc8e426-b6d1-49f1-845c-d93415a93f93",
+  "id": "47773d3e-53d3-475f-a14c-4171848d2114",
   "jsonrpc": "2.0",
   "result": {
     "data": {
       "type": "tendermint/event/Tx",
       "value": {
         "TxResult": {
-          "height": "41",
+          "height": "19",
           "index": 1,
           "result": {
             "events": [
@@ -14,23 +14,23 @@
                 "attributes": [
                   {
                     "index": true,
-                    "key": "Y3JlYXRvcg==",
-                    "value": "Q29zbW9zaGkgTmV0b3dva28="
+                    "key": "creator",
+                    "value": "Cosmoshi Netowoko"
                   },
                   {
                     "index": true,
-                    "key": "a2V5",
-                    "value": "dHgx"
+                    "key": "key",
+                    "value": "tx1"
                   },
                   {
                     "index": true,
-                    "key": "aW5kZXhfa2V5",
-                    "value": "aW5kZXggaXMgd29ya2luZw=="
+                    "key": "index_key",
+                    "value": "index is working"
                   },
                   {
                     "index": false,
-                    "key": "bm9pbmRleF9rZXk=",
-                    "value": "aW5kZXggaXMgd29ya2luZw=="
+                    "key": "noindex_key",
+                    "value": "index is working"
                   }
                 ],
                 "type": "app"
@@ -41,29 +41,64 @@
         }
       }
     },
-    "events": {
-      "app.creator": [
-        "Cosmoshi Netowoko"
-      ],
-      "app.index_key": [
-        "index is working"
-      ],
-      "app.key": [
-        "tx1"
-      ],
-      "app.noindex_key": [
-        "index is working"
-      ],
-      "tm.event": [
-        "Tx"
-      ],
-      "tx.hash": [
-        "9F424A8E634AAF63CFA61151A306AA788C9CC792F16B370F7867ED0BD972476C"
-      ],
-      "tx.height": [
-        "41"
-      ]
-    },
-    "query": "tm.event = 'Tx'"
+    "events": [
+      {
+        "attributes": [
+          {
+            "index": true,
+            "key": "creator",
+            "value": "Cosmoshi Netowoko"
+          },
+          {
+            "index": true,
+            "key": "key",
+            "value": "tx1"
+          },
+          {
+            "index": true,
+            "key": "index_key",
+            "value": "index is working"
+          },
+          {
+            "index": false,
+            "key": "noindex_key",
+            "value": "index is working"
+          }
+        ],
+        "type": "app"
+      },
+      {
+        "attributes": [
+          {
+            "index": false,
+            "key": "event",
+            "value": "Tx"
+          }
+        ],
+        "type": "tm"
+      },
+      {
+        "attributes": [
+          {
+            "index": false,
+            "key": "hash",
+            "value": "9F424A8E634AAF63CFA61151A306AA788C9CC792F16B370F7867ED0BD972476C"
+          }
+        ],
+        "type": "tx"
+      },
+      {
+        "attributes": [
+          {
+            "index": false,
+            "key": "height",
+            "value": "19"
+          }
+        ],
+        "type": "tx"
+      }
+    ],
+    "query": "tm.event = 'Tx'",
+    "subscription_id": ""
   }
 }

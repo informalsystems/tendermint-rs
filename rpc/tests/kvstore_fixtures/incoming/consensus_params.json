@@ -1,13 +1,12 @@
 {
-  "id": "6c5641b5-079a-4d2d-9009-f7d4ce20b2ec",
+  "id": "e7ef4782-f290-42a1-94fd-bc8e84e76b53",
   "jsonrpc": "2.0",
   "result": {
     "block_height": "10",
     "consensus_params": {
       "block": {
         "max_bytes": "22020096",
-        "max_gas": "-1",
-        "time_iota_ms": "500"
+        "max_gas": "-1"
       },
       "evidence": {
         "max_age_duration": "172800000000000",
@@ -19,7 +18,9 @@
           "ed25519"
         ]
       },
-      "version": {}
+      "version": {
+        "app_version": "0"
+      }
     }
   }
 }

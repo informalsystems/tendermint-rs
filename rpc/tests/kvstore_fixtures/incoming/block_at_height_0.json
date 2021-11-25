@@ -1,9 +1,9 @@
 {
   "error": {
-    "code": -32603,
-    "data": "height must be greater than 0, but got 0",
-    "message": "Internal error"
+    "code": -32600,
+    "data": "height must be greater than zero (requested height: 0)",
+    "message": "Invalid Request"
   },
-  "id": "c0ba0ff6-0afd-4d18-bc15-0891696d42f2",
+  "id": "f887795a-4940-4152-9460-1c6bb3f87a5a",
   "jsonrpc": "2.0"
 }

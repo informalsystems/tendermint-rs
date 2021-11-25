@@ -1,5 +1,5 @@
 {
-  "id": "a01a558c-a893-415a-8f57-21f104d1aa46",
+  "id": "87e7b1f1-46bc-4789-8978-f570ed2600b1",
   "jsonrpc": "2.0",
   "result": {
     "listeners": [
@@ -7,6 +7,6 @@
     ],
     "listening": true,
     "n_peers": "0",
-    "peers": []
+    "peers": null
   }
 }
