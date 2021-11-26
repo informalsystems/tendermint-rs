@@ -4,19 +4,7 @@ about: A request for a new feature, or to enhance existing functionality
 labels: enhancement
 ---
 
-<!--
-
-Add/remove versions of Tendermint Core you want to target with this issue to
-this list. Leave each version unchecked until the feature/enhancement has been
-implemented for that version of Tendermint.
-
--->
-
-Relevant version(s) of Tendermint Core:
-
-- [ ] v0.34.x
-- [ ] v0.35.x
-- [ ] v0.36.x
+Version(s) of tendermint-rs: <!-- e.g. v0.23.0 -->
 
 ### Description
 
