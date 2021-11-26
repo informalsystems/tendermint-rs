@@ -70,10 +70,9 @@ impl Time {
     /// as a [`core::time::Duration`]
     pub fn duration_since(&self, other: Time) -> Result<Duration, Error> {
         let duration = self.0.assume_utc() - other.0.assume_utc();
-        let duration = duration
+        duration
             .try_into()
-            .map_err(|_| Error::duration_out_of_range())?;
-        Ok(duration)
+            .map_err(|_| Error::duration_out_of_range())
     }
 
     /// Parse [`Time`] from an RFC 3339 date
