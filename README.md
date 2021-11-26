@@ -21,10 +21,10 @@ Tested against the latest stable version of Rust. May work with older versions.
 Each of the following branches targets a specific version of [Tendermint
 Core][Tendermint]:
 
-- `master` targets the latest official release of Tendermint Core (currently
-  v0.35.x)
-- `v0.23.x` targets Tendermint Core v0.34.x
-- `dev` will target Tendermint Core v0.36.x
+| tendermint-rs branch | tendermint-rs version | Tendermint version |
+| -------------------- | --------------------- | ------------------ |
+| `master`             | v0.24.x               | v0.35.x            |
+| `v0.23.x`            | v0.23.x               | v0.34.x            |
 
 We will do our best to support one version behind the latest official release of
 Tendermint Core (e.g. if v0.35.x is the latest release, we will aim to support
