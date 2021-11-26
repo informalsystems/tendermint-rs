@@ -45,9 +45,12 @@ impl From<Time> for Timestamp {
 }
 
 impl Time {
-    fn from_utc(odt: OffsetDateTime) -> Self {
-        assert_eq!(odt.offset(), offset!(UTC));
-        Time(PrimitiveDateTime::new(odt.date(), odt.time()))
+    fn from_utc(t: OffsetDateTime) -> Result<Self, Error> {
+        debug_assert_eq!(t.offset(), offset!(UTC));
+        match t.year() {
+            0..=9999 => Ok(Time(PrimitiveDateTime::new(t.date(), t.time()))),
+            _ => Err(Error::date_time_conversion("year is out of range".into())),
+        }
     }
 
     /// Get the unix epoch ("1970-01-01 00:00:00 UTC") as a [`Time`]
@@ -58,7 +61,7 @@ impl Time {
     pub fn from_unix_timestamp(secs: i64, nanos: u32) -> Result<Self, Error> {
         let total_nanos = secs as i128 * 1_000_000_000 + nanos as i128;
         match OffsetDateTime::from_unix_timestamp_nanos(total_nanos) {
-            Ok(odt) => Ok(Self::from_utc(odt)),
+            Ok(odt) => Self::from_utc(odt),
             _ => Err(Error::timestamp_conversion()),
         }
     }
@@ -78,7 +81,7 @@ impl Time {
         let date = OffsetDateTime::parse(s, &Rfc3339)
             .map_err(Error::time_parse)?
             .to_offset(offset!(UTC));
-        Ok(Time::from_utc(date))
+        Time::from_utc(date)
     }
 
     /// Return an RFC 3339 and ISO 8601 date and time string with subseconds (if nonzero) and Z.
@@ -89,13 +92,15 @@ impl Time {
     /// Computes `self + duration`, returning `None` if an overflow occurred.
     pub fn checked_add(self, duration: Duration) -> Option<Self> {
         let duration = duration.try_into().ok()?;
-        self.0.checked_add(duration).map(Time)
+        let t = self.0.checked_add(duration)?;
+        Time::from_utc(t.assume_utc()).ok()
     }
 
     /// Computes `self - duration`, returning `None` if an overflow occurred.
     pub fn checked_sub(self, duration: Duration) -> Option<Self> {
         let duration = duration.try_into().ok()?;
-        self.0.checked_sub(duration).map(Time)
+        let t = self.0.checked_sub(duration)?;
+        Time::from_utc(t.assume_utc()).ok()
     }
 }
 
@@ -113,8 +118,10 @@ impl FromStr for Time {
     }
 }
 
-impl From<OffsetDateTime> for Time {
-    fn from(t: OffsetDateTime) -> Time {
+impl TryFrom<OffsetDateTime> for Time {
+    type Error = Error;
+
+    fn try_from(t: OffsetDateTime) -> Result<Time, Error> {
         Time::from_utc(t.to_offset(offset!(UTC)))
     }
 }
@@ -129,15 +136,17 @@ impl Add<Duration> for Time {
     type Output = Self;
 
     fn add(self, rhs: Duration) -> Self {
-        Time(self.0 + rhs)
+        let t = self.0 + rhs;
+        Time::from_utc(t.assume_utc()).expect("overflowed valid time range")
     }
 }
 
 impl Sub<Duration> for Time {
     type Output = Self;
 
-    fn sub(self, rhs: Duration) -> Self::Output {
-        Time(self.0 - rhs)
+    fn sub(self, rhs: Duration) -> Self {
+        let t = self.0 - rhs;
+        Time::from_utc(t.assume_utc()).expect("overflowed valid time range")
     }
 }
 
@@ -150,6 +159,7 @@ pub trait ParseTimestamp {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::error::ErrorDetail;
     use proptest::{prelude::*, sample::select};
     use tendermint_pbt_gen as pbt;
 
@@ -188,11 +198,11 @@ mod tests {
 
         #[test]
         fn serde_from_value_is_the_inverse_of_to_value_within_reasonable_time_range(
-            datetime in pbt::time::arb_datetime()
+            datetime in pbt::time::arb_datetime_for_rfc3339()
         ) {
             // If `from_value` is the inverse of `to_value`, then it will always
             // map the JSON `encoded_time` to back to the inital `time`.
-            let time: Time = datetime.into();
+            let time: Time = datetime.try_into().unwrap();
             let json_encoded_time = serde_json::to_value(&time).unwrap();
             let decoded_time: Time = serde_json::from_value(json_encoded_time).unwrap();
             prop_assert_eq!(time, decoded_time);
@@ -213,6 +223,24 @@ mod tests {
             let json_encoded_time = serde_json::to_value(&time).unwrap();
             let decoded_time: Time = serde_json::from_value(json_encoded_time).unwrap();
             prop_assert_eq!(time, decoded_time);
+        }
+
+        #[test]
+        fn conversion_from_datetime_succeeds_for_4_digit_ce_years(
+            datetime in pbt::time::arb_datetime()
+        ) {
+            let res: Result<Time, _> = datetime.try_into();
+            match datetime.year() {
+                0 ..= 9999 => {
+                    let t = res.unwrap();
+                    let dt_converted_back: OffsetDateTime = t.into();
+                    assert_eq!(dt_converted_back, datetime);
+                }
+                _ => {
+                    let e = res.unwrap_err();
+                    assert!(matches!(e.detail(), ErrorDetail::DateTimeConversion { .. }))
+                }
+            }
         }
     }
 }

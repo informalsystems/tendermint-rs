@@ -123,6 +123,7 @@ mod tests {
     use crate::proposal::SignProposalRequest;
     use crate::test::dummy_signature;
     use crate::{proposal::Type, Proposal};
+    use core::convert::TryInto;
     use core::str::FromStr;
     use tendermint_proto::Protobuf;
     use time::macros::datetime;
@@ -151,7 +152,7 @@ mod tests {
                 )
                 .unwrap(),
             }),
-            timestamp: Some(dt.into()),
+            timestamp: Some(dt.try_into().unwrap()),
             signature: Some(dummy_signature()),
         };
 
@@ -233,7 +234,7 @@ mod tests {
                 )
                 .unwrap(),
             }),
-            timestamp: Some(dt.into()),
+            timestamp: Some(dt.try_into().unwrap()),
             signature: Some(dummy_signature()),
         };
 
@@ -299,7 +300,7 @@ mod tests {
             msg_type: Type::Proposal,
             height: Height::from(12345_u32),
             round: Round::from(23456_u16),
-            timestamp: Some(dt.into()),
+            timestamp: Some(dt.try_into().unwrap()),
 
             pol_round: None,
             block_id: Some(BlockId {

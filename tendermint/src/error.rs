@@ -177,6 +177,10 @@ define_error! {
             [ DisplayOnly<time::error::Parse> ]
             |_| { format_args!("time parsing error") },
 
+        DateTimeConversion
+            { reason: String }
+            |e| { format_args!("date/time conversion error: {}", e.reason) },
+
         SubtleEncoding
             [ DisplayOnly<subtle_encoding::Error> ]
             |_| { format_args!("subtle encoding error") },

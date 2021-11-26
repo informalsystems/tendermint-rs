@@ -103,7 +103,7 @@ mod tests {
     use crate::vote::{SignVoteRequest, Type};
     use crate::Hash;
     use crate::Vote;
-    use core::convert::TryFrom;
+    use core::convert::{TryFrom, TryInto};
     use core::str::FromStr;
     use std::println;
     use tendermint_proto::Protobuf;
@@ -116,7 +116,7 @@ mod tests {
             vote_type: Type::Prevote,
             height: Height::from(12345_u32),
             round: Round::from(2_u16),
-            timestamp: Some(dt.into()),
+            timestamp: Some(dt.try_into().unwrap()),
             block_id: Some(BlockId {
                 hash: Hash::try_from(b"DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA".to_vec()).unwrap(),
                 part_set_header: Header::new(
@@ -202,7 +202,7 @@ mod tests {
             vote_type: Type::Prevote,
             height: Height::from(12345_u32),
             round: Round::from(2_u16),
-            timestamp: Some(dt.into()),
+            timestamp: Some(dt.try_into().unwrap()),
             block_id: Some(BlockId {
                 hash: Hash::try_from(b"".to_vec()).unwrap(),
                 part_set_header: Header::new(
@@ -353,7 +353,7 @@ mod tests {
             validator_index: ValidatorIndex::try_from(56789).unwrap(),
             height: Height::from(12345_u32),
             round: Round::from(2_u16),
-            timestamp: Some(dt.into()),
+            timestamp: Some(dt.try_into().unwrap()),
             vote_type: Type::Prevote,
             block_id: Some(BlockId {
                 hash: Hash::from_hex_upper(Algorithm::Sha256, "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA")
@@ -417,7 +417,7 @@ mod tests {
             validator_index: ValidatorIndex::try_from(56789).unwrap(),
             height: Height::from(12345_u32),
             round: Round::from(2_u16),
-            timestamp: Some(dt.into()),
+            timestamp: Some(dt.try_into().unwrap()),
             vote_type: Type::Prevote,
             block_id: Some(BlockId {
                 hash: Hash::from_hex_upper(Algorithm::Sha256, "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA")
