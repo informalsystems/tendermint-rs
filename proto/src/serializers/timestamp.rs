@@ -3,6 +3,7 @@
 use crate::google::protobuf::Timestamp;
 use crate::prelude::*;
 
+use core::fmt;
 use serde::de::Error as _;
 use serde::ser::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -63,11 +64,32 @@ where
 /// ie. a RFC3339 date-time with left-padded subsecond digits without
 ///     trailing zeros and no trailing dot.
 pub fn to_rfc3339_nanos(t: OffsetDateTime) -> String {
-    let t = t.to_offset(offset!(UTC));
-
     // Can't use OffsetDateTime::format because the feature enabling it
     // currently requires std (https://github.com/time-rs/time/issues/400)
 
+    // Preallocate enough string capacity to fit the shortest possible form,
+    // yyyy-mm-ddThh:mm:ssZ
+    let mut buf = String::with_capacity(20);
+
+    fmt_as_rfc3339_nanos(t, &mut buf).unwrap();
+
+    buf
+}
+
+/// Helper for formatting an [`OffsetDateTime`] value.
+///
+/// This function can be used to efficiently format date-time values
+/// in [`Display`] or [`Debug`] implementations.
+///
+/// The format reproduces Go's `time.RFC3339Nano` format,
+/// ie. a RFC3339 date-time with left-padded subsecond digits without
+///     trailing zeros and no trailing dot.
+///
+/// [`Display`]: core::fmt::Display
+/// [`Debug`]: core::fmt::Debug
+///
+pub fn fmt_as_rfc3339_nanos(t: OffsetDateTime, mut f: impl fmt::Write) -> fmt::Result {
+    let t = t.to_offset(offset!(UTC));
     let ns = t.nanosecond();
     let mut nanos_buf = String::new();
     let nanos = if ns == 0 {
@@ -77,7 +99,8 @@ pub fn to_rfc3339_nanos(t: OffsetDateTime) -> String {
         nanos_buf.trim_end_matches('0')
     };
 
-    format!(
+    write!(
+        f,
         "{year:04}-{month:02}-{day:02}T{hour:02}:{minute:02}:{second:02}{nanos}Z",
         year = t.year(),
         month = t.month() as u8,

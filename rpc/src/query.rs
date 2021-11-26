@@ -479,16 +479,22 @@ impl fmt::Display for Operand {
             Operand::Signed(i) => write!(f, "{}", i),
             Operand::Unsigned(u) => write!(f, "{}", u),
             Operand::Float(h) => write!(f, "{}", h),
-            Operand::Date(d) => write!(f, "DATE {}", format_date(*d)),
-            Operand::DateTime(dt) => write!(f, "TIME {}", timestamp::to_rfc3339_nanos(*dt)),
+            Operand::Date(d) => {
+                write!(f, "DATE ")?;
+                fmt_date(*d, f)?;
+                Ok(())
+            }
+            Operand::DateTime(dt) => {
+                write!(f, "TIME ")?;
+                timestamp::fmt_as_rfc3339_nanos(*dt, f)?;
+                Ok(())
+            }
         }
     }
 }
 
-fn format_date(d: Date) -> String {
-    // Can't use Date::format because the feature enabling it
-    // currently requires std (https://github.com/time-rs/time/issues/400)
-    format!("{:04}-{:02}-{:02}", d.year(), d.month() as u8, d.day())
+fn fmt_date(d: Date, mut f: impl fmt::Write) -> fmt::Result {
+    write!(f, "{:04}-{:02}-{:02}", d.year(), d.month() as u8, d.day())
 }
 
 impl From<String> for Operand {

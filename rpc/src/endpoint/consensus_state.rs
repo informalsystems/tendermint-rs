@@ -299,7 +299,7 @@ impl fmt::Display for VoteSummary {
             self.vote_type,
             self.block_id_hash_fingerprint,
             self.signature_fingerprint,
-            self.timestamp.to_rfc3339(),
+            self.timestamp,
         )
     }
 }

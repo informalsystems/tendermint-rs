@@ -106,7 +106,7 @@ impl Time {
 
 impl fmt::Display for Time {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.to_rfc3339())
+        timestamp::fmt_as_rfc3339_nanos(self.0.assume_utc(), f)
     }
 }
 
