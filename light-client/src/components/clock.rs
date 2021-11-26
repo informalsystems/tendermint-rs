@@ -1,6 +1,8 @@
 //! Provides an interface and a default implementation of the `Clock` component
 
 use crate::types::Time;
+use std::convert::TryInto;
+use time::OffsetDateTime;
 
 /// Abstracts over the current time.
 pub trait Clock: Send + Sync {
@@ -13,6 +15,8 @@ pub trait Clock: Send + Sync {
 pub struct SystemClock;
 impl Clock for SystemClock {
     fn now(&self) -> Time {
-        Time(Utc::now())
+        OffsetDateTime::now_utc()
+            .try_into()
+            .expect("system clock produces invalid time")
     }
 }
