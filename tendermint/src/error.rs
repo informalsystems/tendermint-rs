@@ -33,9 +33,9 @@ define_error! {
             { detail: String }
             |e| { format_args!("protocol error: {}", e.detail) },
 
-        // When the oldtime feature is disabled, the chrono::oldtime::OutOfRangeError
-        // type is private and cannot be referred:
-        // https://github.com/chronotope/chrono/pull/541
+        DateOutOfRange
+            |_| { format_args!("date out of range") },
+
         DurationOutOfRange
             |_| { format_args!("duration value out of range") },
 
@@ -176,9 +176,6 @@ define_error! {
         TimeParse
             [ DisplayOnly<time::error::Parse> ]
             |_| { format_args!("time parsing error") },
-
-        DateOutOfRange
-            |_| { format_args!("date out of range") },
 
         SubtleEncoding
             [ DisplayOnly<subtle_encoding::Error> ]
