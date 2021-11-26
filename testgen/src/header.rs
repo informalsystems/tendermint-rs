@@ -127,11 +127,10 @@ impl Generator<block::Header> for Header {
             Err(_) => bail!("failed to construct header's chain_id"),
         };
 
-        let time = if let Some(t) = self.time {
+        let time: Time = if let Some(t) = self.time {
             get_time(t)?
         } else {
-            let t: Time = OffsetDateTime::now_utc().try_into().unwrap();
-            t
+            OffsetDateTime::now_utc().try_into().unwrap()
         };
 
         let last_block_id = self.last_block_id_hash.map(|hash| block::Id {
