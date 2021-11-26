@@ -12,7 +12,7 @@ use tendermint_proto::Protobuf;
 
 use crate::error::Error;
 
-#[deprecated(since = "0.23.1", note = "use Ed25519Signature::BYTE_SIZE instead")]
+#[deprecated(since = "0.23.2", note = "use Ed25519Signature::BYTE_SIZE instead")]
 pub const ED25519_SIGNATURE_SIZE: usize = Ed25519Signature::BYTE_SIZE;
 
 /// The expected length of all currently supported signatures, in bytes.
