@@ -114,6 +114,17 @@ pub fn subscribe(query: &str) -> PlannedInteraction {
     PlannedSubscription::new(query).into()
 }
 
+pub fn tx(hash: &str, prove: bool) -> PlannedInteraction {
+    Request::new(
+        "tx",
+        json!({
+            "hash": hash,
+            "prove": prove,
+        }),
+    )
+    .into()
+}
+
 pub fn tx_search(
     query: &str,
     prove: bool,

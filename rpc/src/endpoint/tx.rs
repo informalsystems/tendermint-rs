@@ -11,9 +11,8 @@ use tendermint_proto::types::TxProof;
 pub struct Request {
     /// The hash of the transaction we want to find.
     ///
-    /// Serialized internally into a base64-encoded string before sending to
-    /// the RPC server.
-    #[serde(with = "crate::serializers::hash_base64")]
+    /// Serialized internally into a hexadecimal-encoded string before sending
+    /// to the RPC server.
     pub hash: abci::transaction::Hash,
     /// Whether or not to include the proofs of the transaction's inclusion in
     /// the block.

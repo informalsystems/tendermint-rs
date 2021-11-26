@@ -1,11 +1,11 @@
 {
-  "id": "aeca4fe2-9a71-4906-8a8e-91ea4114ea4b",
+  "id": "0fdbf4b0-6223-49e7-a729-adda09e120a4",
   "jsonrpc": "2.0",
   "result": {
-    "hash": "D63F9C23791E610410B576D8C27BB5AEAC93CC1A58522428A7B32A1276085860",
-    "height": "12",
-    "index": 2,
-    "tx": "Y29tbWl0LWtleT12YWx1ZQ==",
+    "hash": "FCB86F71C4EFF43E13C51FA12791F6DD1DDB8600A51131BE2289614D6882F6BE",
+    "height": "20",
+    "index": 0,
+    "tx": "dHgwPXZhbHVl",
     "tx_result": {
       "code": 0,
       "codespace": "",
@@ -15,23 +15,23 @@
           "attributes": [
             {
               "index": true,
-              "key": "Y3JlYXRvcg==",
-              "value": "Q29zbW9zaGkgTmV0b3dva28="
+              "key": "creator",
+              "value": "Cosmoshi Netowoko"
             },
             {
               "index": true,
-              "key": "a2V5",
-              "value": "Y29tbWl0LWtleQ=="
+              "key": "key",
+              "value": "tx0"
             },
             {
               "index": true,
-              "key": "aW5kZXhfa2V5",
-              "value": "aW5kZXggaXMgd29ya2luZw=="
+              "key": "index_key",
+              "value": "index is working"
             },
             {
               "index": false,
-              "key": "bm9pbmRleF9rZXk=",
-              "value": "aW5kZXggaXMgd29ya2luZw=="
+              "key": "noindex_key",
+              "value": "index is working"
             }
           ],
           "type": "app"

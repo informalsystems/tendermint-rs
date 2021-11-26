@@ -58,7 +58,6 @@ pub mod request;
 pub mod response;
 pub mod response_error;
 mod rpc_url;
-mod serializers;
 mod utils;
 mod version;
 

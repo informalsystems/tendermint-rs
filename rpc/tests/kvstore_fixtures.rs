@@ -252,15 +252,28 @@ fn outgoing_fixtures() {
                     base64::decode("dHg1PXZhbHVl").unwrap()
                 );
             }
-            "tx" => {
+            "tx_prove" => {
                 let wrapped =
                     serde_json::from_str::<RequestWrapper<endpoint::tx::Request>>(&content)
                         .unwrap();
                 assert_eq!(
                     wrapped.params().hash,
                     Hash::new([
-                        214, 63, 156, 35, 121, 30, 97, 4, 16, 181, 118, 216, 194, 123, 181, 174,
-                        172, 147, 204, 26, 88, 82, 36, 40, 167, 179, 42, 18, 118, 8, 88, 96
+                        252, 184, 111, 113, 196, 239, 244, 62, 19, 197, 31, 161, 39, 145, 246, 221,
+                        29, 219, 134, 0, 165, 17, 49, 190, 34, 137, 97, 77, 104, 130, 246, 190
+                    ])
+                );
+                assert!(wrapped.params().prove);
+            }
+            "tx_no_prove" => {
+                let wrapped =
+                    serde_json::from_str::<RequestWrapper<endpoint::tx::Request>>(&content)
+                        .unwrap();
+                assert_eq!(
+                    wrapped.params().hash,
+                    Hash::new([
+                        252, 184, 111, 113, 196, 239, 244, 62, 19, 197, 31, 161, 39, 145, 246, 221,
+                        29, 219, 134, 0, 165, 17, 49, 190, 34, 137, 97, 77, 104, 130, 246, 190
                     ])
                 );
                 assert!(!wrapped.params().prove);
@@ -1320,16 +1333,38 @@ fn incoming_fixtures() {
                 );
                 assert!(result.log.value().is_empty());
             }
-            "tx" => {
+            "tx_prove" => {
                 let result = endpoint::tx::Response::from_string(content).unwrap();
                 assert_eq!(
                     result.hash,
                     Hash::new([
-                        214, 63, 156, 35, 121, 30, 97, 4, 16, 181, 118, 216, 194, 123, 181, 174,
-                        172, 147, 204, 26, 88, 82, 36, 40, 167, 179, 42, 18, 118, 8, 88, 96
+                        252, 184, 111, 113, 196, 239, 244, 62, 19, 197, 31, 161, 39, 145, 246, 221,
+                        29, 219, 134, 0, 165, 17, 49, 190, 34, 137, 97, 77, 104, 130, 246, 190
                     ])
                 );
-                assert_eq!(u64::from(result.height), 12u64);
+                assert_eq!(result.height.value(), 20);
+                assert!(result.proof.is_some());
+                let proof = result.proof.unwrap();
+                assert_eq!(
+                    proof.root_hash,
+                    vec![
+                        199, 124, 183, 99, 203, 39, 4, 138, 141, 159, 9, 218, 112, 123, 122, 25,
+                        236, 244, 180, 12, 150, 122, 87, 207, 22, 206, 222, 225, 165, 19, 10, 143
+                    ]
+                );
+                assert_eq!(proof.proof.unwrap().total, 2);
+            }
+            "tx_no_prove" => {
+                let result = endpoint::tx::Response::from_string(content).unwrap();
+                assert_eq!(
+                    result.hash,
+                    Hash::new([
+                        252, 184, 111, 113, 196, 239, 244, 62, 19, 197, 31, 161, 39, 145, 246, 221,
+                        29, 219, 134, 0, 165, 17, 49, 190, 34, 137, 97, 77, 104, 130, 246, 190
+                    ])
+                );
+                assert_eq!(result.height.value(), 20);
+                assert!(result.proof.is_none());
             }
             "tx_search_no_prove" => {
                 let result = endpoint::tx_search::Response::from_string(content).unwrap();
