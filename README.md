@@ -30,6 +30,19 @@ We will do our best to support one version behind the latest official release of
 Tendermint Core (e.g. if v0.35.x is the latest release, we will aim to support
 v0.34.x as well).
 
+### Semantic Versioning
+
+We do our best to follow [Semantic Versioning](https://semver.org/). However, as
+we are pre-v1.0.0, we use the MINOR version to refer to breaking changes and the
+PATCH version for features, improvements, and fixes.
+
+We use the same version for all crates and release them collectively.
+
+If you are using the v0.23.x series of tendermint-rs, however, **please pin your
+dependencies to a specific patch version**. We may need to introduce breaking
+changes to this series in patches (e.g. if critical security updates require
+it), but we will do our best to avoid doing so.
+
 ## Documentation
 
 See each component for the relevant documentation.
@@ -68,20 +81,6 @@ This repo contains the TLA+ specifications and Rust implementations for various
 components of Tendermint. See the [CONTRIBUTING.md][contributing] to start
 contributing.
 
-## Versioning
-
-We follow [Semantic Versioning](https://semver.org/). However, as we are
-pre-v1.0.0, we use the MINOR version to refer to breaking changes and the PATCH
-version for features, improvements, and fixes.
-
-Only the following crates are covered by SemVer guarantees:
-
-- tendermint
-- tendermint-rpc
-
-Other crates may change arbitrarily with every release for now.
-
-We use the same version for all crates and release them collectively.
 
 ## Resources
 
