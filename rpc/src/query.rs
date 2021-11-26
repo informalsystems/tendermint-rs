@@ -6,9 +6,12 @@
 
 use crate::prelude::*;
 use crate::Error;
-use chrono::{Date, DateTime, FixedOffset, NaiveDate, Utc};
 use core::fmt;
 use core::str::FromStr;
+use tendermint_proto::serializers::timestamp;
+use time::format_description::well_known::Rfc3339;
+use time::macros::{format_description, offset};
+use time::{Date, OffsetDateTime};
 
 /// A structured query for use in interacting with the Tendermint RPC event
 /// subscription system.
@@ -271,16 +274,16 @@ peg::parser! {
 
         rule datetime_op() -> Operand
             = "TIME" __ dt:datetime() {?
-                DateTime::parse_from_rfc3339(dt)
-                    .map(|dt| Operand::DateTime(dt.with_timezone(&Utc)))
+                OffsetDateTime::parse(dt, &Rfc3339)
+                    .map(|dt| Operand::DateTime(dt.to_offset(offset!(UTC))))
                     .map_err(|_| "failed to parse as RFC3339-compatible date/time")
             }
 
         rule date_op() -> Operand
             = "DATE" __ dt:date() {?
-                let naive_date = NaiveDate::parse_from_str(dt, "%Y-%m-%d")
+                let date = Date::parse(dt, format_description!("[year]-[month]-[day]"))
                     .map_err(|_| "failed to parse as RFC3339-compatible date")?;
-                Ok(Operand::Date(Date::from_utc(naive_date, Utc)))
+                Ok(Operand::Date(date))
             }
 
         rule float_op() -> Operand
@@ -465,8 +468,8 @@ pub enum Operand {
     Signed(i64),
     Unsigned(u64),
     Float(f64),
-    Date(Date<Utc>),
-    DateTime(DateTime<Utc>),
+    Date(Date),
+    DateTime(OffsetDateTime),
 }
 
 impl fmt::Display for Operand {
@@ -476,10 +479,16 @@ impl fmt::Display for Operand {
             Operand::Signed(i) => write!(f, "{}", i),
             Operand::Unsigned(u) => write!(f, "{}", u),
             Operand::Float(h) => write!(f, "{}", h),
-            Operand::Date(d) => write!(f, "DATE {}", d.format("%Y-%m-%d").to_string()),
-            Operand::DateTime(dt) => write!(f, "TIME {}", dt.to_rfc3339()),
+            Operand::Date(d) => write!(f, "DATE {}", format_date(*d)),
+            Operand::DateTime(dt) => write!(f, "TIME {}", timestamp::to_rfc3339_nanos(*dt)),
         }
     }
+}
+
+fn format_date(d: Date) -> String {
+    // Can't use Date::format because the feature enabling it
+    // currently requires std (https://github.com/time-rs/time/issues/400)
+    format!("{:04}-{:02}-{:02}", d.year(), d.month() as u8, d.day())
 }
 
 impl From<String> for Operand {
@@ -566,21 +575,15 @@ impl From<f32> for Operand {
     }
 }
 
-impl From<Date<Utc>> for Operand {
-    fn from(source: Date<Utc>) -> Self {
+impl From<Date> for Operand {
+    fn from(source: Date) -> Self {
         Operand::Date(source)
     }
 }
 
-impl From<DateTime<Utc>> for Operand {
-    fn from(source: DateTime<Utc>) -> Self {
-        Operand::DateTime(source)
-    }
-}
-
-impl From<DateTime<FixedOffset>> for Operand {
-    fn from(source: DateTime<FixedOffset>) -> Self {
-        Operand::DateTime(source.into())
+impl From<OffsetDateTime> for Operand {
+    fn from(source: OffsetDateTime) -> Self {
+        Operand::DateTime(source.to_offset(offset!(UTC)))
     }
 }
 
@@ -599,7 +602,7 @@ fn escape(s: &str) -> String {
 #[cfg(test)]
 mod test {
     use super::*;
-    use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+    use time::macros::{date, datetime};
 
     #[test]
     fn empty_query() {
@@ -657,21 +660,15 @@ mod test {
 
     #[test]
     fn date_condition() {
-        let query = Query::eq(
-            "some_date",
-            Date::from_utc(NaiveDate::from_ymd(2020, 9, 24), Utc),
-        );
+        let query = Query::eq("some_date", date!(2020 - 09 - 24));
         assert_eq!("some_date = DATE 2020-09-24", query.to_string());
     }
 
     #[test]
     fn date_time_condition() {
-        let query = Query::eq(
-            "some_date_time",
-            DateTime::parse_from_rfc3339("2020-09-24T10:17:23-04:00").unwrap(),
-        );
+        let query = Query::eq("some_date_time", datetime!(2020-09-24 10:17:23 -04:00));
         assert_eq!(
-            "some_date_time = TIME 2020-09-24T14:17:23+00:00",
+            "some_date_time = TIME 2020-09-24T14:17:23Z",
             query.to_string()
         );
     }
@@ -793,7 +790,7 @@ mod test {
             query.conditions,
             vec![Condition::Lte(
                 "some.date".to_owned(),
-                Operand::Date(Date::from_utc(NaiveDate::from_ymd(2022, 2, 3), Utc))
+                Operand::Date(date!(2022 - 2 - 3))
             )]
         );
     }
@@ -808,13 +805,7 @@ mod test {
             query.conditions,
             vec![Condition::Eq(
                 "some.datetime".to_owned(),
-                Operand::DateTime(DateTime::from_utc(
-                    NaiveDateTime::new(
-                        NaiveDate::from_ymd(2021, 2, 26),
-                        NaiveTime::from_hms_nano(17, 5, 2, 149500000)
-                    ),
-                    Utc
-                ))
+                Operand::DateTime(datetime!(2021-2-26 17:05:02.149500000 UTC))
             )]
         )
     }
