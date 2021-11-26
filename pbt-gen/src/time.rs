@@ -4,6 +4,7 @@
 use std::convert::TryInto;
 
 use proptest::prelude::*;
+use time::macros::datetime;
 use time::{Date, OffsetDateTime};
 
 /// Any higher, and we're at seconds
@@ -86,6 +87,20 @@ prop_compose! {
     pub fn arb_datetime()
         (
             d in arb_datetime_in_range(min_time(), max_time())
+        ) -> OffsetDateTime {
+            d
+        }
+}
+
+prop_compose! {
+    /// An abitrary [`OffsetDateTime`], offset in UTC, that can be represented
+    /// as an RFC 3339 timestamp.
+    pub fn arb_datetime_for_rfc3339()
+        (
+            d in arb_datetime_in_range(
+                datetime!(0000-01-01 00:00:00 UTC),
+                datetime!(9999-12-31 23:59:59.999999999 UTC),
+            )
         ) -> OffsetDateTime {
             d
         }
