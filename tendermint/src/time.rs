@@ -49,7 +49,7 @@ impl Time {
         debug_assert_eq!(t.offset(), offset!(UTC));
         match t.year() {
             0..=9999 => Ok(Time(PrimitiveDateTime::new(t.date(), t.time()))),
-            _ => Err(Error::date_time_conversion("year is out of range".into())),
+            _ => Err(Error::date_out_of_range()),
         }
     }
 
@@ -133,20 +133,28 @@ impl From<Time> for OffsetDateTime {
 }
 
 impl Add<Duration> for Time {
-    type Output = Self;
+    type Output = Result<Self, Error>;
 
-    fn add(self, rhs: Duration) -> Self {
-        let t = self.0 + rhs;
-        Time::from_utc(t.assume_utc()).expect("overflowed valid time range")
+    fn add(self, rhs: Duration) -> Self::Output {
+        let duration = rhs.try_into().map_err(|_| Error::duration_out_of_range())?;
+        let t = self
+            .0
+            .checked_add(duration)
+            .ok_or_else(Error::duration_out_of_range)?;
+        Time::from_utc(t.assume_utc())
     }
 }
 
 impl Sub<Duration> for Time {
-    type Output = Self;
+    type Output = Result<Self, Error>;
 
-    fn sub(self, rhs: Duration) -> Self {
-        let t = self.0 - rhs;
-        Time::from_utc(t.assume_utc()).expect("overflowed valid time range")
+    fn sub(self, rhs: Duration) -> Self::Output {
+        let duration = rhs.try_into().map_err(|_| Error::duration_out_of_range())?;
+        let t = self
+            .0
+            .checked_sub(duration)
+            .ok_or_else(Error::duration_out_of_range)?;
+        Time::from_utc(t.assume_utc())
     }
 }
 
@@ -238,7 +246,7 @@ mod tests {
                 }
                 _ => {
                     let e = res.unwrap_err();
-                    assert!(matches!(e.detail(), ErrorDetail::DateTimeConversion { .. }))
+                    assert!(matches!(e.detail(), ErrorDetail::DateOutOfRange(_)))
                 }
             }
         }
