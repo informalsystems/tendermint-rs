@@ -5,7 +5,7 @@ use simple_error::*;
 use std::convert::TryFrom;
 use tendermint::{
     block::{self, parts::Header as PartSetHeader},
-    signature::{Signature, Signer, ED25519_SIGNATURE_SIZE},
+    signature::{Ed25519Signature, Signature, Signer},
     vote,
     vote::ValidatorIndex,
 };
@@ -130,7 +130,7 @@ impl Generator<vote::Vote> for Vote {
             timestamp: Some(timestamp),
             validator_address: block_validator.address,
             validator_index: ValidatorIndex::try_from(validator_index as u32).unwrap(),
-            signature: Signature::new(vec![0_u8; ED25519_SIGNATURE_SIZE])
+            signature: Signature::new(vec![0_u8; Ed25519Signature::BYTE_SIZE])
                 .map_err(|e| SimpleError::new(e.to_string()))?,
         };
 
