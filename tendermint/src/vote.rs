@@ -15,7 +15,6 @@ use core::fmt;
 use core::str::FromStr;
 
 use bytes::BufMut;
-use ed25519::Signature as Ed25519Signature;
 use serde::{Deserialize, Serialize};
 
 use tendermint_proto::types::Vote as RawVote;
@@ -26,6 +25,7 @@ use crate::consensus::State;
 use crate::error::Error;
 use crate::hash;
 use crate::prelude::*;
+use crate::signature::Ed25519Signature;
 use crate::{account, block, Signature, Time};
 
 /// Votes are signed messages from validators for a particular block which
@@ -158,6 +158,7 @@ impl Vote {
 }
 
 /// Default trait. Used in tests.
+// FIXME: Does it need to be in public crate API? If not, replace with a helper fn in crate::test?
 impl Default for Vote {
     fn default() -> Self {
         Vote {
@@ -168,7 +169,8 @@ impl Default for Vote {
             timestamp: Some(Time::unix_epoch()),
             validator_address: account::Id::new([0; account::LENGTH]),
             validator_index: ValidatorIndex::try_from(0_i32).unwrap(),
-            // Unwrap is safe since this is only used in tests.
+            // Could have reused crate::test::dummy_signature, except that
+            // this Default impl is defined outside of #[cfg(test)].
             signature: Some(Signature::from(
                 Ed25519Signature::from_bytes(&[0; Ed25519Signature::BYTE_SIZE]).unwrap(),
             )),

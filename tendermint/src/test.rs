@@ -1,6 +1,8 @@
 use core::fmt::Debug;
 use serde::{de::DeserializeOwned, Serialize};
 
+use crate::signature::{Ed25519Signature, Signature};
+
 /// Test that a struct `T` can be:
 ///
 /// - parsed out of the provided JSON data
@@ -24,4 +26,9 @@ where
     let parsed1 = parsed1.unwrap();
 
     assert_eq!(parsed0, parsed1);
+}
+
+/// Produces a dummy signature value for use as a placeholder in tests.
+pub fn dummy_signature() -> Signature {
+    Signature::from(Ed25519Signature::from_bytes(&[0; Ed25519Signature::BYTE_SIZE]).unwrap())
 }
