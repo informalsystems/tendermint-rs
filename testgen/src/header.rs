@@ -1,11 +1,11 @@
 use crate::{helpers::*, validator::generate_validators, Generator, Validator};
-use chrono::Utc;
 use gumdrop::Options;
 use serde::{Deserialize, Serialize};
 use simple_error::*;
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
-use tendermint::{block, chain, validator, AppHash, Hash};
+use tendermint::{block, chain, validator, AppHash, Hash, Time};
+use timelib::OffsetDateTime;
 
 #[derive(Debug, Options, Serialize, Deserialize, Clone)]
 pub struct Header {
@@ -130,7 +130,8 @@ impl Generator<block::Header> for Header {
         let time = if let Some(t) = self.time {
             get_time(t)?
         } else {
-            tendermint::Time(Utc::now())
+            let t: Time = OffsetDateTime::now_utc().try_into().unwrap();
+            t
         };
 
         let last_block_id = self.last_block_id_hash.map(|hash| block::Id {
