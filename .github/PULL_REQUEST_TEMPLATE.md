@@ -1,8 +1,13 @@
 <!--
 
-Thanks for filing a PR! Before hitting the button, please check the following items.
-Please note that every non-trivial PR must reference an issue that explains the
-changes in the PR.
+Thanks for filing a PR!
+
+Before hitting the button, please check the following items.  Please note that
+every non-trivial PR must reference an issue that explains the changes in the
+PR.
+
+Please also make sure you've targeted the correct branch with your PR. See the
+contributing guidelines for details.
 
 -->
 
