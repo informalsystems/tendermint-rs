@@ -142,11 +142,10 @@ branches:
   Tendermint](https://github.com/tendermint/tendermint/releases).
 - tendermint-rs version-specific branches, e.g. `v0.23.x` - targeting patches to
   older versions of tendermint-rs.
-- `dev` - targeting the latest pre-release of Tendermint.
 
 Indicate in your pull request which version of Tendermint/tendermint-rs you are
 targeting with your changes. Changes to multiple versions will require separate
-PRs.
+PRs. See the [README](./README.md#versioning) for the version support matrix.
 
 Branch names should be prefixed with the author, eg. `name/feature-x`.
 
