@@ -1,6 +1,6 @@
 //! Cryptographic (a.k.a. digital) signatures
 
-pub use ed25519::{Signature as Ed25519Signature, SIGNATURE_LENGTH as ED25519_SIGNATURE_SIZE};
+pub use ed25519::Signature as Ed25519Signature;
 pub use signature::{Signer, Verifier};
 
 #[cfg(feature = "secp256k1")]
@@ -11,6 +11,9 @@ use core::convert::TryFrom;
 use tendermint_proto::Protobuf;
 
 use crate::error::Error;
+
+#[deprecated(since = "0.23.1", note = "use Ed25519Signature::BYTE_SIZE instead")]
+pub const ED25519_SIGNATURE_SIZE: usize = Ed25519Signature::BYTE_SIZE;
 
 /// The expected length of all currently supported signatures, in bytes.
 pub const SIGNATURE_LENGTH: usize = 64;
