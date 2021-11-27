@@ -5,23 +5,23 @@ use crate::prelude::*;
 use crate::{block, evidence, public_key};
 use core::convert::{TryFrom, TryInto};
 use serde::{Deserialize, Serialize};
-use tendermint_proto::abci::ConsensusParams as RawParams;
+use tendermint_proto::types::ConsensusParams as RawParams;
 use tendermint_proto::types::ValidatorParams as RawValidatorParams;
 use tendermint_proto::types::VersionParams as RawVersionParams;
 use tendermint_proto::Protobuf;
 
-/// Tendermint consensus parameters
+/// All consensus-relevant parameters that can be adjusted by the ABCI app.
+///
+/// [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#consensusparams)
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 pub struct Params {
-    /// Block size parameters
+    /// Parameters limiting the size of a block and time between consecutive blocks.
     pub block: block::Size,
-
-    /// Evidence parameters
+    /// Parameters limiting the validity of evidence of byzantine behaviour.
     pub evidence: evidence::Params,
-
-    /// Validator parameters
+    /// Parameters limiting the types of public keys validators can use.
     pub validator: ValidatorParams,
-
+    /// The ABCI application version.
     /// Version parameters
     #[serde(skip)] // Todo: FIXME kvstore /genesis returns '{}' instead of '{app_version: "0"}'
     pub version: Option<VersionParams>,
@@ -62,10 +62,12 @@ impl From<Params> for RawParams {
     }
 }
 
-/// Validator consensus parameters
+/// ValidatorParams restrict the public key types validators can use.
+///
+/// [Tendermint documentation](https://docs.tendermint.com/master/spec/core/data_structures.html#validatorparams)
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 pub struct ValidatorParams {
-    /// Allowed algorithms for validator signing
+    /// List of accepted public key types.
     pub pub_key_types: Vec<public_key::Algorithm>,
 }
 
@@ -108,10 +110,13 @@ impl From<ValidatorParams> for RawValidatorParams {
 }
 
 /// Version Parameters
+///
+/// [Tendermint documentation](https://docs.tendermint.com/master/spec/core/data_structures.html#versionparams)
 #[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq, Default)]
 pub struct VersionParams {
+    /// The ABCI application version.
     #[serde(with = "crate::serializers::from_str")]
-    app_version: u64,
+    pub app_version: u64,
 }
 
 impl Protobuf<RawVersionParams> for VersionParams {}

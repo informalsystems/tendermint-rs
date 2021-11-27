@@ -233,7 +233,11 @@ impl AsRef<[u8]> for AppHash {
 
 impl Debug for AppHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "hash::AppHash({:?})", self.0)
+        write!(
+            f,
+            "AppHash({})",
+            Hex::upper_case().encode_to_string(&self.0).unwrap()
+        )
     }
 }
 

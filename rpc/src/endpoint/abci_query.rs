@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use tendermint::abci::{Code, Log, Path};
+use crate::abci::{Code, Log, Path};
 use tendermint::block;
 use tendermint::merkle::proof::Proof;
 use tendermint::serializers;

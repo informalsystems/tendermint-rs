@@ -7,7 +7,7 @@
 
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Request {
-    #[prost(oneof="request::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15")]
+    #[prost(oneof="request::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14")]
     pub value: ::core::option::Option<request::Value>,
 }
 /// Nested message and enum types in `Request`.
@@ -21,28 +21,26 @@ pub mod request {
         #[prost(message, tag="3")]
         Info(super::RequestInfo),
         #[prost(message, tag="4")]
-        SetOption(super::RequestSetOption),
-        #[prost(message, tag="5")]
         InitChain(super::RequestInitChain),
-        #[prost(message, tag="6")]
+        #[prost(message, tag="5")]
         Query(super::RequestQuery),
-        #[prost(message, tag="7")]
+        #[prost(message, tag="6")]
         BeginBlock(super::RequestBeginBlock),
-        #[prost(message, tag="8")]
+        #[prost(message, tag="7")]
         CheckTx(super::RequestCheckTx),
-        #[prost(message, tag="9")]
+        #[prost(message, tag="8")]
         DeliverTx(super::RequestDeliverTx),
-        #[prost(message, tag="10")]
+        #[prost(message, tag="9")]
         EndBlock(super::RequestEndBlock),
-        #[prost(message, tag="11")]
+        #[prost(message, tag="10")]
         Commit(super::RequestCommit),
-        #[prost(message, tag="12")]
+        #[prost(message, tag="11")]
         ListSnapshots(super::RequestListSnapshots),
-        #[prost(message, tag="13")]
+        #[prost(message, tag="12")]
         OfferSnapshot(super::RequestOfferSnapshot),
-        #[prost(message, tag="14")]
+        #[prost(message, tag="13")]
         LoadSnapshotChunk(super::RequestLoadSnapshotChunk),
-        #[prost(message, tag="15")]
+        #[prost(message, tag="14")]
         ApplySnapshotChunk(super::RequestApplySnapshotChunk),
     }
 }
@@ -62,14 +60,8 @@ pub struct RequestInfo {
     pub block_version: u64,
     #[prost(uint64, tag="3")]
     pub p2p_version: u64,
-}
-/// nondeterministic
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct RequestSetOption {
-    #[prost(string, tag="1")]
-    pub key: ::prost::alloc::string::String,
-    #[prost(string, tag="2")]
-    pub value: ::prost::alloc::string::String,
+    #[prost(string, tag="4")]
+    pub abci_version: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestInitChain {
@@ -78,18 +70,18 @@ pub struct RequestInitChain {
     #[prost(string, tag="2")]
     pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag="3")]
-    pub consensus_params: ::core::option::Option<ConsensusParams>,
+    pub consensus_params: ::core::option::Option<super::types::ConsensusParams>,
     #[prost(message, repeated, tag="4")]
     pub validators: ::prost::alloc::vec::Vec<ValidatorUpdate>,
-    #[prost(bytes="vec", tag="5")]
-    pub app_state_bytes: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="bytes", tag="5")]
+    pub app_state_bytes: ::prost::bytes::Bytes,
     #[prost(int64, tag="6")]
     pub initial_height: i64,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestQuery {
-    #[prost(bytes="vec", tag="1")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="bytes", tag="1")]
+    pub data: ::prost::bytes::Bytes,
     #[prost(string, tag="2")]
     pub path: ::prost::alloc::string::String,
     #[prost(int64, tag="3")]
@@ -99,8 +91,8 @@ pub struct RequestQuery {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestBeginBlock {
-    #[prost(bytes="vec", tag="1")]
-    pub hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="bytes", tag="1")]
+    pub hash: ::prost::bytes::Bytes,
     #[prost(message, optional, tag="2")]
     pub header: ::core::option::Option<super::types::Header>,
     #[prost(message, optional, tag="3")]
@@ -110,15 +102,15 @@ pub struct RequestBeginBlock {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestCheckTx {
-    #[prost(bytes="vec", tag="1")]
-    pub tx: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="bytes", tag="1")]
+    pub tx: ::prost::bytes::Bytes,
     #[prost(enumeration="CheckTxType", tag="2")]
     pub r#type: i32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestDeliverTx {
-    #[prost(bytes="vec", tag="1")]
-    pub tx: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="bytes", tag="1")]
+    pub tx: ::prost::bytes::Bytes,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestEndBlock {
@@ -139,8 +131,8 @@ pub struct RequestOfferSnapshot {
     #[prost(message, optional, tag="1")]
     pub snapshot: ::core::option::Option<Snapshot>,
     /// light client-verified app hash for snapshot height
-    #[prost(bytes="vec", tag="2")]
-    pub app_hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="bytes", tag="2")]
+    pub app_hash: ::prost::bytes::Bytes,
 }
 /// loads a snapshot chunk
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -157,8 +149,8 @@ pub struct RequestLoadSnapshotChunk {
 pub struct RequestApplySnapshotChunk {
     #[prost(uint32, tag="1")]
     pub index: u32,
-    #[prost(bytes="vec", tag="2")]
-    pub chunk: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="bytes", tag="2")]
+    pub chunk: ::prost::bytes::Bytes,
     #[prost(string, tag="3")]
     pub sender: ::prost::alloc::string::String,
 }
@@ -167,7 +159,7 @@ pub struct RequestApplySnapshotChunk {
 
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Response {
-    #[prost(oneof="response::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16")]
+    #[prost(oneof="response::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15")]
     pub value: ::core::option::Option<response::Value>,
 }
 /// Nested message and enum types in `Response`.
@@ -183,28 +175,26 @@ pub mod response {
         #[prost(message, tag="4")]
         Info(super::ResponseInfo),
         #[prost(message, tag="5")]
-        SetOption(super::ResponseSetOption),
-        #[prost(message, tag="6")]
         InitChain(super::ResponseInitChain),
-        #[prost(message, tag="7")]
+        #[prost(message, tag="6")]
         Query(super::ResponseQuery),
-        #[prost(message, tag="8")]
+        #[prost(message, tag="7")]
         BeginBlock(super::ResponseBeginBlock),
-        #[prost(message, tag="9")]
+        #[prost(message, tag="8")]
         CheckTx(super::ResponseCheckTx),
-        #[prost(message, tag="10")]
+        #[prost(message, tag="9")]
         DeliverTx(super::ResponseDeliverTx),
-        #[prost(message, tag="11")]
+        #[prost(message, tag="10")]
         EndBlock(super::ResponseEndBlock),
-        #[prost(message, tag="12")]
+        #[prost(message, tag="11")]
         Commit(super::ResponseCommit),
-        #[prost(message, tag="13")]
+        #[prost(message, tag="12")]
         ListSnapshots(super::ResponseListSnapshots),
-        #[prost(message, tag="14")]
+        #[prost(message, tag="13")]
         OfferSnapshot(super::ResponseOfferSnapshot),
-        #[prost(message, tag="15")]
+        #[prost(message, tag="14")]
         LoadSnapshotChunk(super::ResponseLoadSnapshotChunk),
-        #[prost(message, tag="16")]
+        #[prost(message, tag="15")]
         ApplySnapshotChunk(super::ResponseApplySnapshotChunk),
     }
 }
@@ -227,6 +217,7 @@ pub struct ResponseFlush {
 pub struct ResponseInfo {
     #[prost(string, tag="1")]
     pub data: ::prost::alloc::string::String,
+    /// this is the software version of the application. TODO: remove?
     #[prost(string, tag="2")]
     pub version: ::prost::alloc::string::String,
     #[prost(uint64, tag="3")]
@@ -235,29 +226,18 @@ pub struct ResponseInfo {
     #[prost(int64, tag="4")]
     #[serde(with = "crate::serializers::from_str")]
     pub last_block_height: i64,
-    #[prost(bytes="vec", tag="5")]
-    #[serde(skip_serializing_if = "::prost::alloc::vec::Vec::is_empty", with = "serde_bytes")]
-    pub last_block_app_hash: ::prost::alloc::vec::Vec<u8>,
-}
-/// nondeterministic
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ResponseSetOption {
-    #[prost(uint32, tag="1")]
-    pub code: u32,
-    /// bytes data = 2;
-    #[prost(string, tag="3")]
-    pub log: ::prost::alloc::string::String,
-    #[prost(string, tag="4")]
-    pub info: ::prost::alloc::string::String,
+    #[prost(bytes="bytes", tag="5")]
+    #[serde(skip_serializing_if = "bytes::Bytes::is_empty")]
+    pub last_block_app_hash: ::prost::bytes::Bytes,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseInitChain {
     #[prost(message, optional, tag="1")]
-    pub consensus_params: ::core::option::Option<ConsensusParams>,
+    pub consensus_params: ::core::option::Option<super::types::ConsensusParams>,
     #[prost(message, repeated, tag="2")]
     pub validators: ::prost::alloc::vec::Vec<ValidatorUpdate>,
-    #[prost(bytes="vec", tag="3")]
-    pub app_hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="bytes", tag="3")]
+    pub app_hash: ::prost::bytes::Bytes,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseQuery {
@@ -273,10 +253,10 @@ pub struct ResponseQuery {
     pub info: ::prost::alloc::string::String,
     #[prost(int64, tag="5")]
     pub index: i64,
-    #[prost(bytes="vec", tag="6")]
-    pub key: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes="vec", tag="7")]
-    pub value: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="bytes", tag="6")]
+    pub key: ::prost::bytes::Bytes,
+    #[prost(bytes="bytes", tag="7")]
+    pub value: ::prost::bytes::Bytes,
     #[prost(message, optional, tag="8")]
     pub proof_ops: ::core::option::Option<super::crypto::ProofOps>,
     #[prost(int64, tag="9")]
@@ -293,8 +273,8 @@ pub struct ResponseBeginBlock {
 pub struct ResponseCheckTx {
     #[prost(uint32, tag="1")]
     pub code: u32,
-    #[prost(bytes="vec", tag="2")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="bytes", tag="2")]
+    pub data: ::prost::bytes::Bytes,
     /// nondeterministic
     #[prost(string, tag="3")]
     pub log: ::prost::alloc::string::String,
@@ -309,13 +289,21 @@ pub struct ResponseCheckTx {
     pub events: ::prost::alloc::vec::Vec<Event>,
     #[prost(string, tag="8")]
     pub codespace: ::prost::alloc::string::String,
+    #[prost(string, tag="9")]
+    pub sender: ::prost::alloc::string::String,
+    #[prost(int64, tag="10")]
+    pub priority: i64,
+    /// mempool_error is set by Tendermint.
+    /// ABCI applictions creating a ResponseCheckTX should not set mempool_error.
+    #[prost(string, tag="11")]
+    pub mempool_error: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseDeliverTx {
     #[prost(uint32, tag="1")]
     pub code: u32,
-    #[prost(bytes="vec", tag="2")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="bytes", tag="2")]
+    pub data: ::prost::bytes::Bytes,
     /// nondeterministic
     #[prost(string, tag="3")]
     pub log: ::prost::alloc::string::String,
@@ -337,15 +325,15 @@ pub struct ResponseEndBlock {
     #[prost(message, repeated, tag="1")]
     pub validator_updates: ::prost::alloc::vec::Vec<ValidatorUpdate>,
     #[prost(message, optional, tag="2")]
-    pub consensus_param_updates: ::core::option::Option<ConsensusParams>,
+    pub consensus_param_updates: ::core::option::Option<super::types::ConsensusParams>,
     #[prost(message, repeated, tag="3")]
     pub events: ::prost::alloc::vec::Vec<Event>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseCommit {
     /// reserve 1
-    #[prost(bytes="vec", tag="2")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="bytes", tag="2")]
+    pub data: ::prost::bytes::Bytes,
     #[prost(int64, tag="3")]
     pub retain_height: i64,
 }
@@ -380,8 +368,8 @@ pub mod response_offer_snapshot {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseLoadSnapshotChunk {
-    #[prost(bytes="vec", tag="1")]
-    pub chunk: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="bytes", tag="1")]
+    pub chunk: ::prost::bytes::Bytes,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseApplySnapshotChunk {
@@ -416,29 +404,6 @@ pub mod response_apply_snapshot_chunk {
 //----------------------------------------
 // Misc.
 
-/// ConsensusParams contains all consensus-relevant parameters
-/// that can be adjusted by the abci app
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ConsensusParams {
-    #[prost(message, optional, tag="1")]
-    pub block: ::core::option::Option<BlockParams>,
-    #[prost(message, optional, tag="2")]
-    pub evidence: ::core::option::Option<super::types::EvidenceParams>,
-    #[prost(message, optional, tag="3")]
-    pub validator: ::core::option::Option<super::types::ValidatorParams>,
-    #[prost(message, optional, tag="4")]
-    pub version: ::core::option::Option<super::types::VersionParams>,
-}
-/// BlockParams contains limits on the block size.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct BlockParams {
-    /// Note: must be greater than 0
-    #[prost(int64, tag="1")]
-    pub max_bytes: i64,
-    /// Note: must be greater or equal to -1
-    #[prost(int64, tag="2")]
-    pub max_gas: i64,
-}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LastCommitInfo {
     #[prost(int32, tag="1")]
@@ -459,10 +424,10 @@ pub struct Event {
 /// EventAttribute is a single key-value pair, associated with an event.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventAttribute {
-    #[prost(bytes="vec", tag="1")]
-    pub key: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes="vec", tag="2")]
-    pub value: ::prost::alloc::vec::Vec<u8>,
+    #[prost(string, tag="1")]
+    pub key: ::prost::alloc::string::String,
+    #[prost(string, tag="2")]
+    pub value: ::prost::alloc::string::String,
     /// nondeterministic
     #[prost(bool, tag="3")]
     pub index: bool,
@@ -476,8 +441,8 @@ pub struct TxResult {
     pub height: i64,
     #[prost(uint32, tag="2")]
     pub index: u32,
-    #[prost(bytes="vec", tag="3")]
-    pub tx: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="bytes", tag="3")]
+    pub tx: ::prost::bytes::Bytes,
     #[prost(message, optional, tag="4")]
     pub result: ::core::option::Option<ResponseDeliverTx>,
 }
@@ -488,8 +453,8 @@ pub struct TxResult {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Validator {
     /// The first 20 bytes of SHA256(public key)
-    #[prost(bytes="vec", tag="1")]
-    pub address: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="bytes", tag="1")]
+    pub address: ::prost::bytes::Bytes,
     /// PubKey pub_key = 2 \[(gogoproto.nullable)=false\];
     ///
     /// The voting power
@@ -546,11 +511,11 @@ pub struct Snapshot {
     #[prost(uint32, tag="3")]
     pub chunks: u32,
     /// Arbitrary snapshot hash, equal only if identical
-    #[prost(bytes="vec", tag="4")]
-    pub hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="bytes", tag="4")]
+    pub hash: ::prost::bytes::Bytes,
     /// Arbitrary application metadata
-    #[prost(bytes="vec", tag="5")]
-    pub metadata: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="bytes", tag="5")]
+    pub metadata: ::prost::bytes::Bytes,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]

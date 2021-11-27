@@ -1,6 +1,6 @@
 [env]
 CONTAINER_NAME = "abci-test"
-DOCKER_IMAGE = "informaldev/abci-harness:0.34.0"
+DOCKER_IMAGE = "informaldev/abci-harness:0.35.0"
 HOST_RPC_PORT = 26657
 CARGO_MAKE_WAIT_MILLISECONDS = 3500
 
@@ -22,7 +22,16 @@ dependencies = [ "docker-stop", "docker-rm" ]
 
 [tasks.docker-up]
 command = "docker"
-args = ["run", "--name", "${CONTAINER_NAME}", "--rm", "--publish", "26657:${HOST_RPC_PORT}", "--volume", "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/../target/debug:/abci", "--detach", "${DOCKER_IMAGE}", "--verbose" ]
+args = [
+    "run",
+    "--name", "${CONTAINER_NAME}",
+    "--rm",
+    "--publish", "26657:${HOST_RPC_PORT}",
+    "--volume", "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/../target/debug:/abci",
+    "--detach",
+    "${DOCKER_IMAGE}",
+    "--verbose",
+]
 dependencies = ["docker-up-stop-old", "docker-up-rm-old"]
 
 [tasks.docker-up-debug]
@@ -31,7 +40,7 @@ args = ["run", "--name", "${CONTAINER_NAME}", "--rm", "--publish", "26657:${HOST
 dependencies = ["docker-up-stop-old", "docker-up-rm-old"]
 
 [tasks.test]
-args = ["run", "--all-features"]
+args = ["run", "--all-features", "--", "--verbose"]
 
 [tasks.docker-stop]
 command = "docker"

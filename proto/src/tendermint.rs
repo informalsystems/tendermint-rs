@@ -18,10 +18,6 @@ pub mod rpc {
     }
 }
 
-pub mod blockchain {
-    include!("prost/tendermint.blockchain.rs");
-}
-
 pub mod libs {
     pub mod bits {
         include!("prost/tendermint.libs.bits.rs");
@@ -36,8 +32,8 @@ pub mod version {
     include!("prost/tendermint.version.rs");
 }
 
-pub mod store {
-    include!("prost/tendermint.store.rs");
+pub mod blocksync {
+    include!("prost/tendermint.blocksync.rs");
 }
 
 pub mod privval {
@@ -62,5 +58,5 @@ pub mod crypto {
 
 pub mod meta {
     pub const REPOSITORY: &str = "https://github.com/tendermint/tendermint";
-    pub const COMMITISH: &str = "v0.34.9";
+    pub const COMMITISH: &str = "v0.35.0";
 }

@@ -7,10 +7,9 @@ use tendermint_proto::abci::{
     request, response, RequestApplySnapshotChunk, RequestBeginBlock, RequestCheckTx, RequestCommit,
     RequestDeliverTx, RequestEndBlock, RequestFlush, RequestInfo, RequestInitChain,
     RequestListSnapshots, RequestLoadSnapshotChunk, RequestOfferSnapshot, RequestQuery,
-    RequestSetOption, ResponseApplySnapshotChunk, ResponseBeginBlock, ResponseCheckTx,
-    ResponseCommit, ResponseDeliverTx, ResponseEndBlock, ResponseFlush, ResponseInfo,
-    ResponseInitChain, ResponseListSnapshots, ResponseLoadSnapshotChunk, ResponseOfferSnapshot,
-    ResponseQuery, ResponseSetOption,
+    ResponseApplySnapshotChunk, ResponseBeginBlock, ResponseCheckTx, ResponseCommit,
+    ResponseDeliverTx, ResponseEndBlock, ResponseFlush, ResponseInfo, ResponseInitChain,
+    ResponseListSnapshots, ResponseLoadSnapshotChunk, ResponseOfferSnapshot, ResponseQuery,
 };
 use tendermint_proto::abci::{Request, RequestEcho, ResponseEcho};
 
@@ -111,11 +110,6 @@ impl Client {
     /// Commit the current state at the current height.
     pub fn commit(&mut self) -> Result<ResponseCommit, Error> {
         perform!(self, Commit, RequestCommit {})
-    }
-
-    /// Request that the application set an option to a particular value.
-    pub fn set_option(&mut self, req: RequestSetOption) -> Result<ResponseSetOption, Error> {
-        perform!(self, SetOption, req)
     }
 
     /// Used during state sync to discover available snapshots on peers.

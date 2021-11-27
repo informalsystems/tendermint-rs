@@ -54,6 +54,16 @@ pub fn quick_probe_plan(output_path: &Path, request_wait: Duration) -> Result<Pl
                 // This should have been created in the previous set of
                 // interactions.
                 abci_query("tx0").with_name("abci_query_with_existing_key"),
+                tx(
+                    "FCB86F71C4EFF43E13C51FA12791F6DD1DDB8600A51131BE2289614D6882F6BE",
+                    false,
+                )
+                .with_name("tx_no_prove"),
+                tx(
+                    "FCB86F71C4EFF43E13C51FA12791F6DD1DDB8600A51131BE2289614D6882F6BE",
+                    true,
+                )
+                .with_name("tx_prove"),
                 tx_search("tx.height > 1", false, 1, 10, "asc").with_name("tx_search_no_prove"),
                 tx_search("tx.height > 1", true, 1, 10, "asc").with_name("tx_search_with_prove"),
             ]),

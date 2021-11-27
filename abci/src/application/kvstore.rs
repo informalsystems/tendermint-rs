@@ -1,6 +1,6 @@
 //! In-memory key/value store ABCI application.
 
-use crate::codec::{encode_varint, MAX_VARINT_LENGTH};
+use crate::codec::MAX_VARINT_LENGTH;
 use crate::{Application, Error};
 use bytes::BytesMut;
 use std::collections::HashMap;
@@ -44,7 +44,7 @@ use tracing::{debug, info};
 /// // Deliver a transaction and then commit the transaction
 /// client
 ///     .deliver_tx(RequestDeliverTx {
-///         tx: "test-key=test-value".as_bytes().to_owned(),
+///         tx: "test-key=test-value".into(),
 ///     })
 ///     .unwrap();
 /// client.commit().unwrap();
@@ -52,7 +52,7 @@ use tracing::{debug, info};
 /// // We should be able to query for the data we just delivered above
 /// let res = client
 ///     .query(RequestQuery {
-///         data: "test-key".as_bytes().to_owned(),
+///         data: "test-key".into(),
 ///         path: "".to_string(),
 ///         height: 0,
 ///         prove: false,
@@ -123,17 +123,17 @@ impl Application for KeyValueStoreApp {
             version: "0.1.0".to_string(),
             app_version: 1,
             last_block_height,
-            last_block_app_hash,
+            last_block_app_hash: last_block_app_hash.into(),
         }
     }
 
     fn query(&self, request: RequestQuery) -> ResponseQuery {
-        let key = match String::from_utf8(request.data.clone()) {
+        let key = match std::str::from_utf8(&request.data) {
             Ok(s) => s,
             Err(e) => panic!("Failed to intepret key as UTF-8: {}", e),
         };
         debug!("Attempting to get key: {}", key);
-        match self.get(key.clone()) {
+        match self.get(key) {
             Ok((height, value_opt)) => match value_opt {
                 Some(value) => ResponseQuery {
                     code: 0,
@@ -141,7 +141,7 @@ impl Application for KeyValueStoreApp {
                     info: "".to_string(),
                     index: 0,
                     key: request.data,
-                    value: value.into_bytes(),
+                    value: value.into_bytes().into(),
                     proof_ops: None,
                     height,
                     codespace: "".to_string(),
@@ -152,7 +152,7 @@ impl Application for KeyValueStoreApp {
                     info: "".to_string(),
                     index: 0,
                     key: request.data,
-                    value: vec![],
+                    value: Default::default(),
                     proof_ops: None,
                     height,
                     codespace: "".to_string(),
@@ -165,28 +165,31 @@ impl Application for KeyValueStoreApp {
     fn check_tx(&self, _request: RequestCheckTx) -> ResponseCheckTx {
         ResponseCheckTx {
             code: 0,
-            data: vec![],
+            data: Default::default(),
             log: "".to_string(),
             info: "".to_string(),
             gas_wanted: 1,
             gas_used: 0,
             events: vec![],
             codespace: "".to_string(),
+            mempool_error: "".to_string(),
+            priority: 0,
+            sender: "".to_string(),
         }
     }
 
     fn deliver_tx(&self, request: RequestDeliverTx) -> ResponseDeliverTx {
-        let tx = String::from_utf8(request.tx).unwrap();
+        let tx = std::str::from_utf8(&request.tx).unwrap();
         let tx_parts = tx.split('=').collect::<Vec<&str>>();
         let (key, value) = if tx_parts.len() == 2 {
             (tx_parts[0], tx_parts[1])
         } else {
-            (tx.as_ref(), tx.as_ref())
+            (tx, tx)
         };
         let _ = self.set(key, value).unwrap();
         ResponseDeliverTx {
             code: 0,
-            data: vec![],
+            data: Default::default(),
             log: "".to_string(),
             info: "".to_string(),
             gas_wanted: 0,
@@ -195,18 +198,18 @@ impl Application for KeyValueStoreApp {
                 r#type: "app".to_string(),
                 attributes: vec![
                     EventAttribute {
-                        key: "key".as_bytes().to_owned(),
-                        value: key.as_bytes().to_owned(),
+                        key: "key".to_string(),
+                        value: key.to_string(),
                         index: true,
                     },
                     EventAttribute {
-                        key: "index_key".as_bytes().to_owned(),
-                        value: "index is working".as_bytes().to_owned(),
+                        key: "index_key".to_string(),
+                        value: "index is working".to_string(),
                         index: true,
                     },
                     EventAttribute {
-                        key: "noindex_key".as_bytes().to_owned(),
-                        value: "index is working".as_bytes().to_owned(),
+                        key: "noindex_key".to_string(),
+                        value: "index is working".to_string(),
                         index: false,
                     },
                 ],
@@ -221,7 +224,7 @@ impl Application for KeyValueStoreApp {
         let (height, app_hash) = channel_recv(&result_rx).unwrap();
         info!("Committed height {}", height);
         ResponseCommit {
-            data: app_hash,
+            data: app_hash.into(),
             retain_height: height - 1,
         }
     }
@@ -278,7 +281,7 @@ impl KeyValueStoreDriver {
         // As in the Go-based key/value store, simply encode the number of
         // items as the "app hash"
         let mut app_hash = BytesMut::with_capacity(MAX_VARINT_LENGTH);
-        encode_varint(self.store.len() as u64, &mut app_hash);
+        prost::encoding::encode_varint(self.store.len() as u64, &mut app_hash);
         self.app_hash = app_hash.to_vec();
         self.height += 1;
         channel_send(&result_tx, (self.height, self.app_hash.clone()))

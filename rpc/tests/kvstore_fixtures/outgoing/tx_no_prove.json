@@ -1,0 +1,9 @@
+{
+  "id": "0fdbf4b0-6223-49e7-a729-adda09e120a4",
+  "jsonrpc": "2.0",
+  "method": "tx",
+  "params": {
+    "hash": "FCB86F71C4EFF43E13C51FA12791F6DD1DDB8600A51131BE2289614D6882F6BE",
+    "prove": false
+  }
+}

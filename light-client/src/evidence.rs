@@ -2,7 +2,7 @@
 
 use crate::{components::io::IoError, types::PeerId};
 
-use tendermint::abci::transaction::Hash;
+use tendermint_rpc::abci::transaction::Hash;
 
 use contracts::contract_trait;
 

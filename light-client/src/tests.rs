@@ -3,8 +3,8 @@
 use crate::types::{Height, LightBlock, PeerId, SignedHeader, Time, TrustThreshold, ValidatorSet};
 
 use serde::{Deserialize, Serialize};
-use tendermint::abci::transaction::Hash;
 use tendermint_rpc as rpc;
+use tendermint_rpc::abci::transaction::Hash;
 
 use crate::components::clock::Clock;
 use crate::components::io::{AtHeight, Io, IoError};

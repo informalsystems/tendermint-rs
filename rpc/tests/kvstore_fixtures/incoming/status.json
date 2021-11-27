@@ -1,10 +1,10 @@
 {
-  "id": "7acd6adc-648a-4e73-88de-911fb2db10c5",
+  "id": "84cd8df6-1ab8-4678-9294-7c7f63b60ad7",
   "jsonrpc": "2.0",
   "result": {
     "node_info": {
-      "channels": "40202122233038606100",
-      "id": "eb277d0093f0a454f87558b962ae0ba6a0675691",
+      "channels": "402021222330386061626300",
+      "id": "25d4acdbecad89a4d50073cc5673965d98f5681d",
       "listen_addr": "tcp://0.0.0.0:26656",
       "moniker": "dockernode",
       "network": "dockerchain",
@@ -17,24 +17,34 @@
         "block": "11",
         "p2p": "8"
       },
-      "version": "v0.34.9"
+      "version": "0.35.0-unreleased"
     },
     "sync_info": {
+      "backfill_blocks_total": "0",
+      "backfilled_blocks": "0",
       "catching_up": false,
+      "chunk_process_avg_time": "0",
       "earliest_app_hash": "",
-      "earliest_block_hash": "44C37753BF31FD4238227E19213F042699F62416D4E5422BBA59095FC4BEE039",
+      "earliest_block_hash": "05D500079FA8DFDCA556313E7A8E1FC4BDA2407D23A1A2ED40F1C06889A0BC43",
       "earliest_block_height": "1",
-      "earliest_block_time": "2021-07-16T12:16:29.232984022Z",
-      "latest_app_hash": "0000000000000000",
-      "latest_block_hash": "D18444A13CC9F798A4B57FDCD3C486EB7FF1F4EF73DF6234764226DDED75A394",
-      "latest_block_height": "34",
-      "latest_block_time": "2021-07-16T12:16:46.411375512Z"
+      "earliest_block_time": "2021-11-25T17:04:33.387236819Z",
+      "latest_app_hash": "0600000000000000",
+      "latest_block_hash": "96685C09D7C09916D127A894A5F53652E18AF8F0E5B4112C69A39CC631179960",
+      "latest_block_height": "12",
+      "latest_block_time": "2021-11-25T17:04:39.209040526Z",
+      "max_peer_block_height": "0",
+      "remaining_time": "0",
+      "snapshot_chunks_count": "0",
+      "snapshot_chunks_total": "0",
+      "snapshot_height": "0",
+      "total_snapshots": "0",
+      "total_synced_time": "0"
     },
     "validator_info": {
-      "address": "ABA577531E6D6F4119E7E1E0EE1909B908A8346D",
+      "address": "6B3F66DCF73507BCE7148D6580DAC27074108628",
       "pub_key": {
         "type": "tendermint/PubKeyEd25519",
-        "value": "f+7sWZojwd8xbxZ+GJL+x/zKr1wyM0NMJkp8tCnA4t0="
+        "value": "fbRNPLlIO+9TvAyBBwxAm2CKODIL8Oxaryw/DaHJGq4="
       },
       "voting_power": "10"
     }

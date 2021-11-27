@@ -2,8 +2,9 @@
 
 use crate::Method;
 
+use crate::abci::transaction;
 use serde::{Deserialize, Serialize};
-use tendermint::{abci::transaction, evidence::Evidence};
+use tendermint::evidence::Evidence;
 
 /// `/broadcast_evidence`: broadcast an evidence.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
