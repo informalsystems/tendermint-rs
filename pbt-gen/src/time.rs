@@ -4,8 +4,9 @@
 use std::convert::TryInto;
 
 use proptest::prelude::*;
-use time::macros::datetime;
-use time::{Date, OffsetDateTime};
+use time::format_description::well_known::Rfc3339;
+use time::macros::{datetime, offset};
+use time::{Date, OffsetDateTime, UtcOffset};
 
 /// Any higher, and we're at seconds
 pub const MAX_NANO_SECS: u32 = 999_999_999u32;
@@ -42,6 +43,24 @@ pub fn max_time() -> OffsetDateTime {
         .with_hms_nano(23, 59, 59, MAX_NANO_SECS)
         .unwrap()
         .assume_utc()
+}
+
+/// The most distant time in the past that has a valid representation in
+/// Google's well-known [`Timestamp`] protobuf message format.
+///
+/// [`Timestamp`]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
+///
+pub const fn min_protobuf_time() -> OffsetDateTime {
+    datetime!(0001-01-01 00:00:00 UTC)
+}
+
+/// The most distant time in the future that has a valid representation in
+/// Google's well-known [`Timestamp`] protobuf message format.
+///
+/// [`Timestamp`]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
+///
+pub const fn max_protobuf_time() -> OffsetDateTime {
+    datetime!(9999-12-31 23:59:59.999999999 UTC)
 }
 
 fn num_days_in_month(year: i32, month: u8) -> u8 {
@@ -93,16 +112,57 @@ prop_compose! {
 }
 
 prop_compose! {
+    /// An abitrary [`OffsetDateTime`] ((between [min_time] and [max_time])),
+    /// with an arbitrary time zone offset from UTC.
+    pub fn arb_datetime_with_offset()
+        (
+            d in arb_datetime_in_range(min_time(), max_time()),
+            off in arb_utc_offset(),
+        ) -> OffsetDateTime {
+            d.to_offset(off)
+        }
+}
+
+prop_compose! {
     /// An abitrary [`OffsetDateTime`], offset in UTC, that can be represented
-    /// as an RFC 3339 timestamp.
-    pub fn arb_datetime_for_rfc3339()
+    /// as an RFC 3339 timestamp. Values with year 0 are further excluded
+    /// due to the validity requirements on
+    /// Google's well-known [`Timestamp`] protobuf message format.
+    ///
+    /// [`Timestamp`]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
+    pub fn arb_protobuf_safe_datetime()
         (
             d in arb_datetime_in_range(
-                datetime!(0000-01-01 00:00:00 UTC),
-                datetime!(9999-12-31 23:59:59.999999999 UTC),
+                min_protobuf_time(),
+                max_protobuf_time(),
             )
         ) -> OffsetDateTime {
             d
+        }
+}
+
+prop_compose! {
+    fn arb_utc_offset_hms()
+        (
+            h in 0..=23i8,
+            m in 0..=59i8,
+            s in 0..=59i8,
+        ) -> UtcOffset {
+            UtcOffset::from_hms(h, m, s).unwrap()
+        }
+}
+
+prop_compose! {
+    /// An abitrary [`UtcOffset`].
+    pub fn arb_utc_offset()
+        (
+            off in prop_oneof![
+                Just(offset!(UTC)),
+                arb_utc_offset_hms(),
+                arb_utc_offset_hms().prop_map(|off| -off),
+            ]
+        ) -> UtcOffset {
+            off
         }
 }
 
@@ -181,4 +241,17 @@ prop_compose! {
     ) -> String {
         format!("{:}T{:}", date, time)
     }
+}
+
+/// Like `[arb_rfc3339_timestamp]`, but restricted to produce timestamps
+/// that have a valid representation in
+/// Google's well-known [`Timestamp`] protobuf message format.
+///
+/// [`Timestamp`]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
+///
+pub fn arb_protobuf_safe_rfc3339_timestamp() -> impl Strategy<Value = String> {
+    arb_rfc3339_timestamp().prop_filter("timestamp out of protobuf range", |ts| {
+        let t = OffsetDateTime::parse(ts, &Rfc3339).unwrap();
+        (min_protobuf_time()..=max_protobuf_time()).contains(&t)
+    })
 }

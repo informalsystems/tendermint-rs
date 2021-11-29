@@ -48,7 +48,7 @@ impl Time {
     fn from_utc(t: OffsetDateTime) -> Result<Self, Error> {
         debug_assert_eq!(t.offset(), offset!(UTC));
         match t.year() {
-            0..=9999 => Ok(Time(PrimitiveDateTime::new(t.date(), t.time()))),
+            1..=9999 => Ok(Time(PrimitiveDateTime::new(t.date(), t.time()))),
             _ => Err(Error::date_out_of_range()),
         }
     }
@@ -169,10 +169,13 @@ mod tests {
     use crate::error::ErrorDetail;
     use proptest::{prelude::*, sample::select};
     use tendermint_pbt_gen as pbt;
+    use time::{Date, Month::*};
 
     // We want to make sure that these timestamps specifically get tested.
     fn particular_rfc3339_timestamps() -> impl Strategy<Value = String> {
         let strs: Vec<String> = vec![
+            "0001-01-01T00:00:00Z",
+            "9999-12-31T23:59:59.999999999Z",
             "2020-09-14T16:33:54.21191421Z",
             "2020-09-14T16:33:00Z",
             "2020-09-14T16:33:00.1Z",
@@ -197,15 +200,28 @@ mod tests {
         select(strs)
     }
 
+    fn particular_datetimes_out_of_range() -> impl Strategy<Value = OffsetDateTime> {
+        let dts = vec![
+            datetime!(0000-12-31 23:59:59.999999999 UTC),
+            datetime!(0001-01-01 00:00:00.999999999 +00:00:01),
+            datetime!(9999-12-31 23:59:59 -00:00:01),
+            Date::from_calendar_date(-1, October, 9)
+                .unwrap()
+                .midnight()
+                .assume_utc(),
+        ];
+        select(dts)
+    }
+
     proptest! {
         #[test]
-        fn can_parse_rfc3339_timestamps(stamp in pbt::time::arb_rfc3339_timestamp()) {
+        fn can_parse_rfc3339_timestamps(stamp in pbt::time::arb_protobuf_safe_rfc3339_timestamp()) {
             prop_assert!(stamp.parse::<Time>().is_ok())
         }
 
         #[test]
         fn serde_from_value_is_the_inverse_of_to_value_within_reasonable_time_range(
-            datetime in pbt::time::arb_datetime_for_rfc3339()
+            datetime in pbt::time::arb_protobuf_safe_datetime()
         ) {
             // If `from_value` is the inverse of `to_value`, then it will always
             // map the JSON `encoded_time` to back to the inital `time`.
@@ -218,7 +234,7 @@ mod tests {
         #[test]
         fn serde_of_rfc3339_timestamps_is_safe(
             stamp in prop_oneof![
-                pbt::time::arb_rfc3339_timestamp(),
+                pbt::time::arb_protobuf_safe_rfc3339_timestamp(),
                 particular_rfc3339_timestamps(),
             ]
         ) {
@@ -234,11 +250,14 @@ mod tests {
 
         #[test]
         fn conversion_from_datetime_succeeds_for_4_digit_ce_years(
-            datetime in pbt::time::arb_datetime()
+            datetime in prop_oneof![
+                pbt::time::arb_datetime_with_offset(),
+                particular_datetimes_out_of_range(),
+            ]
         ) {
             let res: Result<Time, _> = datetime.try_into();
-            match datetime.year() {
-                0 ..= 9999 => {
+            match datetime.to_offset(offset!(UTC)).year() {
+                1 ..= 9999 => {
                     let t = res.unwrap();
                     let dt_converted_back: OffsetDateTime = t.into();
                     assert_eq!(dt_converted_back, datetime);
