@@ -18,7 +18,19 @@ use time::{OffsetDateTime, PrimitiveDateTime};
 use crate::error::Error;
 
 /// Tendermint timestamps
-/// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#time>
+///
+/// A `Time` value is guaranteed to represent a valid `Timestamp` as defined
+/// by Google's well-known protobuf type [specification]. Conversions and
+/// operations that would result in exceeding `Timestamp`'s validity
+/// range return an error or `None`.
+///
+/// The string serialization format for `Time` is defined as an RFC 3339
+/// compliant string with the optional subsecond fraction part having
+/// up to 9 digits and no trailing zeros, and the UTC offset denoted by Z.
+/// This reproduces the behavior of Go's `time.RFC3339Nano` format.
+///
+/// [specification]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
+///
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(try_from = "Timestamp", into = "Timestamp")]
 pub struct Time(PrimitiveDateTime);
