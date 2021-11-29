@@ -269,4 +269,96 @@ mod tests {
             }
         }
     }
+
+    fn duration_from_nanos(whole_nanos: u128) -> Duration {
+        let secs: u64 = (whole_nanos / 1_000_000_000).try_into().unwrap();
+        let nanos = (whole_nanos % 1_000_000_000) as u32;
+        Duration::new(secs, nanos)
+    }
+
+    prop_compose! {
+        fn args_for_regular_add()
+            (t in pbt::time::arb_protobuf_safe_datetime())
+            (
+                t in Just(t),
+                d_nanos in 0 ..= (pbt::time::max_protobuf_time() - t).whole_nanoseconds() as u128,
+            ) -> (OffsetDateTime, Duration)
+            {
+                (t, duration_from_nanos(d_nanos))
+            }
+    }
+
+    prop_compose! {
+        fn args_for_regular_sub()
+            (t in pbt::time::arb_protobuf_safe_datetime())
+            (
+                t in Just(t),
+                d_nanos in 0 ..= (t - pbt::time::min_protobuf_time()).whole_nanoseconds() as u128,
+            ) -> (OffsetDateTime, Duration)
+            {
+                (t, duration_from_nanos(d_nanos))
+            }
+    }
+
+    prop_compose! {
+        fn args_for_overflowed_add()
+            (t in pbt::time::arb_protobuf_safe_datetime())
+            (
+                t in Just(t),
+                d_nanos in (
+                    (pbt::time::max_protobuf_time() - t).whole_nanoseconds() as u128 + 1
+                    ..=
+                    Duration::MAX.as_nanos()
+                ),
+            ) -> (OffsetDateTime, Duration)
+            {
+                (t, duration_from_nanos(d_nanos))
+            }
+    }
+
+    prop_compose! {
+        fn args_for_overflowed_sub()
+            (t in pbt::time::arb_protobuf_safe_datetime())
+            (
+                t in Just(t),
+                d_nanos in (
+                    (t - pbt::time::min_protobuf_time()).whole_nanoseconds() as u128 + 1
+                    ..=
+                    Duration::MAX.as_nanos()
+                ),
+            ) -> (OffsetDateTime, Duration)
+            {
+                (t, duration_from_nanos(d_nanos))
+            }
+    }
+
+    proptest! {
+        #[test]
+        fn checked_add_regular((dt, d) in args_for_regular_add()) {
+            let t: Time = dt.try_into().unwrap();
+            let t = t.checked_add(d).unwrap();
+            let res: OffsetDateTime = t.into();
+            assert_eq!(res, dt + d);
+        }
+
+        #[test]
+        fn checked_sub_regular((dt, d) in args_for_regular_sub()) {
+            let t: Time = dt.try_into().unwrap();
+            let t = t.checked_sub(d).unwrap();
+            let res: OffsetDateTime = t.into();
+            assert_eq!(res, dt - d);
+        }
+
+        #[test]
+        fn checked_add_overflow((dt, d) in args_for_overflowed_add()) {
+            let t: Time = dt.try_into().unwrap();
+            assert_eq!(t.checked_add(d), None);
+        }
+
+        #[test]
+        fn checked_sub_overflow((dt, d) in args_for_overflowed_sub()) {
+            let t: Time = dt.try_into().unwrap();
+            assert_eq!(t.checked_sub(d), None);
+        }
+    }
 }
