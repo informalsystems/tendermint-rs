@@ -1,0 +1,46 @@
+{
+  "id": "0fdbf4b0-6223-49e7-a729-adda09e120a4",
+  "jsonrpc": "2.0",
+  "result": {
+    "hash": "FCB86F71C4EFF43E13C51FA12791F6DD1DDB8600A51131BE2289614D6882F6BE",
+    "height": "20",
+    "index": 0,
+    "tx": "dHgwPXZhbHVl",
+    "tx_result": {
+      "code": 0,
+      "codespace": "",
+      "data": null,
+      "events": [
+        {
+          "attributes": [
+            {
+              "index": true,
+              "key": "creator",
+              "value": "Cosmoshi Netowoko"
+            },
+            {
+              "index": true,
+              "key": "key",
+              "value": "tx0"
+            },
+            {
+              "index": true,
+              "key": "index_key",
+              "value": "index is working"
+            },
+            {
+              "index": false,
+              "key": "noindex_key",
+              "value": "index is working"
+            }
+          ],
+          "type": "app"
+        }
+      ],
+      "gas_used": "0",
+      "gas_wanted": "0",
+      "info": "",
+      "log": ""
+    }
+  }
+}

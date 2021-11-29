@@ -1,11 +1,12 @@
 {
-  "id": "421a030f-0b5d-4adb-bb17-537d11228040",
+  "id": "f3ef9de0-d9af-4708-8c17-6679eea49c35",
   "jsonrpc": "2.0",
   "result": {
     "begin_block_events": null,
     "consensus_param_updates": null,
     "end_block_events": null,
     "height": "10",
+    "total_gas_used": "0",
     "txs_results": null,
     "validator_updates": null
   }

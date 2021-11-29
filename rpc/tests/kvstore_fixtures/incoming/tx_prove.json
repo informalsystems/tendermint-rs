@@ -1,0 +1,58 @@
+{
+  "id": "ca7613d3-1d03-4fcb-9a78-afda77f77250",
+  "jsonrpc": "2.0",
+  "result": {
+    "hash": "FCB86F71C4EFF43E13C51FA12791F6DD1DDB8600A51131BE2289614D6882F6BE",
+    "height": "20",
+    "index": 0,
+    "proof": {
+      "data": "dHgwPXZhbHVl",
+      "proof": {
+        "aunts": [
+          "QnwQk7ERU9NjeD1GlLa4H8lscIRFD3evj6SZulKp3T8="
+        ],
+        "index": "0",
+        "leaf_hash": "3UnhxGnCw+sKtov5uD2YZbCP79vHFwLMc1ZPTaVocKQ=",
+        "total": "2"
+      },
+      "root_hash": "C77CB763CB27048A8D9F09DA707B7A19ECF4B40C967A57CF16CEDEE1A5130A8F"
+    },
+    "tx": "dHgwPXZhbHVl",
+    "tx_result": {
+      "code": 0,
+      "codespace": "",
+      "data": null,
+      "events": [
+        {
+          "attributes": [
+            {
+              "index": true,
+              "key": "creator",
+              "value": "Cosmoshi Netowoko"
+            },
+            {
+              "index": true,
+              "key": "key",
+              "value": "tx0"
+            },
+            {
+              "index": true,
+              "key": "index_key",
+              "value": "index is working"
+            },
+            {
+              "index": false,
+              "key": "noindex_key",
+              "value": "index is working"
+            }
+          ],
+          "type": "app"
+        }
+      ],
+      "gas_used": "0",
+      "gas_wanted": "0",
+      "info": "",
+      "log": ""
+    }
+  }
+}

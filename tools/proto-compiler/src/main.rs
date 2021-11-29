@@ -55,8 +55,12 @@ fn main() {
     // List available proto files
     let protos = find_proto_files(proto_paths);
 
-    // Compile proto files with added annotations, exchange prost_types to our own
     let mut pb = prost_build::Config::new();
+
+    // Use shared Bytes buffers for ABCI messages:
+    pb.bytes(&[".tendermint.abci"]);
+
+    // Compile proto files with added annotations, exchange prost_types to our own
     pb.out_dir(&out_dir);
     for type_attribute in CUSTOM_TYPE_ATTRIBUTES {
         pb.type_attribute(type_attribute.0, type_attribute.1);

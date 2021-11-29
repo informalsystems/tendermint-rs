@@ -39,9 +39,10 @@ impl Client {
             response_tx,
         })
         .await?;
-        response_rx.recv().await.ok_or_else(|| {
-            Error::InternalError("internal channel communication problem".to_string())
-        })?
+        response_rx
+            .recv()
+            .await
+            .ok_or_else(|| Error::Internal("internal channel communication problem".to_string()))?
     }
 
     pub async fn subscribe(
@@ -59,7 +60,7 @@ impl Client {
         })
         .await?;
         let response = response_rx.recv().await.ok_or_else(|| {
-            Error::InternalError("internal channel communication problem".to_string())
+            Error::Internal("internal channel communication problem".to_string())
         })??;
         Ok((subscription_rx, response))
     }
@@ -93,7 +94,7 @@ impl Client {
                 return Ok(());
             }
         }
-        Err(Error::InternalError(format!(
+        Err(Error::Internal(format!(
             "subscription terminated before we could reach target height of {}",
             h
         )))
@@ -105,7 +106,7 @@ impl Client {
 
     async fn send_cmd(&mut self, cmd: DriverCommand) -> Result<()> {
         self.cmd_tx.send(cmd).map_err(|e| {
-            Error::InternalError(format!(
+            Error::Internal(format!(
                 "WebSocket driver channel receiving end closed unexpectedly: {}",
                 e.to_string()
             ))
@@ -155,7 +156,7 @@ impl ClientDriver {
                 Some(res) = self.stream.next() => match res {
                     Ok(msg) => self.handle_incoming_msg(msg).await?,
                     Err(e) => return Err(
-                        Error::WebSocketError(
+                        Error::WebSocket(
                             format!("failed to read from WebSocket connection: {}", e),
                         ),
                     ),
@@ -179,7 +180,7 @@ impl ClientDriver {
 
     async fn send_msg(&mut self, msg: Message) -> Result<()> {
         self.stream.send(msg).await.map_err(|e| {
-            Error::WebSocketError(format!("failed to write to WebSocket connection: {}", e))
+            Error::WebSocket(format!("failed to write to WebSocket connection: {}", e))
         })
     }
 

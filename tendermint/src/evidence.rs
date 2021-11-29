@@ -207,19 +207,28 @@ impl AsRef<[Evidence]> for Data {
     }
 }
 
-/// Evidence collection parameters
+/// EvidenceParams determine how we handle evidence of malfeasance.
+///
+/// [Tendermint documentation](https://docs.tendermint.com/master/spec/core/data_structures.html#evidenceparams)
 #[derive(Deserialize, Serialize, Clone, Debug, Eq, PartialEq)]
 // Todo: This struct is ready to be converted through tendermint_proto::types::EvidenceParams.
 // https://github.com/informalsystems/tendermint-rs/issues/741
 pub struct Params {
-    /// Maximum allowed age for evidence to be collected
+    /// Max age of evidence, in blocks.
     #[serde(with = "serializers::from_str")]
     pub max_age_num_blocks: u64,
 
-    /// Max age duration
+    /// Max age of evidence, in time.
+    ///
+    /// It should correspond with an app's "unbonding period" or other similar
+    /// mechanism for handling [Nothing-At-Stake attacks][nas].
+    ///
+    /// [nas]: https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed
     pub max_age_duration: Duration,
 
-    /// Max bytes
+    /// This sets the maximum size of total evidence in bytes that can be
+    /// committed in a single block, and should fall comfortably under the max
+    /// block bytes. The default is 1048576 or 1MB.
     #[serde(with = "serializers::from_str", default)]
     pub max_bytes: i64,
 }

@@ -1,0 +1,9 @@
+{
+  "id": "ca7613d3-1d03-4fcb-9a78-afda77f77250",
+  "jsonrpc": "2.0",
+  "method": "tx",
+  "params": {
+    "hash": "FCB86F71C4EFF43E13C51FA12791F6DD1DDB8600A51131BE2289614D6882F6BE",
+    "prove": true
+  }
+}

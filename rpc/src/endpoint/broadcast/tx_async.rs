@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use tendermint::abci::{transaction, Code, Data, Log, Transaction};
+use crate::abci::{transaction, Code, Data, Log, Transaction};
 
 /// `/broadcast_tx_async`: broadcast a transaction and return immediately.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

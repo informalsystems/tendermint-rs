@@ -185,7 +185,7 @@ impl Handshake<AwaitingAuthSig> {
             proto::crypto::public_key::Sum::Ed25519(ref bytes) => {
                 ed25519::PublicKey::from_bytes(bytes).map_err(Error::signature)
             }
-            proto::crypto::public_key::Sum::Secp256k1(_) => Err(Error::unsupported_key()),
+            _ => Err(Error::unsupported_key()),
         }?;
 
         let remote_sig =

@@ -155,9 +155,11 @@ mod test {
     use tokio::time::{self, Duration};
 
     async fn read_json_fixture(name: &str) -> String {
-        fs::read_to_string(PathBuf::from("./tests/support/").join(name.to_owned() + ".json"))
-            .await
-            .unwrap()
+        fs::read_to_string(
+            PathBuf::from("./tests/kvstore_fixtures/").join(name.to_owned() + ".json"),
+        )
+        .await
+        .unwrap()
     }
 
     async fn read_event(name: &str) -> Event {
@@ -201,7 +203,7 @@ mod test {
         // Another subscription with a different query
         router.add(subs3_id, "query2", subs3_event_tx);
 
-        let mut ev = read_event("event_new_block_1").await;
+        let mut ev = read_event("incoming/subscribe_newblock_0").await;
         ev.query = "query1".into();
         router.publish_event(ev.clone());
 

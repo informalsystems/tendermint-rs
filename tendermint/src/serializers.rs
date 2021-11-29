@@ -9,6 +9,5 @@ pub use tendermint_proto::serializers::*;
 
 pub mod apphash;
 pub mod hash;
-pub mod hash_base64;
 pub mod option_hash;
 pub mod time;

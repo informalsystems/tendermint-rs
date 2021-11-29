@@ -1094,9 +1094,11 @@ mod test {
     }
 
     async fn read_json_fixture(name: &str) -> String {
-        fs::read_to_string(PathBuf::from("./tests/support/").join(name.to_owned() + ".json"))
-            .await
-            .unwrap()
+        fs::read_to_string(
+            PathBuf::from("./tests/kvstore_fixtures/").join(name.to_owned() + ".json"),
+        )
+        .await
+        .unwrap()
     }
 
     async fn read_event(name: &str) -> Event {
@@ -1105,9 +1107,9 @@ mod test {
 
     #[tokio::test]
     async fn websocket_client_happy_path() {
-        let event1 = read_event("event_new_block_1").await;
-        let event2 = read_event("event_new_block_2").await;
-        let event3 = read_event("event_new_block_3").await;
+        let event1 = read_event("incoming/subscribe_newblock_0").await;
+        let event2 = read_event("incoming/subscribe_newblock_1").await;
+        let event3 = read_event("incoming/subscribe_newblock_2").await;
         let test_events = vec![event1, event2, event3];
 
         println!("Starting WebSocket server...");

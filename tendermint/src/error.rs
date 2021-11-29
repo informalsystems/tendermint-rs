@@ -112,6 +112,27 @@ define_error! {
         MissingTimestamp
             |_| { format_args!("missing timestamp field") },
 
+        MissingVersion
+            |_| { format_args!("missing version") },
+
+        MissingMaxAgeDuration
+            |_| { format_args!("missing max_age_duration") },
+
+        MissingPublicKey
+            |_| { format_args!("missing public key") },
+
+        MissingValidator
+            |_| { format_args!("missing validator") },
+
+        MissingLastCommitInfo
+            |_| { format_args!("missing last commit info") },
+
+        MissingGenesisTime
+            |_| { format_args!("missing genesis time") },
+
+        MissingConsensusParams
+            |_| { format_args!("missing consensus params") },
+
         InvalidTimestamp
             { reason: String }
             | e | { format_args!("invalid timestamp: {}", e.reason) },
@@ -119,9 +140,6 @@ define_error! {
         InvalidBlock
             { reason: String }
             | e | { format_args!("invalid block: {}", e.reason) },
-
-        MissingVersion
-            |_| { format_args!("missing version") },
 
         InvalidFirstHeader
             |_| { format_args!("last_block_id is not null on first height") },
@@ -139,6 +157,18 @@ define_error! {
         InvalidEvidence
             |_| { format_args!("invalid evidence") },
 
+        InvalidValidatorParams
+            |_| { format_args!("invalid validator parameters") },
+
+        InvalidVersionParams
+            |_| { format_args!("invalid version parameters") },
+
+        InvalidAbciRequestType
+            |_| { format_args!("invalid ABCI request type") },
+
+        InvalidAbciResponseType
+            |_| { format_args!("invalid ABCI response type") },
+
         BlockIdFlag
             |_| { format_args!("invalid block id flag") },
 
@@ -149,25 +179,22 @@ define_error! {
         UnsupportedKeyType
             |_| { format_args!("unsupported key type" ) },
 
+        UnsupportedCheckTxType
+            |_| { format_args!("unsupported CheckTx type" ) },
+
+        UnsupportedApplySnapshotChunkResult
+            |_| { format_args!("unsupported ApplySnapshotChunkResult type" ) },
+
+        UnsupportedOfferSnapshotChunkResult
+            |_| { format_args!("unsupported OfferSnapshotChunkResult type" ) },
+
         RawVotingPowerMismatch
             { raw: vote::Power, computed: vote::Power }
             |e| { format_args!("mismatch between raw voting ({0:?}) and computed one ({1:?})", e.raw, e.computed) },
 
-        MissingPublicKey
-            |_| { format_args!("missing public key") },
-
-        InvalidValidatorParams
-            |_| { format_args!("invalid validator parameters") },
-
-        InvalidVersionParams
-            |_| { format_args!("invalid version parameters") },
-
         NegativeMaxAgeNum
             [ DisplayOnly<TryFromIntError> ]
             |_| { format_args!("negative max_age_num_blocks") },
-
-        MissingMaxAgeDuration
-            |_| { format_args!("missing max_age_duration") },
 
         ProposerNotFound
             { account: account::Id }
@@ -193,5 +220,11 @@ define_error! {
 
         TrustThresholdTooSmall
             |_| { "trust threshold too small (must be >= 1/3)" },
+    }
+}
+
+impl From<core::convert::Infallible> for Error {
+    fn from(_never: core::convert::Infallible) -> Error {
+        unreachable!("Infallible can never be constructed")
     }
 }
