@@ -1,7 +1,6 @@
 use bytes::Bytes;
-use chrono::{DateTime, Utc};
 
-use crate::{block, consensus, prelude::*};
+use crate::{block, consensus, prelude::*, Time};
 
 use super::super::types::ValidatorUpdate;
 
@@ -11,7 +10,7 @@ use super::super::types::ValidatorUpdate;
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct InitChain {
     /// The genesis time.
-    pub time: DateTime<Utc>,
+    pub time: Time,
     /// The ID of the blockchain.
     pub chain_id: String,
     /// Initial consensus-critical parameters.
