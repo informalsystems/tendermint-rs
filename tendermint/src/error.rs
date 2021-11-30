@@ -80,9 +80,8 @@ define_error! {
             [ DisplayOnly<TryFromIntError> ]
             |_| { format_args!("integer overflow") },
 
-        TimestampOverflow
-            [ DisplayOnly<TryFromIntError> ]
-            |_| { format_args!("timestamp overflow") },
+        TimestampNanosOutOfRange
+            |_| { format_args!("timestamp nanosecond component is out of range") },
 
         TimestampConversion
             |_| { format_args!("timestamp conversion error") },
