@@ -41,18 +41,25 @@ impl TryFrom<Timestamp> for Time {
     type Error = Error;
 
     fn try_from(value: Timestamp) -> Result<Self, Error> {
-        let nanos = value.nanos.try_into().map_err(Error::timestamp_overflow)?;
+        let nanos = value
+            .nanos
+            .try_into()
+            .map_err(|_| Error::timestamp_nanos_out_of_range())?;
+        if nanos > 999_999_999 {
+            return Err(Error::timestamp_nanos_out_of_range());
+        }
         Time::from_unix_timestamp(value.seconds, nanos)
     }
 }
 
 impl From<Time> for Timestamp {
     fn from(value: Time) -> Self {
-        let total_nanos = value.0.assume_utc().unix_timestamp_nanos();
-        Timestamp {
-            seconds: total_nanos.div_euclid(1_000_000_000) as _,
-            nanos: total_nanos.rem_euclid(1_000_000_000) as _,
-        }
+        let t = value.0.assume_utc();
+        let seconds = t.unix_timestamp();
+        // Safe to convert to i32 because .nanosecond()
+        // is guaranteed to return a value in 0..1_000_000_000 range.
+        let nanos = t.nanosecond() as i32;
+        Timestamp { seconds, nanos }
     }
 }
 

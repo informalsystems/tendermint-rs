@@ -35,13 +35,16 @@ where
     D: Deserializer<'de>,
 {
     let value_string = String::deserialize(deserializer)?;
-    let value_datetime =
-        OffsetDateTime::parse(&value_string, &Rfc3339Format).map_err(D::Error::custom)?;
-    let total_nanos = value_datetime.unix_timestamp_nanos();
-    Ok(Timestamp {
-        seconds: total_nanos.div_euclid(1_000_000_000) as _,
-        nanos: total_nanos.rem_euclid(1_000_000_000) as _,
-    })
+    let t = OffsetDateTime::parse(&value_string, &Rfc3339Format).map_err(D::Error::custom)?;
+    let t = t.to_offset(offset!(UTC));
+    if !matches!(t.year(), 1..=9999) {
+        return Err(D::Error::custom("date is out of range"));
+    }
+    let seconds = t.unix_timestamp();
+    // Safe to convert to i32 because .nanosecond()
+    // is guaranteed to return a value in 0..1_000_000_000 range.
+    let nanos = t.nanosecond() as i32;
+    Ok(Timestamp { seconds, nanos })
 }
 
 /// Serialize from Timestamp into string
@@ -49,7 +52,7 @@ pub fn serialize<S>(value: &Timestamp, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    if value.nanos < 0 {
+    if value.nanos < 0 || value.nanos > 999_999_999 {
         return Err(S::Error::custom("invalid nanoseconds in time"));
     }
     let total_nanos = value.seconds as i128 * 1_000_000_000 + value.nanos as i128;
