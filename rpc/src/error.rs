@@ -98,14 +98,6 @@ define_error! {
                 format_args!("parse error: {}", e.reason)
             },
 
-        Server
-            {
-                reason: String
-            }
-            | e | {
-                format_args!("server error: {}", e.reason)
-            },
-
         ClientInternal
             {
                 reason: String
