@@ -91,28 +91,40 @@ pub fn to_rfc3339_nanos(t: OffsetDateTime) -> String {
 /// [`Display`]: core::fmt::Display
 /// [`Debug`]: core::fmt::Debug
 ///
-pub fn fmt_as_rfc3339_nanos(t: OffsetDateTime, mut f: impl fmt::Write) -> fmt::Result {
+pub fn fmt_as_rfc3339_nanos(t: OffsetDateTime, f: &mut impl fmt::Write) -> fmt::Result {
     let t = t.to_offset(offset!(UTC));
-    let ns = t.nanosecond();
-    let mut nanos_buf = String::new();
-    let nanos = if ns == 0 {
-        &nanos_buf
+    let nanos = t.nanosecond();
+    if nanos == 0 {
+        write!(
+            f,
+            "{year:04}-{month:02}-{day:02}T{hour:02}:{minute:02}:{second:02}Z",
+            year = t.year(),
+            month = t.month() as u8,
+            day = t.day(),
+            hour = t.hour(),
+            minute = t.minute(),
+            second = t.second(),
+        )
     } else {
-        nanos_buf = format!(".{:09}", ns);
-        nanos_buf.trim_end_matches('0')
-    };
-
-    write!(
-        f,
-        "{year:04}-{month:02}-{day:02}T{hour:02}:{minute:02}:{second:02}{nanos}Z",
-        year = t.year(),
-        month = t.month() as u8,
-        day = t.day(),
-        hour = t.hour(),
-        minute = t.minute(),
-        second = t.second(),
-        nanos = nanos,
-    )
+        let mut secfrac = nanos;
+        let mut secfrac_width = 9;
+        while secfrac % 10 == 0 {
+            secfrac /= 10;
+            secfrac_width -= 1;
+        }
+        write!(
+            f,
+            "{year:04}-{month:02}-{day:02}T{hour:02}:{minute:02}:{second:02}.{secfrac:0sfw$}Z",
+            year = t.year(),
+            month = t.month() as u8,
+            day = t.day(),
+            hour = t.hour(),
+            minute = t.minute(),
+            second = t.second(),
+            secfrac = secfrac,
+            sfw = secfrac_width,
+        )
+    }
 }
 
 #[allow(warnings)]
