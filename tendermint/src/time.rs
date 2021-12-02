@@ -45,9 +45,6 @@ impl TryFrom<Timestamp> for Time {
             .nanos
             .try_into()
             .map_err(|_| Error::timestamp_nanos_out_of_range())?;
-        if nanos > 999_999_999 {
-            return Err(Error::timestamp_nanos_out_of_range());
-        }
         Time::from_unix_timestamp(value.seconds, nanos)
     }
 }
@@ -78,6 +75,9 @@ impl Time {
     }
 
     pub fn from_unix_timestamp(secs: i64, nanos: u32) -> Result<Self, Error> {
+        if nanos > 999_999_999 {
+            return Err(Error::timestamp_nanos_out_of_range());
+        }
         let total_nanos = secs as i128 * 1_000_000_000 + nanos as i128;
         match OffsetDateTime::from_unix_timestamp_nanos(total_nanos) {
             Ok(odt) => Self::from_utc(odt),
@@ -286,6 +286,17 @@ mod tests {
                     assert!(matches!(e.detail(), ErrorDetail::DateOutOfRange(_)))
                 }
             }
+        }
+
+        #[test]
+        fn from_unix_timestamp_rejects_out_of_range_nanos(
+            datetime in pbt::time::arb_protobuf_safe_datetime(),
+            nanos in 1_000_000_000 ..= u32::MAX,
+        ) {
+            let secs = datetime.unix_timestamp();
+            let res = Time::from_unix_timestamp(secs, nanos);
+            let e = res.unwrap_err();
+            assert!(matches!(e.detail(), ErrorDetail::TimestampNanosOutOfRange(_)))
         }
     }
 
