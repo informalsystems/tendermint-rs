@@ -43,7 +43,7 @@ impl Event {
 pub enum EventData {
     #[serde(alias = "tendermint/event/NewBlock")]
     NewBlock {
-        block: Option<Block>,
+        block: Option<Box<Block>>,
         result_begin_block: Option<BeginBlock>,
         result_end_block: Option<EndBlock>,
     },
