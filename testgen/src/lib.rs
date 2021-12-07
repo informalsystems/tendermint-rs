@@ -20,12 +20,12 @@ pub mod validator;
 pub mod validator_set;
 pub mod vote;
 
+pub use crate::time::Time;
 pub use commit::Commit;
 pub use generator::Generator;
 pub use header::Header;
 pub use light_block::LightBlock;
 pub use light_chain::LightChain;
-pub use time::Time;
 pub use validator::Validator;
 pub use validator_set::ValidatorSet;
 pub use vote::Vote;
