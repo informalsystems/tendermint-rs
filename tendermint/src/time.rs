@@ -45,7 +45,7 @@ impl TryFrom<Timestamp> for Time {
             .nanos
             .try_into()
             .map_err(|_| Error::timestamp_nanos_out_of_range())?;
-        Time::from_unix_timestamp(value.seconds, nanos)
+        Self::from_unix_timestamp(value.seconds, nanos)
     }
 }
 
@@ -64,14 +64,14 @@ impl Time {
     fn from_utc(t: OffsetDateTime) -> Result<Self, Error> {
         debug_assert_eq!(t.offset(), offset!(UTC));
         match t.year() {
-            1..=9999 => Ok(Time(PrimitiveDateTime::new(t.date(), t.time()))),
+            1..=9999 => Ok(Self(PrimitiveDateTime::new(t.date(), t.time()))),
             _ => Err(Error::date_out_of_range()),
         }
     }
 
     /// Get the unix epoch ("1970-01-01 00:00:00 UTC") as a [`Time`]
     pub fn unix_epoch() -> Self {
-        Time(datetime!(1970-01-01 00:00:00))
+        Self(datetime!(1970-01-01 00:00:00))
     }
 
     pub fn from_unix_timestamp(secs: i64, nanos: u32) -> Result<Self, Error> {
@@ -95,11 +95,11 @@ impl Time {
     }
 
     /// Parse [`Time`] from an RFC 3339 date
-    pub fn parse_from_rfc3339(s: &str) -> Result<Time, Error> {
+    pub fn parse_from_rfc3339(s: &str) -> Result<Self, Error> {
         let date = OffsetDateTime::parse(s, &Rfc3339)
             .map_err(Error::time_parse)?
             .to_offset(offset!(UTC));
-        Time::from_utc(date)
+        Self::from_utc(date)
     }
 
     /// Return an RFC 3339 and ISO 8601 date and time string with subseconds (if nonzero) and Z.
@@ -111,14 +111,14 @@ impl Time {
     pub fn checked_add(self, duration: Duration) -> Option<Self> {
         let duration = duration.try_into().ok()?;
         let t = self.0.checked_add(duration)?;
-        Time::from_utc(t.assume_utc()).ok()
+        Self::from_utc(t.assume_utc()).ok()
     }
 
     /// Computes `self - duration`, returning `None` if an overflow occurred.
     pub fn checked_sub(self, duration: Duration) -> Option<Self> {
         let duration = duration.try_into().ok()?;
         let t = self.0.checked_sub(duration)?;
-        Time::from_utc(t.assume_utc()).ok()
+        Self::from_utc(t.assume_utc()).ok()
     }
 }
 
@@ -132,7 +132,7 @@ impl FromStr for Time {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Time::parse_from_rfc3339(s)
+        Self::parse_from_rfc3339(s)
     }
 }
 
@@ -140,7 +140,7 @@ impl TryFrom<OffsetDateTime> for Time {
     type Error = Error;
 
     fn try_from(t: OffsetDateTime) -> Result<Time, Error> {
-        Time::from_utc(t.to_offset(offset!(UTC)))
+        Self::from_utc(t.to_offset(offset!(UTC)))
     }
 }
 
@@ -159,7 +159,7 @@ impl Add<Duration> for Time {
             .0
             .checked_add(duration)
             .ok_or_else(Error::duration_out_of_range)?;
-        Time::from_utc(t.assume_utc())
+        Self::from_utc(t.assume_utc())
     }
 }
 
@@ -172,7 +172,7 @@ impl Sub<Duration> for Time {
             .0
             .checked_sub(duration)
             .ok_or_else(Error::duration_out_of_range)?;
-        Time::from_utc(t.assume_utc())
+        Self::from_utc(t.assume_utc())
     }
 }
 
