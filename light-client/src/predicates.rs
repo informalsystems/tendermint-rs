@@ -205,10 +205,11 @@ pub trait VerificationPredicates: Send + Sync {
 
 #[cfg(test)]
 mod tests {
-    use chrono::Utc;
-    use std::ops::Sub;
+    use std::convert::TryInto;
     use std::time::Duration;
-    use tendermint::Time;
+    use tendermint::block::CommitSig;
+    use tendermint::validator::Set;
+    use time::OffsetDateTime;
 
     use tendermint_testgen::{
         light_block::{LightBlock as TestgenLightBlock, TmLightBlock},
@@ -224,8 +225,6 @@ mod tests {
         Hasher, ProdCommitValidator, ProdHasher, ProdVotingPowerCalculator, VotingPowerTally,
     };
     use crate::types::{LightBlock, TrustThreshold};
-    use tendermint::block::CommitSig;
-    use tendermint::validator::Set;
 
     impl From<TmLightBlock> for LightBlock {
         fn from(lb: TmLightBlock) -> Self {
@@ -294,7 +293,7 @@ mod tests {
 
         // 1. ensure valid header verifies
         let mut trusting_period = Duration::new(1000, 0);
-        let now = Time(Utc::now());
+        let now = OffsetDateTime::now_utc().try_into().unwrap();
 
         let result_ok = vp.is_within_trust_period(header.time, trusting_period, now);
         assert!(result_ok.is_ok());
@@ -322,13 +321,15 @@ mod tests {
         let vp = ProdPredicates::default();
         let one_second = Duration::new(1, 0);
 
+        let now = OffsetDateTime::now_utc().try_into().unwrap();
+
         // 1. ensure valid header verifies
-        let result_ok = vp.is_header_from_past(header.time, one_second, Time(Utc::now()));
+        let result_ok = vp.is_header_from_past(header.time, one_second, now);
 
         assert!(result_ok.is_ok());
 
         // 2. ensure it fails if header is from a future time
-        let now = Time(Utc::now()).sub(one_second * 15).unwrap();
+        let now = now.checked_sub(one_second * 15).unwrap();
         let result_err = vp.is_header_from_past(header.time, one_second, now);
 
         match result_err {
