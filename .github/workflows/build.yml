@@ -8,6 +8,7 @@ on:
       - "docs/**"
     branches:
       - master
+      - 'v*.*.*'
 jobs:
   cleanup-runs:
     runs-on: ubuntu-latest
