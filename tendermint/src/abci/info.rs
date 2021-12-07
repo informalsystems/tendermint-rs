@@ -3,7 +3,7 @@ use core::fmt::{self, Display};
 use serde::{Deserialize, Serialize};
 
 /// ABCI info
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Info(String);
 
 impl AsRef<str> for Info {
@@ -15,11 +15,5 @@ impl AsRef<str> for Info {
 impl Display for Info {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
-    }
-}
-
-impl Default for Info {
-    fn default() -> Self {
-        Self(String::new())
     }
 }

@@ -9,7 +9,7 @@ use tendermint::{block, validator};
 pub const DEFAULT_VALIDATORS_PER_PAGE: u8 = 30;
 
 /// List validators for a specific block
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[non_exhaustive]
 pub struct Request {
     /// The height at which to retrieve the validator set. If not specified,
@@ -39,18 +39,6 @@ impl Request {
             height,
             page,
             per_page,
-        }
-    }
-}
-
-impl Default for Request {
-    fn default() -> Self {
-        // By default we get the latest validators list, page 1, maximum 30
-        // items per page (the RPC defaults).
-        Self {
-            height: None,
-            page: None,
-            per_page: None,
         }
     }
 }
