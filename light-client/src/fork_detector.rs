@@ -20,6 +20,8 @@ pub enum ForkDetection {
 
 /// Types of fork
 #[derive(Debug)]
+// To be fixed in 0.24
+#[allow(clippy::large_enum_variant)]
 pub enum Fork {
     /// An actual fork was found for this `LightBlock`
     Forked {

@@ -41,6 +41,8 @@ impl Event {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", content = "value")]
+// To be fixed in 0.24
+#[allow(clippy::large_enum_variant)]
 pub enum EventData {
     #[serde(alias = "tendermint/event/NewBlock")]
     NewBlock {
