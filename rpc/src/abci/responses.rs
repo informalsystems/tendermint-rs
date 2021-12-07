@@ -130,7 +130,7 @@ where
 }
 
 /// Codespace
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Codespace(String);
 
 impl AsRef<str> for Codespace {
@@ -142,11 +142,5 @@ impl AsRef<str> for Codespace {
 impl Display for Codespace {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
-    }
-}
-
-impl Default for Codespace {
-    fn default() -> Self {
-        Self(String::new())
     }
 }

@@ -21,7 +21,7 @@ pub type SubscriptionIdRef<'a> = &'a str;
 ///
 /// [`Subscription`]: struct.Subscription.html
 /// [`Event`]: ./event/struct.Event.html
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct SubscriptionRouter {
     /// A map of subscription queries to collections of subscription IDs and
     /// their result channels. Used for publishing events relating to a specific
@@ -125,14 +125,6 @@ impl SubscriptionRouter {
             .get(&query.to_string())
             .map(|subs_for_query| subs_for_query.len())
             .unwrap_or(0)
-    }
-}
-
-impl Default for SubscriptionRouter {
-    fn default() -> Self {
-        Self {
-            subscriptions: HashMap::new(),
-        }
     }
 }
 

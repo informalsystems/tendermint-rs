@@ -29,7 +29,7 @@ impl TestEnv {
     pub fn push(&self, child: &str) -> Option<Self> {
         let mut path = PathBuf::from(&self.current_dir);
         path.push(child);
-        path.to_str().and_then(|path| TestEnv::new(path))
+        path.to_str().and_then(TestEnv::new)
     }
 
     pub fn current_dir(&self) -> &str {
@@ -256,7 +256,7 @@ impl Tester {
                 *result = Failure { message, location };
             })
         });
-        let result = panic::catch_unwind(|| test());
+        let result = panic::catch_unwind(test);
         panic::set_hook(old_hook);
         match result {
             Ok(_) => Success,

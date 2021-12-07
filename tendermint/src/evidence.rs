@@ -27,7 +27,7 @@ use tendermint_proto::Protobuf;
 pub enum Evidence {
     /// Duplicate vote evidence
     //#[serde(rename = "tendermint/DuplicateVoteEvidence")]
-    DuplicateVote(DuplicateVoteEvidence),
+    DuplicateVote(Box<DuplicateVoteEvidence>),
 
     /// Conflicting headers evidence - Todo: this is not implemented in protobuf, it's ignored now
     //#[serde(rename = "tendermint/ConflictingHeadersEvidence")]
@@ -42,7 +42,7 @@ impl TryFrom<RawEvidence> for Evidence {
 
     fn try_from(value: RawEvidence) -> Result<Self, Self::Error> {
         match value.sum.ok_or_else(Error::invalid_evidence)? {
-            Sum::DuplicateVoteEvidence(ev) => Ok(Evidence::DuplicateVote(ev.try_into()?)),
+            Sum::DuplicateVoteEvidence(ev) => Ok(Evidence::DuplicateVote(Box::new(ev.try_into()?))),
             Sum::LightClientAttackEvidence(_ev) => Ok(Evidence::LightClientAttackEvidence),
         }
     }
@@ -52,7 +52,7 @@ impl From<Evidence> for RawEvidence {
     fn from(value: Evidence) -> Self {
         match value {
             Evidence::DuplicateVote(ev) => RawEvidence {
-                sum: Some(RawSum::DuplicateVoteEvidence(ev.into())),
+                sum: Some(RawSum::DuplicateVoteEvidence((*ev).into())),
             },
             Evidence::ConflictingHeaders(_ev) => RawEvidence { sum: None }, // Todo: implement
             Evidence::LightClientAttackEvidence => RawEvidence { sum: None }, // Todo: implement
