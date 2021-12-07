@@ -1,11 +1,10 @@
 #[cfg(feature = "mbt")]
 mod mbt {
-    use chrono::Utc;
     use rand::Rng;
     use serde::de::DeserializeOwned;
     use serde::{Deserialize, Serialize};
     use serde_json::Error;
-    use std::convert::TryFrom;
+    use std::convert::{TryFrom, TryInto};
     use std::str::FromStr;
     use std::time::Duration;
     use tendermint::validator::Set;
@@ -20,6 +19,7 @@ mod mbt {
         apalache::*, jsonatr::*, light_block::TmLightBlock, validator::generate_validators,
         Command, Generator, LightBlock as TestgenLightBlock, TestEnv, Tester, Validator, Vote,
     };
+    use time::OffsetDateTime;
 
     fn testgen_to_lb(tm_lb: TmLightBlock) -> LightBlock {
         LightBlock {
@@ -180,7 +180,8 @@ mod mbt {
     impl SingleStepTestFuzzer for HeaderTimeFuzzer {
         fn fuzz_input(input: &mut BlockVerdict) -> (String, LiteVerdict) {
             let mut rng = rand::thread_rng();
-            let secs = tendermint::Time(Utc::now())
+            let now: Time = OffsetDateTime::now_utc().try_into().unwrap();
+            let secs = now
                 .duration_since(tendermint::Time::unix_epoch())
                 .unwrap()
                 .as_secs();

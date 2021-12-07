@@ -1,10 +1,15 @@
 //! Serialize/deserialize Timestamp type from and into string:
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::google::protobuf::Timestamp;
 use crate::prelude::*;
-use chrono::{DateTime, LocalResult, TimeZone, Utc};
+
+use core::fmt;
+use serde::de::Error as _;
 use serde::ser::Error;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use time::format_description::well_known::Rfc3339 as Rfc3339Format;
+use time::macros::offset;
+use time::OffsetDateTime;
 
 /// Helper struct to serialize and deserialize Timestamp into an RFC3339-compatible string
 /// This is required because the serde `with` attribute is only available to fields of a struct but
@@ -30,12 +35,16 @@ where
     D: Deserializer<'de>,
 {
     let value_string = String::deserialize(deserializer)?;
-    let value_datetime = DateTime::parse_from_rfc3339(value_string.as_str())
-        .map_err(|e| D::Error::custom(format!("{}", e)))?;
-    Ok(Timestamp {
-        seconds: value_datetime.timestamp(),
-        nanos: value_datetime.timestamp_subsec_nanos() as i32,
-    })
+    let t = OffsetDateTime::parse(&value_string, &Rfc3339Format).map_err(D::Error::custom)?;
+    let t = t.to_offset(offset!(UTC));
+    if !matches!(t.year(), 1..=9999) {
+        return Err(D::Error::custom("date is out of range"));
+    }
+    let seconds = t.unix_timestamp();
+    // Safe to convert to i32 because .nanosecond()
+    // is guaranteed to return a value in 0..1_000_000_000 range.
+    let nanos = t.nanosecond() as i32;
+    Ok(Timestamp { seconds, nanos })
 }
 
 /// Serialize from Timestamp into string
@@ -43,51 +52,79 @@ pub fn serialize<S>(value: &Timestamp, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    if value.nanos < 0 {
+    if value.nanos < 0 || value.nanos > 999_999_999 {
         return Err(S::Error::custom("invalid nanoseconds in time"));
     }
-    match Utc.timestamp_opt(value.seconds, value.nanos as u32) {
-        LocalResult::None => Err(S::Error::custom("invalid time")),
-        LocalResult::Single(t) => Ok(as_rfc3339_nanos(&t)),
-        LocalResult::Ambiguous(_, _) => Err(S::Error::custom("ambiguous time")),
-    }?
-    .serialize(serializer)
+    let total_nanos = value.seconds as i128 * 1_000_000_000 + value.nanos as i128;
+    let datetime = OffsetDateTime::from_unix_timestamp_nanos(total_nanos)
+        .map_err(|_| S::Error::custom("invalid time"))?;
+    to_rfc3339_nanos(datetime).serialize(serializer)
 }
 
-/// Serialization helper for converting a `DateTime<Utc>` object to a string.
+/// Serialization helper for converting an [`OffsetDateTime`] object to a string.
 ///
 /// This reproduces the behavior of Go's `time.RFC3339Nano` format,
 /// ie. a RFC3339 date-time with left-padded subsecond digits without
 ///     trailing zeros and no trailing dot.
-pub fn as_rfc3339_nanos(t: &DateTime<Utc>) -> String {
-    use chrono::format::{Fixed, Item, Numeric::*, Pad::Zero};
+pub fn to_rfc3339_nanos(t: OffsetDateTime) -> String {
+    // Can't use OffsetDateTime::format because the feature enabling it
+    // currently requires std (https://github.com/time-rs/time/issues/400)
 
-    const PREFIX: &[Item<'_>] = &[
-        Item::Numeric(Year, Zero),
-        Item::Literal("-"),
-        Item::Numeric(Month, Zero),
-        Item::Literal("-"),
-        Item::Numeric(Day, Zero),
-        Item::Literal("T"),
-        Item::Numeric(Hour, Zero),
-        Item::Literal(":"),
-        Item::Numeric(Minute, Zero),
-        Item::Literal(":"),
-        Item::Numeric(Second, Zero),
-    ];
+    // Preallocate enough string capacity to fit the shortest possible form,
+    // yyyy-mm-ddThh:mm:ssZ
+    let mut buf = String::with_capacity(20);
 
-    const NANOS: &[Item<'_>] = &[Item::Fixed(Fixed::Nanosecond)];
+    fmt_as_rfc3339_nanos(t, &mut buf).unwrap();
 
-    // Format as RFC339 without nanoseconds nor timezone marker
-    let prefix = t.format_with_items(PREFIX.iter());
+    buf
+}
 
-    // Format nanoseconds with dot, leading zeros, and variable number of trailing zeros
-    let nanos = t.format_with_items(NANOS.iter()).to_string();
-
-    // Trim trailing zeros and remove leftover dot if any
-    let nanos_trimmed = nanos.trim_end_matches('0').trim_end_matches('.');
-
-    format!("{}{}Z", prefix, nanos_trimmed)
+/// Helper for formatting an [`OffsetDateTime`] value.
+///
+/// This function can be used to efficiently format date-time values
+/// in [`Display`] or [`Debug`] implementations.
+///
+/// The format reproduces Go's `time.RFC3339Nano` format,
+/// ie. a RFC3339 date-time with left-padded subsecond digits without
+///     trailing zeros and no trailing dot.
+///
+/// [`Display`]: core::fmt::Display
+/// [`Debug`]: core::fmt::Debug
+///
+pub fn fmt_as_rfc3339_nanos(t: OffsetDateTime, f: &mut impl fmt::Write) -> fmt::Result {
+    let t = t.to_offset(offset!(UTC));
+    let nanos = t.nanosecond();
+    if nanos == 0 {
+        write!(
+            f,
+            "{year:04}-{month:02}-{day:02}T{hour:02}:{minute:02}:{second:02}Z",
+            year = t.year(),
+            month = t.month() as u8,
+            day = t.day(),
+            hour = t.hour(),
+            minute = t.minute(),
+            second = t.second(),
+        )
+    } else {
+        let mut secfrac = nanos;
+        let mut secfrac_width = 9;
+        while secfrac % 10 == 0 {
+            secfrac /= 10;
+            secfrac_width -= 1;
+        }
+        write!(
+            f,
+            "{year:04}-{month:02}-{day:02}T{hour:02}:{minute:02}:{second:02}.{secfrac:0sfw$}Z",
+            year = t.year(),
+            month = t.month() as u8,
+            day = t.day(),
+            hour = t.hour(),
+            minute = t.minute(),
+            second = t.second(),
+            secfrac = secfrac,
+            sfw = secfrac_width,
+        )
+    }
 }
 
 #[allow(warnings)]

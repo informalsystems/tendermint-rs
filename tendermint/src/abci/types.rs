@@ -8,9 +8,8 @@
 use core::convert::{TryFrom, TryInto};
 
 use bytes::Bytes;
-use chrono::{DateTime, Utc};
 
-use crate::{block, prelude::*, vote, Error, PublicKey};
+use crate::{block, prelude::*, vote, Error, PublicKey, Time};
 
 /// A validator address with voting power.
 ///
@@ -80,7 +79,7 @@ pub struct Evidence {
     /// The height when the offense occurred.
     pub height: block::Height,
     /// The corresponding time when the offense occurred.
-    pub time: DateTime<Utc>,
+    pub time: Time,
     /// Total voting power of the validator set at `height`.
     ///
     /// This is included in case the ABCI application does not store historical
@@ -247,7 +246,10 @@ impl TryFrom<pb::Evidence> for Evidence {
                 .ok_or_else(Error::missing_validator)?
                 .try_into()?,
             height: evidence.height.try_into()?,
-            time: evidence.time.ok_or_else(Error::missing_timestamp)?.into(),
+            time: evidence
+                .time
+                .ok_or_else(Error::missing_timestamp)?
+                .try_into()?,
             total_voting_power: evidence.total_voting_power.try_into()?,
         })
     }

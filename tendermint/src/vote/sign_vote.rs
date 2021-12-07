@@ -103,20 +103,20 @@ mod tests {
     use crate::vote::{SignVoteRequest, Type};
     use crate::Hash;
     use crate::Vote;
-    use chrono::{DateTime, Utc};
-    use core::convert::TryFrom;
+    use core::convert::{TryFrom, TryInto};
     use core::str::FromStr;
     use std::println;
     use tendermint_proto::Protobuf;
+    use time::macros::datetime;
 
     #[test]
     fn test_vote_serialization() {
-        let dt = "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap();
+        let dt = datetime!(2017-12-25 03:00:01.234 UTC);
         let vote = Vote {
             vote_type: Type::Prevote,
             height: Height::from(12345_u32),
             round: Round::from(2_u16),
-            timestamp: Some(dt.into()),
+            timestamp: Some(dt.try_into().unwrap()),
             block_id: Some(BlockId {
                 hash: Hash::try_from(b"DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA".to_vec()).unwrap(),
                 part_set_header: Header::new(
@@ -197,12 +197,12 @@ mod tests {
     #[test]
     // Test vote encoding with a malformed block_id (no hash) which is considered nil in Go.
     fn test_vote_encoding_with_empty_block_id() {
-        let dt = "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap();
+        let dt = datetime!(2017-12-25 03:00:01.234 UTC);
         let vote = Vote {
             vote_type: Type::Prevote,
             height: Height::from(12345_u32),
             round: Round::from(2_u16),
-            timestamp: Some(dt.into()),
+            timestamp: Some(dt.try_into().unwrap()),
             block_id: Some(BlockId {
                 hash: Hash::try_from(b"".to_vec()).unwrap(),
                 part_set_header: Header::new(
@@ -343,7 +343,7 @@ mod tests {
 
     #[test]
     fn test_vote_rountrip_with_sig() {
-        let dt = "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap();
+        let dt = datetime!(2017-12-25 03:00:01.234 UTC);
         let vote = Vote {
             validator_address: AccountId::try_from(vec![
                 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
@@ -353,7 +353,7 @@ mod tests {
             validator_index: ValidatorIndex::try_from(56789).unwrap(),
             height: Height::from(12345_u32),
             round: Round::from(2_u16),
-            timestamp: Some(dt.into()),
+            timestamp: Some(dt.try_into().unwrap()),
             vote_type: Type::Prevote,
             block_id: Some(BlockId {
                 hash: Hash::from_hex_upper(Algorithm::Sha256, "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA")
@@ -407,7 +407,7 @@ mod tests {
             1, 1, 1, 1, 1, 1, 1, 18, 13, 116, 101, 115, 116, 95, 99, 104, 97, 105, 110, 95, 105,
             100,
         ]; // Todo: Double-check the Go implementation, this was self-generated.
-        let dt = "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap();
+        let dt = datetime!(2017-12-25 03:00:01.234 UTC);
         let vote = Vote {
             validator_address: AccountId::try_from(vec![
                 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
@@ -417,7 +417,7 @@ mod tests {
             validator_index: ValidatorIndex::try_from(56789).unwrap(),
             height: Height::from(12345_u32),
             round: Round::from(2_u16),
-            timestamp: Some(dt.into()),
+            timestamp: Some(dt.try_into().unwrap()),
             vote_type: Type::Prevote,
             block_id: Some(BlockId {
                 hash: Hash::from_hex_upper(Algorithm::Sha256, "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA")

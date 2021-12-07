@@ -33,9 +33,9 @@ define_error! {
             { detail: String }
             |e| { format_args!("protocol error: {}", e.detail) },
 
-        // When the oldtime feature is disabled, the chrono::oldtime::OutOfRangeError
-        // type is private and cannot be referred:
-        // https://github.com/chronotope/chrono/pull/541
+        DateOutOfRange
+            |_| { format_args!("date out of range") },
+
         DurationOutOfRange
             |_| { format_args!("duration value out of range") },
 
@@ -80,9 +80,8 @@ define_error! {
             [ DisplayOnly<TryFromIntError> ]
             |_| { format_args!("integer overflow") },
 
-        TimestampOverflow
-            [ DisplayOnly<TryFromIntError> ]
-            |_| { format_args!("timestamp overflow") },
+        TimestampNanosOutOfRange
+            |_| { format_args!("timestamp nanosecond component is out of range") },
 
         TimestampConversion
             |_| { format_args!("timestamp conversion error") },
@@ -200,9 +199,9 @@ define_error! {
             { account: account::Id }
             |e| { format_args!("proposer with address '{0}' no found in validator set", e.account) },
 
-        ChronoParse
-            [ DisplayOnly<chrono::ParseError> ]
-            |_| { format_args!("chrono parse error") },
+        TimeParse
+            [ DisplayOnly<time::error::Parse> ]
+            |_| { format_args!("time parsing error") },
 
         SubtleEncoding
             [ DisplayOnly<subtle_encoding::Error> ]

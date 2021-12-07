@@ -20,7 +20,6 @@ pub mod google {
     }
 }
 
-mod chrono;
 mod error;
 #[allow(warnings)]
 mod tendermint;
