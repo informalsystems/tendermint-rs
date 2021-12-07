@@ -64,6 +64,9 @@ impl From<Time> for Timestamp {
 }
 
 impl Time {
+    // Internal helper to produce a `Time` value validated with regard to
+    // the date range allowed in protobuf timestamps.
+    // The source `OffsetDateTime` value must have the zero UTC offset.
     fn from_utc(t: OffsetDateTime) -> Result<Self, Error> {
         debug_assert_eq!(t.offset(), offset!(UTC));
         match t.year() {
