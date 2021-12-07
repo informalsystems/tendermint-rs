@@ -5,7 +5,7 @@ use simple_error::*;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 use tendermint::{block, chain, validator, AppHash, Hash, Time};
-use timelib::OffsetDateTime;
+use time::OffsetDateTime;
 
 #[derive(Debug, Options, Serialize, Deserialize, Clone)]
 pub struct Header {
