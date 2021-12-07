@@ -9,7 +9,7 @@ use core::{
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
 /// Block round for a particular chain
-#[derive(Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Default, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub struct Round(u32);
 
 impl TryFrom<i32> for Round {
@@ -69,12 +69,6 @@ impl Round {
 impl Debug for Round {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "block::Round({})", self.0)
-    }
-}
-
-impl Default for Round {
-    fn default() -> Self {
-        Round(0)
     }
 }
 

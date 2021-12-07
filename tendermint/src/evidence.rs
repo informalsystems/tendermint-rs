@@ -24,6 +24,8 @@ use tendermint_proto::Protobuf;
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 //#[serde(tag = "type", content = "value")]
 #[serde(try_from = "RawEvidence", into = "RawEvidence")] // Used by RPC /broadcast_evidence endpoint
+// To be fixed in 0.24
+#[allow(clippy::large_enum_variant)]
 pub enum Evidence {
     /// Duplicate vote evidence
     //#[serde(rename = "tendermint/DuplicateVoteEvidence")]

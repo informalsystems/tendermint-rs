@@ -3,13 +3,7 @@
 use crate::Application;
 
 /// Trivial echo application, mainly for testing purposes.
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct EchoApp;
-
-impl Default for EchoApp {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 impl Application for EchoApp {}

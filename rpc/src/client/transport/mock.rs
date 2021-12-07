@@ -199,7 +199,7 @@ pub trait MockRequestMatcher: Send + Sync {
 /// requests with specific methods to responses.
 ///
 /// [`MockRequestMatcher`]: trait.MockRequestMatcher.html
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct MockRequestMethodMatcher {
     mappings: HashMap<Method, Result<String, Error>>,
 }
@@ -213,14 +213,6 @@ impl MockRequestMatcher for MockRequestMethodMatcher {
             Ok(json) => R::Response::from_string(json),
             Err(e) => Err(e.clone()),
         })
-    }
-}
-
-impl Default for MockRequestMethodMatcher {
-    fn default() -> Self {
-        Self {
-            mappings: HashMap::new(),
-        }
     }
 }
 
