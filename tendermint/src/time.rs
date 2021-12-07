@@ -34,7 +34,7 @@ use crate::{error::Error, prelude::*};
 // For memory efficiency, the inner member is `PrimitiveDateTime`, with assumed
 // UTC offset. The `assume_utc` method is used to get the operational
 // `OffsetDateTime` value.
-#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(try_from = "Timestamp", into = "Timestamp")]
 pub struct Time(PrimitiveDateTime);
 
@@ -117,6 +117,20 @@ impl Time {
     pub fn to_rfc3339(&self) -> String {
         timestamp::to_rfc3339_nanos(self.0.assume_utc())
     }
+
+    /// Computes `self + duration`, returning `None` if an overflow occurred.
+    pub fn checked_add(self, duration: Duration) -> Option<Self> {
+        let duration = duration.try_into().ok()?;
+        let t = self.0.checked_add(duration)?;
+        Self::from_utc(t.assume_utc()).ok()
+    }
+
+    /// Computes `self - duration`, returning `None` if an overflow occurred.
+    pub fn checked_sub(self, duration: Duration) -> Option<Self> {
+        let duration = duration.try_into().ok()?;
+        let t = self.0.checked_sub(duration)?;
+        Self::from_utc(t.assume_utc()).ok()
+    }
 }
 
 impl fmt::Display for Time {
@@ -151,19 +165,12 @@ impl Add<Duration> for Time {
     type Output = Result<Self, Error>;
 
     fn add(self, rhs: Duration) -> Self::Output {
-        // Work around not being able to depend on time 0.3.5
-        // https://github.com/informalsystems/tendermint-rs/issues/1047
-        let lhs_nanos = self.0.assume_utc().unix_timestamp_nanos();
-        let rhs_nanos: i128 = rhs
-            .as_nanos()
-            .try_into()
-            .map_err(|_| Error::duration_out_of_range())?;
-        let res_nanos = lhs_nanos
-            .checked_add(rhs_nanos)
+        let duration = rhs.try_into().map_err(|_| Error::duration_out_of_range())?;
+        let t = self
+            .0
+            .checked_add(duration)
             .ok_or_else(Error::duration_out_of_range)?;
-        let t = OffsetDateTime::from_unix_timestamp_nanos(res_nanos)
-            .map_err(|_| Error::duration_out_of_range())?;
-        Self::from_utc(t)
+        Self::from_utc(t.assume_utc())
     }
 }
 
@@ -171,19 +178,12 @@ impl Sub<Duration> for Time {
     type Output = Result<Self, Error>;
 
     fn sub(self, rhs: Duration) -> Self::Output {
-        // Work around not being able to depend on time 0.3.5
-        // https://github.com/informalsystems/tendermint-rs/issues/1047
-        let lhs_nanos = self.0.assume_utc().unix_timestamp_nanos();
-        let rhs_nanos: i128 = rhs
-            .as_nanos()
-            .try_into()
-            .map_err(|_| Error::duration_out_of_range())?;
-        let res_nanos = lhs_nanos
-            .checked_sub(rhs_nanos)
+        let duration = rhs.try_into().map_err(|_| Error::duration_out_of_range())?;
+        let t = self
+            .0
+            .checked_sub(duration)
             .ok_or_else(Error::duration_out_of_range)?;
-        let t = OffsetDateTime::from_unix_timestamp_nanos(res_nanos)
-            .map_err(|_| Error::duration_out_of_range())?;
-        Self::from_utc(t)
+        Self::from_utc(t.assume_utc())
     }
 }
 
@@ -376,31 +376,31 @@ mod tests {
 
     proptest! {
         #[test]
-        fn add_regular((dt, d) in args_for_regular_add()) {
+        fn checked_add_regular((dt, d) in args_for_regular_add()) {
             let t: Time = dt.try_into().unwrap();
-            let t = (t + d).unwrap();
+            let t = t.checked_add(d).unwrap();
             let res: OffsetDateTime = t.into();
             assert_eq!(res, dt + d);
         }
 
         #[test]
-        fn sub_regular((dt, d) in args_for_regular_sub()) {
+        fn checked_sub_regular((dt, d) in args_for_regular_sub()) {
             let t: Time = dt.try_into().unwrap();
-            let t = (t - d).unwrap();
+            let t = t.checked_sub(d).unwrap();
             let res: OffsetDateTime = t.into();
             assert_eq!(res, dt - d);
         }
 
         #[test]
-        fn add_overflow((dt, d) in args_for_overflowed_add()) {
+        fn checked_add_overflow((dt, d) in args_for_overflowed_add()) {
             let t: Time = dt.try_into().unwrap();
-            assert!((t + d).is_err());
+            assert_eq!(t.checked_add(d), None);
         }
 
         #[test]
-        fn sub_overflow((dt, d) in args_for_overflowed_sub()) {
+        fn checked_sub_overflow((dt, d) in args_for_overflowed_sub()) {
             let t: Time = dt.try_into().unwrap();
-            assert!((t - d).is_err());
+            assert_eq!(t.checked_sub(d), None);
         }
     }
 }

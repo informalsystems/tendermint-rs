@@ -28,8 +28,6 @@ num-derive = { version = "0.3", default-features = false }
 # TODO(thane): Remove restrictions once js-sys issue is resolved (causes the Substrate no_std check to fail)
 time = { version = ">=0.3, <0.3.12", default-features = false, features = ["macros", "parsing"] }
 flex-error = { version = "0.4.4", default-features = false }
-# TODO(hdevalence): re-added while rebasing the ABCI domain types PR again
-chrono = { version = "0.4", default-features = false, features = ["serde", "alloc"] }
 
 [dev-dependencies]
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }

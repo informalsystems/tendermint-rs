@@ -146,7 +146,7 @@ where
         Ok(len) => len,
         // We've potentially only received a partial length delimiter
         Err(_) if src_len <= MAX_VARINT_LENGTH => return Ok(None),
-        //Err(e) => return Err(Error::decode(e)),
+        // Err(e) => return Err(Error::decode(e)),
         Err(e) => return Err(e),
     };
     let remaining = tmp.remaining() as u64;
