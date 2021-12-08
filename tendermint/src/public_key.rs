@@ -109,7 +109,7 @@ impl PublicKey {
     /// From raw Ed25519 public key bytes
     pub fn from_raw_ed25519(bytes: &[u8]) -> Option<PublicKey> {
         Ed25519::try_from(bytes)
-            .map(|vk| PublicKey::Ed25519(vk))
+            .map(PublicKey::Ed25519)
             .ok()
     }
 
@@ -142,9 +142,9 @@ impl PublicKey {
                             "Ed25519 signature verification failed".to_string(),
                         )
                     }),
-                    Err(_) => Err(Error::signature_invalid(format!(
-                        "Could not parse Ed25519 signature",
-                    ))),
+                    Err(_) => Err(Error::signature_invalid(
+                        "Could not parse Ed25519 signature".to_string(),
+                    )),
                 }
             }
             #[cfg(feature = "secp256k1")]
