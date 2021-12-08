@@ -329,7 +329,7 @@ mod tests {
         assert!(result_ok.is_ok());
 
         // 2. ensure it fails if header is from a future time
-        let now = now.checked_sub(one_second * 15).unwrap();
+        let now = (now - one_second * 15).unwrap();
         let result_err = vp.is_header_from_past(header.time, one_second, now);
 
         match result_err {
