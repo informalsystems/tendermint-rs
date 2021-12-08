@@ -1,12 +1,15 @@
 //! Cryptographic private keys
 
-pub use ed25519_dalek::{Keypair as Ed25519, EXPANDED_SECRET_KEY_LENGTH as ED25519_KEYPAIR_SIZE};
+pub use ed25519_consensus::SigningKey as Ed25519;
 
 use crate::prelude::*;
 use crate::public_key::PublicKey;
+use ed25519_consensus::VerificationKey;
 use serde::{de, ser, Deserialize, Serialize};
 use subtle_encoding::{Base64, Encoding};
 use zeroize::Zeroizing;
+
+pub const ED25519_KEYPAIR_SIZE: usize = 64;
 
 /// Private keys as parsed from configuration files
 #[derive(Serialize, Deserialize)]
@@ -26,24 +29,28 @@ impl PrivateKey {
     /// Get the public key associated with this private key
     pub fn public_key(&self) -> PublicKey {
         match self {
-            PrivateKey::Ed25519(private_key) => private_key.public.into(),
+            PrivateKey::Ed25519(signing_key) => PublicKey::Ed25519(signing_key.verification_key()),
         }
     }
 
     /// If applicable, borrow the Ed25519 keypair
-    pub fn ed25519_keypair(&self) -> Option<&Ed25519> {
+    pub fn ed25519_signing_key(&self) -> Option<&Ed25519> {
         match self {
-            PrivateKey::Ed25519(keypair) => Some(keypair),
+            PrivateKey::Ed25519(signing_key) => Some(signing_key),
         }
     }
 }
 
 /// Serialize an Ed25519 keypair as Base64
-fn serialize_ed25519_keypair<S>(keypair: &Ed25519, serializer: S) -> Result<S::Ok, S::Error>
+fn serialize_ed25519_keypair<S>(signing_key: &Ed25519, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: ser::Serializer,
 {
-    let keypair_bytes = Zeroizing::new(keypair.to_bytes());
+    // Tendermint uses a serialization format inherited from Go that includes
+    // a cached copy of the public key as the second half.
+    let mut keypair_bytes = Zeroizing::new([0u8; ED25519_KEYPAIR_SIZE]);
+    keypair_bytes[0..32].copy_from_slice(signing_key.as_bytes());
+    keypair_bytes[32..64].copy_from_slice(signing_key.verification_key().as_bytes());
     Zeroizing::new(String::from_utf8(Base64::default().encode(&keypair_bytes[..])).unwrap())
         .serialize(serializer)
 }
@@ -64,5 +71,17 @@ where
         return Err(D::Error::custom("invalid Ed25519 keypair size"));
     }
 
-    Ed25519::from_bytes(&*keypair_bytes).map_err(D::Error::custom)
+    // Tendermint uses a serialization format inherited from Go that includes a
+    // cached copy of the public key as the second half.  This is somewhat
+    // dangerous, since there's no validation that the two parts are consistent
+    // with each other, so we ignore the second half and just check consistency
+    // with the re-derived data.
+    let signing_key = Ed25519::try_from(&keypair_bytes[0..32])
+        .map_err(|_| D::Error::custom("invalid signing key"))?;
+    let verification_key = VerificationKey::from(&signing_key);
+    if &keypair_bytes[32..64] != verification_key.as_bytes() {
+        return Err(D::Error::custom("keypair mismatch"));
+    }
+
+    Ok(signing_key)
 }

@@ -14,10 +14,10 @@ authors     = ["Alexander Simmerl <a.simmerl@gmail.com>"]
 test = true
 
 [dev-dependencies]
-ed25519-dalek = { version = "1", default-features = false, features = ["rand"] }
+ed25519-consensus = { version = "1.2", default-features = false }
 flex-error = { version = "0.4.4", default-features = false }
 flume = { version = "0.10", default-features = false }
-rand_core = { version = "0.5", default-features = false, features = ["std"] }
+rand_core = { version = "0.6", default-features = false, features = ["std"] }
 readwrite = { version = "^0.1.1", default-features = false }
 subtle-encoding = { version = "0.5", default-features = false }
 x25519-dalek = { version = "1.1", default-features = false }

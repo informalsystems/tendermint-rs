@@ -5,7 +5,7 @@ use simple_error::*;
 use std::convert::TryFrom;
 use tendermint::{
     block::{self, parts::Header as PartSetHeader},
-    signature::{Ed25519Signature, Signature, Signer},
+    signature::{Ed25519Signature, Signature},
     vote,
     vote::ValidatorIndex,
 };
@@ -87,7 +87,7 @@ impl Generator<vote::Vote> for Vote {
             None => bail!("failed to generate vote: header is missing"),
             Some(h) => h,
         };
-        let signer = validator.get_private_key()?;
+        let signing_key = validator.get_private_key()?;
         let block_validator = validator.generate()?;
         let block_header = header.generate()?;
         let block_id = if self.nil.is_some() {
@@ -135,7 +135,7 @@ impl Generator<vote::Vote> for Vote {
         };
 
         let sign_bytes = get_vote_sign_bytes(block_header.chain_id, &vote);
-        vote.signature = Some(signer.sign(sign_bytes.as_slice()).into());
+        vote.signature = Some(signing_key.sign(sign_bytes.as_slice()).into());
 
         Ok(vote)
     }

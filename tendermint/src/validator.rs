@@ -268,7 +268,7 @@ impl From<&Info> for SimpleValidator {
     fn from(info: &Info) -> SimpleValidator {
         let sum = match &info.pub_key {
             PublicKey::Ed25519(pk) => Some(tendermint_proto::crypto::public_key::Sum::Ed25519(
-                pk.as_bytes().to_vec(),
+                pk.as_ref().to_vec(),
             )),
             #[cfg(feature = "secp256k1")]
             PublicKey::Secp256k1(pk) => Some(tendermint_proto::crypto::public_key::Sum::Secp256k1(
