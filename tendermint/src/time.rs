@@ -112,20 +112,6 @@ impl Time {
     pub fn to_rfc3339(&self) -> String {
         timestamp::to_rfc3339_nanos(self.0.assume_utc())
     }
-
-    /// Computes `self + duration`, returning `None` if an overflow occurred.
-    pub fn checked_add(self, duration: Duration) -> Option<Self> {
-        let duration = duration.try_into().ok()?;
-        let t = self.0.checked_add(duration)?;
-        Self::from_utc(t.assume_utc()).ok()
-    }
-
-    /// Computes `self - duration`, returning `None` if an overflow occurred.
-    pub fn checked_sub(self, duration: Duration) -> Option<Self> {
-        let duration = duration.try_into().ok()?;
-        let t = self.0.checked_sub(duration)?;
-        Self::from_utc(t.assume_utc()).ok()
-    }
 }
 
 impl fmt::Display for Time {
@@ -306,6 +292,7 @@ mod tests {
         }
     }
 
+    #[allow(dead_code)]
     fn duration_from_nanos(whole_nanos: u128) -> Duration {
         let secs: u64 = (whole_nanos / 1_000_000_000).try_into().unwrap();
         let nanos = (whole_nanos % 1_000_000_000) as u32;
@@ -368,33 +355,5 @@ mod tests {
             }
     }
 
-    proptest! {
-        #[test]
-        fn checked_add_regular((dt, d) in args_for_regular_add()) {
-            let t: Time = dt.try_into().unwrap();
-            let t = t.checked_add(d).unwrap();
-            let res: OffsetDateTime = t.into();
-            assert_eq!(res, dt + d);
-        }
-
-        #[test]
-        fn checked_sub_regular((dt, d) in args_for_regular_sub()) {
-            let t: Time = dt.try_into().unwrap();
-            let t = t.checked_sub(d).unwrap();
-            let res: OffsetDateTime = t.into();
-            assert_eq!(res, dt - d);
-        }
-
-        #[test]
-        fn checked_add_overflow((dt, d) in args_for_overflowed_add()) {
-            let t: Time = dt.try_into().unwrap();
-            assert_eq!(t.checked_add(d), None);
-        }
-
-        #[test]
-        fn checked_sub_overflow((dt, d) in args_for_overflowed_sub()) {
-            let t: Time = dt.try_into().unwrap();
-            assert_eq!(t.checked_sub(d), None);
-        }
-    }
+    // TODO: add tests for additive ops using the strategies above
 }
