@@ -306,7 +306,6 @@ mod tests {
         }
     }
 
-    #[allow(dead_code)]
     fn duration_from_nanos(whole_nanos: u128) -> Duration {
         let secs: u64 = (whole_nanos / 1_000_000_000).try_into().unwrap();
         let nanos = (whole_nanos % 1_000_000_000) as u32;
@@ -369,5 +368,33 @@ mod tests {
             }
     }
 
-    // TODO: add tests for additive ops using the strategies above
+    proptest! {
+        #[test]
+        fn add_regular((dt, d) in args_for_regular_add()) {
+            let t: Time = dt.try_into().unwrap();
+            let t = (t + d).unwrap();
+            let res: OffsetDateTime = t.into();
+            assert_eq!(res, dt + d);
+        }
+
+        #[test]
+        fn sub_regular((dt, d) in args_for_regular_sub()) {
+            let t: Time = dt.try_into().unwrap();
+            let t = (t - d).unwrap();
+            let res: OffsetDateTime = t.into();
+            assert_eq!(res, dt - d);
+        }
+
+        #[test]
+        fn add_overflow((dt, d) in args_for_overflowed_add()) {
+            let t: Time = dt.try_into().unwrap();
+            assert!((t + d).is_err());
+        }
+
+        #[test]
+        fn sub_overflow((dt, d) in args_for_overflowed_sub()) {
+            let t: Time = dt.try_into().unwrap();
+            assert!((t - d).is_err());
+        }
+    }
 }
