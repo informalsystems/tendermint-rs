@@ -281,7 +281,7 @@ peg::parser! {
 
         rule date_op() -> Operand
             = "DATE" __ dt:date() {?
-                let date = Date::parse(dt, format_description!("[year]-[month]-[day]"))
+                let date = Date::parse(dt, &format_description!("[year]-[month]-[day]"))
                     .map_err(|_| "failed to parse as RFC3339-compatible date")?;
                 Ok(Operand::Date(date))
             }
