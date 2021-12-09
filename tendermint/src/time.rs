@@ -146,12 +146,19 @@ impl Add<Duration> for Time {
     type Output = Result<Self, Error>;
 
     fn add(self, rhs: Duration) -> Self::Output {
-        let duration = rhs.try_into().map_err(|_| Error::duration_out_of_range())?;
-        let t = self
-            .0
-            .checked_add(duration)
+        // Work around not being able to depend on time 0.3.5
+        // https://github.com/informalsystems/tendermint-rs/issues/1047
+        let lhs_nanos = self.0.assume_utc().unix_timestamp_nanos();
+        let rhs_nanos: i128 = rhs
+            .as_nanos()
+            .try_into()
+            .map_err(|_| Error::duration_out_of_range())?;
+        let res_nanos = lhs_nanos
+            .checked_add(rhs_nanos)
             .ok_or_else(Error::duration_out_of_range)?;
-        Self::from_utc(t.assume_utc())
+        let t = OffsetDateTime::from_unix_timestamp_nanos(res_nanos)
+            .map_err(|_| Error::duration_out_of_range())?;
+        Self::from_utc(t)
     }
 }
 
@@ -159,12 +166,19 @@ impl Sub<Duration> for Time {
     type Output = Result<Self, Error>;
 
     fn sub(self, rhs: Duration) -> Self::Output {
-        let duration = rhs.try_into().map_err(|_| Error::duration_out_of_range())?;
-        let t = self
-            .0
-            .checked_sub(duration)
+        // Work around not being able to depend on time 0.3.5
+        // https://github.com/informalsystems/tendermint-rs/issues/1047
+        let lhs_nanos = self.0.assume_utc().unix_timestamp_nanos();
+        let rhs_nanos: i128 = rhs
+            .as_nanos()
+            .try_into()
+            .map_err(|_| Error::duration_out_of_range())?;
+        let res_nanos = lhs_nanos
+            .checked_sub(rhs_nanos)
             .ok_or_else(Error::duration_out_of_range)?;
-        Self::from_utc(t.assume_utc())
+        let t = OffsetDateTime::from_unix_timestamp_nanos(res_nanos)
+            .map_err(|_| Error::duration_out_of_range())?;
+        Self::from_utc(t)
     }
 }
 
