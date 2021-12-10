@@ -17,9 +17,6 @@ description = """
     Implementation of the Tendermint Light Client Verification Protocol.
 """
 
-[lib]
-crate-type = ["rlib"]
-
 # docs.rs-specific configuration
 [package.metadata.docs.rs]
 # document all features
