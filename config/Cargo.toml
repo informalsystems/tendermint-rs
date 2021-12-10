@@ -25,7 +25,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["rlib"]
 
 [dependencies]
 tendermint = { version = "0.23.0", default-features = false, path = "../tendermint" }

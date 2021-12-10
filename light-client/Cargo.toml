@@ -18,7 +18,7 @@ description = """
 """
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["rlib"]
 
 # docs.rs-specific configuration
 [package.metadata.docs.rs]

@@ -30,7 +30,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["rlib"]
 
 [dependencies]
 async-trait = { version = "0.1", default-features = false }
