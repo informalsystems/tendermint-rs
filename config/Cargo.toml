@@ -24,9 +24,6 @@ authors = [
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [dependencies]
 tendermint = { version = "0.23.2", default-features = false, path = "../tendermint" }
 flex-error = { version = "0.4.4", default-features = false }
