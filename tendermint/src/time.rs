@@ -34,7 +34,7 @@ use crate::error::Error;
 // For memory efficiency, the inner member is `PrimitiveDateTime`, with assumed
 // UTC offset. The `assume_utc` method is used to get the operational
 // `OffsetDateTime` value.
-#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(try_from = "Timestamp", into = "Timestamp")]
 pub struct Time(PrimitiveDateTime);
 
