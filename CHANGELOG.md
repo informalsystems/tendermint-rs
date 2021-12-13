@@ -1,5 +1,49 @@
 # CHANGELOG
 
+## v0.23.2
+
+*Dec 7, 2021*
+
+This release focuses on the removal of
+[`chrono`](https://crates.io/crates/chrono) as our primary dependency for
+dealing with time, and replaces it with the
+[`time`](https://crates.io/crates/time) crate.
+
+This is necessarily a breaking change, but is released as v0.23.2 as per our
+current [versioning
+scheme](https://github.com/informalsystems/tendermint-rs#versioning).
+
+### BREAKING CHANGES
+
+- `[tendermint]` Reform `tendermint::Time`
+  ([#1030](https://github.com/informalsystems/tendermint-rs/issues/1030)):
+  * The struct content is made private.
+  * The range of acceptable values is restricted to years 1-9999
+    (as reckoned in UTC).
+  * Removed conversions from/to `chrono::DateTime<chrono::Utc>`.
+  * Changes in error variants: removed `TimestampOverflow`, replaced with
+    `TimestampNanosOutOfRange`; removed `ChronoParse`, replaced with `TimeParse`.
+- `[tendermint-rpc]` Use `OffsetDateTime` and `Date` types provided by the `time` crate
+  in query operands instead of their `chrono` counterparts.
+  ([#1030](https://github.com/informalsystems/tendermint-rs/issues/1030))
+
+### IMPROVEMENTS
+
+- `[tendermint]` Deprecated `signature::ED25519_SIGNATURE_SIZE`
+  in favor of `Ed25519Signature::BYTE_SIZE`
+  ([#1023](https://github.com/informalsystems/tendermint-rs/issues/1023))
+- Remove dependencies on the `chrono` crate.
+  ([#1030](https://github.com/informalsystems/tendermint-rs/issues/1030))
+- `[tendermint]` Improve `tendermint::Time`
+  ([#1036](https://github.com/informalsystems/tendermint-rs/issues/1036),
+   revised by [#1048](https://github.com/informalsystems/tendermint-rs/pull/1048)):
+  * Restrict the validity range of `Time` to dates with years in the range
+    1-9999, to match the specification of protobuf message `Timestamp`.
+    Add an `ErrorDetail` variant `DateOutOfRange` to report when this
+    restriction is not met.
+  * Added a conversion to, and a fallible conversion from,
+    `OffsetDateTime` of the `time` crate.
+
 ## v0.23.1
 
 *Nov 15, 2021*
