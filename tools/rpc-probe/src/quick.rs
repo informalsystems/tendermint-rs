@@ -1,7 +1,7 @@
 //! RPC quick probe-related functionality.
 
+use crate::common::*;
 use crate::error::Result;
-use crate::kvstore::*;
 use crate::plan::{in_parallel, in_series, Plan};
 use std::path::Path;
 use tokio::time::Duration;
