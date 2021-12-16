@@ -1,13 +1,13 @@
 mod client;
 mod common;
 mod error;
+mod kvstore;
 mod plan;
-mod quick;
 mod request;
 mod subscription;
 mod utils;
 
-use crate::quick::quick_probe_plan;
+use crate::kvstore::quick_probe_plan;
 use log::LevelFilter;
 use simple_logger::SimpleLogger;
 use std::path::PathBuf;
@@ -43,7 +43,6 @@ impl ToString for OutputPathBuf {
     }
 }
 
-#[derive(Debug, StructOpt)]
 /// A utility application that primarily aims to assist in testing
 /// compatibility between tendermint.rs (https://github.com/informalsystems/tendermint-rs)
 /// and Tendermint (https://github.com/tendermint/tendermint).
@@ -51,6 +50,7 @@ impl ToString for OutputPathBuf {
 /// Running this application will execute a "quick probe" against a running
 /// Tendermint node. This executes a number of RPC requests against the node,
 /// saving both the requests and responses to the desired output folder.
+#[derive(Debug, StructOpt)]
 struct Opts {
     /// The address of the Tendermint node's WebSocket-based RPC endpoint.
     #[structopt(default_value = "ws://127.0.0.1:26657/websocket", long)]

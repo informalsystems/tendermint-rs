@@ -1,4 +1,5 @@
-//! RPC quick probe-related functionality.
+//! RPC quick probe-related functionality specifically targeting a Tendermint
+//! node running the `kvstore` ABCI application.
 
 use crate::common::*;
 use crate::error::Result;
@@ -8,7 +9,7 @@ use tokio::time::Duration;
 
 pub fn quick_probe_plan(output_path: &Path, request_wait: Duration) -> Result<Plan> {
     Plan::new(
-        "quick-probe",
+        "kvstore-quick-probe",
         output_path,
         request_wait,
         vec![
