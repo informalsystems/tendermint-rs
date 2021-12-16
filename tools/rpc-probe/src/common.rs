@@ -1,5 +1,5 @@
-//! Common interactions that can be used by plans interacting with the
-//! `kvstore` application running on a Tendermint node.
+//! Common interactions that can be used by plans interacting with any ABCI
+//! application.
 
 use crate::plan::{PlannedInteraction, PlannedSubscription};
 use crate::request::Request;
