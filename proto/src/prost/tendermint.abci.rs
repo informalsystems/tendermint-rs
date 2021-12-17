@@ -228,9 +228,10 @@ pub struct ResponseInfo {
     #[prost(string, tag="1")]
     pub data: ::prost::alloc::string::String,
     #[prost(string, tag="2")]
+    #[serde(default)]
     pub version: ::prost::alloc::string::String,
     #[prost(uint64, tag="3")]
-    #[serde(with = "crate::serializers::from_str")]
+    #[serde(with = "crate::serializers::from_str", default)]
     pub app_version: u64,
     #[prost(int64, tag="4")]
     #[serde(with = "crate::serializers::from_str")]
