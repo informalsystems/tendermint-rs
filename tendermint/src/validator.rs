@@ -1,9 +1,9 @@
 //! Tendermint validators
 
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
-use subtle_encoding::base64;
+use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
+use crate::public_key::deserialize_public_key;
 use crate::{account, hash::Hash, merkle, vote, Error, PublicKey, Signature};
 
 use core::convert::{TryFrom, TryInto};
@@ -326,34 +326,6 @@ pub struct Update {
     pub power: vote::Power,
 }
 
-/// Validator updates use a slightly different public key format than the one
-/// implemented in `tendermint::PublicKey`.
-///
-/// This is an internal thunk type to parse the `validator_updates` format and
-/// then convert to `tendermint::PublicKey` in `deserialize_public_key` below.
-#[derive(Serialize, Deserialize)]
-#[serde(tag = "type", content = "data")]
-enum Pk {
-    /// Ed25519 keys
-    #[serde(rename = "ed25519")]
-    Ed25519(String),
-}
-
-fn deserialize_public_key<'de, D>(deserializer: D) -> Result<PublicKey, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    match &Pk::deserialize(deserializer)? {
-        Pk::Ed25519(base64_value) => {
-            let bytes =
-                base64::decode(base64_value).map_err(|e| D::Error::custom(format!("{}", e)))?;
-
-            PublicKey::from_raw_ed25519(&bytes)
-                .ok_or_else(|| D::Error::custom("error parsing Ed25519 key"))
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
 
@@ -437,5 +409,33 @@ mod tests {
             val_set.total_voting_power().value(),
             148_151_478_422_287_875 + 158_095_448_483_785_107 + 770_561_664_770_006_272
         );
+    }
+
+    #[test]
+    fn deserialize_validator_updates() {
+        const FMT1: &str = r#"{
+            "pub_key": {
+                "Sum": {
+                    "type": "tendermint.crypto.PublicKey_Ed25519",
+                    "value": {
+                        "ed25519": "VqJCr3vjQdffcLIG6RMBl2MgXDFYNY6b3Joaa43gV3o="
+                    }
+                }
+            },
+            "power": "573929"
+        }"#;
+        const FMT2: &str = r#"{
+            "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "VqJCr3vjQdffcLIG6RMBl2MgXDFYNY6b3Joaa43gV3o="
+            },
+            "power": "573929"
+        }"#;
+
+        let update1 = serde_json::from_str::<Update>(FMT1).unwrap();
+        let update2 = serde_json::from_str::<Update>(FMT2).unwrap();
+
+        assert_eq!(u64::from(update1.power), 573929);
+        assert_eq!(update1, update2);
     }
 }
