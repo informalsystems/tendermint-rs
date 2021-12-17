@@ -47,6 +47,10 @@ fn incoming_fixtures() {
             "block_at_height_10" => {
                 assert!(endpoint::block::Response::from_string(content).is_ok())
             }
+            "block_at_height_4555980" => {
+                let r = endpoint::block::Response::from_string(content);
+                assert!(r.is_ok(), "{:?}", r);
+            }
             "block_results_at_height_10" => {
                 let r = endpoint::block_results::Response::from_string(content);
                 assert!(r.is_ok(), "block_results_at_height_10: {:?}", r);
@@ -111,6 +115,9 @@ fn outgoing_fixtures() {
                 assert!(endpoint::block::Request::from_string(content).is_ok())
             }
             "block_at_height_10" => {
+                assert!(endpoint::block::Request::from_string(content).is_ok())
+            }
+            "block_at_height_4555980" => {
                 assert!(endpoint::block::Request::from_string(content).is_ok())
             }
             "block_results_at_height_10" => {
