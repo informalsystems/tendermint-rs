@@ -1,7 +1,7 @@
 //! JSON-RPC requests
 
 use super::{Id, Method, Version};
-use crate::prelude::*;
+use crate::{prelude::*, Error};
 use core::fmt::Debug;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
@@ -16,6 +16,12 @@ pub trait Request: Debug + DeserializeOwned + Serialize + Sized + Send {
     /// Serialize this request as JSON
     fn into_json(self) -> String {
         Wrapper::new(self).into_json()
+    }
+
+    /// Parse a JSON-RPC request from a JSON string.
+    fn from_string(s: impl AsRef<[u8]>) -> Result<Self, Error> {
+        let wrapper: Wrapper<Self> = serde_json::from_slice(s.as_ref()).map_err(Error::serde)?;
+        Ok(wrapper.params)
     }
 }
 
