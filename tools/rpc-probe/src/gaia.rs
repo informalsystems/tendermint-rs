@@ -23,7 +23,6 @@ pub fn query_plan(output_path: &Path, request_wait: Duration) -> Result<Plan> {
                 .with_min_height(10)
                 .with_name("block_at_height_10"),
             block_results(10).with_name("block_results_at_height_10"),
-            block_results(4555980).with_name("block_results_at_height_4555980"),
             blockchain(1, 10).with_name("blockchain_from_1_to_10"),
             commit(10).with_name("commit_at_height_10"),
             consensus_params(10),
