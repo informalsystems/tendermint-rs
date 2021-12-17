@@ -16,6 +16,7 @@ const TYPE_TAG: &str = r#"#[serde(tag = "type", content = "value")]"#;
 /// Predefined custom attributes for field annotations
 const QUOTED: &str = r#"#[serde(with = "crate::serializers::from_str")]"#;
 const QUOTED_WITH_DEFAULT: &str = r#"#[serde(with = "crate::serializers::from_str", default)]"#;
+const DEFAULT: &str = r#"#[serde(default)]"#;
 const HEXSTRING: &str = r#"#[serde(with = "crate::serializers::bytes::hexstring")]"#;
 const BASE64STRING: &str = r#"#[serde(with = "crate::serializers::bytes::base64string")]"#;
 const VEC_BASE64STRING: &str = r#"#[serde(with = "crate::serializers::bytes::vec_base64string")]"#;
@@ -86,13 +87,17 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         QUOTED_WITH_DEFAULT,
     ),
     (".tendermint.abci.ResponseInfo.last_block_height", QUOTED),
+    (".tendermint.abci.ResponseInfo.version", DEFAULT),
     (".tendermint.version.Consensus.block", QUOTED),
     (".tendermint.version.Consensus.app", QUOTED_WITH_DEFAULT),
     (
         ".tendermint.abci.ResponseInfo.last_block_app_hash",
         VEC_SKIP_IF_EMPTY,
     ),
-    (".tendermint.abci.ResponseInfo.app_version", QUOTED),
+    (
+        ".tendermint.abci.ResponseInfo.app_version",
+        QUOTED_WITH_DEFAULT,
+    ),
     (".tendermint.types.BlockID.hash", HEXSTRING),
     (".tendermint.types.BlockID.part_set_header", ALIAS_PARTS),
     (
