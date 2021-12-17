@@ -1,0 +1,302 @@
+{
+  "id": "787038cc-70e1-4634-ade0-84eb98744b56",
+  "jsonrpc": "2.0",
+  "result": {
+    "data": {
+      "type": "tendermint/event/NewBlock",
+      "value": {
+        "block": {
+          "data": {
+            "txs": []
+          },
+          "evidence": {
+            "evidence": []
+          },
+          "header": {
+            "app_hash": "D9113E033948082B4ADDAE389B4732E4EC6B4C87834B28F3044BE04259394133",
+            "chain_id": "ibc-0",
+            "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
+            "data_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+            "evidence_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+            "height": "168",
+            "last_block_id": {
+              "hash": "A98681C8309818FF210C2E026392E1AF5F5C2D33837A1C68032F3EC3128709CA",
+              "parts": {
+                "hash": "98B5B45140CB0856C942F44BAED62E0C52470EEAAF8702A1FF442CD460457840",
+                "total": 1
+              }
+            },
+            "last_commit_hash": "110762EB63F2F99040B348EC23DFE75154B5082D5B50580C19FE8F2C7FF62056",
+            "last_results_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+            "next_validators_hash": "0A6CA9001DB07E985DF9043045B392588DF7C1C720E30EBAEFDC8A848C551D6A",
+            "proposer_address": "BB22AD764B674CC08753B24175E2FC61B22B1419",
+            "time": "2021-12-17T20:30:29.268206229Z",
+            "validators_hash": "0A6CA9001DB07E985DF9043045B392588DF7C1C720E30EBAEFDC8A848C551D6A",
+            "version": {
+              "block": "11"
+            }
+          },
+          "last_commit": {
+            "block_id": {
+              "hash": "A98681C8309818FF210C2E026392E1AF5F5C2D33837A1C68032F3EC3128709CA",
+              "parts": {
+                "hash": "98B5B45140CB0856C942F44BAED62E0C52470EEAAF8702A1FF442CD460457840",
+                "total": 1
+              }
+            },
+            "height": "167",
+            "round": 0,
+            "signatures": [
+              {
+                "block_id_flag": 2,
+                "signature": "lHsxLUXfcH1e8DdAUBCrGd9dDL++NCS9J4TJk4hyeaVlTk2kkXdPHT9L+cX527UDbx+ZEPRea1TVNwyVmVwYCg==",
+                "timestamp": "2021-12-17T20:30:29.268206229Z",
+                "validator_address": "BB22AD764B674CC08753B24175E2FC61B22B1419"
+              }
+            ]
+          }
+        },
+        "result_begin_block": {
+          "events": [
+            {
+              "attributes": [
+                {
+                  "index": true,
+                  "key": "cmVjaXBpZW50",
+                  "value": "Y29zbW9zMTd4cGZ2YWttMmFtZzk2MnlsczZmODR6M2tlbGw4YzVsc2VycXRh"
+                },
+                {
+                  "index": true,
+                  "key": "c2VuZGVy",
+                  "value": "Y29zbW9zMW0zaDMwd2x2c2Y4bGxydXh0cHVrZHZzeTBrbTJrdW04ZzM4Yzhx"
+                },
+                {
+                  "index": true,
+                  "key": "YW1vdW50",
+                  "value": "NjE3OXN0YWtl"
+                }
+              ],
+              "type": "transfer"
+            },
+            {
+              "attributes": [
+                {
+                  "index": true,
+                  "key": "c2VuZGVy",
+                  "value": "Y29zbW9zMW0zaDMwd2x2c2Y4bGxydXh0cHVrZHZzeTBrbTJrdW04ZzM4Yzhx"
+                }
+              ],
+              "type": "message"
+            },
+            {
+              "attributes": [
+                {
+                  "index": true,
+                  "key": "Ym9uZGVkX3JhdGlv",
+                  "value": "MC4zMzMzMzIxODY3ODk0OTkyNTc="
+                },
+                {
+                  "index": true,
+                  "key": "aW5mbGF0aW9u",
+                  "value": "MC4xMzAwMDE3Mzg3ODAzNjQzNDk="
+                },
+                {
+                  "index": true,
+                  "key": "YW5udWFsX3Byb3Zpc2lvbnM=",
+                  "value": "MzkwMDA2NTU3ODEuOTkzNTM5OTg2NTA5MTgyNjU3"
+                },
+                {
+                  "index": true,
+                  "key": "YW1vdW50",
+                  "value": "NjE3OQ=="
+                }
+              ],
+              "type": "mint"
+            },
+            {
+              "attributes": [
+                {
+                  "index": true,
+                  "key": "cmVjaXBpZW50",
+                  "value": "Y29zbW9zMWp2NjVzM2dycWY2djZqbDNkcDR0NmM5dDlyazk5Y2Q4OGx5dWZs"
+                },
+                {
+                  "index": true,
+                  "key": "c2VuZGVy",
+                  "value": "Y29zbW9zMTd4cGZ2YWttMmFtZzk2MnlsczZmODR6M2tlbGw4YzVsc2VycXRh"
+                },
+                {
+                  "index": true,
+                  "key": "YW1vdW50",
+                  "value": "NjE3OXN0YWtl"
+                }
+              ],
+              "type": "transfer"
+            },
+            {
+              "attributes": [
+                {
+                  "index": true,
+                  "key": "c2VuZGVy",
+                  "value": "Y29zbW9zMTd4cGZ2YWttMmFtZzk2MnlsczZmODR6M2tlbGw4YzVsc2VycXRh"
+                }
+              ],
+              "type": "message"
+            },
+            {
+              "attributes": [
+                {
+                  "index": true,
+                  "key": "YW1vdW50",
+                  "value": "MzA4Ljk1MDAwMDAwMDAwMDAwMDAwMHN0YWtl"
+                },
+                {
+                  "index": true,
+                  "key": "dmFsaWRhdG9y",
+                  "value": "Y29zbW9zdmFsb3BlcjF2anpqMGhkcHhlZThzYWhld3pzbDg5MHdqbmgwcDBrZnJzZW5tdQ=="
+                }
+              ],
+              "type": "proposer_reward"
+            },
+            {
+              "attributes": [
+                {
+                  "index": true,
+                  "key": "YW1vdW50",
+                  "value": "MzAuODk1MDAwMDAwMDAwMDAwMDAwc3Rha2U="
+                },
+                {
+                  "index": true,
+                  "key": "dmFsaWRhdG9y",
+                  "value": "Y29zbW9zdmFsb3BlcjF2anpqMGhkcHhlZThzYWhld3pzbDg5MHdqbmgwcDBrZnJzZW5tdQ=="
+                }
+              ],
+              "type": "commission"
+            },
+            {
+              "attributes": [
+                {
+                  "index": true,
+                  "key": "YW1vdW50",
+                  "value": "MzA4Ljk1MDAwMDAwMDAwMDAwMDAwMHN0YWtl"
+                },
+                {
+                  "index": true,
+                  "key": "dmFsaWRhdG9y",
+                  "value": "Y29zbW9zdmFsb3BlcjF2anpqMGhkcHhlZThzYWhld3pzbDg5MHdqbmgwcDBrZnJzZW5tdQ=="
+                }
+              ],
+              "type": "rewards"
+            },
+            {
+              "attributes": [
+                {
+                  "index": true,
+                  "key": "YW1vdW50",
+                  "value": "NTc0LjY0NzAwMDAwMDAwMDAwMDAwMHN0YWtl"
+                },
+                {
+                  "index": true,
+                  "key": "dmFsaWRhdG9y",
+                  "value": "Y29zbW9zdmFsb3BlcjF2anpqMGhkcHhlZThzYWhld3pzbDg5MHdqbmgwcDBrZnJzZW5tdQ=="
+                }
+              ],
+              "type": "commission"
+            },
+            {
+              "attributes": [
+                {
+                  "index": true,
+                  "key": "YW1vdW50",
+                  "value": "NTc0Ni40NzAwMDAwMDAwMDAwMDAwMDBzdGFrZQ=="
+                },
+                {
+                  "index": true,
+                  "key": "dmFsaWRhdG9y",
+                  "value": "Y29zbW9zdmFsb3BlcjF2anpqMGhkcHhlZThzYWhld3pzbDg5MHdqbmgwcDBrZnJzZW5tdQ=="
+                }
+              ],
+              "type": "rewards"
+            }
+          ]
+        },
+        "result_end_block": {
+          "consensus_param_updates": {
+            "block": {
+              "max_bytes": "22020096",
+              "max_gas": "-1"
+            },
+            "evidence": {
+              "max_age_duration": "172800000000000",
+              "max_age_num_blocks": "100000",
+              "max_bytes": "1048576"
+            },
+            "validator": {
+              "pub_key_types": [
+                "ed25519"
+              ]
+            }
+          },
+          "events": [],
+          "validator_updates": []
+        }
+      }
+    },
+    "events": {
+      "commission.amount": [
+        "30.895000000000000000stake",
+        "574.647000000000000000stake"
+      ],
+      "commission.validator": [
+        "cosmosvaloper1vjzj0hdpxee8sahewzsl890wjnh0p0kfrsenmu",
+        "cosmosvaloper1vjzj0hdpxee8sahewzsl890wjnh0p0kfrsenmu"
+      ],
+      "message.sender": [
+        "cosmos1m3h30wlvsf8llruxtpukdvsy0km2kum8g38c8q",
+        "cosmos17xpfvakm2amg962yls6f84z3kell8c5lserqta"
+      ],
+      "mint.amount": [
+        "6179"
+      ],
+      "mint.annual_provisions": [
+        "39000655781.993539986509182657"
+      ],
+      "mint.bonded_ratio": [
+        "0.333332186789499257"
+      ],
+      "mint.inflation": [
+        "0.130001738780364349"
+      ],
+      "proposer_reward.amount": [
+        "308.950000000000000000stake"
+      ],
+      "proposer_reward.validator": [
+        "cosmosvaloper1vjzj0hdpxee8sahewzsl890wjnh0p0kfrsenmu"
+      ],
+      "rewards.amount": [
+        "308.950000000000000000stake",
+        "5746.470000000000000000stake"
+      ],
+      "rewards.validator": [
+        "cosmosvaloper1vjzj0hdpxee8sahewzsl890wjnh0p0kfrsenmu",
+        "cosmosvaloper1vjzj0hdpxee8sahewzsl890wjnh0p0kfrsenmu"
+      ],
+      "tm.event": [
+        "NewBlock"
+      ],
+      "transfer.amount": [
+        "6179stake",
+        "6179stake"
+      ],
+      "transfer.recipient": [
+        "cosmos17xpfvakm2amg962yls6f84z3kell8c5lserqta",
+        "cosmos1jv65s3grqf6v6jl3dp4t6c9t9rk99cd88lyufl"
+      ],
+      "transfer.sender": [
+        "cosmos1m3h30wlvsf8llruxtpukdvsy0km2kum8g38c8q",
+        "cosmos17xpfvakm2amg962yls6f84z3kell8c5lserqta"
+      ]
+    },
+    "query": "tm.event = 'NewBlock'"
+  }
+}

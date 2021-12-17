@@ -1,0 +1,64 @@
+{
+  "id": "9ba09d2c-3d72-4a7f-8e12-eae2496a65fa",
+  "jsonrpc": "2.0",
+  "result": {
+    "block": {
+      "data": {
+        "txs": []
+      },
+      "evidence": {
+        "evidence": []
+      },
+      "header": {
+        "app_hash": "A7139E6F28A9506629C60E3FDFD1A325E99177A4A3C8FA131732B6170C113C8E",
+        "chain_id": "ibc-0",
+        "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
+        "data_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "evidence_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "height": "10",
+        "last_block_id": {
+          "hash": "CD0A81D2658C56FD65587E4502E4BC89955002B5B89F986C7D63A5AF184FBC92",
+          "parts": {
+            "hash": "6E41BBA804019240A672F9AC6625BAA6D40B3887D6F6BE3E64CF54D93F021B76",
+            "total": 1
+          }
+        },
+        "last_commit_hash": "3A9BEC015F1A923C17EF81007945F552AD4E35DDA445AFA91296564DCB748357",
+        "last_results_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "next_validators_hash": "0A6CA9001DB07E985DF9043045B392588DF7C1C720E30EBAEFDC8A848C551D6A",
+        "proposer_address": "BB22AD764B674CC08753B24175E2FC61B22B1419",
+        "time": "2021-12-17T20:27:47.875954829Z",
+        "validators_hash": "0A6CA9001DB07E985DF9043045B392588DF7C1C720E30EBAEFDC8A848C551D6A",
+        "version": {
+          "block": "11"
+        }
+      },
+      "last_commit": {
+        "block_id": {
+          "hash": "CD0A81D2658C56FD65587E4502E4BC89955002B5B89F986C7D63A5AF184FBC92",
+          "parts": {
+            "hash": "6E41BBA804019240A672F9AC6625BAA6D40B3887D6F6BE3E64CF54D93F021B76",
+            "total": 1
+          }
+        },
+        "height": "9",
+        "round": 0,
+        "signatures": [
+          {
+            "block_id_flag": 2,
+            "signature": "d1qUrZd0jrJRGDnI3I69LXTTHh2HBLHY8U5r4YFwy7Zn+kdo30Xs0eAdhmpt7kUG/XZSr1zwyLTneRXPipn9DQ==",
+            "timestamp": "2021-12-17T20:27:47.875954829Z",
+            "validator_address": "BB22AD764B674CC08753B24175E2FC61B22B1419"
+          }
+        ]
+      }
+    },
+    "block_id": {
+      "hash": "EB917FF229E0987637F20EDB8114CAC3F967D843C5CC480969D64D7A368F077F",
+      "parts": {
+        "hash": "ABFFFBEDF37CB50B0F5617D2A85110B838EA2B3E3E56CCA1E09A27DCD5BBF769",
+        "total": 1
+      }
+    }
+  }
+}
