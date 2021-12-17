@@ -8,12 +8,13 @@ mod pub_key_request;
 mod pub_key_response;
 pub use pub_key_request::PubKeyRequest;
 pub use pub_key_response::PubKeyResponse;
+use serde_json::Value;
 
 use crate::prelude::*;
 use crate::{error::Error, signature::Signature};
 use core::convert::TryFrom;
 use core::{cmp::Ordering, fmt, ops::Deref, str::FromStr};
-use serde::{de, ser, Deserialize, Serialize};
+use serde::{de, ser, Deserialize, Deserializer, Serialize};
 use signature::Verifier as _;
 use subtle_encoding::{base64, bech32, hex};
 use tendermint_proto::crypto::public_key::Sum;
@@ -52,6 +53,69 @@ pub enum PublicKey {
         deserialize_with = "deserialize_secp256k1_base64"
     )]
     Secp256k1(Secp256k1),
+}
+
+// Internal thunk type to facilitate deserialization from the raw Protobuf data
+// structure's JSON representation.
+#[derive(Serialize, Deserialize)]
+struct ProtobufPublicKeyWrapper {
+    #[serde(rename = "Sum")]
+    sum: ProtobufPublicKey,
+}
+
+impl From<ProtobufPublicKeyWrapper> for PublicKey {
+    fn from(wrapper: ProtobufPublicKeyWrapper) -> Self {
+        match wrapper.sum {
+            ProtobufPublicKey::Ed25519 { ed25519 } => PublicKey::Ed25519(ed25519),
+            #[cfg(feature = "secp256k1")]
+            ProtobufPublicKey::Secp256k1 { secp256k1 } => PublicKey::Secp256k1(secp256k1),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(tag = "type", content = "value")] // JSON custom serialization for priv_validator_key.json
+enum ProtobufPublicKey {
+    #[serde(rename = "tendermint.crypto.PublicKey_Ed25519")]
+    Ed25519 {
+        #[serde(
+            serialize_with = "serialize_ed25519_base64",
+            deserialize_with = "deserialize_ed25519_base64"
+        )]
+        ed25519: Ed25519,
+    },
+
+    #[cfg(feature = "secp256k1")]
+    #[serde(rename = "tendermint.crypto.PublicKey_Secp256K1")]
+    Secp256k1 {
+        #[serde(
+            serialize_with = "serialize_secp256k1_base64",
+            deserialize_with = "deserialize_secp256k1_base64"
+        )]
+        secp256k1: Secp256k1,
+    },
+}
+
+/// Custom deserialization for public keys to handle multiple potential JSON
+/// formats from Tendermint.
+///
+/// See <https://github.com/informalsystems/tendermint-rs/issues/1021> for
+/// context.
+// TODO(thane): Remove this once the serialization in Tendermint has been fixed.
+pub fn deserialize_public_key<'de, D>(deserializer: D) -> Result<PublicKey, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let v = Value::deserialize(deserializer)?;
+    if v.as_object()
+        .map(|obj| obj.contains_key("Sum"))
+        .unwrap_or(false)
+    {
+        serde_json::from_value::<ProtobufPublicKeyWrapper>(v).map(Into::into)
+    } else {
+        serde_json::from_value::<PublicKey>(v)
+    }
+    .map_err(serde::de::Error::custom)
 }
 
 impl Protobuf<RawPublicKey> for PublicKey {}
@@ -325,7 +389,7 @@ impl Serialize for Algorithm {
 }
 
 impl<'de> Deserialize<'de> for Algorithm {
-    fn deserialize<D: de::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         use de::Error;
         let s = String::deserialize(deserializer)?;
         s.parse().map_err(D::Error::custom)
@@ -355,7 +419,7 @@ where
 
 fn deserialize_ed25519_base64<'de, D>(deserializer: D) -> Result<Ed25519, D::Error>
 where
-    D: de::Deserializer<'de>,
+    D: Deserializer<'de>,
 {
     use de::Error;
     let encoded = String::deserialize(deserializer)?;
@@ -366,7 +430,7 @@ where
 #[cfg(feature = "secp256k1")]
 fn deserialize_secp256k1_base64<'de, D>(deserializer: D) -> Result<Secp256k1, D::Error>
 where
-    D: de::Deserializer<'de>,
+    D: Deserializer<'de>,
 {
     use de::Error;
     let encoded = String::deserialize(deserializer)?;
