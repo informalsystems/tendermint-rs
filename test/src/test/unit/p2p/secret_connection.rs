@@ -3,7 +3,6 @@ use std::io::Write as _;
 use std::net::{TcpListener, TcpStream};
 use std::thread;
 
-use ed25519_consensus;
 use rand_core::OsRng;
 use x25519_dalek::PublicKey as EphemeralPublic;
 
