@@ -1,15 +1,17 @@
 //! Secret Connection peer public keys
 
-use ed25519_dalek as ed25519;
 use sha2::{digest::Digest, Sha256};
-use std::fmt::{self, Display};
+use std::{
+    convert::TryFrom,
+    fmt::{self, Display},
+};
 use tendermint::{error::Error, node};
 
 /// Secret Connection peer public keys (signing, presently Ed25519-only)
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum PublicKey {
     /// Ed25519 Secret Connection Keys
-    Ed25519(ed25519::PublicKey),
+    Ed25519(ed25519_consensus::VerificationKey),
 }
 
 impl PublicKey {
@@ -19,14 +21,14 @@ impl PublicKey {
     ///
     /// * if the bytes given are invalid
     pub fn from_raw_ed25519(bytes: &[u8]) -> Result<Self, Error> {
-        ed25519::PublicKey::from_bytes(bytes)
+        ed25519_consensus::VerificationKey::try_from(bytes)
             .map(Self::Ed25519)
-            .map_err(Error::signature)
+            .map_err(|_| Error::signature())
     }
 
     /// Get Ed25519 public key
     #[must_use]
-    pub const fn ed25519(self) -> Option<ed25519::PublicKey> {
+    pub const fn ed25519(self) -> Option<ed25519_consensus::VerificationKey> {
         match self {
             Self::Ed25519(pk) => Some(pk),
         }
@@ -53,14 +55,14 @@ impl Display for PublicKey {
     }
 }
 
-impl From<&ed25519::Keypair> for PublicKey {
-    fn from(sk: &ed25519::Keypair) -> Self {
-        Self::Ed25519(sk.public)
+impl From<&ed25519_consensus::SigningKey> for PublicKey {
+    fn from(sk: &ed25519_consensus::SigningKey) -> Self {
+        Self::Ed25519(sk.verification_key())
     }
 }
 
-impl From<ed25519::PublicKey> for PublicKey {
-    fn from(pk: ed25519::PublicKey) -> Self {
+impl From<ed25519_consensus::VerificationKey> for PublicKey {
+    fn from(pk: ed25519_consensus::VerificationKey) -> Self {
         Self::Ed25519(pk)
     }
 }

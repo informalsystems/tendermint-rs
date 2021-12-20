@@ -13,7 +13,6 @@ use chacha20poly1305::{
     aead::{generic_array::GenericArray, AeadInPlace, NewAead},
     ChaCha20Poly1305,
 };
-use ed25519_dalek::{self as ed25519, Signer, Verifier};
 use merlin::Transcript;
 use rand_core::OsRng;
 use subtle::ConstantTimeEq;
@@ -58,7 +57,7 @@ pub struct Handshake<S> {
 
 /// `AwaitingEphKey` means we're waiting for the remote ephemeral pubkey.
 pub struct AwaitingEphKey {
-    local_privkey: ed25519::Keypair,
+    local_privkey: ed25519_consensus::SigningKey,
     local_eph_privkey: Option<EphemeralSecret>,
 }
 
@@ -68,7 +67,7 @@ pub struct AwaitingAuthSig {
     kdf: Kdf,
     recv_cipher: ChaCha20Poly1305,
     send_cipher: ChaCha20Poly1305,
-    local_signature: ed25519::Signature,
+    local_signature: ed25519_consensus::Signature,
 }
 
 #[allow(clippy::use_self)]
@@ -76,7 +75,7 @@ impl Handshake<AwaitingEphKey> {
     /// Initiate a handshake.
     #[must_use]
     pub fn new(
-        local_privkey: ed25519::Keypair,
+        local_privkey: ed25519_consensus::SigningKey,
         protocol_version: Version,
     ) -> (Self, EphemeralPublic) {
         // Generate an ephemeral key for perfect forward secrecy.
@@ -148,9 +147,9 @@ impl Handshake<AwaitingEphKey> {
 
         // Sign the challenge bytes for authentication.
         let local_signature = if self.protocol_version.has_transcript() {
-            sign_challenge(&sc_mac, &self.state.local_privkey)?
+            self.state.local_privkey.sign(&sc_mac)
         } else {
-            sign_challenge(&kdf.challenge, &self.state.local_privkey)?
+            self.state.local_privkey.sign(&kdf.challenge)
         };
 
         Ok(Handshake {
@@ -183,22 +182,23 @@ impl Handshake<AwaitingAuthSig> {
 
         let remote_pubkey = match pk_sum {
             proto::crypto::public_key::Sum::Ed25519(ref bytes) => {
-                ed25519::PublicKey::from_bytes(bytes).map_err(Error::signature)
+                ed25519_consensus::VerificationKey::try_from(&bytes[..])
+                    .map_err(|_| Error::signature())
             }
             _ => Err(Error::unsupported_key()),
         }?;
 
-        let remote_sig =
-            ed25519::Signature::try_from(auth_sig_msg.sig.as_slice()).map_err(Error::signature)?;
+        let remote_sig = ed25519_consensus::Signature::try_from(auth_sig_msg.sig.as_slice())
+            .map_err(|_| Error::signature())?;
 
         if self.protocol_version.has_transcript() {
             remote_pubkey
-                .verify(&self.state.sc_mac, &remote_sig)
-                .map_err(Error::signature)?;
+                .verify(&remote_sig, &self.state.sc_mac)
+                .map_err(|_| Error::signature())?;
         } else {
             remote_pubkey
-                .verify(&self.state.kdf.challenge, &remote_sig)
-                .map_err(Error::signature)?;
+                .verify(&remote_sig, &self.state.kdf.challenge)
+                .map_err(|_| Error::signature())?;
         }
 
         // We've authorized.
@@ -276,7 +276,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
     /// * if receiving the signature fails
     pub fn new(
         mut io_handler: IoHandler,
-        local_privkey: ed25519::Keypair,
+        local_privkey: ed25519_consensus::SigningKey,
         protocol_version: Version,
     ) -> Result<Self, Error> {
         // Start a handshake process.
@@ -467,20 +467,12 @@ fn share_eph_pubkey<IoHandler: Read + Write + Send + Sync>(
     protocol_version.decode_initial_handshake(&buf)
 }
 
-/// Sign the challenge with the local private key
-fn sign_challenge(
-    challenge: &[u8; 32],
-    local_privkey: &dyn Signer<ed25519::Signature>,
-) -> Result<ed25519::Signature, Error> {
-    local_privkey.try_sign(challenge).map_err(Error::signature)
-}
-
 // TODO(ismail): change from DecodeError to something more generic
 // this can also fail while writing / sending
 fn share_auth_signature<IoHandler: Read + Write + Send + Sync>(
     sc: &mut SecretConnection<IoHandler>,
-    pubkey: &ed25519::PublicKey,
-    local_signature: &ed25519::Signature,
+    pubkey: &ed25519_consensus::VerificationKey,
+    local_signature: &ed25519_consensus::Signature,
 ) -> Result<proto::p2p::AuthSigMessage, Error> {
     let buf = sc
         .protocol_version

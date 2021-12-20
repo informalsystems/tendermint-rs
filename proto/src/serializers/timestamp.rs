@@ -90,7 +90,6 @@ pub fn to_rfc3339_nanos(t: OffsetDateTime) -> String {
 ///
 /// [`Display`]: core::fmt::Display
 /// [`Debug`]: core::fmt::Debug
-///
 pub fn fmt_as_rfc3339_nanos(t: OffsetDateTime, f: &mut impl fmt::Write) -> fmt::Result {
     let t = t.to_offset(offset!(UTC));
     let nanos = t.nanosecond();

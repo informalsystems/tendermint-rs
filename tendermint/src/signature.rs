@@ -88,8 +88,14 @@ impl AsRef<[u8]> for Signature {
 }
 
 impl From<Ed25519Signature> for Signature {
-    fn from(pk: Ed25519Signature) -> Signature {
-        Self(pk.as_ref().to_vec())
+    fn from(sig: Ed25519Signature) -> Signature {
+        Self(sig.as_ref().to_vec())
+    }
+}
+
+impl From<ed25519_consensus::Signature> for Signature {
+    fn from(sig: ed25519_consensus::Signature) -> Signature {
+        Self(sig.to_bytes().to_vec())
     }
 }
 

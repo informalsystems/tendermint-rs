@@ -2,7 +2,6 @@
 
 use flex_error::{define_error, DisplayOnly};
 use prost::DecodeError;
-use signature::Error as SignatureError;
 
 define_error! {
     Error {
@@ -36,7 +35,6 @@ define_error! {
             | _ | { "public key missing" },
 
         Signature
-            [ DisplayOnly<SignatureError> ]
             | _ | { "signature error" },
 
         UnsupportedKey
