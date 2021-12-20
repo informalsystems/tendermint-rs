@@ -1,0 +1,8 @@
+{
+  "id": "7806be81-373d-4d30-ba02-c8f3268e7ffc",
+  "jsonrpc": "2.0",
+  "method": "commit",
+  "params": {
+    "height": "10"
+  }
+}

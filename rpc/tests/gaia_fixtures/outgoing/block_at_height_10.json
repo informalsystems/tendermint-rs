@@ -1,0 +1,8 @@
+{
+  "id": "9ba09d2c-3d72-4a7f-8e12-eae2496a65fa",
+  "jsonrpc": "2.0",
+  "method": "block",
+  "params": {
+    "height": "10"
+  }
+}

@@ -1,0 +1,188 @@
+{
+  "id": "04ac2ac1-29e1-450e-921b-997db4c943a0",
+  "jsonrpc": "2.0",
+  "result": {
+    "begin_block_events": [
+      {
+        "attributes": [
+          {
+            "index": true,
+            "key": "cmVjaXBpZW50",
+            "value": "Y29zbW9zMTd4cGZ2YWttMmFtZzk2MnlsczZmODR6M2tlbGw4YzVsc2VycXRh"
+          },
+          {
+            "index": true,
+            "key": "c2VuZGVy",
+            "value": "Y29zbW9zMW0zaDMwd2x2c2Y4bGxydXh0cHVrZHZzeTBrbTJrdW04ZzM4Yzhx"
+          },
+          {
+            "index": true,
+            "key": "YW1vdW50",
+            "value": "NjE3OXN0YWtl"
+          }
+        ],
+        "type": "transfer"
+      },
+      {
+        "attributes": [
+          {
+            "index": true,
+            "key": "c2VuZGVy",
+            "value": "Y29zbW9zMW0zaDMwd2x2c2Y4bGxydXh0cHVrZHZzeTBrbTJrdW04ZzM4Yzhx"
+          }
+        ],
+        "type": "message"
+      },
+      {
+        "attributes": [
+          {
+            "index": true,
+            "key": "Ym9uZGVkX3JhdGlv",
+            "value": "MC4zMzMzMzMyNzE1NDMzNDQ3ODc="
+          },
+          {
+            "index": true,
+            "key": "aW5mbGF0aW9u",
+            "value": "MC4xMzAwMDAxMDM0OTg2NjQ0NzQ="
+          },
+          {
+            "index": true,
+            "key": "YW5udWFsX3Byb3Zpc2lvbnM=",
+            "value": "MzkwMDAwMzgyNzkuMDM1MDk3ODY0MjMwMDYzNjE0"
+          },
+          {
+            "index": true,
+            "key": "YW1vdW50",
+            "value": "NjE3OQ=="
+          }
+        ],
+        "type": "mint"
+      },
+      {
+        "attributes": [
+          {
+            "index": true,
+            "key": "cmVjaXBpZW50",
+            "value": "Y29zbW9zMWp2NjVzM2dycWY2djZqbDNkcDR0NmM5dDlyazk5Y2Q4OGx5dWZs"
+          },
+          {
+            "index": true,
+            "key": "c2VuZGVy",
+            "value": "Y29zbW9zMTd4cGZ2YWttMmFtZzk2MnlsczZmODR6M2tlbGw4YzVsc2VycXRh"
+          },
+          {
+            "index": true,
+            "key": "YW1vdW50",
+            "value": "NjE3OXN0YWtl"
+          }
+        ],
+        "type": "transfer"
+      },
+      {
+        "attributes": [
+          {
+            "index": true,
+            "key": "c2VuZGVy",
+            "value": "Y29zbW9zMTd4cGZ2YWttMmFtZzk2MnlsczZmODR6M2tlbGw4YzVsc2VycXRh"
+          }
+        ],
+        "type": "message"
+      },
+      {
+        "attributes": [
+          {
+            "index": true,
+            "key": "YW1vdW50",
+            "value": "MzA4Ljk1MDAwMDAwMDAwMDAwMDAwMHN0YWtl"
+          },
+          {
+            "index": true,
+            "key": "dmFsaWRhdG9y",
+            "value": "Y29zbW9zdmFsb3BlcjF2anpqMGhkcHhlZThzYWhld3pzbDg5MHdqbmgwcDBrZnJzZW5tdQ=="
+          }
+        ],
+        "type": "proposer_reward"
+      },
+      {
+        "attributes": [
+          {
+            "index": true,
+            "key": "YW1vdW50",
+            "value": "MzAuODk1MDAwMDAwMDAwMDAwMDAwc3Rha2U="
+          },
+          {
+            "index": true,
+            "key": "dmFsaWRhdG9y",
+            "value": "Y29zbW9zdmFsb3BlcjF2anpqMGhkcHhlZThzYWhld3pzbDg5MHdqbmgwcDBrZnJzZW5tdQ=="
+          }
+        ],
+        "type": "commission"
+      },
+      {
+        "attributes": [
+          {
+            "index": true,
+            "key": "YW1vdW50",
+            "value": "MzA4Ljk1MDAwMDAwMDAwMDAwMDAwMHN0YWtl"
+          },
+          {
+            "index": true,
+            "key": "dmFsaWRhdG9y",
+            "value": "Y29zbW9zdmFsb3BlcjF2anpqMGhkcHhlZThzYWhld3pzbDg5MHdqbmgwcDBrZnJzZW5tdQ=="
+          }
+        ],
+        "type": "rewards"
+      },
+      {
+        "attributes": [
+          {
+            "index": true,
+            "key": "YW1vdW50",
+            "value": "NTc0LjY0NzAwMDAwMDAwMDAwMDAwMHN0YWtl"
+          },
+          {
+            "index": true,
+            "key": "dmFsaWRhdG9y",
+            "value": "Y29zbW9zdmFsb3BlcjF2anpqMGhkcHhlZThzYWhld3pzbDg5MHdqbmgwcDBrZnJzZW5tdQ=="
+          }
+        ],
+        "type": "commission"
+      },
+      {
+        "attributes": [
+          {
+            "index": true,
+            "key": "YW1vdW50",
+            "value": "NTc0Ni40NzAwMDAwMDAwMDAwMDAwMDBzdGFrZQ=="
+          },
+          {
+            "index": true,
+            "key": "dmFsaWRhdG9y",
+            "value": "Y29zbW9zdmFsb3BlcjF2anpqMGhkcHhlZThzYWhld3pzbDg5MHdqbmgwcDBrZnJzZW5tdQ=="
+          }
+        ],
+        "type": "rewards"
+      }
+    ],
+    "consensus_param_updates": {
+      "block": {
+        "max_bytes": "22020096",
+        "max_gas": "-1"
+      },
+      "evidence": {
+        "max_age_duration": "172800000000000",
+        "max_age_num_blocks": "100000",
+        "max_bytes": "1048576"
+      },
+      "validator": {
+        "pub_key_types": [
+          "ed25519"
+        ]
+      }
+    },
+    "end_block_events": null,
+    "height": "10",
+    "txs_results": null,
+    "validator_updates": null
+  }
+}

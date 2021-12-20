@@ -1,0 +1,42 @@
+{
+  "id": "5f94b30b-02aa-4c4e-9916-4c23f8aac3f4",
+  "jsonrpc": "2.0",
+  "result": {
+    "node_info": {
+      "channels": "40202122233038606100",
+      "id": "2a3d93f511a7c1b5c72c9dd789cc0dfbefc282e4",
+      "listen_addr": "tcp://0.0.0.0:26656",
+      "moniker": "ibc-0",
+      "network": "ibc-0",
+      "other": {
+        "rpc_address": "tcp://0.0.0.0:26657",
+        "tx_index": "on"
+      },
+      "protocol_version": {
+        "app": "0",
+        "block": "11",
+        "p2p": "8"
+      },
+      "version": "v0.34.9"
+    },
+    "sync_info": {
+      "catching_up": false,
+      "earliest_app_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "earliest_block_hash": "739127E7942BEF14DFF0C3C9C4A9BF0DF1A97BEFF085153817B8960273830439",
+      "earliest_block_height": "1",
+      "earliest_block_time": "2021-12-17T20:27:28.966992937Z",
+      "latest_app_hash": "52F71E06EA0AFE26A7A554B975BEF75BA81277928AFB0A7A2C9CFDBF1CC5E3AD",
+      "latest_block_hash": "AA648B60B442D3F711B1B5A73530CF6E7E2EEF9ED075D6CE6CA3320A53658973",
+      "latest_block_height": "165",
+      "latest_block_time": "2021-12-17T20:30:26.207551727Z"
+    },
+    "validator_info": {
+      "address": "BB22AD764B674CC08753B24175E2FC61B22B1419",
+      "pub_key": {
+        "type": "tendermint/PubKeyEd25519",
+        "value": "sor2GvQvyJm5myIU0gI+VtPSvwUkyZQFYF8abzvOLPs="
+      },
+      "voting_power": "100000"
+    }
+  }
+}

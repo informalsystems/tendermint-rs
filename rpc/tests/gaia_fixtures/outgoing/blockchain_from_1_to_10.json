@@ -1,0 +1,9 @@
+{
+  "id": "c6e8fa9e-f201-4a15-b9fb-cdfd7f0412e0",
+  "jsonrpc": "2.0",
+  "method": "blockchain",
+  "params": {
+    "maxHeight": "10",
+    "minHeight": "1"
+  }
+}

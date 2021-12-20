@@ -90,6 +90,7 @@ impl Client {
                 .parse::<u64>()
                 .unwrap();
             if height >= h {
+                debug!("Successfully reached height {} (> {})", height, h);
                 return Ok(());
             }
         }

@@ -1,13 +1,13 @@
 mod client;
+mod common;
 mod error;
+mod gaia;
 mod kvstore;
 mod plan;
-mod quick;
 mod request;
 mod subscription;
 mod utils;
 
-use crate::quick::quick_probe_plan;
 use log::LevelFilter;
 use simple_logger::SimpleLogger;
 use std::path::PathBuf;
@@ -43,7 +43,6 @@ impl ToString for OutputPathBuf {
     }
 }
 
-#[derive(Debug, StructOpt)]
 /// A utility application that primarily aims to assist in testing
 /// compatibility between tendermint.rs (https://github.com/informalsystems/tendermint-rs)
 /// and Tendermint (https://github.com/tendermint/tendermint).
@@ -51,6 +50,7 @@ impl ToString for OutputPathBuf {
 /// Running this application will execute a "quick probe" against a running
 /// Tendermint node. This executes a number of RPC requests against the node,
 /// saving both the requests and responses to the desired output folder.
+#[derive(Debug, StructOpt)]
 struct Opts {
     /// The address of the Tendermint node's WebSocket-based RPC endpoint.
     #[structopt(default_value = "ws://127.0.0.1:26657/websocket", long)]
@@ -67,6 +67,18 @@ struct Opts {
     /// Increase output logging verbosity.
     #[structopt(short, long)]
     pub verbose: bool,
+
+    #[structopt(subcommand)]
+    pub cmd: Command,
+}
+
+#[derive(Debug, StructOpt)]
+enum Command {
+    /// Execute a quick probe of a Tendermint node running the `kvstore` ABCI
+    /// application.
+    Kvstore,
+    /// Execute a probe of a Gaia node.
+    Gaia,
 }
 
 #[tokio::main]
@@ -79,8 +91,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     SimpleLogger::new().with_level(log_level).init().unwrap();
 
-    quick_probe_plan(&opts.output.0, Duration::from_millis(opts.request_wait))?
-        .execute(&opts.addr)
-        .await?;
+    let request_wait = Duration::from_millis(opts.request_wait);
+    match opts.cmd {
+        Command::Kvstore => kvstore::quick_probe_plan(&opts.output.0, request_wait)?,
+        Command::Gaia => gaia::query_plan(&opts.output.0, request_wait)?,
+    }
+    .execute(&opts.addr)
+    .await?;
+
     Ok(())
 }

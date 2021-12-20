@@ -1,0 +1,57 @@
+{
+  "id": "6b12587c-a02b-441b-9350-6a8a5ee6fb3b",
+  "jsonrpc": "2.0",
+  "result": {
+    "block": {
+      "data": {
+        "txs": []
+      },
+      "evidence": {
+        "evidence": []
+      },
+      "header": {
+        "app_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "chain_id": "ibc-0",
+        "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
+        "data_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "evidence_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "height": "1",
+        "last_block_id": {
+          "hash": "",
+          "parts": {
+            "hash": "",
+            "total": 0
+          }
+        },
+        "last_commit_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "last_results_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "next_validators_hash": "0A6CA9001DB07E985DF9043045B392588DF7C1C720E30EBAEFDC8A848C551D6A",
+        "proposer_address": "BB22AD764B674CC08753B24175E2FC61B22B1419",
+        "time": "2021-12-17T20:27:28.966992937Z",
+        "validators_hash": "0A6CA9001DB07E985DF9043045B392588DF7C1C720E30EBAEFDC8A848C551D6A",
+        "version": {
+          "block": "11"
+        }
+      },
+      "last_commit": {
+        "block_id": {
+          "hash": "",
+          "parts": {
+            "hash": "",
+            "total": 0
+          }
+        },
+        "height": "0",
+        "round": 0,
+        "signatures": []
+      }
+    },
+    "block_id": {
+      "hash": "739127E7942BEF14DFF0C3C9C4A9BF0DF1A97BEFF085153817B8960273830439",
+      "parts": {
+        "hash": "AF225F2883AFC75DB7F481E5BDEE396CE9B5787399F8F9876CA980BD026C02D1",
+        "total": 1
+      }
+    }
+  }
+}

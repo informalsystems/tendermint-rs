@@ -88,7 +88,7 @@ impl Plan {
         let (mut client, driver) = Client::new(url).await?;
         let driver_handle = tokio::spawn(async move { driver.run().await });
 
-        info!("Executing interactions");
+        info!("Executing plan \"{}\"", self.config.name);
         for interactions in &self.interactions {
             let result =
                 execute_interactions(&mut client, &self.config, interactions.clone()).await;
@@ -317,7 +317,8 @@ async fn execute_interaction(
     let inner_interaction = interaction.clone();
     let f = async {
         info!("Executing interaction \"{}\"", inner_interaction.name);
-        if let Some(wait) = inner_interaction.pre_wait {
+        let wait = inner_interaction.pre_wait.unwrap_or(config.request_wait);
+        if !wait.is_zero() {
             debug!("Sleeping for {} seconds", wait.as_secs_f64());
             tokio::time::sleep(wait).await;
         }

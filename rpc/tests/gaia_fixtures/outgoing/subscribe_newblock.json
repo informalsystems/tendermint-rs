@@ -1,0 +1,8 @@
+{
+  "id": "666c75eb-91df-4d2c-8ea3-f3c05b690aca",
+  "jsonrpc": "2.0",
+  "method": "subscribe",
+  "params": {
+    "query": "tm.event = 'NewBlock'"
+  }
+}
