@@ -108,9 +108,7 @@ impl PublicKey {
 
     /// From raw Ed25519 public key bytes
     pub fn from_raw_ed25519(bytes: &[u8]) -> Option<PublicKey> {
-        Ed25519::try_from(bytes)
-            .map(PublicKey::Ed25519)
-            .ok()
+        Ed25519::try_from(bytes).map(PublicKey::Ed25519).ok()
     }
 
     /// Get Ed25519 public key
