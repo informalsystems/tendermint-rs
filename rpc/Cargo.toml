@@ -62,7 +62,7 @@ websocket-client = [
 
 [dependencies]
 bytes = { version = "1.0", default-features = false }
-getrandom = { version = "0.1", default-features = false }
+getrandom = { version = "0.2", default-features = false, features = ["js"] }
 peg = { version = "0.7.0", default-features = false }
 pin-project = { version = "1.0.1", default-features = false }
 serde = { version = "1", default-features = false, features = [ "derive" ] }
