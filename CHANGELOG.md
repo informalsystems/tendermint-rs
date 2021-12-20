@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## v0.23.3
+
+*Dec 20, 2021*
+
+Here we mainly attempt to provide a short-term workaround for
+[\#1021](https://github.com/informalsystems/tendermint-rs/issues/1021) by
+catering for both possible forms of JSON serialization for public keys.
+
+### IMPROVEMENTS
+
+- `[tendermint]` `Hash` is implemented for `tendermint::Time`
+  ([#1054](https://github.com/informalsystems/tendermint-rs/pull/1054))
+
+### WORKAROUNDS
+
+- `[tendermint-rpc]` Allow deserialization of public keys from validator updates
+  from `block_results` endpoint in multiple JSON formats until this is fixed in
+  Tendermint
+  ([#1021](https://github.com/informalsystems/tendermint-rs/issues/1021))
+
 ## v0.23.2
 
 *Dec 7, 2021*

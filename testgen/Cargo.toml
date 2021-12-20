@@ -1,6 +1,6 @@
 [package]
 name        = "tendermint-testgen"
-version     = "0.23.2"
+version     = "0.23.3"
 authors     = ["Informal Systems <hello@informal.systems>"]
 edition     = "2018"
 readme      = "README.md"
@@ -16,7 +16,7 @@ description = """
     """
 
 [dependencies]
-tendermint = { version = "0.23.2", path = "../tendermint" }
+tendermint = { version = "0.23.3", path = "../tendermint" }
 serde = { version = "1", default-features = false, features = ["derive"] }
 serde_json = { version = "1", default-features = false, features = ["std"] }
 ed25519-dalek = { version = "1", default-features = false }
