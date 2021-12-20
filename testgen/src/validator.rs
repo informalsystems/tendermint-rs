@@ -1,6 +1,4 @@
-use std::convert::TryFrom;
-
-use ed25519_dalek::SecretKey as Ed25519SecretKey;
+use ed25519_consensus::SigningKey as Ed25519SigningKey;
 use gumdrop::Options;
 use serde::{Deserialize, Serialize};
 use simple_error::*;
@@ -51,17 +49,17 @@ impl Validator {
             bail!("validator identifier is too long")
         }
         bytes.extend(vec![0u8; 32 - bytes.len()].iter());
-        let secret = require_with!(
-            Ed25519SecretKey::from_bytes(&bytes).ok(),
+        let signing_key = require_with!(
+            Ed25519SigningKey::try_from(&bytes[..]).ok(),
             "failed to construct a seed from validator identifier"
         );
-        let public = public_key::Ed25519::from(&secret);
-        Ok(private_key::Ed25519 { secret, public })
+        Ok(signing_key)
     }
 
     /// Get public key for this validator companion.
     pub fn get_public_key(&self) -> Result<public_key::Ed25519, SimpleError> {
-        self.get_private_key().map(|keypair| keypair.public)
+        self.get_private_key()
+            .map(|secret_key| secret_key.verification_key())
     }
 }
 
@@ -108,10 +106,10 @@ impl Generator<validator::Info> for Validator {
     }
 
     fn generate(&self) -> Result<validator::Info, SimpleError> {
-        let keypair = self.get_private_key()?;
+        let verification_key = self.get_private_key()?.verification_key();
         let info = validator::Info {
-            address: account::Id::from(keypair.public),
-            pub_key: PublicKey::from(keypair.public),
+            address: account::Id::from(verification_key),
+            pub_key: PublicKey::from(verification_key),
             power: vote::Power::try_from(self.voting_power.unwrap_or(0)).unwrap(),
             name: None,
             proposer_priority: validator::ProposerPriority::from(

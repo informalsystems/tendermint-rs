@@ -2,7 +2,6 @@
 
 use std::convert::TryInto;
 
-use ed25519_dalek as ed25519;
 use prost::Message as _;
 use tendermint_proto as proto;
 use x25519_dalek::PublicKey as EphemeralPublic;
@@ -110,8 +109,8 @@ impl Version {
     #[must_use]
     pub fn encode_auth_signature(
         self,
-        pub_key: &ed25519::PublicKey,
-        signature: &ed25519::Signature,
+        pub_key: &ed25519_consensus::VerificationKey,
+        signature: &ed25519_consensus::Signature,
     ) -> Vec<u8> {
         if self.is_protobuf() {
             // Protobuf `AuthSigMessage`
@@ -123,7 +122,7 @@ impl Version {
 
             let msg = proto::p2p::AuthSigMessage {
                 pub_key: Some(pub_key),
-                sig: signature.as_ref().to_vec(),
+                sig: signature.to_bytes().to_vec(),
             };
 
             let mut buf = Vec::new();
@@ -165,8 +164,8 @@ impl Version {
     #[cfg(feature = "amino")]
     fn encode_auth_signature_amino(
         self,
-        pub_key: &ed25519::PublicKey,
-        signature: &ed25519::Signature,
+        pub_key: &ed25519_consensus::VerificationKey,
+        signature: &ed25519_consensus::Signature,
     ) -> Vec<u8> {
         // Legacy Amino encoded `AuthSigMessage`
         let msg = amino_types::AuthSigMessage::new(pub_key, signature);
@@ -181,8 +180,8 @@ impl Version {
     #[cfg(not(feature = "amino"))]
     const fn encode_auth_signature_amino(
         self,
-        _: &ed25519::PublicKey,
-        _: &ed25519::Signature,
+        _: &ed25519_consensus::VerificationKey,
+        _: &ed25519_consensus::Signature,
     ) -> Vec<u8> {
         panic!("attempted to encode auth signature using amino, but 'amino' feature is not present")
     }

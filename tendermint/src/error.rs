@@ -209,8 +209,7 @@ define_error! {
             |_| { format_args!("subtle encoding error") },
 
         Signature
-            [ DisplayOnly<signature::Error> ]
-            |_| { format_args!("signature error") },
+            |_| { "signature error" },
 
         TrustThresholdTooLarge
             |_| { "trust threshold is too large (must be <= 1)" },

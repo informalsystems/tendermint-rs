@@ -4,7 +4,6 @@ use std::{
     thread,
 };
 
-use ed25519_dalek::{self as ed25519};
 use rand_core::OsRng;
 use tendermint_p2p::secret_connection::{sort32, Handshake, SecretConnection, Version};
 use tendermint_proto as proto;
@@ -64,7 +63,7 @@ fn test_read_write_single_message() {
 #[test]
 fn test_evil_peer_shares_invalid_eph_key() {
     let mut csprng = OsRng {};
-    let local_privkey: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
+    let local_privkey = ed25519_consensus::SigningKey::new(&mut csprng);
     let (mut h, _) = Handshake::new(local_privkey, Version::V0_34);
     let bytes: [u8; 32] = [0; 32];
     let res = h.got_key(EphemeralPublic::from(bytes));
@@ -74,7 +73,7 @@ fn test_evil_peer_shares_invalid_eph_key() {
 #[test]
 fn test_evil_peer_shares_invalid_auth_sig() {
     let mut csprng = OsRng {};
-    let local_privkey: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
+    let local_privkey = ed25519_consensus::SigningKey::new(&mut csprng);
     let (mut h, _) = Handshake::new(local_privkey, Version::V0_34);
     let res = h.got_key(EphemeralPublic::from(x25519_dalek::X25519_BASEPOINT_BYTES));
     assert!(res.is_ok());
@@ -186,6 +185,6 @@ where
     IoHandler: std::io::Read + std::io::Write + Send + Sync,
 {
     let mut csprng = OsRng {};
-    let privkey1: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
+    let privkey1 = ed25519_consensus::SigningKey::new(&mut csprng);
     SecretConnection::new(io_handler, privkey1, Version::V0_34)
 }
