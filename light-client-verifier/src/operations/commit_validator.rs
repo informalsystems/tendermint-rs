@@ -1,8 +1,8 @@
 //! Provides an interface and default implementation for the `CommitValidator` operation
 
 use crate::{
+    errors::VerificationError,
     operations::{Hasher, ProdHasher},
-    predicates::errors::VerificationError,
     types::{SignedHeader, ValidatorSet},
 };
 

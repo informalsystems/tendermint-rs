@@ -1,25 +1,30 @@
 //! DSL for building a light client [`Instance`]
 
 use tendermint::{block::Height, Hash};
+use tendermint_light_client_verifier::options::Options;
+use tendermint_light_client_verifier::types::{LightBlock, PeerId, Status};
+use tendermint_light_client_verifier::verifier::Verifier;
 
 use crate::builder::error::Error;
 use crate::components::clock::Clock;
 use crate::components::io::{AtHeight, Io};
 use crate::components::scheduler::Scheduler;
-use crate::components::verifier::Verifier;
-use crate::light_client::{LightClient, Options};
-use crate::operations::Hasher;
-use crate::predicates::VerificationPredicates;
+use crate::light_client::LightClient;
 use crate::state::{State, VerificationTrace};
 use crate::store::LightStore;
 use crate::supervisor::Instance;
-use crate::types::{LightBlock, PeerId, Status};
+use tendermint_light_client_verifier::operations::Hasher;
+use tendermint_light_client_verifier::predicates::VerificationPredicates;
 
 #[cfg(feature = "rpc-client")]
 use {
-    crate::components::clock::SystemClock, crate::components::io::ProdIo,
-    crate::components::scheduler, crate::components::verifier::ProdVerifier,
-    crate::operations::ProdHasher, crate::predicates::ProdPredicates, std::time::Duration,
+    crate::components::clock::SystemClock,
+    crate::components::io::ProdIo,
+    crate::components::scheduler,
+    core::time::Duration,
+    tendermint_light_client_verifier::{
+        operations::ProdHasher, predicates::ProdPredicates, verifier::ProdVerifier,
+    },
     tendermint_rpc as rpc,
 };
 

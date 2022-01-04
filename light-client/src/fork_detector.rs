@@ -1,12 +1,14 @@
 //! Fork detection data structures and implementation.
 
+use tendermint_light_client_verifier::errors::ErrorExt;
+use tendermint_light_client_verifier::operations::{Hasher, ProdHasher};
+use tendermint_light_client_verifier::types::{LightBlock, PeerId, Status};
+
 use crate::{
-    errors::{Error, ErrorDetail, ErrorExt},
-    operations::{Hasher, ProdHasher},
+    errors::{Error, ErrorDetail},
     state::State,
     store::memory::MemoryStore,
     supervisor::Instance,
-    types::{LightBlock, PeerId, Status},
 };
 
 /// Result of fork detection

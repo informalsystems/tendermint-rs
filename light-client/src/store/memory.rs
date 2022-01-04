@@ -1,12 +1,10 @@
 //! Transient in-memory store
 
-use crate::{
-    store::{LightStore, Status},
-    types::{Height, LightBlock},
-};
+use crate::store::{LightStore, Status};
 
 use std::collections::btree_map::Entry::*;
 use std::collections::BTreeMap;
+use tendermint_light_client_verifier::types::{Height, LightBlock};
 
 /// Internal entry for the memory store
 #[derive(Clone, Debug, PartialEq)]

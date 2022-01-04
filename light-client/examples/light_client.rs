@@ -3,15 +3,14 @@ use std::{path::PathBuf, time::Duration};
 use gumdrop::Options;
 
 use tendermint::Hash;
-use tendermint_rpc as rpc;
-
 use tendermint_light_client::supervisor::{Handle as _, Instance};
 use tendermint_light_client::{
     builder::{LightClientBuilder, SupervisorBuilder},
-    light_client,
     store::memory::MemoryStore,
-    types::{Height, PeerId, TrustThreshold},
 };
+use tendermint_light_client_verifier::options::Options as LightClientOptions;
+use tendermint_light_client_verifier::types::{Height, PeerId, TrustThreshold};
+use tendermint_rpc as rpc;
 
 #[derive(Debug, Options)]
 struct CliOptions {
@@ -82,7 +81,7 @@ fn make_instance(
 ) -> Result<Instance, Box<dyn std::error::Error>> {
     let light_store = MemoryStore::new();
     let rpc_client = rpc::HttpClient::new(addr).unwrap();
-    let options = light_client::Options {
+    let options = LightClientOptions {
         trust_threshold: TrustThreshold::default(),
         trusting_period: Duration::from_secs(36000),
         clock_drift: Duration::from_secs(1),

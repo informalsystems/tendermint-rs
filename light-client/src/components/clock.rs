@@ -1,7 +1,7 @@
 //! Provides an interface and a default implementation of the `Clock` component
 
-use crate::types::Time;
 use std::convert::TryInto;
+use tendermint_light_client_verifier::types::Time;
 use time::OffsetDateTime;
 
 /// Abstracts over the current time.
