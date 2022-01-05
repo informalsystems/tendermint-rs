@@ -1,9 +1,8 @@
 //! State maintained by the light client.
 
-use crate::{
-    store::LightStore,
-    types::{Height, LightBlock, Status},
-};
+use tendermint_light_client_verifier::types::{Height, LightBlock, Status};
+
+use crate::store::LightStore;
 
 use contracts::*;
 use std::collections::{HashMap, HashSet};

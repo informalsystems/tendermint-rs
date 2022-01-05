@@ -5,9 +5,9 @@
 use std::marker::PhantomData;
 
 use serde::{de::DeserializeOwned, Serialize};
+use tendermint_light_client_verifier::types::Height;
 
 use crate::errors::Error;
-use crate::types::Height;
 
 /// Provides a view over the database for storing key/value pairs at the given prefix.
 #[derive(Clone, Debug)]

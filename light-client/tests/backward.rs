@@ -3,20 +3,21 @@
 use std::{collections::HashMap, time::Duration};
 
 use tendermint::{hash::Algorithm, Hash};
+use tendermint_light_client_verifier::operations::ProdHasher;
+use tendermint_light_client_verifier::options::Options;
+use tendermint_light_client_verifier::types::{Height, LightBlock, Status};
+use tendermint_light_client_verifier::verifier::ProdVerifier;
 
 use tendermint_light_client::{
     components::{
         io::{AtHeight, Io},
         scheduler,
-        verifier::ProdVerifier,
     },
     errors::Error,
-    light_client::{LightClient, Options},
-    operations::ProdHasher,
+    light_client::LightClient,
     state::State,
     store::{memory::MemoryStore, LightStore},
     tests::{MockClock, MockIo},
-    types::{Height, LightBlock, Status},
 };
 
 use tendermint_testgen::{

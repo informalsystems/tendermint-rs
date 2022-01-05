@@ -1,15 +1,14 @@
 //! Predicates for light block validation and verification.
 
+use crate::errors::VerificationError;
+use crate::prelude::*;
 use crate::{
     operations::{CommitValidator, Hasher, VotingPowerCalculator},
     types::{Header, SignedHeader, Time, TrustThreshold, ValidatorSet},
 };
 
-use errors::VerificationError;
-use std::time::Duration;
+use core::time::Duration;
 use tendermint::{block::Height, hash::Hash};
-
-pub mod errors;
 
 /// Production predicates, using the default implementation
 /// of the `VerificationPredicates` trait.
@@ -205,8 +204,8 @@ pub trait VerificationPredicates: Send + Sync {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryInto;
-    use std::time::Duration;
+    use core::convert::TryInto;
+    use core::time::Duration;
     use tendermint::block::CommitSig;
     use tendermint::validator::Set;
     use time::OffsetDateTime;
@@ -216,9 +215,10 @@ mod tests {
         Commit, Generator, Header, Validator, ValidatorSet,
     };
 
-    use crate::predicates::{
+    use crate::prelude::*;
+    use crate::{
         errors::{VerificationError, VerificationErrorDetail},
-        ProdPredicates, VerificationPredicates,
+        predicates::{ProdPredicates, VerificationPredicates},
     };
 
     use crate::operations::{
@@ -329,7 +329,7 @@ mod tests {
         assert!(result_ok.is_ok());
 
         // 2. ensure it fails if header is from a future time
-        let now = (now - one_second * 15).unwrap();
+        let now = now.checked_sub(one_second * 15).unwrap();
         let result_err = vp.is_header_from_past(header.time, one_second, now);
 
         match result_err {

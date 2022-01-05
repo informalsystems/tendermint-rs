@@ -1,12 +1,14 @@
 //! Fork detection data structures and implementation.
 
+use tendermint_light_client_verifier::errors::ErrorExt;
+use tendermint_light_client_verifier::operations::{Hasher, ProdHasher};
+use tendermint_light_client_verifier::types::{LightBlock, PeerId, Status};
+
 use crate::{
-    errors::{Error, ErrorDetail, ErrorExt},
-    operations::{Hasher, ProdHasher},
+    errors::{Error, ErrorDetail},
     state::State,
     store::memory::MemoryStore,
     supervisor::Instance,
-    types::{LightBlock, PeerId, Status},
 };
 
 /// Result of fork detection
@@ -20,18 +22,16 @@ pub enum ForkDetection {
 
 /// Types of fork
 #[derive(Debug)]
-// To be fixed in 0.24
-#[allow(clippy::large_enum_variant)]
 pub enum Fork {
     /// An actual fork was found for this `LightBlock`
     Forked {
         /// Light block fetched from the primary
-        primary: LightBlock,
+        primary: Box<LightBlock>,
         /// Light block fetched from a witness
-        witness: LightBlock,
+        witness: Box<LightBlock>,
     },
     /// The node has been deemed faulty for this `LightBlock`
-    Faulty(LightBlock, ErrorDetail),
+    Faulty(Box<LightBlock>, ErrorDetail),
     /// The node has timed out
     Timeout(PeerId, ErrorDetail),
 }
@@ -119,20 +119,20 @@ impl ForkDetector for ProdForkDetector {
 
             match result {
                 Ok(_) => forks.push(Fork::Forked {
-                    primary: verified_block.clone(),
-                    witness: witness_block,
+                    primary: Box::new(verified_block.clone()),
+                    witness: Box::new(witness_block),
                 }),
                 Err(Error(e, _)) if e.has_expired() => {
                     forks.push(Fork::Forked {
-                        primary: verified_block.clone(),
-                        witness: witness_block,
+                        primary: Box::new(verified_block.clone()),
+                        witness: Box::new(witness_block),
                     });
                 }
                 Err(Error(e, _)) => {
                     if e.is_timeout().is_some() {
                         forks.push(Fork::Timeout(witness_block.provider, e))
                     } else {
-                        forks.push(Fork::Faulty(witness_block, e))
+                        forks.push(Fork::Faulty(Box::new(witness_block), e))
                     }
                 }
             }

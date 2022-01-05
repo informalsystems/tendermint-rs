@@ -1,9 +1,9 @@
-use std::time::Duration;
+use core::time::Duration;
+use tendermint_light_client_verifier::types::PeerId;
 
 use crate::builder::error::Error;
 use crate::peer_list::{PeerList, PeerListBuilder};
 use crate::supervisor::Instance;
-use crate::types::PeerId;
 
 #[cfg(feature = "rpc-client")]
 use {

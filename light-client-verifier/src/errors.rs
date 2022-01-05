@@ -1,14 +1,14 @@
 //! Errors which may be raised when verifying a `LightBlock`
 
+use core::time::Duration;
 use flex_error::define_error;
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
-
-use crate::errors::ErrorExt;
-use crate::operations::voting_power::VotingPowerTally;
-use crate::types::{Hash, Height, Time, Validator, ValidatorAddress};
 use tendermint::account::Id;
 use tendermint::Error as TendermintError;
+
+use crate::operations::voting_power::VotingPowerTally;
+use crate::prelude::*;
+use crate::types::{Hash, Height, Time, Validator, ValidatorAddress};
 
 define_error! {
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -25,15 +25,6 @@ define_error! {
             | e | {
                 format_args!("header from the future: header_time={0} now={1}",
                     e.header_time, e.now)
-            },
-
-        ImplementationSpecific
-            {
-                detail: String,
-            }
-            | e | {
-                format_args!("implementation specific: {0}",
-                    e.detail)
             },
 
         NotEnoughTrust
@@ -169,6 +160,21 @@ define_error! {
             },
 
     }
+}
+
+/// Extension methods for `ErrorKind`
+pub trait ErrorExt {
+    /// Whether this error means that the light block
+    /// cannot be trusted w.r.t. the latest trusted state.
+    fn not_enough_trust(&self) -> Option<VotingPowerTally>;
+
+    /// Whether this error means that the light block has expired,
+    /// ie. it's outside of the trusting period.
+    fn has_expired(&self) -> bool;
+
+    /// Whether this error means that a timeout occured when
+    /// querying a node.
+    fn is_timeout(&self) -> Option<Duration>;
 }
 
 impl ErrorExt for VerificationErrorDetail {

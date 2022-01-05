@@ -1,13 +1,10 @@
 //! Persistent store backed by an on-disk `sled` database.
 
 pub mod utils;
+use utils::HeightIndexedDb;
 
 use std::path::Path;
-
-use crate::{
-    store::sled::utils::HeightIndexedDb,
-    types::{Height, LightBlock},
-};
+use tendermint_light_client_verifier::types::{Height, LightBlock};
 
 use super::{LightStore, Status};
 
