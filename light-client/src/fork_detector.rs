@@ -22,16 +22,18 @@ pub enum ForkDetection {
 
 /// Types of fork
 #[derive(Debug)]
+// To be fixed in 0.24
+#[allow(clippy::large_enum_variant)]
 pub enum Fork {
     /// An actual fork was found for this `LightBlock`
     Forked {
         /// Light block fetched from the primary
-        primary: Box<LightBlock>,
+        primary: LightBlock,
         /// Light block fetched from a witness
-        witness: Box<LightBlock>,
+        witness: LightBlock,
     },
     /// The node has been deemed faulty for this `LightBlock`
-    Faulty(Box<LightBlock>, ErrorDetail),
+    Faulty(LightBlock, ErrorDetail),
     /// The node has timed out
     Timeout(PeerId, ErrorDetail),
 }
@@ -119,20 +121,20 @@ impl ForkDetector for ProdForkDetector {
 
             match result {
                 Ok(_) => forks.push(Fork::Forked {
-                    primary: Box::new(verified_block.clone()),
-                    witness: Box::new(witness_block),
+                    primary: verified_block.clone(),
+                    witness: witness_block,
                 }),
                 Err(Error(e, _)) if e.has_expired() => {
                     forks.push(Fork::Forked {
-                        primary: Box::new(verified_block.clone()),
-                        witness: Box::new(witness_block),
+                        primary: verified_block.clone(),
+                        witness: witness_block,
                     });
                 }
                 Err(Error(e, _)) => {
                     if e.is_timeout().is_some() {
                         forks.push(Fork::Timeout(witness_block.provider, e))
                     } else {
-                        forks.push(Fork::Faulty(Box::new(witness_block), e))
+                        forks.push(Fork::Faulty(witness_block, e))
                     }
                 }
             }

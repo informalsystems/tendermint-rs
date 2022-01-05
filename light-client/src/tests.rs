@@ -1,13 +1,13 @@
 //! Utilities and datatypes for use in tests.
 
 use serde::{Deserialize, Serialize};
+use tendermint::abci::transaction::Hash;
 use tendermint_light_client_verifier::options::Options;
 use tendermint_light_client_verifier::types::{
     Height, LightBlock, PeerId, SignedHeader, Time, TrustThreshold, ValidatorSet,
 };
 use tendermint_light_client_verifier::verifier::{ProdVerifier, Verdict, Verifier};
 use tendermint_rpc as rpc;
-use tendermint_rpc::abci::transaction::Hash;
 
 use crate::components::clock::Clock;
 use crate::components::io::{AtHeight, Io, IoError};
