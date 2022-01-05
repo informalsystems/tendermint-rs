@@ -12,6 +12,7 @@ edition = "2018"
 futures = "0.3"
 tendermint = { version = "0.23.3", path = "../../tendermint" }
 tendermint-light-client = { version = "0.23.3", path = "../../light-client", features = ["unstable"] }
+tendermint-light-client-verifier = { version = "0.23.3", path = "../../light-client-verifier" }
 tendermint-rpc = { version = "0.23.3", path = "../../rpc", features = [ "http-client", "websocket-client" ] }
 tokio = { version = "1.0", features = [ "rt-multi-thread", "macros" ] }
 tracing = "0.1"

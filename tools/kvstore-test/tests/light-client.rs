@@ -17,11 +17,11 @@ use tendermint_light_client::{
     components::io::{AtHeight, Io, IoError, ProdIo},
     errors::Error,
     evidence::{Evidence, EvidenceReporter},
-    light_client,
     store::{memory::MemoryStore, LightStore},
     supervisor::{Handle, Instance, Supervisor},
-    types::{Height, PeerId, Status, TrustThreshold},
 };
+use tendermint_light_client_verifier::options::Options as LightClientOptions;
+use tendermint_light_client_verifier::types::{Height, PeerId, Status, TrustThreshold};
 
 use tendermint::abci::transaction::Hash as TxHash;
 use tendermint_rpc as rpc;
@@ -41,7 +41,7 @@ impl EvidenceReporter for TestEvidenceReporter {
     }
 }
 
-fn make_instance(peer_id: PeerId, options: light_client::Options, address: rpc::Url) -> Instance {
+fn make_instance(peer_id: PeerId, options: LightClientOptions, address: rpc::Url) -> Instance {
     let rpc_client = rpc::HttpClient::new(address).unwrap();
     let io = ProdIo::new(peer_id, rpc_client.clone(), Some(Duration::from_secs(2)));
     let latest_block = io.fetch_light_block(AtHeight::Highest).unwrap();
@@ -72,7 +72,7 @@ fn make_supervisor() -> Supervisor {
     // by the nodes.
     let node_address: rpc::Url = "http://127.0.0.1:26657".parse().unwrap();
 
-    let options = light_client::Options {
+    let options = LightClientOptions {
         trust_threshold: TrustThreshold::new(1, 3).unwrap(),
         trusting_period: Duration::from_secs(60 * 60), // 60 minutes
         clock_drift: Duration::from_secs(5 * 60),      // 5 minutes
