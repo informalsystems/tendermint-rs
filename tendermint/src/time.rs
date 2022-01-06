@@ -63,6 +63,11 @@ impl From<Time> for Timestamp {
 }
 
 impl Time {
+    #[cfg(any(feature = "clock"))]
+    pub fn now() -> Time {
+        OffsetDateTime::now_utc().try_into().unwrap()
+    }
+
     // Internal helper to produce a `Time` value validated with regard to
     // the date range allowed in protobuf timestamps.
     // The source `OffsetDateTime` value must have the zero UTC offset.
