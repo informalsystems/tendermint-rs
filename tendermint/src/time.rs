@@ -30,7 +30,6 @@ use crate::error::Error;
 /// This reproduces the behavior of Go's `time.RFC3339Nano` format.
 ///
 /// [specification]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
-///
 // For memory efficiency, the inner member is `PrimitiveDateTime`, with assumed
 // UTC offset. The `assume_utc` method is used to get the operational
 // `OffsetDateTime` value.
