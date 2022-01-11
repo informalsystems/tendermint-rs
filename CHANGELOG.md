@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## v0.23.4
+
+*Jan 11, 2022*
+
+This release exclusively focuses on removing `native-tls`/`openssl` from the
+dependency tree and replacing it with `rustls`. This was previously incorrectly
+configured in our `hyper-proxy` dependency.
+
+### DEPENDENCIES
+
+- `[tendermint-rpc]`: Switch `hyper-proxy` to use `rustls`, eliminating
+  the only use of `native-tls` in tendermint-rs dependencies
+  ([#1068](https://github.com/informalsystems/tendermint-rs/pull/1068))
+
 ## v0.23.3
 
 *Dec 20, 2021*
