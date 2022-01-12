@@ -3,7 +3,7 @@
 use std::fmt::Debug;
 use std::time::Duration;
 
-use crate::verifier::errors::{ErrorExt, VerificationErrorDetail};
+use crate::verifier::errors::VerificationErrorDetail;
 use crate::verifier::operations::voting_power::VotingPowerTally;
 use crate::verifier::options::Options;
 use crate::verifier::types::{Hash, Height, LightBlock, PeerId, Status};
@@ -11,6 +11,9 @@ use crossbeam_channel as crossbeam;
 
 use crate::components::io::IoError;
 use flex_error::{define_error, DisplayError, TraceError};
+
+// Re-export for backward compatibility
+pub use crate::verifier::errors::ErrorExt;
 
 #[cfg(feature = "sled")]
 type SledError = TraceError<sled::Error>;
