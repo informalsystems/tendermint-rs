@@ -8,7 +8,7 @@
 use std::fmt::Debug;
 
 use crate::utils::std_ext;
-use tendermint_light_client_verifier::types::{Height, LightBlock, Status};
+use crate::verifier::types::{Height, LightBlock, Status};
 
 pub mod memory;
 

@@ -2,9 +2,9 @@
 
 use contracts::contract_trait;
 use tendermint::abci::transaction::Hash;
-use tendermint_light_client_verifier::types::PeerId;
 
 use crate::components::io::IoError;
+use crate::verifier::types::PeerId;
 
 pub use tendermint::evidence::Evidence;
 

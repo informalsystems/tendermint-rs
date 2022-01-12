@@ -2,11 +2,6 @@
 
 use serde::{Deserialize, Serialize};
 use tendermint::abci::transaction::Hash;
-use tendermint_light_client_verifier::options::Options;
-use tendermint_light_client_verifier::types::{
-    Height, LightBlock, PeerId, SignedHeader, Time, TrustThreshold, ValidatorSet,
-};
-use tendermint_light_client_verifier::verifier::{ProdVerifier, Verdict, Verifier};
 use tendermint_rpc as rpc;
 
 use crate::components::clock::Clock;
@@ -15,6 +10,11 @@ use crate::errors::Error;
 use crate::evidence::EvidenceReporter;
 use crate::light_client::LightClient;
 use crate::state::State;
+use crate::verifier::options::Options;
+use crate::verifier::types::{
+    Height, LightBlock, PeerId, SignedHeader, Time, TrustThreshold, ValidatorSet,
+};
+use crate::verifier::{ProdVerifier, Verdict, Verifier};
 use contracts::contract_trait;
 use std::collections::HashMap;
 use std::time::Duration;

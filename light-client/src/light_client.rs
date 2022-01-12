@@ -4,16 +4,18 @@
 
 use contracts::*;
 use core::fmt;
-use tendermint_light_client_verifier::operations::Hasher;
-use tendermint_light_client_verifier::options::Options;
-use tendermint_light_client_verifier::types::{Height, LightBlock, PeerId, Status};
-use tendermint_light_client_verifier::verifier::{Verdict, Verifier};
 
 use crate::{
     components::{clock::Clock, io::*, scheduler::*},
     contracts::*,
     errors::Error,
     state::State,
+    verifier::{
+        operations::Hasher,
+        options::Options,
+        types::{Height, LightBlock, PeerId, Status},
+        Verdict, Verifier,
+    },
 };
 
 /// The light client implements a read operation of a header from the blockchain,

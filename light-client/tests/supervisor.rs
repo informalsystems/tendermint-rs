@@ -1,8 +1,3 @@
-use tendermint_light_client_verifier::operations::ProdHasher;
-use tendermint_light_client_verifier::options::Options;
-use tendermint_light_client_verifier::types::{LightBlock, PeerId, Status, Time};
-use tendermint_light_client_verifier::verifier::ProdVerifier;
-
 use tendermint_light_client::{
     components::{
         io::{AtHeight, Io},
@@ -14,6 +9,12 @@ use tendermint_light_client::{
     state::State,
     store::LightStore,
     supervisor::{Handle, Instance, Supervisor},
+    verifier::{
+        operations::ProdHasher,
+        options::Options,
+        types::{LightBlock, PeerId, Status, Time},
+        ProdVerifier,
+    },
 };
 
 use std::collections::HashMap;

@@ -1,12 +1,12 @@
 //! Tendermint Light Client JavaScript/WASM interface.
 //!
-//! This crate exposes some of the [`tendermint-light-client`] crate's
+//! This crate exposes some of the [`tendermint-light-client-verifier`] crate's
 //! functionality to be used from the JavaScript ecosystem.
 //!
 //! For a detailed example, please see the [`verifier-web` example] in the
 //! repository.
 //!
-//! [`tendermint-light-client`]: https://github.com/informalsystems/tendermint-rs/tree/master/light-client
+//! [`tendermint-light-client-verifier`]: https://github.com/informalsystems/tendermint-rs/tree/master/light-client-verifier
 //! [`verifier-web` example]: https://github.com/informalsystems/tendermint-rs/tree/master/light-client-js/examples/verifier-web
 
 mod utils;
@@ -16,7 +16,7 @@ use std::time::Duration;
 use tendermint::Time;
 use tendermint_light_client_verifier::options::Options;
 use tendermint_light_client_verifier::types::{LightBlock, TrustThreshold};
-use tendermint_light_client_verifier::verifier::{ProdVerifier, Verifier};
+use tendermint_light_client_verifier::{ProdVerifier, Verifier};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
 
