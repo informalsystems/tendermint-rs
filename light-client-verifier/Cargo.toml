@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint-light-client-verifier"
-version    = "0.23.3"
+version    = "0.23.4"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -26,8 +26,8 @@ rustdoc-args = ["--cfg", "docsrs"]
 default = ["flex-error/std", "flex-error/eyre_tracer"]
 
 [dependencies]
-tendermint = { version = "0.23.3", path = "../tendermint", default-features = false }
-tendermint-rpc = { version = "0.23.3", path = "../rpc", default-features = false }
+tendermint = { version = "0.23.4", path = "../tendermint", default-features = false }
+tendermint-rpc = { version = "0.23.4", path = "../rpc", default-features = false }
 
 derive_more = { version = "0.99.5", default-features = false, features = ["display"] }
 serde = { version = "1.0.106", default-features = false }
