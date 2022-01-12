@@ -9,4 +9,6 @@ pub mod operations;
 pub mod options;
 pub mod predicates;
 pub mod types;
-pub mod verifier;
+mod verifier;
+
+pub use verifier::{PredicateVerifier, ProdVerifier, Verdict, Verifier};

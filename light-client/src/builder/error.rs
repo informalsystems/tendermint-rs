@@ -3,9 +3,9 @@
 use flex_error::define_error;
 use tendermint::block::Height;
 use tendermint::Hash;
-use tendermint_light_client_verifier::errors::VerificationError;
 
 use crate::components::io::IoError;
+use crate::verifier::errors::VerificationError;
 
 define_error! {
     Error {

@@ -3,8 +3,8 @@
 pub mod utils;
 use utils::HeightIndexedDb;
 
+use crate::verifier::types::{Height, LightBlock};
 use std::path::Path;
-use tendermint_light_client_verifier::types::{Height, LightBlock};
 
 use super::{LightStore, Status};
 

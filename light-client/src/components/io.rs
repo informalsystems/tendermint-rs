@@ -6,7 +6,7 @@ use std::time::Duration;
 #[cfg(feature = "rpc-client")]
 use tendermint_rpc::Client;
 
-use tendermint_light_client_verifier::types::{Height, LightBlock};
+use crate::verifier::types::{Height, LightBlock};
 use tendermint_rpc as rpc;
 
 #[cfg(feature = "tokio")]
@@ -99,7 +99,7 @@ mod prod {
     use std::time::Duration;
 
     use crate::utils::block_on;
-    use tendermint_light_client_verifier::types::PeerId;
+    use crate::verifier::types::PeerId;
 
     use tendermint::account::Id as TMAccountId;
     use tendermint::block::signed_header::SignedHeader as TMSignedHeader;

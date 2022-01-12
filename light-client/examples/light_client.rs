@@ -4,12 +4,12 @@ use gumdrop::Options;
 
 use tendermint::Hash;
 use tendermint_light_client::supervisor::{Handle as _, Instance};
+use tendermint_light_client::verifier::options::Options as LightClientOptions;
+use tendermint_light_client::verifier::types::{Height, PeerId, TrustThreshold};
 use tendermint_light_client::{
     builder::{LightClientBuilder, SupervisorBuilder},
     store::memory::MemoryStore,
 };
-use tendermint_light_client_verifier::options::Options as LightClientOptions;
-use tendermint_light_client_verifier::types::{Height, PeerId, TrustThreshold};
 use tendermint_rpc as rpc;
 
 #[derive(Debug, Options)]
