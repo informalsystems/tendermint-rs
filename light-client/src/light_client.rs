@@ -12,11 +12,13 @@ use crate::{
     state::State,
     verifier::{
         operations::Hasher,
-        options::Options,
         types::{Height, LightBlock, PeerId, Status},
         Verdict, Verifier,
     },
 };
+
+// Re-export for backward compatibility
+pub use crate::verifier::options::Options;
 
 /// The light client implements a read operation of a header from the blockchain,
 /// by communicating with full nodes. As full nodes may be faulty, it cannot trust
