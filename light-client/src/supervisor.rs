@@ -3,7 +3,6 @@
 use crossbeam_channel as channel;
 
 use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
-use tendermint_light_client_verifier::types::{Height, LatestStatus, LightBlock, PeerId, Status};
 
 use crate::errors::Error;
 use crate::evidence::EvidenceReporter;
@@ -11,6 +10,7 @@ use crate::fork_detector::{Fork, ForkDetection, ForkDetector};
 use crate::light_client::LightClient;
 use crate::peer_list::PeerList;
 use crate::state::State;
+use crate::verifier::types::{Height, LatestStatus, LightBlock, PeerId, Status};
 
 /// Provides an interface to the supervisor for use in downstream code.
 pub trait Handle: Send + Sync {
@@ -434,16 +434,16 @@ mod tests {
         tests::{MockClock, MockEvidenceReporter, MockIo, TrustOptions},
     };
 
+    use crate::verifier::operations::ProdHasher;
+    use crate::verifier::options::Options;
+    use crate::verifier::types::Time;
+    use crate::verifier::ProdVerifier;
     use core::convert::{Into, TryFrom};
     use core::time::Duration;
     use std::collections::HashMap;
     use tendermint::block::Height;
     use tendermint::evidence::Duration as DurationStr;
     use tendermint::trust_threshold::TrustThresholdFraction;
-    use tendermint_light_client_verifier::operations::ProdHasher;
-    use tendermint_light_client_verifier::options::Options;
-    use tendermint_light_client_verifier::types::Time;
-    use tendermint_light_client_verifier::verifier::ProdVerifier;
     use tendermint_rpc::{
         self as rpc,
         response_error::{Code, ResponseError},

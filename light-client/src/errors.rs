@@ -3,11 +3,11 @@
 use std::fmt::Debug;
 use std::time::Duration;
 
+use crate::verifier::errors::{ErrorExt, VerificationErrorDetail};
+use crate::verifier::operations::voting_power::VotingPowerTally;
+use crate::verifier::options::Options;
+use crate::verifier::types::{Hash, Height, LightBlock, PeerId, Status};
 use crossbeam_channel as crossbeam;
-use tendermint_light_client_verifier::errors::{ErrorExt, VerificationErrorDetail};
-use tendermint_light_client_verifier::operations::voting_power::VotingPowerTally;
-use tendermint_light_client_verifier::options::Options;
-use tendermint_light_client_verifier::types::{Hash, Height, LightBlock, PeerId, Status};
 
 use crate::components::io::IoError;
 use flex_error::{define_error, DisplayError, TraceError};

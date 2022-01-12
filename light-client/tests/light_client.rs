@@ -1,11 +1,6 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
-use tendermint_light_client_verifier::operations::ProdHasher;
-use tendermint_light_client_verifier::options::Options;
-use tendermint_light_client_verifier::types::{LightBlock, Status};
-use tendermint_light_client_verifier::verifier::ProdVerifier;
-
 use tendermint_light_client::{
     components::{
         io::{AtHeight, Io},
@@ -16,6 +11,12 @@ use tendermint_light_client::{
     state::State,
     store::{memory::MemoryStore, LightStore},
     tests::*,
+    verifier::{
+        operations::ProdHasher,
+        options::Options,
+        types::{LightBlock, Status},
+        ProdVerifier,
+    },
 };
 
 use tendermint_testgen::light_block::default_peer_id;

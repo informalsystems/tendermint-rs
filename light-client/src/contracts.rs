@@ -1,8 +1,7 @@
 //! Predicates used in components contracts.
 
-use tendermint_light_client_verifier::types::{Height, LightBlock, Status, Time};
-
 use crate::store::LightStore;
+use crate::verifier::types::{Height, LightBlock, Status, Time};
 
 use std::time::Duration;
 

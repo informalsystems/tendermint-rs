@@ -16,7 +16,7 @@ use std::time::Duration;
 use tendermint::Time;
 use tendermint_light_client_verifier::options::Options;
 use tendermint_light_client_verifier::types::{LightBlock, TrustThreshold};
-use tendermint_light_client_verifier::verifier::{ProdVerifier, Verifier};
+use tendermint_light_client_verifier::{ProdVerifier, Verifier};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
 

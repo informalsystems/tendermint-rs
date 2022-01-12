@@ -12,8 +12,6 @@
 //!
 //! (Make sure you install cargo-make using `cargo install cargo-make` first.)
 
-use tendermint_light_client_verifier::types::{Height, PeerId, Status, TrustThreshold};
-use tendermint_light_client_verifier::options::Options as LightClientOptions;
 use tendermint_light_client::{
     builder::{LightClientBuilder, SupervisorBuilder},
     components::io::{AtHeight, Io, IoError, ProdIo},
@@ -21,6 +19,10 @@ use tendermint_light_client::{
     evidence::{Evidence, EvidenceReporter},
     store::{memory::MemoryStore, LightStore},
     supervisor::{Handle, Instance, Supervisor},
+    verifier::{
+        options::Options as LightClientOptions,
+        types::{Height, PeerId, Status, TrustThreshold},
+    },
 };
 
 use tendermint_rpc as rpc;
