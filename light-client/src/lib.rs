@@ -23,15 +23,18 @@ pub mod errors;
 pub mod evidence;
 pub mod fork_detector;
 pub mod light_client;
-pub mod operations;
 pub mod peer_list;
-pub mod predicates;
 pub mod state;
 pub mod store;
 pub mod supervisor;
-pub mod types;
 
 pub(crate) mod utils;
+
+// Re-export `tendermint-light-client-verifier` crate.
+pub use tendermint_light_client_verifier as verifier;
+
+// Re-export for backward compatibility
+pub use verifier::{operations, predicates, types};
 
 #[doc(hidden)]
 pub mod tests;

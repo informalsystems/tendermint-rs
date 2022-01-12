@@ -1,5 +1,7 @@
 //! Defines or just re-exports the main datatypes used by the light client.
 
+use crate::prelude::*;
+
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
 
@@ -73,7 +75,7 @@ impl Status {
     ///
     /// From least to most trusted: `Failed`, `Unverified`, `Verified`, `Trusted`.
     pub fn most_trusted(a: Self, b: Self) -> Self {
-        std::cmp::max(a, b)
+        core::cmp::max(a, b)
     }
 }
 
@@ -201,6 +203,7 @@ impl LatestStatus {
 mod tests {
 
     mod status {
+        use crate::prelude::*;
         use crate::types::Status;
         use Status::*;
 

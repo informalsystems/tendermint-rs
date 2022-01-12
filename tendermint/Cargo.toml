@@ -55,7 +55,9 @@ k256 = { version = "0.10", optional = true, default-features = false, features =
 ripemd160 = { version = "0.9", default-features = false, optional = true }
 
 [features]
-default = ["flex-error/std", "flex-error/eyre_tracer"]
+default = ["std"]
+std = ["flex-error/std", "flex-error/eyre_tracer", "clock"]
+clock = ["time/std"]
 secp256k1 = ["k256", "ripemd160"]
 
 [dev-dependencies]

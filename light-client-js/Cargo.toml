@@ -25,7 +25,7 @@ serde_json = { version = "1.0", default-features = false }
 # TODO(thane): Remove once https://github.com/rustwasm/wasm-bindgen/issues/2508 is resolved
 syn = { version = "=1.0.65", default-features = false }
 tendermint = { version = "0.23.0", default-features = false, path = "../tendermint" }
-tendermint-light-client = { version = "0.23.0", default-features = false, path = "../light-client" }
+tendermint-light-client-verifier = { version = "0.23.0", default-features = false, path = "../light-client-verifier" }
 wasm-bindgen = { version = "0.2.63", default-features = false, features = [ "serde-serialize" ] }
 
 # The `console_error_panic_hook` crate provides better debugging of panics by

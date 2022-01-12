@@ -3,8 +3,8 @@
 use contracts::*;
 
 use crate::store::LightStore;
-use crate::types::Height;
-use std::convert::TryInto;
+use crate::verifier::types::Height;
+use core::convert::TryInto;
 
 /// The scheduler decides what block to verify next given the current and target heights.
 ///

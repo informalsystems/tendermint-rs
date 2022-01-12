@@ -1,9 +1,10 @@
 //! Provides a peer list for use within the `Supervisor`
 
-use crate::{errors::Error, types::PeerId};
-
 use contracts::{post, pre};
 use std::collections::{BTreeSet, HashMap};
+
+use crate::errors::Error;
+use crate::verifier::types::PeerId;
 
 /// A generic container mapping `PeerId`s to some type `T`,
 /// which keeps track of the primary peer, witnesses, full nodes,

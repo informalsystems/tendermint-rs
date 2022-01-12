@@ -1,12 +1,14 @@
 //! Fork detection data structures and implementation.
 
+use crate::verifier::errors::ErrorExt;
+use crate::verifier::operations::{Hasher, ProdHasher};
+use crate::verifier::types::{LightBlock, PeerId, Status};
+
 use crate::{
-    errors::{Error, ErrorDetail, ErrorExt},
-    operations::{Hasher, ProdHasher},
+    errors::{Error, ErrorDetail},
     state::State,
     store::memory::MemoryStore,
     supervisor::Instance,
-    types::{LightBlock, PeerId, Status},
 };
 
 /// Result of fork detection

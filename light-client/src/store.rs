@@ -7,8 +7,8 @@
 
 use std::fmt::Debug;
 
-use crate::types::{Height, LightBlock, Status};
 use crate::utils::std_ext;
+use crate::verifier::types::{Height, LightBlock, Status};
 
 pub mod memory;
 

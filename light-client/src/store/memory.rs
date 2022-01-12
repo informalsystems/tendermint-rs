@@ -1,9 +1,7 @@
 //! Transient in-memory store
 
-use crate::{
-    store::{LightStore, Status},
-    types::{Height, LightBlock},
-};
+use crate::store::{LightStore, Status};
+use crate::verifier::types::{Height, LightBlock};
 
 use std::collections::btree_map::Entry::*;
 use std::collections::BTreeMap;

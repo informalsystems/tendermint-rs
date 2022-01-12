@@ -7,7 +7,7 @@ use std::marker::PhantomData;
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::errors::Error;
-use crate::types::Height;
+use crate::verifier::types::Height;
 
 /// Provides a view over the database for storing key/value pairs at the given prefix.
 #[derive(Clone, Debug)]

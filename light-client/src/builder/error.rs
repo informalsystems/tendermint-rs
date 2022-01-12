@@ -5,7 +5,7 @@ use tendermint::block::Height;
 use tendermint::Hash;
 
 use crate::components::io::IoError;
-use crate::predicates::errors::VerificationError;
+use crate::verifier::errors::VerificationError;
 
 define_error! {
     Error {

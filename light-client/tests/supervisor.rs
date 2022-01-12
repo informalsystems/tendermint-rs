@@ -2,16 +2,19 @@ use tendermint_light_client::{
     components::{
         io::{AtHeight, Io},
         scheduler,
-        verifier::ProdVerifier,
     },
     fork_detector::ProdForkDetector,
-    light_client::{self, LightClient},
-    operations::ProdHasher,
+    light_client::LightClient,
     peer_list::PeerList,
     state::State,
     store::LightStore,
     supervisor::{Handle, Instance, Supervisor},
-    types::{LightBlock, PeerId, Status, Time},
+    verifier::{
+        operations::ProdHasher,
+        options::Options,
+        types::{LightBlock, PeerId, Status, Time},
+        ProdVerifier,
+    },
 };
 
 use std::collections::HashMap;
@@ -40,7 +43,7 @@ fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: 
         verification_trace: HashMap::new(),
     };
 
-    let options = light_client::Options {
+    let options = Options {
         trust_threshold: trust_options.trust_level,
         trusting_period: trust_options.period.into(),
         clock_drift: Duration::from_secs(10),

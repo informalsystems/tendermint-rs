@@ -10,7 +10,7 @@ use crate::fork_detector::{Fork, ForkDetection, ForkDetector};
 use crate::light_client::LightClient;
 use crate::peer_list::PeerList;
 use crate::state::State;
-use crate::types::{Height, LatestStatus, LightBlock, PeerId, Status};
+use crate::verifier::types::{Height, LatestStatus, LightBlock, PeerId, Status};
 
 /// Provides an interface to the supervisor for use in downstream code.
 pub trait Handle: Send + Sync {
@@ -424,20 +424,23 @@ impl Handle for SupervisorHandle {
 mod tests {
     use super::*;
     use crate::errors::{Error, ErrorDetail};
-    use crate::light_client::Options;
-    use crate::operations::ProdHasher;
     use crate::{
         components::{
             io::{self, AtHeight, Io},
             scheduler,
-            verifier::ProdVerifier,
         },
         fork_detector::ProdForkDetector,
         store::{memory::MemoryStore, LightStore},
         tests::{MockClock, MockEvidenceReporter, MockIo, TrustOptions},
-        types::Time,
     };
-    use std::{collections::HashMap, convert::TryFrom, time::Duration};
+
+    use crate::verifier::operations::ProdHasher;
+    use crate::verifier::options::Options;
+    use crate::verifier::types::Time;
+    use crate::verifier::ProdVerifier;
+    use core::convert::{Into, TryFrom};
+    use core::time::Duration;
+    use std::collections::HashMap;
     use tendermint::block::Height;
     use tendermint::evidence::Duration as DurationStr;
     use tendermint::trust_threshold::TrustThresholdFraction;
@@ -446,9 +449,25 @@ mod tests {
         response_error::{Code, ResponseError},
     };
     use tendermint_testgen::helpers::get_time;
+    use tendermint_testgen::light_block::TmLightBlock;
     use tendermint_testgen::{
         Commit, Generator, Header, LightBlock as TestgenLightBlock, LightChain, ValidatorSet,
     };
+
+    trait IntoLightBlock {
+        fn into_light_block(self) -> LightBlock;
+    }
+
+    impl IntoLightBlock for TmLightBlock {
+        fn into_light_block(self) -> LightBlock {
+            LightBlock {
+                signed_header: self.signed_header,
+                validators: self.validators,
+                next_validators: self.next_validators,
+                provider: self.provider,
+            }
+        }
+    }
 
     fn make_instance(
         peer_id: PeerId,
@@ -570,11 +589,11 @@ mod tests {
         let commit = Commit::new(header.clone(), 1);
         let mut lb = TestgenLightBlock::new(header, commit).provider(peer_id);
 
-        let mut witness: Vec<LightBlock> = vec![lb.generate().unwrap().into()];
+        let mut witness: Vec<LightBlock> = vec![lb.generate().unwrap().into_light_block()];
 
         for _ in 1..length {
             lb = lb.next();
-            let tm_lb = lb.generate().unwrap().into();
+            let tm_lb = lb.generate().unwrap().into_light_block();
             witness.push(tm_lb);
         }
 
@@ -587,7 +606,7 @@ mod tests {
         let primary = chain
             .light_blocks
             .into_iter()
-            .map(|lb| lb.generate().unwrap().into())
+            .map(|lb| lb.generate().unwrap().into_light_block())
             .collect::<Vec<LightBlock>>();
 
         let witness = change_provider(primary.clone(), None);
@@ -612,7 +631,7 @@ mod tests {
         let primary = chain
             .light_blocks
             .into_iter()
-            .map(|lb| lb.generate().unwrap().into())
+            .map(|lb| lb.generate().unwrap().into_light_block())
             .collect::<Vec<LightBlock>>();
 
         let peer_list = make_peer_list(Some(primary), None, get_time(11).unwrap());
@@ -631,7 +650,7 @@ mod tests {
         let primary = chain
             .light_blocks
             .into_iter()
-            .map(|lb| lb.generate().unwrap().into())
+            .map(|lb| lb.generate().unwrap().into_light_block())
             .collect::<Vec<LightBlock>>();
 
         let mut light_blocks = primary.clone();
@@ -662,7 +681,7 @@ mod tests {
         let primary = chain
             .light_blocks
             .into_iter()
-            .map(|lb| lb.generate().unwrap().into())
+            .map(|lb| lb.generate().unwrap().into_light_block())
             .collect::<Vec<LightBlock>>();
 
         let witness = make_conflicting_witness(5, None, None, None);
@@ -699,7 +718,7 @@ mod tests {
             .light_blocks
             .clone()
             .into_iter()
-            .map(|lb| lb.generate().unwrap().into())
+            .map(|lb| lb.generate().unwrap().into_light_block())
             .collect::<Vec<LightBlock>>();
 
         let mut header = chain.light_blocks[4].header.clone().unwrap();
@@ -713,7 +732,7 @@ mod tests {
             chain
                 .light_blocks
                 .into_iter()
-                .map(|lb| lb.generate().unwrap().into())
+                .map(|lb| lb.generate().unwrap().into_light_block())
                 .collect::<Vec<LightBlock>>(),
             None,
         );
@@ -734,7 +753,7 @@ mod tests {
         let primary = chain
             .light_blocks
             .into_iter()
-            .map(|lb| lb.generate().unwrap().into())
+            .map(|lb| lb.generate().unwrap().into_light_block())
             .collect::<Vec<LightBlock>>();
 
         let witness1 = change_provider(primary.clone(), None);
@@ -782,7 +801,7 @@ mod tests {
         let primary = chain
             .light_blocks
             .into_iter()
-            .map(|lb| lb.generate().unwrap().into())
+            .map(|lb| lb.generate().unwrap().into_light_block())
             .collect::<Vec<LightBlock>>();
 
         let witness = change_provider(primary.clone(), None);
@@ -812,7 +831,7 @@ mod tests {
         let mut primary = chain
             .light_blocks
             .into_iter()
-            .map(|lb| lb.generate().unwrap().into())
+            .map(|lb| lb.generate().unwrap().into_light_block())
             .collect::<Vec<LightBlock>>();
 
         primary[9].signed_header.commit.round = primary[9].signed_header.commit.round.increment();
