@@ -1,5 +1,100 @@
 # CHANGELOG
 
+## v0.24.0-pre.1
+
+*Jan 12, 2022*
+
+This pre-release targets Tendermint Core v0.35 and introduces a number of
+breaking changes from the v0.23 series of tendermint-rs. We provide a
+pre-release here so people can start experimenting with and preparing for
+Tendermint v0.35 compatibility, but a number of refinements need to be made
+before we can produce a v0.24.0 release.
+
+One of the major changes involves the introduction of [domain types for
+ABCI](https://github.com/informalsystems/tendermint-rs/pull/1022) in preparation
+for the release of ABCI++ in Tendermint v0.36. It also includes a number of
+fixes and backports from the v0.23.x series of tendermint-rs.
+
+### BREAKING CHANGES
+
+- Updated integration testing to test against Tendermint v0.35.0
+  ([#862](https://github.com/informalsystems/tendermint-rs/issues/862))
+- `[tendermint-rpc]` The `/tx` endpoint now encodes
+  the `hash` parameter as hexadecimal instead of base64
+  ([#862](https://github.com/informalsystems/tendermint-rs/issues/862))
+- `[tendermint]` Added domain types for ABCI
+  ([#862](https://github.com/informalsystems/tendermint-rs/issues/862))
+- `[tendermint-abci]` Changed low-level wire encoding protocol to
+  accommodate <https://github.com/tendermint/tendermint/issues/5783>
+  ([#862](https://github.com/informalsystems/tendermint-rs/issues/862))
+- `[tendermint-rpc]` The `event::Event::events` field is now represented as
+  `Option<Vec<crate::abci::Event>>` as opposed to `Option<HashMap<String,
+  Vec<String>>>` to accommodate breaking change in Tendermint v0.35.0
+  subscription interface ([#862](https://github.com/informalsystems/tendermint-
+  rs/issues/862))
+- `[tendermint-light-client]` Split out the verification functionality from the
+  `tendermint-light-client` crate into its own `no_std`-compatible crate:
+  `tendermint-light-client-verifier`. This helps move us closer to `no_std`
+  compliance in both tendermint-rs and ibc-rs
+  ([#1027](https://github.com/informalsystems/tendermint-rs/issues/1027))
+- `[tendermint]` Reform `tendermint::Time`
+  ([#1030](https://github.com/informalsystems/tendermint-rs/issues/1030)):
+  * The struct content is made private.
+  * The range of acceptable values is restricted to years 1-9999
+    (as reckoned in UTC).
+  * Removed conversions from/to `chrono::DateTime<chrono::Utc>`.
+  * Changes in error variants: removed `TimestampOverflow`, replaced with
+    `TimestampNanosOutOfRange`; removed `ChronoParse`, replaced with `TimeParse`.
+- `[tendermint-rpc]` Use `OffsetDateTime` and `Date` types provided by the `time` crate
+  in query operands instead of their `chrono` counterparts.
+  ([#1030](https://github.com/informalsystems/tendermint-rs/issues/1030))
+- `[tendermint-rpc]` Remove the `ErrorDetail::Server` variant
+  ([#1039](https://github.com/informalsystems/tendermint-rs/issues/1039))
+- `[tendermint]` Box a large field value in `evidence::Evidence`
+  ([#1041](https://github.com/informalsystems/tendermint-rs/pull/1041))
+- `[tendermint-light-client]` Box large field values in `fork_detector::Fork`
+  ([#1041](https://github.com/informalsystems/tendermint-rs/pull/1041))
+- `[tendermint-rpc]` Box a large field value in `event::EventData`
+  ([#1041](https://github.com/informalsystems/tendermint-rs/pull/1041))
+- `[tendermint-p2p]` All public APIs using `ed25519-
+  dalek` types now use types from `ed25519-consensus`
+  ([#1046](https://github.com/informalsystems/tendermint-rs/pull/1046))
+
+### BUG FIXES
+
+- `[tools/proto-compiler]` Fixed our proto-compiler, which was producing
+  protos that did not compile due to an incorrect Prost field annotation
+  ([#1014](https://github.com/informalsystems/tendermint-rs/issues/1014))
+- `[tendermint]` The `tendermint::node::Id` `Display` implementation now prints the hexadecimal string in lowercase ([#971](https://github.com/informalsystems/tendermint-rs/issues/971))
+
+### DEPENDENCIES
+
+- `[tendermint, tendermint-p2p]` Replaced the `ed25519-dalek` dependency with
+  `ed25519-consensus`
+  ([#1046](https://github.com/informalsystems/tendermint-rs/pull/1046))
+- `[tendermint-rpc]`: Switch `hyper-proxy` to use `rustls`, eliminating
+  the only use of `native-tls` in tendermint-rs dependencies
+  ([#1068](https://github.com/informalsystems/tendermint-rs/pull/1068))
+
+### IMPROVEMENTS
+
+- `[tendermint]` Deprecated `signature::ED25519_SIGNATURE_SIZE`
+  in favor of `Ed25519Signature::BYTE_SIZE`
+  ([#1023](https://github.com/informalsystems/tendermint-rs/issues/1023))
+- Remove dependencies on the `chrono` crate.
+  ([#1030](https://github.com/informalsystems/tendermint-rs/issues/1030))
+- `[tendermint]` Improve `tendermint::Time`
+  ([#1030](https://github.com/informalsystems/tendermint-rs/issues/1030)):
+  * Restrict the validity range of `Time` to dates with years in the range
+    1-9999, to match the specification of protobuf message `Timestamp`.
+    Add an `ErrorDetail` variant `DateOutOfRange` to report when this
+    restriction is not met.
+  * Added a conversion to, and a fallible conversion from,
+    `OffsetDateTime` of the `time` crate.
+  * Added `Time` methods `checked_add` and `checked_sub`.
+- `[tendermint]` `Hash` is implemented for `tendermint::Time`
+  ([#1054](https://github.com/informalsystems/tendermint-rs/pull/1054))
+
 ## v0.23.0
 
 *Oct 27, 2021*
