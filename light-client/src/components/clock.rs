@@ -1,6 +1,6 @@
 //! Provides an interface and a default implementation of the `Clock` component
 
-use crate::types::Time;
+use crate::verifier::types::Time;
 use std::convert::TryInto;
 use time::OffsetDateTime;
 

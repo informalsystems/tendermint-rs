@@ -3,4 +3,6 @@
 pub mod clock;
 pub mod io;
 pub mod scheduler;
-pub mod verifier;
+
+// Re-export for backward compatibility
+pub use tendermint_light_client_verifier as verifier;

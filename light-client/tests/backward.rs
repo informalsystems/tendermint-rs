@@ -8,15 +8,18 @@ use tendermint_light_client::{
     components::{
         io::{AtHeight, Io},
         scheduler,
-        verifier::ProdVerifier,
     },
     errors::Error,
-    light_client::{LightClient, Options},
-    operations::ProdHasher,
+    light_client::LightClient,
     state::State,
     store::{memory::MemoryStore, LightStore},
     tests::{MockClock, MockIo},
-    types::{Height, LightBlock, Status},
+    verifier::{
+        operations::ProdHasher,
+        options::Options,
+        types::{Height, LightBlock, Status},
+        ProdVerifier,
+    },
 };
 
 use tendermint_testgen::{

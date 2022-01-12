@@ -2,40 +2,23 @@
 //!
 //! [1]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification/verification.md
 
-use std::{fmt, time::Duration};
-
 use contracts::*;
-use derive_more::Display;
-use serde::{Deserialize, Serialize};
+use core::fmt;
 
 use crate::{
-    components::{clock::Clock, io::*, scheduler::*, verifier::*},
+    components::{clock::Clock, io::*, scheduler::*},
     contracts::*,
     errors::Error,
-    operations::Hasher,
     state::State,
-    types::{Height, LightBlock, PeerId, Status, TrustThreshold},
+    verifier::{
+        operations::Hasher,
+        types::{Height, LightBlock, PeerId, Status},
+        Verdict, Verifier,
+    },
 };
 
-/// Verification parameters
-#[derive(Copy, Clone, Debug, PartialEq, Display, Serialize, Deserialize)]
-#[display(fmt = "{:?}", self)]
-pub struct Options {
-    /// Defines what fraction of the total voting power of a known
-    /// and trusted validator set is sufficient for a commit to be
-    /// accepted going forward.
-    pub trust_threshold: TrustThreshold,
-
-    /// How long a validator set is trusted for (must be shorter than the chain's
-    /// unbonding period)
-    pub trusting_period: Duration,
-
-    /// Correction parameter dealing with only approximately synchronized clocks.
-    /// The local clock should always be ahead of timestamps from the blockchain; this
-    /// is the maximum amount that the local clock may drift behind a timestamp from the
-    /// blockchain.
-    pub clock_drift: Duration,
-}
+// Re-export for backward compatibility
+pub use crate::verifier::options::Options;
 
 /// The light client implements a read operation of a header from the blockchain,
 /// by communicating with full nodes. As full nodes may be faulty, it cannot trust

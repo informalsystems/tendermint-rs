@@ -1,0 +1,38 @@
+[package]
+name       = "tendermint-light-client-verifier"
+version    = "0.23.4"
+edition    = "2021"
+license    = "Apache-2.0"
+readme     = "README.md"
+keywords   = ["blockchain", "bft", "consensus", "cosmos", "tendermint"]
+categories = ["cryptography::cryptocurrencies", "network-programming"]
+repository = "https://github.com/informalsystems/tendermint-rs"
+authors    = [
+  "Informal Systems <hello@informal.systems>",
+]
+
+description = """
+    Implementation of the Tendermint Light Client Verification Algorithm.
+"""
+
+# docs.rs-specific configuration
+[package.metadata.docs.rs]
+# document all features
+all-features = true
+# defines the configuration attribute `docsrs`
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+default = ["flex-error/std", "flex-error/eyre_tracer"]
+
+[dependencies]
+tendermint = { version = "0.23.4", path = "../tendermint", default-features = false }
+tendermint-rpc = { version = "0.23.4", path = "../rpc", default-features = false }
+
+derive_more = { version = "0.99.5", default-features = false, features = ["display"] }
+serde = { version = "1.0.106", default-features = false }
+time = { version = "0.3.5", default-features = false }
+flex-error = { version = "0.4.4", default-features = false }
+
+[dev-dependencies]
+tendermint-testgen = { path = "../testgen", default-features = false }

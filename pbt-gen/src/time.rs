@@ -21,7 +21,6 @@ pub const MAX_NANO_SECS: u32 = 999_999_999u32;
 /// let timestamp = pbt_gen::time::min_time().unix_timestamp_nanos();
 /// assert!(OffsetDateTime::from_unix_timestamp_nanos(timestamp).is_ok());
 /// assert!(OffsetDateTime::from_unix_timestamp_nanos(timestamp - 1).is_err());
-///
 /// ```
 pub fn min_time() -> OffsetDateTime {
     Date::MIN.midnight().assume_utc()
@@ -49,7 +48,6 @@ pub fn max_time() -> OffsetDateTime {
 /// Google's well-known [`Timestamp`] protobuf message format.
 ///
 /// [`Timestamp`]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
-///
 pub const fn min_protobuf_time() -> OffsetDateTime {
     datetime!(0001-01-01 00:00:00 UTC)
 }
@@ -58,7 +56,6 @@ pub const fn min_protobuf_time() -> OffsetDateTime {
 /// Google's well-known [`Timestamp`] protobuf message format.
 ///
 /// [`Timestamp`]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
-///
 pub const fn max_protobuf_time() -> OffsetDateTime {
     datetime!(9999-12-31 23:59:59.999999999 UTC)
 }
@@ -248,7 +245,6 @@ prop_compose! {
 /// Google's well-known [`Timestamp`] protobuf message format.
 ///
 /// [`Timestamp`]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
-///
 pub fn arb_protobuf_safe_rfc3339_timestamp() -> impl Strategy<Value = String> {
     arb_rfc3339_timestamp().prop_filter("timestamp out of protobuf range", |ts| {
         let t = OffsetDateTime::parse(ts, &Rfc3339).unwrap();

@@ -1,10 +1,10 @@
 //! Fork evidence data structures and interfaces.
 
-use crate::{components::io::IoError, types::PeerId};
-
+use contracts::contract_trait;
 use tendermint::abci::transaction::Hash;
 
-use contracts::contract_trait;
+use crate::components::io::IoError;
+use crate::verifier::types::PeerId;
 
 pub use tendermint::evidence::Evidence;
 

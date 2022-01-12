@@ -1,15 +1,16 @@
 //! Provides an interface and default implementation for the `VotingPower` operation
 
+use crate::prelude::*;
 use crate::{
-    predicates::errors::VerificationError,
+    errors::VerificationError,
     types::{Commit, SignedHeader, TrustThreshold, ValidatorSet},
 };
 
+use alloc::collections::BTreeSet as HashSet;
+use core::fmt;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
-use std::fmt;
 
-use std::convert::TryFrom;
+use core::convert::TryFrom;
 use tendermint::block::CommitSig;
 use tendermint::trust_threshold::TrustThreshold as _;
 use tendermint::vote::{SignedVote, ValidatorIndex, Vote};
@@ -220,7 +221,7 @@ fn non_absent_vote(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::predicates::errors::VerificationErrorDetail;
+    use crate::errors::VerificationErrorDetail;
     use crate::types::LightBlock;
     use tendermint::trust_threshold::TrustThresholdFraction;
     use tendermint_testgen::light_block::generate_signed_header;

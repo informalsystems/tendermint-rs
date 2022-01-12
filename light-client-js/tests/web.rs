@@ -4,9 +4,9 @@
 
 extern crate wasm_bindgen_test;
 use tendermint::Time;
-use tendermint_light_client::components::verifier::Verdict;
-use tendermint_light_client::types::LightBlock;
 use tendermint_light_client_js::{verify, Error, JsOptions};
+use tendermint_light_client_verifier::types::LightBlock;
+use tendermint_light_client_verifier::Verdict;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_test::*;
 

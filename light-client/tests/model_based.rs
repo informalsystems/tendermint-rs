@@ -8,12 +8,11 @@ mod mbt {
     use std::str::FromStr;
     use std::time::Duration;
     use tendermint::validator::Set;
-    use tendermint_light_client::components::verifier::Verdict;
-    use tendermint_light_client::types::ValidatorSet;
-    use tendermint_light_client::{
-        tests::*,
-        types::{LightBlock, Time, TrustThreshold},
+    use tendermint_light_client::tests::*;
+    use tendermint_light_client::verifier::types::{
+        LightBlock, Time, TrustThreshold, ValidatorSet,
     };
+    use tendermint_light_client::verifier::Verdict;
     use tendermint_testgen::light_block::default_peer_id;
     use tendermint_testgen::{
         apalache::*, jsonatr::*, light_block::TmLightBlock, validator::generate_validators,

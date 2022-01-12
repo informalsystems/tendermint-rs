@@ -6,9 +6,8 @@ use std::time::Duration;
 #[cfg(feature = "rpc-client")]
 use tendermint_rpc::Client;
 
+use crate::verifier::types::{Height, LightBlock};
 use tendermint_rpc as rpc;
-
-use crate::types::{Height, LightBlock};
 
 #[cfg(feature = "tokio")]
 type TimeoutError = flex_error::DisplayOnly<tokio::time::error::Elapsed>;
@@ -99,8 +98,8 @@ mod prod {
 
     use std::time::Duration;
 
-    use crate::types::PeerId;
     use crate::utils::block_on;
+    use crate::verifier::types::PeerId;
 
     use tendermint::account::Id as TMAccountId;
     use tendermint::block::signed_header::SignedHeader as TMSignedHeader;

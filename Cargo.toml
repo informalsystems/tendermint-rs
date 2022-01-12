@@ -4,6 +4,7 @@ members = [
     "abci",
     "config",
     "light-client",
+    "light-client-verifier",
     "light-client-js",
     "p2p",
     "pbt-gen",

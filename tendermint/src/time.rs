@@ -30,7 +30,6 @@ use crate::error::Error;
 /// This reproduces the behavior of Go's `time.RFC3339Nano` format.
 ///
 /// [specification]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
-///
 // For memory efficiency, the inner member is `PrimitiveDateTime`, with assumed
 // UTC offset. The `assume_utc` method is used to get the operational
 // `OffsetDateTime` value.
@@ -64,6 +63,11 @@ impl From<Time> for Timestamp {
 }
 
 impl Time {
+    #[cfg(any(feature = "clock"))]
+    pub fn now() -> Time {
+        OffsetDateTime::now_utc().try_into().unwrap()
+    }
+
     // Internal helper to produce a `Time` value validated with regard to
     // the date range allowed in protobuf timestamps.
     // The source `OffsetDateTime` value must have the zero UTC offset.
