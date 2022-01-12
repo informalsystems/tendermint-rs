@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## v0.23.5
+
+*Jan 12, 2022*
+
+A single breaking change is provided by this release in order to move us closer
+toward `no_std` support in both tendermint-rs and ibc-rs.
+
+### BREAKING CHANGES
+
+- `[tendermint-light-client]` Split out the verification functionality from the
+  `tendermint-light-client` crate into its own `no_std`-compatible crate:
+  `tendermint-light-client-verifier`. This helps move us closer to `no_std`
+  compliance in both tendermint-rs and ibc-rs
+  ([#1027](https://github.com/informalsystems/tendermint-rs/issues/1027))
+
 ## v0.23.4
 
 *Jan 11, 2022*
