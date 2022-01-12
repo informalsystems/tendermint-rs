@@ -8,7 +8,6 @@ use tokio::time::Duration;
 
 pub fn quick_probe_plan(output_path: &Path, request_wait: Duration) -> Result<Plan> {
     Plan::new(
-        "quick-probe",
         output_path,
         request_wait,
         vec![

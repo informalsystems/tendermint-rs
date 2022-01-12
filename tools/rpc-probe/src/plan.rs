@@ -20,8 +20,6 @@ pub const DEFAULT_SUBSCRIPTION_MAX_EVENTS: usize = 5;
 
 #[derive(Debug, Clone)]
 struct PlanConfig {
-    // A short, descriptive name for this plan.
-    name: String,
     // Where to store all the raw JSON outgoing messages.
     out_path: PathBuf,
     // Where to store all the raw JSON incoming messages.
@@ -44,7 +42,6 @@ pub struct Plan {
 impl Plan {
     /// Create a new plan with the given configuration.
     pub fn new(
-        name: &str,
         output_path: &Path,
         request_wait: Duration,
         interactions: impl Into<Vec<CoordinatedInteractions>>,
@@ -70,7 +67,6 @@ impl Plan {
         }
         Ok(Self {
             config: PlanConfig {
-                name: name.to_owned(),
                 out_path,
                 in_path,
                 request_wait,
@@ -317,10 +313,11 @@ async fn execute_interaction(
     let inner_interaction = interaction.clone();
     let f = async {
         info!("Executing interaction \"{}\"", inner_interaction.name);
-        if let Some(wait) = inner_interaction.pre_wait {
-            debug!("Sleeping for {} seconds", wait.as_secs_f64());
-            tokio::time::sleep(wait).await;
-        }
+
+        let wait = inner_interaction.pre_wait.unwrap_or(config.request_wait);
+        debug!("Sleeping for {} seconds", wait.as_secs_f64());
+        tokio::time::sleep(wait).await;
+
         if let Some(h) = inner_interaction.min_height {
             debug!("Waiting for height {}", h);
             client.wait_for_height(h).await?;
