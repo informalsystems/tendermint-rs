@@ -24,8 +24,6 @@ use tendermint_light_client::{
         types::{Height, PeerId, Status, TrustThreshold},
     },
 };
-use tendermint_light_client_verifier::options::Options as LightClientOptions;
-use tendermint_light_client_verifier::types::{Height, PeerId, Status, TrustThreshold};
 
 use tendermint::abci::transaction::Hash as TxHash;
 use tendermint_rpc as rpc;
