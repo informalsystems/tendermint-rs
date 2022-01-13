@@ -2,10 +2,12 @@ use crate::{helpers::*, validator::generate_validators, Generator, Validator};
 use core::time::Duration;
 use gumdrop::Options;
 use serde::{Deserialize, Serialize};
+use serde::{Deserializer, Serializer};
 use simple_error::*;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 use tendermint::{block, chain, validator, AppHash, Hash, Time};
+use time::OffsetDateTime;
 
 #[derive(Debug, Options, Serialize, Deserialize, Clone)]
 pub struct Header {
@@ -24,11 +26,39 @@ pub struct Header {
     #[options(help = "block height (default: 1)")]
     pub height: Option<u64>,
     #[options(help = "time (default: now)")]
+    #[serde(deserialize_with = "deserialize_time")]
+    #[serde(serialize_with = "serialize_time")]
     pub time: Option<Time>,
     #[options(help = "proposer index (default: 0)")]
     pub proposer: Option<usize>,
     #[options(help = "last block id hash (default: Hash::None)")]
     pub last_block_id_hash: Option<Hash>,
+}
+
+// Serialize and deserialize time only up to second precision for integration with MBT.
+// This is ok as long as the serialized form is only used exclusively for MBT.
+// Otherwise we will have to find other ways to serialize time at least down to
+// millisecond precision, at the same time still being able to support that in MBT.
+fn deserialize_time<'de, D>(deserializer: D) -> Result<Option<Time>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let m_secs = <Option<i64>>::deserialize(deserializer)?;
+    let m_time = m_secs.map(|secs| Time::from_unix_timestamp(secs, 0).unwrap());
+
+    Ok(m_time)
+}
+
+fn serialize_time<S>(m_time: &Option<Time>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let m_secs = m_time.map(|time| {
+        let datetime: OffsetDateTime = time.into();
+        datetime.unix_timestamp()
+    });
+
+    m_secs.serialize(serializer)
 }
 
 impl Header {
