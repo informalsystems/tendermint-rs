@@ -585,7 +585,10 @@ mod tests {
 
         let peer_id = provider.unwrap_or("0BEFEEDC0C0ADEADBEBADFADADEFC0FFEEFACADE");
 
-        let header = Header::new(&vals).height(1).chain_id(chain).time(1);
+        let header = Header::new(&vals)
+            .height(1)
+            .chain_id(chain)
+            .time(Time::from_unix_timestamp(1, 0).unwrap());
         let commit = Commit::new(header.clone(), 1);
         let mut lb = TestgenLightBlock::new(header, commit).provider(peer_id);
 
@@ -722,8 +725,7 @@ mod tests {
             .collect::<Vec<LightBlock>>();
 
         let mut header = chain.light_blocks[4].header.clone().unwrap();
-        let mut time = header.time.unwrap();
-        time += 3;
+        let time = (header.time.unwrap() + Duration::from_secs(3)).unwrap();
         header.time = Some(time);
         chain.light_blocks[4].header = Some(header.clone());
         chain.light_blocks[4].commit = Some(Commit::new(header, 1));

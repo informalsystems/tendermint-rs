@@ -1,11 +1,11 @@
 use crate::{helpers::*, validator::generate_validators, Generator, Validator};
+use core::time::Duration;
 use gumdrop::Options;
 use serde::{Deserialize, Serialize};
 use simple_error::*;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 use tendermint::{block, chain, validator, AppHash, Hash, Time};
-use time::OffsetDateTime;
 
 #[derive(Debug, Options, Serialize, Deserialize, Clone)]
 pub struct Header {
@@ -24,7 +24,7 @@ pub struct Header {
     #[options(help = "block height (default: 1)")]
     pub height: Option<u64>,
     #[options(help = "time (default: now)")]
-    pub time: Option<u64>,
+    pub time: Option<Time>,
     #[options(help = "proposer index (default: 0)")]
     pub proposer: Option<usize>,
     #[options(help = "last block id hash (default: Hash::None)")]
@@ -51,13 +51,16 @@ impl Header {
     );
     set_option!(chain_id, &str, Some(chain_id.to_string()));
     set_option!(height, u64);
-    set_option!(time, u64);
+    set_option!(time, Time);
     set_option!(proposer, usize);
     set_option!(last_block_id_hash, Hash);
 
     pub fn next(&self) -> Self {
         let height = self.height.expect("Missing previous header's height");
-        let time = self.time.unwrap_or(height); // if no time is found, then we simple correspond it to the header height
+        // if no time is found, then we simple correspond it to the header height
+        let time = self
+            .time
+            .unwrap_or_else(|| Time::from_unix_timestamp(height.try_into().unwrap(), 0).unwrap());
         let validators = self.validators.clone().expect("Missing validators");
         let next_validators = self.next_validators.clone().unwrap_or(validators);
 
@@ -69,7 +72,7 @@ impl Header {
             next_validators: Some(next_validators),
             chain_id: self.chain_id.clone(),
             height: Some(height + 1),
-            time: Some(time + 1),
+            time: Some((time + Duration::from_secs(1)).unwrap()),
             proposer: self.proposer, // TODO: proposer must be incremented
             last_block_id_hash: Some(last_block_id_hash),
         }
@@ -127,11 +130,7 @@ impl Generator<block::Header> for Header {
             Err(_) => bail!("failed to construct header's chain_id"),
         };
 
-        let time: Time = if let Some(t) = self.time {
-            get_time(t)?
-        } else {
-            OffsetDateTime::now_utc().try_into().unwrap()
-        };
+        let time: Time = self.time.unwrap_or_else(Time::now);
 
         let last_block_id = self.last_block_id_hash.map(|hash| block::Id {
             hash,
@@ -164,6 +163,8 @@ impl Generator<block::Header> for Header {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use core::time::Duration;
+    use tendermint::Time;
 
     #[test]
     fn test_header() {
@@ -178,13 +179,13 @@ mod tests {
             Validator::new("d"),
         ];
 
-        let now1: u64 = 100;
+        let now1 = Time::now();
         let header1 = Header::new(&valset1)
             .next_validators(&valset2)
             .height(10)
             .time(now1);
 
-        let now2 = now1 + 1;
+        let now2 = (now1 + Duration::from_secs(1)).unwrap();
         let header2 = Header::new(&valset1)
             .next_validators(&valset2)
             .height(10)

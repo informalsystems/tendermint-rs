@@ -2,7 +2,7 @@
 
 use std::{collections::HashMap, time::Duration};
 
-use tendermint::{hash::Algorithm, Hash};
+use tendermint::{hash::Algorithm, Hash, Time};
 
 use tendermint_light_client::{
     components::{
@@ -156,7 +156,7 @@ fn corrupt_hash(mut tc: TestCase, mut rng: TestRng) -> TestCase {
     let block = tc.chain.block_mut(height).unwrap();
 
     if let Some(header) = block.header.as_mut() {
-        header.time = Some(1610105021);
+        header.time = Some(Time::from_unix_timestamp(1610105021, 0).unwrap());
     }
 
     tc
