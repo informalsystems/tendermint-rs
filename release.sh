@@ -18,7 +18,7 @@ set -e
 # A space-separated list of all the crates we want to publish, in the order in
 # which they must be published. It's important to respect this order, since
 # each subsequent crate depends on one or more of the preceding ones.
-DEFAULT_CRATES="tendermint-proto tendermint-std-ext tendermint tendermint-config tendermint-abci tendermint-rpc tendermint-p2p tendermint-light-client tendermint-light-client-js tendermint-testgen"
+DEFAULT_CRATES="tendermint-proto tendermint-std-ext tendermint tendermint-config tendermint-abci tendermint-rpc tendermint-p2p tendermint-light-client-verifier tendermint-light-client tendermint-light-client-js tendermint-testgen"
 
 # Allows us to override the crates we want to publish.
 CRATES=${*:-${DEFAULT_CRATES}}
