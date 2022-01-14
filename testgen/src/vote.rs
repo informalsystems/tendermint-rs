@@ -163,7 +163,7 @@ mod tests {
         let header = Header::new(&valset1)
             .next_validators(&valset2)
             .height(10)
-            .time(10);
+            .time(tendermint::Time::from_unix_timestamp(10, 0).unwrap());
 
         let val = &valset1[1];
         let vote = Vote::new(val.clone(), header.clone()).round(2);

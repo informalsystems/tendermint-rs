@@ -169,6 +169,7 @@ impl Generator<block::Commit> for Commit {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tendermint::Time;
 
     #[test]
     fn test_commit() {
@@ -186,7 +187,7 @@ mod tests {
         let header = Header::new(&valset1)
             .next_validators(&valset2)
             .height(10)
-            .time(11);
+            .time(Time::from_unix_timestamp(11, 0).unwrap());
 
         let commit = Commit::new(header.clone(), 3);
 

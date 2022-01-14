@@ -12,7 +12,7 @@ use zeroize::Zeroizing;
 pub const ED25519_KEYPAIR_SIZE: usize = 64;
 
 /// Private keys as parsed from configuration files
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[non_exhaustive]
 #[serde(tag = "type", content = "value")] // JSON custom serialization for priv_validator_key.json
 pub enum PrivateKey {
