@@ -1,4 +1,4 @@
-*Jan 12, 2022*
+*Jan 13, 2022*
 
 This pre-release targets Tendermint Core v0.35 and introduces a number of
 breaking changes from the v0.23 series of tendermint-rs. We provide a
