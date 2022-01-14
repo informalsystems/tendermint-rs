@@ -20,7 +20,7 @@
     unused_qualifications
 )]
 #![doc(
-    html_root_url = "https://docs.rs/tendermint-p2p/0.23.4",
+    html_root_url = "https://docs.rs/tendermint-p2p/0.23.5",
     html_logo_url = "https://raw.githubusercontent.com/informalsystems/tendermint-rs/master/img/logo-tendermint-rs_3961x4001.png"
 )]
 
