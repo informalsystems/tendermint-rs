@@ -9,7 +9,7 @@ use subtle_encoding::{Base64, Encoding};
 use zeroize::Zeroizing;
 
 /// Private keys as parsed from configuration files
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[non_exhaustive]
 #[serde(tag = "type", content = "value")] // JSON custom serialization for priv_validator_key.json
 pub enum PrivateKey {
