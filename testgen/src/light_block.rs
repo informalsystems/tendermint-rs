@@ -8,7 +8,9 @@ use crate::{Commit, Generator, Header, Validator};
 use tendermint::node::Id as PeerId;
 use tendermint::validator;
 use tendermint::validator::Set as ValidatorSet;
+use tendermint::Time;
 use tendermint::{block::signed_header::SignedHeader, Hash};
+
 /// A light block is the core data structure used by the light client.
 /// It records everything the light client needs to know about a block.
 /// NOTE: This struct & associated `impl` below are a copy of light-client's `LightBlock`.
@@ -92,7 +94,7 @@ impl LightBlock {
             .height(height)
             .chain_id("test-chain")
             .next_validators(&validators)
-            .time(height); // just wanted to initialize time with some value
+            .time(Time::from_unix_timestamp(height as i64, 0).unwrap()); // just wanted to initialize time with some value
 
         let commit = Commit::new(header.clone(), 1);
 
@@ -105,7 +107,7 @@ impl LightBlock {
         }
     }
 
-    pub fn new_default_with_time_and_chain_id(chain_id: String, time: u64, height: u64) -> Self {
+    pub fn new_default_with_time_and_chain_id(chain_id: String, time: Time, height: u64) -> Self {
         let validators = [
             Validator::new("1").voting_power(50),
             Validator::new("2").voting_power(50),
@@ -295,7 +297,7 @@ mod tests {
         let header_6 = Header::new(&validators)
             .next_validators(&validators)
             .height(10)
-            .time(10)
+            .time(Time::from_unix_timestamp(10, 0).unwrap())
             .chain_id("test-chain");
         let commit_6 = Commit::new(header_6.clone(), 1);
         let light_block_6 = LightBlock::new(header_6.clone(), commit_6);
