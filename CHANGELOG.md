@@ -94,6 +94,8 @@ fixes and backports from the v0.23.x series of tendermint-rs.
   * Added `Time` methods `checked_add` and `checked_sub`.
 - `[tendermint]` `Hash` is implemented for `tendermint::Time`
   ([#1054](https://github.com/informalsystems/tendermint-rs/pull/1054))
+- `[tendermint]` Implement `Clone` for `PrivateKey`
+  ([#1077](https://github.com/informalsystems/tendermint-rs/issues/1077))
 
 ## v0.23.0
 
