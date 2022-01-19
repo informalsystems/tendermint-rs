@@ -108,7 +108,7 @@ impl Client {
         self.cmd_tx.send(cmd).map_err(|e| {
             Error::Internal(format!(
                 "WebSocket driver channel receiving end closed unexpectedly: {}",
-                e.to_string()
+                e
             ))
         })
     }
