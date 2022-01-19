@@ -1,13 +1,13 @@
 mod client;
 mod common;
 mod error;
+mod kvstore;
 mod plan;
-mod quick;
 mod request;
 mod subscription;
 mod utils;
 
-use crate::quick::quick_probe_plan;
+use crate::kvstore::quick_probe_plan;
 use log::LevelFilter;
 use simple_logger::SimpleLogger;
 use std::path::PathBuf;

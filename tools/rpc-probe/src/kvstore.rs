@@ -1,4 +1,5 @@
-//! RPC quick probe-related functionality.
+//! RPC quick probe-related functionality specifically targeting a Tendermint
+//! node running the `kvstore` ABCI application.
 
 use crate::common::*;
 use crate::error::Result;
