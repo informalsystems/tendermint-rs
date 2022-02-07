@@ -15,7 +15,7 @@ jobs:
           toolchain: stable
           override: true
       - run: |
-          cd ci/no-std-check
+          cd tools/no-std-check
           make check-panic-conflict
 
   check-substrate:
@@ -29,5 +29,5 @@ jobs:
           target: wasm32-unknown-unknown
           override: true
       - run: |
-          cd ci/no-std-check
+          cd tools/no-std-check
           make check-substrate
