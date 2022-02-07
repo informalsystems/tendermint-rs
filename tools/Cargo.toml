@@ -6,3 +6,7 @@ members = [
     "proto-compiler",
     "rpc-probe"
 ]
+
+exclude = [
+    "no-std-check"
+]
