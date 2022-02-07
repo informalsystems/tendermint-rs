@@ -17,7 +17,8 @@ members = [
 ]
 
 exclude = [
-    "proto-compiler"
+    "proto-compiler",
+    "tools/no-std-check"
 ]
 
 [profile.release.package.tendermint-light-client-js]
