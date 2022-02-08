@@ -27,8 +27,6 @@ default = ["flex-error/std", "flex-error/eyre_tracer"]
 
 [dependencies]
 tendermint = { version = "0.24.0-pre.1", path = "../tendermint", default-features = false }
-tendermint-rpc = { version = "0.24.0-pre.1", path = "../rpc", default-features = false }
-
 derive_more = { version = "0.99.5", default-features = false, features = ["display"] }
 serde = { version = "1.0.106", default-features = false }
 time = { version = "0.3.5", default-features = false }
