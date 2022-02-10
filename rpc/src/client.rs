@@ -67,6 +67,14 @@ pub trait Client {
         self.perform(block::Request::new(height.into())).await
     }
 
+    /// `/block_by_hash`: get block by hash.
+    async fn block_by_hash(
+        &self,
+        hash: tendermint::Hash,
+    ) -> Result<block_by_hash::Response, Error> {
+        self.perform(block_by_hash::Request::new(hash)).await
+    }
+
     /// `/block`: get the latest block.
     async fn latest_block(&self) -> Result<block::Response, Error> {
         self.perform(block::Request::default()).await

@@ -22,6 +22,9 @@ pub enum Method {
     /// Get block info
     Block,
 
+    /// Get block info by hash
+    BlockByHash,
+
     /// Get ABCI results for a particular block
     BlockResults,
 
@@ -87,6 +90,7 @@ impl Method {
             Method::AbciInfo => "abci_info",
             Method::AbciQuery => "abci_query",
             Method::Block => "block",
+            Method::BlockByHash => "block_by_hash",
             Method::BlockResults => "block_results",
             Method::BlockSearch => "block_search",
             Method::Blockchain => "blockchain",
@@ -118,6 +122,7 @@ impl FromStr for Method {
             "abci_info" => Method::AbciInfo,
             "abci_query" => Method::AbciQuery,
             "block" => Method::Block,
+            "block_by_hash" => Method::BlockByHash,
             "block_results" => Method::BlockResults,
             "block_search" => Method::BlockSearch,
             "blockchain" => Method::Blockchain,
