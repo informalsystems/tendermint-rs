@@ -1,0 +1,8 @@
+{
+  "id": "a37bcc8e-6a32-4157-9200-a26be9981bbd",
+  "jsonrpc": "2.0",
+  "method": "block",
+  "params": {
+    "hash": "00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF"
+  }
+}

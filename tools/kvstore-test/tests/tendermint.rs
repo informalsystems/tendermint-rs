@@ -122,6 +122,31 @@ mod rpc {
         );
     }
 
+    /// `/block_search` endpoint
+    #[tokio::test]
+    async fn block_by_hash() {
+        let res = localhost_http_client()
+            .block_by_hash(
+                tendermint::Hash::from_str("0000000000000000000000000000000000000000000000000000000000000000").unwrap()
+            )
+            .await
+            .unwrap();
+        assert!(res.block.is_none());
+
+        // Reuse block(1) to get an existing hash.
+        let height = 1u64;
+        let block_info = localhost_http_client()
+            .block(Height::try_from(height).unwrap())
+            .await
+            .unwrap();
+        let res = localhost_http_client()
+            .block_by_hash(block_info.block_id.hash)
+            .await
+            .unwrap();
+        assert!(res.block.is_some());
+        assert_eq!(block_info.block.header.height.value(), height);
+    }
+
     /// `/block_results` endpoint
     #[tokio::test]
     async fn block_results() {
