@@ -9,7 +9,7 @@ use core::{fmt, time::Duration};
 
 use async_trait::async_trait;
 use serde::{de::DeserializeOwned, Serialize};
-use tendermint::{block::Height, evidence::Evidence, Genesis};
+use tendermint::{abci, block::Height, evidence::Evidence, Genesis};
 use tokio::time;
 #[cfg(feature = "http-client")]
 pub use transport::http::{HttpClient, HttpClientUrl};
@@ -38,7 +38,7 @@ use crate::{
 #[async_trait]
 pub trait Client {
     /// `/abci_info`: get information about the ABCI application.
-    async fn abci_info(&self) -> Result<abci_info::AbciInfo, Error> {
+    async fn abci_info(&self) -> Result<abci::response::Info, Error> {
         Ok(self.perform(abci_info::Request).await?.response)
     }
 
