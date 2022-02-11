@@ -1,14 +1,6 @@
 //! `/abci_info` endpoint JSON-RPC wrapper
 
-use core::convert::{TryFrom, TryInto};
-
-use bytes::Bytes;
 use serde::{Deserialize, Serialize};
-use tendermint::block;
-use tendermint::Error;
-use tendermint_proto::abci::ResponseInfo;
-
-use crate::prelude::*;
 
 /// Request ABCI information from a node
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -28,53 +20,7 @@ impl crate::SimpleRequest for Request {}
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {
     /// ABCI info
-    pub response: AbciInfo,
+    pub response: tendermint::abci::response::Info,
 }
 
 impl crate::Response for Response {}
-
-/// ABCI information
-#[derive(Clone, Debug, Deserialize, Serialize, Default)]
-#[serde(default, try_from = "ResponseInfo", into = "ResponseInfo")]
-pub struct AbciInfo {
-    /// Name of the application
-    pub data: String,
-
-    /// Version
-    pub version: String,
-
-    /// App version
-    pub app_version: u64,
-
-    /// Last block height
-    pub last_block_height: block::Height,
-
-    /// Last app hash for the block
-    pub last_block_app_hash: Bytes,
-}
-
-impl TryFrom<ResponseInfo> for AbciInfo {
-    type Error = Error;
-
-    fn try_from(value: ResponseInfo) -> Result<Self, Self::Error> {
-        Ok(AbciInfo {
-            data: value.data,
-            version: value.version,
-            app_version: value.app_version,
-            last_block_height: value.last_block_height.try_into()?,
-            last_block_app_hash: value.last_block_app_hash,
-        })
-    }
-}
-
-impl From<AbciInfo> for ResponseInfo {
-    fn from(value: AbciInfo) -> Self {
-        ResponseInfo {
-            data: value.data,
-            version: value.version,
-            app_version: value.app_version,
-            last_block_height: value.last_block_height.into(),
-            last_block_app_hash: value.last_block_app_hash,
-        }
-    }
-}

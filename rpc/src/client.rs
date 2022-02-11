@@ -23,6 +23,7 @@ use crate::query::Query;
 use crate::{Error, Order, SimpleRequest};
 use async_trait::async_trait;
 use core::time::Duration;
+use tendermint::abci;
 use tendermint::block::Height;
 use tendermint::evidence::Evidence;
 use tendermint::Genesis;
@@ -38,7 +39,7 @@ use tokio::time;
 #[async_trait]
 pub trait Client {
     /// `/abci_info`: get information about the ABCI application.
-    async fn abci_info(&self) -> Result<abci_info::AbciInfo, Error> {
+    async fn abci_info(&self) -> Result<abci::response::Info, Error> {
         Ok(self.perform(abci_info::Request).await?.response)
     }
 

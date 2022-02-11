@@ -1,9 +1,14 @@
 use crate::{block, prelude::*, Error};
+use core::convert::TryFrom;
+use tendermint_proto::abci as pb;
+use tendermint_proto::Protobuf;
 
 use bytes::Bytes;
+use serde::{Deserialize, Serialize};
 
 #[doc = include_str!("../doc/response-info.md")]
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
+#[serde(default, try_from = "pb::ResponseInfo", into = "pb::ResponseInfo")]
 pub struct Info {
     /// Some arbitrary information.
     pub data: String,
@@ -21,10 +26,6 @@ pub struct Info {
 // =============================================================================
 // Protobuf conversions
 // =============================================================================
-
-use core::convert::TryFrom;
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
 
 impl From<Info> for pb::ResponseInfo {
     fn from(info: Info) -> Self {
