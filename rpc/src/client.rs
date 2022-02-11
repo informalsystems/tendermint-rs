@@ -20,7 +20,7 @@ pub use transport::websocket::{
 };
 
 use crate::{
-    abci::{self, Transaction},
+    abci::Transaction,
     endpoint::{validators::DEFAULT_VALIDATORS_PER_PAGE, *},
     paging::Paging,
     prelude::*,
@@ -45,7 +45,7 @@ pub trait Client {
     /// `/abci_query`: query the ABCI application
     async fn abci_query<V>(
         &self,
-        path: Option<abci::Path>,
+        path: Option<crate::abci::Path>,
         data: V,
         height: Option<Height>,
         prove: bool,
@@ -253,7 +253,11 @@ pub trait Client {
     }
 
     /// `/tx`: find transaction by hash.
-    async fn tx(&self, hash: abci::transaction::Hash, prove: bool) -> Result<tx::Response, Error> {
+    async fn tx(
+        &self,
+        hash: crate::abci::transaction::Hash,
+        prove: bool,
+    ) -> Result<tx::Response, Error> {
         self.perform(tx::Request::new(hash, prove)).await
     }
 
