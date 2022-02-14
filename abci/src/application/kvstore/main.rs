@@ -29,38 +29,20 @@ struct Opt {
 }
 
 fn main() {
-    // let opt: Opt = Opt::from_args();
-    // let log_level = if opt.quiet {
-    //     LevelFilter::OFF
-    // } else if opt.verbose {
-    //     LevelFilter::DEBUG
-    // } else {
-    //     LevelFilter::INFO
-    // };
-    // tracing_subscriber::fmt().with_max_level(log_level).init();
-    //
-    // let (app, driver) = KeyValueStoreApp::new();
-    // let server = ServerBuilder::new(opt.read_buf_sizeSubscription)
-    //     .bind(format!("{}:{}", opt.host, opt.port), app)
-    //     .unwrap();
-    // std::thread::spawn(move || driver.run());
-    // server.listen().unwrap();
-    use futures::StreamExt;
-    use tendermint_rpc::Subscription;
+    let opt: Opt = Opt::from_args();
+    let log_level = if opt.quiet {
+        LevelFilter::OFF
+    } else if opt.verbose {
+        LevelFilter::DEBUG
+    } else {
+        LevelFilter::INFO
+    };
+    tracing_subscriber::fmt().with_max_level(log_level).init();
 
-    /// Prints `count` events from the given subscription.
-    async fn print_events(subs: &mut Subscription, count: usize) {
-        let mut counter = 0_usize;
-        while let Some(res) = subs.next().await {
-            // Technically, a subscription produces `Result<Event, Error>`
-            // instances. Errors can be produced by the remote endpoint at any
-            // time and need to be handled here.
-            let ev = res.unwrap();
-            println!("Got incoming event: {:?}", ev);
-            counter += 1;
-            if counter >= count {
-                break;
-            }
-        }
-    }
+    let (app, driver) = KeyValueStoreApp::new();
+    let server = ServerBuilder::new(opt.read_buf_size)
+        .bind(format!("{}:{}", opt.host, opt.port), app)
+        .unwrap();
+    std::thread::spawn(move || driver.run());
+    server.listen().unwrap();
 }
