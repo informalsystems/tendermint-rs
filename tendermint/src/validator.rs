@@ -286,7 +286,7 @@ impl Info {
     /// Returns the bytes to be hashed into the Merkle tree -
     /// the leaves of the tree.
     pub fn hash_bytes(&self) -> Vec<u8> {
-        SimpleValidator::from(self).encode_vec().unwrap()
+        SimpleValidator::from(self).encode_vec()
     }
 }
 

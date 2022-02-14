@@ -185,9 +185,11 @@ where
     }
 
     /// Encodes into a Protobuf-encoded `Vec<u8>`.
-    fn encode_vec(&self) -> Result<Vec<u8>, Error> {
+    fn encode_vec(&self) -> Vec<u8> {
         let mut wire = Vec::with_capacity(self.encoded_len());
-        self.encode(&mut wire).map(|_| wire)
+        self.encode(&mut wire)
+            .map(|_| wire)
+            .expect("buffer size too small")
     }
 
     /// Constructor that attempts to decode a Protobuf-encoded instance from a

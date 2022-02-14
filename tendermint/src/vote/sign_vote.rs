@@ -295,7 +295,7 @@ mod tests {
             };
             println!("{:?}", vt_precommit);
             let cv_precommit = CanonicalVote::new(vt_precommit, ChainId::try_from("A").unwrap());
-            let got = cv_precommit.encode_vec().unwrap();
+            let got = cv_precommit.encode_vec();
             let want = vec![
                 0x8,  // (field_number << 3) | wire_type
                 0x2,  // PrecommitType
@@ -322,7 +322,7 @@ mod tests {
 
             let cv_prevote = CanonicalVote::new(vt_prevote, ChainId::try_from("A").unwrap());
 
-            let got = cv_prevote.encode_vec().unwrap();
+            let got = cv_prevote.encode_vec();
 
             let want = vec![
                 0x8,  // (field_number << 3) | wire_type
@@ -375,7 +375,7 @@ mod tests {
             ])
             .unwrap(),
         };
-        let got = vote.encode_vec().unwrap();
+        let got = vote.encode_vec();
         let v = Vote::decode_vec(&got).unwrap();
 
         assert_eq!(v, vote);
