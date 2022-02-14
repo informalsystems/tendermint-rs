@@ -553,7 +553,7 @@ mod tests {
             ),
             error: None,
         };
-        let got = msg.encode_vec().unwrap();
+        let got = msg.encode_vec();
 
         assert_eq!(got, encoded);
         assert_eq!(PubKeyResponse::decode_vec(&encoded).unwrap(), msg);
