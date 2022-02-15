@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use tendermint::{block, merkle::proof::Proof, serializers};
 
 use crate::{
-    abci::{Code, Log, Path},
+    abci::{Code, Log},
     prelude::*,
 };
 
@@ -13,7 +13,7 @@ use crate::{
 pub struct Request {
     /// Path to the data
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub path: Option<Path>,
+    pub path: Option<String>,
 
     /// Data to query
     #[serde(with = "serializers::bytes::hexstring")]
@@ -30,7 +30,7 @@ pub struct Request {
 
 impl Request {
     /// Create a new ABCI query request
-    pub fn new<D>(path: Option<Path>, data: D, height: Option<block::Height>, prove: bool) -> Self
+    pub fn new<D>(path: Option<String>, data: D, height: Option<block::Height>, prove: bool) -> Self
     where
         D: Into<Vec<u8>>,
     {
