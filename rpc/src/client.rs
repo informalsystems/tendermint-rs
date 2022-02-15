@@ -46,7 +46,7 @@ pub trait Client {
     /// `/abci_query`: query the ABCI application
     async fn abci_query<V>(
         &self,
-        path: Option<crate::abci::Path>,
+        path: Option<String>,
         data: V,
         height: Option<Height>,
         prove: bool,

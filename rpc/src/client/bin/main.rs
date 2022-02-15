@@ -3,7 +3,7 @@
 use core::str::FromStr;
 use futures::StreamExt;
 use structopt::StructOpt;
-use tendermint_rpc::abci::{transaction::Hash, Path, Transaction};
+use tendermint_rpc::abci::{transaction::Hash, Transaction};
 use tendermint_rpc::query::Query;
 use tendermint_rpc::{
     Client, Error, HttpClient, Order, Paging, Scheme, Subscription, SubscriptionClient, Url,
@@ -304,14 +304,7 @@ where
             prove,
         } => serde_json::to_string_pretty(
             &client
-                .abci_query(
-                    path.map(|s| Path::from_str(&s))
-                        .transpose()
-                        .map_err(Error::tendermint)?,
-                    data,
-                    height.map(Into::into),
-                    prove,
-                )
+                .abci_query(path, data, height.map(Into::into), prove)
                 .await?,
         )
         .map_err(Error::serde)?,
