@@ -2,8 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 
-use tendermint::Hash;
 use tendermint::block::{self, Block};
+use tendermint::Hash;
 
 /// Get information about a specific block by its hash
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
