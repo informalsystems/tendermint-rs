@@ -92,9 +92,10 @@ fn outgoing_fixtures() {
             }
             "block_by_hash" => {
                 // First, get the hash at height 1.
-                let wrapped =
-                    serde_json::from_str::<RequestWrapper<endpoint::block_by_hash::Request>>(&content)
-                        .unwrap();
+                let wrapped = serde_json::from_str::<
+                    RequestWrapper<endpoint::block_by_hash::Request>,
+                >(&content)
+                .unwrap();
                 assert_eq!(
                     wrapped.params().hash.unwrap().to_string(),
                     "00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF"
@@ -484,7 +485,10 @@ fn incoming_fixtures() {
             }
             "block_by_hash" => {
                 let result = endpoint::block::Response::from_string(content).unwrap();
-                assert_eq!(result.block_id.hash.to_string(), "BCF3DB412E80A396D10BF5B5E6D3E63D3B06DEB25AA958BCB8CE18D023838042");
+                assert_eq!(
+                    result.block_id.hash.to_string(),
+                    "BCF3DB412E80A396D10BF5B5E6D3E63D3B06DEB25AA958BCB8CE18D023838042"
+                );
             }
             "block_search" => {
                 let result = endpoint::block_search::Response::from_string(content).unwrap();
