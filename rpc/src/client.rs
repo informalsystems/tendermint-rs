@@ -23,10 +23,10 @@ use crate::query::Query;
 use crate::{Error, Order, SimpleRequest};
 use async_trait::async_trait;
 use core::time::Duration;
-use tendermint::abci;
 use tendermint::block::Height;
 use tendermint::evidence::Evidence;
 use tendermint::Genesis;
+use tendermint::{abci, Hash};
 use tokio::time;
 
 /// Provides lightweight access to the Tendermint RPC. It gives access to all
@@ -259,11 +259,7 @@ pub trait Client {
     }
 
     /// `/tx`: find transaction by hash.
-    async fn tx(
-        &self,
-        hash: crate::abci::transaction::Hash,
-        prove: bool,
-    ) -> Result<tx::Response, Error> {
+    async fn tx(&self, hash: Hash, prove: bool) -> Result<tx::Response, Error> {
         self.perform(tx::Request::new(hash, prove)).await
     }
 

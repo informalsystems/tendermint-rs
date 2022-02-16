@@ -12,6 +12,7 @@
 //!
 //! (Make sure you install cargo-make using `cargo install cargo-make` first.)
 
+use tendermint::Hash;
 use tendermint_light_client::{
     builder::{LightClientBuilder, SupervisorBuilder},
     components::io::{AtHeight, Io, IoError, ProdIo},
@@ -34,11 +35,7 @@ struct TestEvidenceReporter;
 
 #[contracts::contract_trait]
 impl EvidenceReporter for TestEvidenceReporter {
-    fn report(
-        &self,
-        evidence: Evidence,
-        peer: PeerId,
-    ) -> Result<rpc::abci::transaction::Hash, IoError> {
+    fn report(&self, evidence: Evidence, peer: PeerId) -> Result<Hash, IoError> {
         panic!(
             "unexpected fork detected for peer {} with evidence: {:?}",
             peer, evidence

@@ -3,10 +3,10 @@
 use core::str::FromStr;
 use std::{fs, path::PathBuf};
 use subtle_encoding::{base64, hex};
-use tendermint::evidence::Duration;
+use tendermint::hash::Algorithm;
 use tendermint::public_key;
+use tendermint::{evidence::Duration, Hash};
 use tendermint_config::net::Address;
-use tendermint_rpc::abci::transaction::Hash;
 use tendermint_rpc::{
     endpoint,
     error::{Error, ErrorDetail},
@@ -269,10 +269,15 @@ fn outgoing_fixtures() {
                         .unwrap();
                 assert_eq!(
                     wrapped.params().hash,
-                    Hash::new([
-                        252, 184, 111, 113, 196, 239, 244, 62, 19, 197, 31, 161, 39, 145, 246, 221,
-                        29, 219, 134, 0, 165, 17, 49, 190, 34, 137, 97, 77, 104, 130, 246, 190
-                    ])
+                    Hash::from_bytes(
+                        Algorithm::Sha256,
+                        &[
+                            252, 184, 111, 113, 196, 239, 244, 62, 19, 197, 31, 161, 39, 145, 246,
+                            221, 29, 219, 134, 0, 165, 17, 49, 190, 34, 137, 97, 77, 104, 130, 246,
+                            190
+                        ]
+                    )
+                    .unwrap()
                 );
                 assert!(wrapped.params().prove);
             }
@@ -282,10 +287,15 @@ fn outgoing_fixtures() {
                         .unwrap();
                 assert_eq!(
                     wrapped.params().hash,
-                    Hash::new([
-                        252, 184, 111, 113, 196, 239, 244, 62, 19, 197, 31, 161, 39, 145, 246, 221,
-                        29, 219, 134, 0, 165, 17, 49, 190, 34, 137, 97, 77, 104, 130, 246, 190
-                    ])
+                    Hash::from_bytes(
+                        Algorithm::Sha256,
+                        &[
+                            252, 184, 111, 113, 196, 239, 244, 62, 19, 197, 31, 161, 39, 145, 246,
+                            221, 29, 219, 134, 0, 165, 17, 49, 190, 34, 137, 97, 77, 104, 130, 246,
+                            190
+                        ]
+                    )
+                    .unwrap()
                 );
                 assert!(!wrapped.params().prove);
             }
@@ -550,7 +560,7 @@ fn incoming_fixtures() {
                 assert!(result.data.value().is_empty());
                 assert_ne!(
                     result.hash,
-                    tendermint_rpc::abci::transaction::Hash::new([0; 32])
+                    Hash::from_bytes(Algorithm::Sha256, &[0; 32]).unwrap()
                 );
                 assert!(result.log.value().is_empty());
             }
@@ -640,7 +650,7 @@ fn incoming_fixtures() {
                 assert!(result.deliver_tx.log.value().is_empty());
                 assert_ne!(
                     result.hash,
-                    tendermint_rpc::abci::transaction::Hash::new([0; 32])
+                    Hash::from_bytes(Algorithm::Sha256, &[0; 32]).unwrap()
                 );
             }
             "broadcast_tx_sync" => {
@@ -649,7 +659,7 @@ fn incoming_fixtures() {
                 assert!(result.data.value().is_empty());
                 assert_ne!(
                     result.hash,
-                    tendermint_rpc::abci::transaction::Hash::new([0; 32])
+                    Hash::from_bytes(Algorithm::Sha256, &[0; 32]).unwrap()
                 );
                 assert!(result.log.value().is_empty());
             }
@@ -1297,7 +1307,7 @@ fn incoming_fixtures() {
                 assert!(result.data.value().is_empty());
                 assert_ne!(
                     result.hash,
-                    tendermint_rpc::abci::transaction::Hash::new([0; 32])
+                    Hash::from_bytes(Algorithm::Sha256, &[0; 32]).unwrap()
                 );
                 assert!(result.log.value().is_empty());
             }
@@ -1307,7 +1317,7 @@ fn incoming_fixtures() {
                 assert!(result.data.value().is_empty());
                 assert_ne!(
                     result.hash,
-                    tendermint_rpc::abci::transaction::Hash::new([0; 32])
+                    Hash::from_bytes(Algorithm::Sha256, &[0; 32]).unwrap()
                 );
                 assert!(result.log.value().is_empty());
             }
@@ -1317,7 +1327,7 @@ fn incoming_fixtures() {
                 assert!(result.data.value().is_empty());
                 assert_ne!(
                     result.hash,
-                    tendermint_rpc::abci::transaction::Hash::new([0; 32])
+                    Hash::from_bytes(Algorithm::Sha256, &[0; 32]).unwrap()
                 );
                 assert!(result.log.value().is_empty());
             }
@@ -1327,7 +1337,7 @@ fn incoming_fixtures() {
                 assert!(result.data.value().is_empty());
                 assert_ne!(
                     result.hash,
-                    tendermint_rpc::abci::transaction::Hash::new([0; 32])
+                    Hash::from_bytes(Algorithm::Sha256, &[0; 32]).unwrap()
                 );
                 assert!(result.log.value().is_empty());
             }
@@ -1337,7 +1347,7 @@ fn incoming_fixtures() {
                 assert!(result.data.value().is_empty());
                 assert_ne!(
                     result.hash,
-                    tendermint_rpc::abci::transaction::Hash::new([0; 32])
+                    Hash::from_bytes(Algorithm::Sha256, &[0; 32]).unwrap()
                 );
                 assert!(result.log.value().is_empty());
             }
@@ -1347,7 +1357,7 @@ fn incoming_fixtures() {
                 assert!(result.data.value().is_empty());
                 assert_ne!(
                     result.hash,
-                    tendermint_rpc::abci::transaction::Hash::new([0; 32])
+                    Hash::from_bytes(Algorithm::Sha256, &[0; 32]).unwrap()
                 );
                 assert!(result.log.value().is_empty());
             }
@@ -1355,10 +1365,15 @@ fn incoming_fixtures() {
                 let result = endpoint::tx::Response::from_string(content).unwrap();
                 assert_eq!(
                     result.hash,
-                    Hash::new([
-                        252, 184, 111, 113, 196, 239, 244, 62, 19, 197, 31, 161, 39, 145, 246, 221,
-                        29, 219, 134, 0, 165, 17, 49, 190, 34, 137, 97, 77, 104, 130, 246, 190
-                    ])
+                    Hash::from_bytes(
+                        Algorithm::Sha256,
+                        &[
+                            252, 184, 111, 113, 196, 239, 244, 62, 19, 197, 31, 161, 39, 145, 246,
+                            221, 29, 219, 134, 0, 165, 17, 49, 190, 34, 137, 97, 77, 104, 130, 246,
+                            190
+                        ]
+                    )
+                    .unwrap()
                 );
                 assert_eq!(result.height.value(), 20);
                 assert!(result.proof.is_some());
@@ -1376,10 +1391,15 @@ fn incoming_fixtures() {
                 let result = endpoint::tx::Response::from_string(content).unwrap();
                 assert_eq!(
                     result.hash,
-                    Hash::new([
-                        252, 184, 111, 113, 196, 239, 244, 62, 19, 197, 31, 161, 39, 145, 246, 221,
-                        29, 219, 134, 0, 165, 17, 49, 190, 34, 137, 97, 77, 104, 130, 246, 190
-                    ])
+                    Hash::from_bytes(
+                        Algorithm::Sha256,
+                        &[
+                            252, 184, 111, 113, 196, 239, 244, 62, 19, 197, 31, 161, 39, 145, 246,
+                            221, 29, 219, 134, 0, 165, 17, 49, 190, 34, 137, 97, 77, 104, 130, 246,
+                            190
+                        ]
+                    )
+                    .unwrap(),
                 );
                 assert_eq!(result.height.value(), 20);
                 assert!(result.proof.is_none());

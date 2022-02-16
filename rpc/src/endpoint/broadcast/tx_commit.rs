@@ -3,10 +3,8 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::abci::{
-    responses::Codespace, transaction, Code, Data, Event, Gas, Info, Log, Transaction,
-};
-use tendermint::block;
+use crate::abci::{responses::Codespace, Code, Data, Event, Gas, Info, Log, Transaction};
+use tendermint::{block, Hash};
 
 use crate::prelude::*;
 
@@ -48,7 +46,7 @@ pub struct Response {
     pub deliver_tx: TxResult,
 
     /// Transaction
-    pub hash: transaction::Hash,
+    pub hash: Hash,
 
     /// Height
     pub height: block::Height,

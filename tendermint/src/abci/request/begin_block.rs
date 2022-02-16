@@ -1,6 +1,5 @@
 use crate::prelude::*;
-
-use bytes::Bytes;
+use crate::Hash;
 
 use crate::block;
 
@@ -17,7 +16,7 @@ pub struct BeginBlock {
     /// The block's hash.
     ///
     /// This can be derived from the block header.
-    pub hash: Bytes,
+    pub hash: Hash,
     /// The block header.
     pub header: block::Header,
     /// Information about the last commit.
@@ -40,7 +39,7 @@ use tendermint_proto::Protobuf;
 impl From<BeginBlock> for pb::RequestBeginBlock {
     fn from(begin_block: BeginBlock) -> Self {
         Self {
-            hash: begin_block.hash,
+            hash: begin_block.hash.into(),
             header: Some(begin_block.header.into()),
             last_commit_info: Some(begin_block.last_commit_info.into()),
             byzantine_validators: begin_block
@@ -57,7 +56,7 @@ impl TryFrom<pb::RequestBeginBlock> for BeginBlock {
 
     fn try_from(begin_block: pb::RequestBeginBlock) -> Result<Self, Self::Error> {
         Ok(Self {
-            hash: begin_block.hash,
+            hash: begin_block.hash.try_into()?,
             header: begin_block
                 .header
                 .ok_or_else(Error::missing_header)?

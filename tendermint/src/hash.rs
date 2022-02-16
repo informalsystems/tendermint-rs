@@ -2,6 +2,7 @@
 
 use crate::error::Error;
 use crate::prelude::*;
+use bytes::Bytes;
 use core::convert::TryFrom;
 use core::{
     fmt::{self, Debug, Display},
@@ -51,6 +52,29 @@ impl From<Hash> for Vec<u8> {
             Hash::Sha256(s) => s.to_vec(),
             Hash::None => vec![],
         }
+    }
+}
+
+impl AsRef<[u8]> for Hash {
+    fn as_ref(&self) -> &[u8] {
+        match self {
+            Hash::Sha256(ref h) => h.as_ref(),
+            Hash::None => &[],
+        }
+    }
+}
+
+impl From<Hash> for Bytes {
+    fn from(h: Hash) -> Self {
+        Self::copy_from_slice(h.as_ref())
+    }
+}
+
+impl TryFrom<Bytes> for Hash {
+    type Error = Error;
+
+    fn try_from(value: Bytes) -> Result<Self, Self::Error> {
+        Self::from_bytes(Algorithm::Sha256, value.as_ref())
     }
 }
 

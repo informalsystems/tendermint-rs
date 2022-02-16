@@ -1,8 +1,9 @@
 //! Utilities and datatypes for use in tests.
 
 use serde::{Deserialize, Serialize};
+use tendermint::hash::Algorithm;
+use tendermint::Hash;
 use tendermint_rpc as rpc;
-use tendermint_rpc::abci::transaction::Hash;
 
 use crate::components::clock::Clock;
 use crate::components::io::{AtHeight, Io, IoError};
@@ -127,7 +128,7 @@ pub struct MockEvidenceReporter;
 #[contract_trait]
 impl EvidenceReporter for MockEvidenceReporter {
     fn report(&self, _e: Evidence, _peer: PeerId) -> Result<Hash, IoError> {
-        Ok(Hash::new([0; 32]))
+        Ok(Hash::from_bytes(Algorithm::Sha256, &[0; 32]).unwrap())
     }
 }
 

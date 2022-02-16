@@ -3,7 +3,8 @@
 use core::str::FromStr;
 use futures::StreamExt;
 use structopt::StructOpt;
-use tendermint_rpc::abci::{transaction::Hash, Transaction};
+use tendermint::Hash;
+use tendermint_rpc::abci::Transaction;
 use tendermint_rpc::query::Query;
 use tendermint_rpc::{
     Client, Error, HttpClient, Order, Paging, Scheme, Subscription, SubscriptionClient, Url,

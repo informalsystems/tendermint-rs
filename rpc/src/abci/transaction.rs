@@ -1,8 +1,5 @@
 //! Transactions
 
-mod hash;
-
-pub use self::hash::{Hash, LENGTH as HASH_LENGTH};
 use crate::prelude::*;
 use core::{fmt, slice};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};

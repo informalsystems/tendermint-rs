@@ -17,6 +17,7 @@ mod rpc {
     use std::str::FromStr;
     use std::cmp::min;
 
+    use tendermint::Hash;
     use tendermint_rpc::{
         Client, HttpClient, Id, Order, SubscriptionClient, WebSocketClient, WebSocketClientDriver,
     };
@@ -496,7 +497,7 @@ mod rpc {
         http_client: &HttpClient,
         websocket_client: &mut WebSocketClient,
         tx: Transaction,
-    ) -> Result<(tendermint_rpc::abci::transaction::Hash, TxInfo), tendermint_rpc::Error> {
+    ) -> Result<(Hash, TxInfo), tendermint_rpc::Error> {
         let mut subs = websocket_client.subscribe(EventType::Tx.into()).await?;
         let r = http_client.broadcast_tx_async(tx.clone()).await?;
 
