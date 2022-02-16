@@ -2,7 +2,7 @@
 
 use contracts::contract_trait;
 pub use tendermint::evidence::Evidence;
-use tendermint_rpc::abci::transaction::Hash;
+use tendermint::Hash;
 
 use crate::{components::io::IoError, verifier::types::PeerId};
 

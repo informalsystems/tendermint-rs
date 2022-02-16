@@ -1,14 +1,11 @@
 //! Transactions
 
-mod hash;
-
 use core::{fmt, slice};
 
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use subtle_encoding::base64;
 use tendermint_proto::types::Data as RawData;
 
-pub use self::hash::{Hash, LENGTH as HASH_LENGTH};
 use crate::prelude::*;
 
 /// Transactions are arbitrary byte arrays whose contents are validated by the

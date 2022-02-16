@@ -3,10 +3,8 @@
 use serde::{Deserialize, Deserializer, Serializer};
 use subtle_encoding::base64;
 
-use crate::{
-    abci::transaction::{Hash, HASH_LENGTH},
-    prelude::*,
-};
+use crate::prelude::*;
+use tendermint::{hash::Algorithm, Hash};
 
 /// Deserialize a base64-encoded string into a Hash
 pub fn deserialize<'de, D>(deserializer: D) -> Result<Hash, D::Error>
@@ -15,14 +13,8 @@ where
 {
     let s = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
     let decoded = base64::decode(&s).map_err(serde::de::Error::custom)?;
-    if decoded.len() != HASH_LENGTH {
-        return Err(serde::de::Error::custom(
-            "unexpected transaction length for hash",
-        ));
-    }
-    let mut decoded_bytes = [0u8; HASH_LENGTH];
-    decoded_bytes.copy_from_slice(decoded.as_ref());
-    Ok(Hash::new(decoded_bytes))
+    let hash = Hash::from_bytes(Algorithm::Sha256, &decoded).map_err(serde::de::Error::custom)?;
+    Ok(hash)
 }
 
 /// Serialize from a Hash into a base64-encoded string

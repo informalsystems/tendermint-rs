@@ -9,7 +9,7 @@ use core::{fmt, time::Duration};
 
 use async_trait::async_trait;
 use serde::{de::DeserializeOwned, Serialize};
-use tendermint::{abci, block::Height, evidence::Evidence, Genesis};
+use tendermint::{abci, block::Height, evidence::Evidence, Genesis, Hash};
 use tokio::time;
 #[cfg(feature = "http-client")]
 pub use transport::http::{HttpClient, HttpClientUrl};
@@ -253,11 +253,7 @@ pub trait Client {
     }
 
     /// `/tx`: find transaction by hash.
-    async fn tx(
-        &self,
-        hash: crate::abci::transaction::Hash,
-        prove: bool,
-    ) -> Result<tx::Response, Error> {
+    async fn tx(&self, hash: Hash, prove: bool) -> Result<tx::Response, Error> {
         self.perform(tx::Request::new(hash, prove)).await
     }
 

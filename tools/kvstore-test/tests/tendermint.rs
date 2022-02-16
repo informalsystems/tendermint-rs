@@ -22,6 +22,7 @@ mod rpc {
 
     use futures::StreamExt;
     use tendermint::{
+        Hash,
         block::Height,
         merkle::simple_hash_from_byte_vectors,
     };
@@ -475,7 +476,7 @@ mod rpc {
         http_client: &HttpClient,
         websocket_client: &mut WebSocketClient,
         tx: Transaction,
-    ) -> Result<(tendermint_rpc::abci::transaction::Hash, TxInfo), tendermint_rpc::Error> {
+    ) -> Result<(Hash, TxInfo), tendermint_rpc::Error> {
         let mut subs = websocket_client.subscribe(EventType::Tx.into()).await?;
         let r = http_client.broadcast_tx_async(tx.clone()).await?;
 
