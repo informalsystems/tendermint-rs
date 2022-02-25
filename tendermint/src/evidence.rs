@@ -203,7 +203,7 @@ impl Data {
 
 impl AsRef<[Evidence]> for Data {
     fn as_ref(&self) -> &[Evidence] {
-        self.evidence.as_deref().unwrap_or_else(|| &[])
+        self.evidence.as_deref().unwrap_or(&[])
     }
 }
 
