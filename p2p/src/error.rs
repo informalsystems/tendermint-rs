@@ -1,5 +1,8 @@
 //! Error types
 
+// FIXME(hu55a1n1): Remove below line once flex-error solves this clippy error
+#![allow(clippy::use_self)]
+
 use flex_error::{define_error, DisplayOnly};
 use prost::DecodeError;
 use signature::Error as SignatureError;
