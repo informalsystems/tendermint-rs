@@ -77,6 +77,8 @@ enum ClientRequest {
         #[structopt(long)]
         prove: bool,
     },
+    /// Get a header at a given height.
+    Header { height: u32 },
     /// Get a block at a given height.
     Block { height: u32 },
     /// Get block headers between two heights (min <= height <= max).
@@ -314,6 +316,9 @@ where
                 .await?,
         )
         .map_err(Error::serde)?,
+        ClientRequest::Header { height } => {
+            serde_json::to_string_pretty(&client.header(height).await?).map_err(Error::serde)?
+        }
         ClientRequest::Block { height } => {
             serde_json::to_string_pretty(&client.block(height).await?).map_err(Error::serde)?
         }

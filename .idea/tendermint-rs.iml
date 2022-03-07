@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="CPP_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/abci/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/abci/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/light-client-js/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/light-client-js/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/light-client-js/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/light-client/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/light-client/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/light-client/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/p2p/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/pbt-gen/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/proto/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/proto/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/rpc/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rpc/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/tendermint/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/tendermint/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/testgen/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/std-ext/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/config/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/config/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/light-client-verifier/src" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/target" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>

@@ -19,6 +19,9 @@ pub enum Method {
     /// Get ABCI query
     AbciQuery,
 
+    /// Get block header
+    Header,
+
     /// Get block info
     Block,
 
@@ -86,6 +89,7 @@ impl Method {
         match self {
             Method::AbciInfo => "abci_info",
             Method::AbciQuery => "abci_query",
+            Method::Header => "header",
             Method::Block => "block",
             Method::BlockResults => "block_results",
             Method::BlockSearch => "block_search",
@@ -117,6 +121,7 @@ impl FromStr for Method {
         Ok(match s {
             "abci_info" => Method::AbciInfo,
             "abci_query" => Method::AbciQuery,
+            "header" => Method::Header,
             "block" => Method::Block,
             "block_results" => Method::BlockResults,
             "block_search" => Method::BlockSearch,

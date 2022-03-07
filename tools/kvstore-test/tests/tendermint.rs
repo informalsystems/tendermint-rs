@@ -92,6 +92,17 @@ mod rpc {
         assert_eq!(abci_query.codespace, String::new());
     }
 
+    /// `/header` endpoint
+    #[tokio::test]
+    async fn header() {
+        let height = 1u64;
+        let header = localhost_http_client()
+            .header(Height::try_from(height).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(header.height.value(), height);
+    }
+
     /// `/block` endpoint
     #[tokio::test]
     async fn block() {

@@ -20,6 +20,16 @@ pub fn abci_query(key: &str) -> PlannedInteraction {
     .into()
 }
 
+pub fn header(height: u64) -> PlannedInteraction {
+    Request::new(
+        "header",
+        json!({
+            "height": format!("{}", height),
+        }),
+    )
+    .into()
+}
+
 pub fn block(height: u64) -> PlannedInteraction {
     Request::new(
         "block",

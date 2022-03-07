@@ -59,6 +59,14 @@ pub trait Client {
             .response)
     }
 
+    /// `/header`: get header at a given height.
+    async fn header<H>(&self, height: H) -> Result<header::Response, Error>
+    where
+        H: Into<Height> + Send,
+    {
+        self.perform(header::Request::new(height.into())).await
+    }
+
     /// `/block`: get block at a given height.
     async fn block<H>(&self, height: H) -> Result<block::Response, Error>
     where
