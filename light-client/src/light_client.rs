@@ -2,6 +2,9 @@
 //!
 //! [1]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification/verification.md
 
+// FIXME(hu55a1n1): Remove below line once clippy errors in `contracts::post` derive macro are fixed
+#![allow(clippy::nonminimal_bool)]
+
 use contracts::*;
 use core::fmt;
 

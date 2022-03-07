@@ -1,5 +1,8 @@
 //! Provides a peer list for use within the `Supervisor`
 
+// FIXME(hu55a1n1): Remove below line once clippy errors in `contracts::post` derive macro are fixed
+#![allow(clippy::nonminimal_bool)]
+
 use contracts::{post, pre};
 use std::collections::{BTreeSet, HashMap};
 
