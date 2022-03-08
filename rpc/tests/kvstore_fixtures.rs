@@ -370,7 +370,6 @@ fn incoming_fixtures() {
                 );
                 assert!(
                     result
-                        .block
                         .header
                         .time
                         .duration_since(informal_epoch)
