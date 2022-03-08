@@ -34,6 +34,7 @@ impl crate::SimpleRequest for Request {}
 
 /// Header responses
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(transparent)]
 pub struct Response {
     /// Header
     pub header: Header,
