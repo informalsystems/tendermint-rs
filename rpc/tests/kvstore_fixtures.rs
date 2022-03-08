@@ -72,6 +72,12 @@ fn outgoing_fixtures() {
                 assert!(wrapped.params().height.is_none());
                 assert!(!wrapped.params().prove);
             }
+            "header_at_height_1" => {
+                let wrapped =
+                    serde_json::from_str::<RequestWrapper<endpoint::header::Request>>(&content)
+                        .unwrap();
+                assert_eq!(wrapped.params().height.unwrap().value(), 1);
+            }
             "block_at_height_0" => {
                 let wrapped =
                     serde_json::from_str::<RequestWrapper<endpoint::block::Request>>(&content)
@@ -345,6 +351,38 @@ fn incoming_fixtures() {
                 assert_eq!(result.response.log.value(), "does not exist");
                 assert!(result.response.proof.is_none());
                 assert!(result.response.value.is_empty());
+            }
+            "header_at_height_1" => {
+                let result = endpoint::header::Response::from_string(content).unwrap();
+                assert!(result.header.app_hash.value().is_empty());
+                assert_eq!(result.header.chain_id.as_str(), CHAIN_ID);
+                assert!(!result.header.consensus_hash.is_empty());
+                assert_eq!(result.header.data_hash, empty_merkle_root_hash);
+                assert_eq!(result.header.evidence_hash, empty_merkle_root_hash);
+                assert_eq!(result.header.height.value(), 1);
+                assert!(result.header.last_block_id.is_none());
+                assert_eq!(result.header.last_commit_hash, empty_merkle_root_hash);
+                assert_eq!(result.header.last_results_hash, empty_merkle_root_hash);
+                assert!(!result.header.next_validators_hash.is_empty());
+                assert_ne!(
+                    result.header.proposer_address.as_bytes(),
+                    [0u8; tendermint::account::LENGTH]
+                );
+                assert!(
+                    result
+                        .block
+                        .header
+                        .time
+                        .duration_since(informal_epoch)
+                        .unwrap()
+                        .as_secs()
+                        > 0
+                );
+                assert!(!result.header.validators_hash.is_empty());
+                assert_eq!(
+                    result.header.version,
+                    tendermint::block::header::Version { block: 11, app: 1 }
+                );
             }
             "block_at_height_0" => {
                 let res = endpoint::block::Response::from_string(&content);

@@ -1,0 +1,8 @@
+{
+  "id": "0166b641-4967-4b3c-a36a-73ea4e5a737a",
+  "jsonrpc": "2.0",
+  "method": "header",
+  "params": {
+    "height": "1"
+  }
+}
