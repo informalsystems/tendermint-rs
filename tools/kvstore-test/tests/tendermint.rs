@@ -96,11 +96,11 @@ mod rpc {
     #[tokio::test]
     async fn header() {
         let height = 1u64;
-        let header = localhost_http_client()
+        let res = localhost_http_client()
             .header(Height::try_from(height).unwrap())
             .await
             .unwrap();
-        assert_eq!(header.height.value(), height);
+        assert_eq!(res.header.height.value(), height);
     }
 
     /// `/block` endpoint
