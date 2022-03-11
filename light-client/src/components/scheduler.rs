@@ -20,8 +20,8 @@ pub trait Scheduler: Send + Sync {
     ///
     /// ## Postcondition
     /// - The resulting height must be valid according to `valid_schedule`. [LCV-SCHEDULE-POST.1]
-    #[pre(light_store.highest_trusted_or_verified().is_some())]
-    #[post(valid_schedule(ret, target_height, current_height, light_store))]
+    #[requires(light_store.highest_trusted_or_verified().is_some())]
+    #[ensures(valid_schedule(ret, target_height, current_height, light_store))]
     fn schedule(
         &self,
         light_store: &dyn LightStore,
@@ -53,8 +53,8 @@ where
 ///
 /// ## Postcondition
 /// - The resulting height must be valid according to `valid_schedule`. [LCV-SCHEDULE-POST.1]
-#[pre(light_store.highest_trusted_or_verified().is_some())]
-#[post(valid_schedule(ret, target_height, current_height, light_store))]
+#[requires(light_store.highest_trusted_or_verified().is_some())]
+#[ensures(valid_schedule(ret, target_height, current_height, light_store))]
 pub fn basic_bisecting_schedule(
     light_store: &dyn LightStore,
     current_height: Height,
@@ -120,8 +120,8 @@ pub fn valid_schedule(
     }
 }
 
-#[pre(low <= high)]
-#[post(low <= ret && ret <= high)]
+#[requires(low <= high)]
+#[ensures(low <= ret && ret <= high)]
 fn midpoint(low: Height, high: Height) -> Height {
     (low.value() + (high.value() + 1 - low.value()) / 2)
         .try_into()

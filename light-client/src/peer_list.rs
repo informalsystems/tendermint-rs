@@ -1,6 +1,6 @@
 //! Provides a peer list for use within the `Supervisor`
 
-use contracts::{post, pre};
+use contracts::*;
 use std::collections::{BTreeSet, HashMap};
 
 use crate::errors::Error;
@@ -111,8 +111,8 @@ impl<T> PeerList<T> {
     /// ## Precondition
     /// - The given peer id must not be the primary peer id.
     /// - The given peer must be in the witness list
-    #[pre(faulty_witness != self.primary && self.witnesses.contains(&faulty_witness))]
-    #[post(Self::invariant(self))]
+    #[requires(faulty_witness != self.primary && self.witnesses.contains(&faulty_witness))]
+    #[ensures(Self::invariant(self))]
     pub fn replace_faulty_witness(&mut self, faulty_witness: PeerId) -> Option<PeerId> {
         let mut result = None;
 
@@ -134,7 +134,8 @@ impl<T> PeerList<T> {
     ///
     /// ## Errors
     /// - If there are no witness left, returns `ErrorKind::NoWitnessLeft`.
-    #[post(ret.is_ok() ==> Self::invariant(self))]
+    #[allow(clippy::nonminimal_bool)]
+    #[ensures(ret.is_ok() -> Self::invariant(self))]
     pub fn replace_faulty_primary(
         &mut self,
         primary_error: Option<Error>,
@@ -196,21 +197,21 @@ impl<T> PeerListBuilder<T> {
     }
 
     /// Register the given peer id and value as a witness.
-    #[pre(self.primary != Some(peer_id))]
+    #[requires(self.primary != Some(peer_id))]
     pub fn witness(&mut self, peer_id: PeerId, value: T) {
         self.values.insert(peer_id, value);
         self.witnesses.insert(peer_id);
     }
 
     /// Register the given peer id and value as a full node.
-    #[pre(self.primary != Some(peer_id))]
+    #[requires(self.primary != Some(peer_id))]
     pub fn full_node(&mut self, peer_id: PeerId, value: T) {
         self.values.insert(peer_id, value);
         self.full_nodes.insert(peer_id);
     }
 
     /// Register the given peer id and value as a faulty node.
-    #[pre(self.primary != Some(peer_id))]
+    #[requires(self.primary != Some(peer_id))]
     pub fn faulty_node(&mut self, peer_id: PeerId, value: T) {
         self.values.insert(peer_id, value);
         self.faulty_nodes.insert(peer_id);
@@ -220,8 +221,8 @@ impl<T> PeerListBuilder<T> {
     ///
     /// ## Precondition
     /// - A primary has been set with a call to `PeerListBuilder::primary`.
-    #[pre(self.primary.is_some())]
-    #[post(PeerList::invariant(&ret))]
+    #[requires(self.primary.is_some())]
+    #[ensures(PeerList::invariant(&ret))]
     pub fn build(self) -> PeerList<T> {
         PeerList {
             values: self.values,
