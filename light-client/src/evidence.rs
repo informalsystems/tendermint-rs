@@ -24,7 +24,7 @@ mod prod {
     use super::*;
     use crate::utils::block_on;
 
-    use contracts::pre;
+    use contracts::requires;
     use std::{collections::HashMap, time::Duration};
 
     use tendermint_rpc as rpc;
@@ -40,7 +40,7 @@ mod prod {
 
     #[contract_trait]
     impl EvidenceReporter for ProdEvidenceReporter {
-        #[pre(self.peer_map.contains_key(&peer))]
+        #[requires(self.peer_map.contains_key(&peer))]
         fn report(&self, e: Evidence, peer: PeerId) -> Result<Hash, IoError> {
             let client = self.rpc_client_for(peer)?;
 
@@ -65,7 +65,7 @@ mod prod {
             Self { peer_map, timeout }
         }
 
-        #[pre(self.peer_map.contains_key(&peer))]
+        #[requires(self.peer_map.contains_key(&peer))]
         fn rpc_client_for(&self, peer: PeerId) -> Result<rpc::HttpClient, IoError> {
             let peer_addr = self.peer_map.get(&peer).unwrap().to_owned();
             rpc::HttpClient::new(peer_addr).map_err(IoError::rpc)

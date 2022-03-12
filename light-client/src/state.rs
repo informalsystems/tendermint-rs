@@ -32,7 +32,7 @@ impl State {
     ///
     /// ## Preconditions
     /// - `height` <= `target_height`
-    #[pre(height <= target_height)]
+    #[requires(height <= target_height)]
     pub fn trace_block(&mut self, target_height: Height, height: Height) {
         self.verification_trace
             .entry(target_height)

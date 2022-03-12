@@ -140,8 +140,9 @@ impl LightClient {
     /// - If the core verification loop invariant is violated [LCV-INV-TP.1]
     /// - If verification of a light block fails
     /// - If the fetching a light block from the primary node fails
-    #[post(
-        ret.is_ok() ==> trusted_store_contains_block_at_target_height(
+    #[allow(clippy::nonminimal_bool)]
+    #[ensures(
+        ret.is_ok() -> trusted_store_contains_block_at_target_height(
             state.light_store.as_ref(),
             target_height,
         )
@@ -365,7 +366,7 @@ impl LightClient {
     ///
     /// ## Postcondition
     /// - The provider of block that is returned matches the given peer.
-    #[post(ret.as_ref().map(|(lb, _)| lb.provider == self.peer).unwrap_or(true))]
+    #[ensures(ret.as_ref().map(|(lb, _)| lb.provider == self.peer).unwrap_or(true))]
     pub fn get_or_fetch_block(
         &self,
         height: Height,
