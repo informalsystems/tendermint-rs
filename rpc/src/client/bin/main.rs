@@ -377,7 +377,8 @@ where
             serde_json::to_string_pretty(&client.consensus_state().await?).map_err(Error::serde)?
         }
         ClientRequest::Genesis => {
-            serde_json::to_string_pretty(&client.genesis().await?).map_err(Error::serde)?
+            serde_json::to_string_pretty(&client.genesis::<serde_json::Value>().await?)
+                .map_err(Error::serde)?
         }
         ClientRequest::Health => {
             serde_json::to_string_pretty(&client.health().await?).map_err(Error::serde)?

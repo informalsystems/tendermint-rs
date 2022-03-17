@@ -21,7 +21,10 @@ use crate::prelude::*;
 use crate::query::Query;
 use crate::{Error, Order, SimpleRequest};
 use async_trait::async_trait;
+use core::fmt;
 use core::time::Duration;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use tendermint::abci::{self, Transaction};
 use tendermint::block::Height;
 use tendermint::evidence::Evidence;
@@ -229,8 +232,11 @@ pub trait Client {
     }
 
     /// `/genesis`: get genesis file.
-    async fn genesis(&self) -> Result<Genesis, Error> {
-        Ok(self.perform(genesis::Request).await?.genesis)
+    async fn genesis<AppState>(&self) -> Result<Genesis<AppState>, Error>
+    where
+        AppState: fmt::Debug + Serialize + DeserializeOwned + Send,
+    {
+        Ok(self.perform(genesis::Request::default()).await?.genesis)
     }
 
     /// `/net_info`: obtain information about P2P and other network connections.

@@ -1,28 +1,45 @@
 //! `/genesis` endpoint JSON-RPC wrapper
 
-use serde::{Deserialize, Serialize};
+use core::{fmt, marker::PhantomData};
 
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tendermint::Genesis;
 
 /// Get the genesis state for the current chain
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct Request;
+pub struct Request<AppState> {
+    marker: PhantomData<AppState>,
+}
 
-impl crate::Request for Request {
-    type Response = Response;
+impl<AppState> Default for Request<AppState> {
+    fn default() -> Self {
+        Self {
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<AppState> crate::Request for Request<AppState>
+where
+    AppState: fmt::Debug + Serialize + DeserializeOwned + Send,
+{
+    type Response = Response<AppState>;
 
     fn method(&self) -> crate::Method {
         crate::Method::Genesis
     }
 }
 
-impl crate::SimpleRequest for Request {}
+impl<AppState> crate::SimpleRequest for Request<AppState> where
+    AppState: fmt::Debug + Serialize + DeserializeOwned + Send
+{
+}
 
 /// Block responses
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Response {
+pub struct Response<AppState> {
     /// Genesis data
-    pub genesis: Genesis,
+    pub genesis: Genesis<AppState>,
 }
 
-impl crate::Response for Response {}
+impl<AppState> crate::Response for Response<AppState> where AppState: Serialize + DeserializeOwned {}

@@ -163,10 +163,10 @@ fn outgoing_fixtures() {
                 RequestWrapper<endpoint::consensus_state::Request>,
             >(&content)
             .is_ok()),
-            "genesis" => assert!(
-                serde_json::from_str::<RequestWrapper<endpoint::genesis::Request>>(&content)
-                    .is_ok()
-            ),
+            "genesis" => assert!(serde_json::from_str::<
+                RequestWrapper<endpoint::genesis::Request::<serde_json::Value>>,
+            >(&content)
+            .is_ok()),
             "net_info" => assert!(serde_json::from_str::<
                 RequestWrapper<endpoint::net_info::Request>,
             >(&content)
@@ -727,7 +727,8 @@ fn incoming_fixtures() {
                 assert!(endpoint::consensus_state::Response::from_string(content).is_ok());
             }
             "genesis" => {
-                let result = endpoint::genesis::Response::from_string(content).unwrap();
+                let result =
+                    endpoint::genesis::Response::<serde_json::Value>::from_string(content).unwrap();
                 assert!(result.genesis.app_hash.is_empty());
                 assert_eq!(result.genesis.chain_id.as_str(), CHAIN_ID);
                 assert_eq!(result.genesis.consensus_params.block.max_bytes, 22020096);
