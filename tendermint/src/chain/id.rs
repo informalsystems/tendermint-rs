@@ -2,6 +2,7 @@
 
 use crate::error::Error;
 use crate::prelude::*;
+use alloc::borrow::Cow;
 use core::convert::TryFrom;
 use core::{
     cmp::Ordering,
@@ -19,7 +20,7 @@ pub const MAX_LENGTH: usize = 50;
 
 /// Chain identifier (e.g. 'gaia-9000')
 #[derive(Clone)]
-pub struct Id(String);
+pub struct Id(Cow<'static, str>);
 
 impl Protobuf<String> for Id {}
 
@@ -31,44 +32,57 @@ impl TryFrom<String> for Id {
             return Err(Error::length());
         }
 
-        for byte in value.as_bytes() {
-            match byte {
-                b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_' | b'.' => (),
-                _ => return Err(Error::parse("chain id charset".to_string())),
-            }
-        }
-
-        Ok(Id(value))
+        validate(&value).map_err(|_| Error::parse("chain id charset".to_string()))?;
+        Ok(Id(Cow::Owned(value)))
     }
 }
 
 impl From<Id> for String {
     fn from(value: Id) -> Self {
-        value.0
+        value.0.into_owned()
     }
 }
 
 impl Id {
+    /// Create a new chain ID constant.
+    ///
+    /// This implementation is `const`-friendly and can be used to define
+    /// chain ID constants. Use the `FromStr` implementation if you'd like
+    /// a heap-allocated chain ID instead.
+    ///
+    /// Panics if the chain ID is not valid.
+    pub const fn new(id: &'static str) -> Self {
+        if id.is_empty() || id.len() > MAX_LENGTH {
+            panic!("chain ID has invalid length");
+        }
+
+        if validate(id).is_err() {
+            panic!("chain ID is invalid");
+        }
+
+        Id(Cow::Borrowed(id))
+    }
+
     /// Get the chain ID as a `str`
     pub fn as_str(&self) -> &str {
-        self.0.as_str()
+        self.0.as_ref()
     }
 
     /// Get the chain ID as a raw bytes.
     pub fn as_bytes(&self) -> &[u8] {
-        self.0.as_str().as_bytes()
+        self.as_str().as_bytes()
     }
 }
 
 impl AsRef<str> for Id {
     fn as_ref(&self) -> &str {
-        self.0.as_str()
+        self.as_str()
     }
 }
 
 impl Debug for Id {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "chain::Id({})", self.0.as_str())
+        write!(f, "chain::Id({})", self.as_str())
     }
 }
 
@@ -96,7 +110,7 @@ impl FromStr for Id {
 
 impl Hash for Id {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.as_str().hash(state)
+        self.as_str().hash(state)
     }
 }
 
@@ -108,13 +122,13 @@ impl PartialOrd for Id {
 
 impl Ord for Id {
     fn cmp(&self, other: &Id) -> Ordering {
-        self.0.as_str().cmp(other.as_str())
+        self.as_str().cmp(other.as_str())
     }
 }
 
 impl PartialEq for Id {
     fn eq(&self, other: &Id) -> bool {
-        self.0.as_str() == other.as_str()
+        self.as_str() == other.as_str()
     }
 }
 
@@ -133,38 +147,81 @@ impl<'de> Deserialize<'de> for Id {
     }
 }
 
+/// Validate that a given input string is a well-formed chain ID.
+const fn validate(s: &str) -> Result<(), ()> {
+    let bytes = s.as_bytes();
+    let mut i = 0;
+
+    while i < bytes.len() {
+        if !matches!(bytes[i], b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_' | b'.') {
+            return Err(());
+        }
+
+        i += 1;
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::error::ErrorDetail;
 
     const EXAMPLE_CHAIN_ID: &str = "gaia-9000";
+    const MAX_LENGTH_CHAIN_ID: &str = "01234567890123456789012345678901234567890123456789";
+    const OVERLENGTH_CHAIN_ID: &str = "012345678901234567890123456789012345678901234567890";
 
     #[test]
-    fn parses_valid_chain_ids() {
+    fn from_str_parses_valid_chain_ids() {
         assert_eq!(
             EXAMPLE_CHAIN_ID.parse::<Id>().unwrap().as_str(),
             EXAMPLE_CHAIN_ID
         );
 
-        let long_id = String::from_utf8(vec![b'x'; MAX_LENGTH]).unwrap();
-        assert_eq!(&long_id.parse::<Id>().unwrap().as_str(), &long_id);
+        assert_eq!(
+            MAX_LENGTH_CHAIN_ID.parse::<Id>().unwrap().as_str(),
+            MAX_LENGTH_CHAIN_ID
+        );
     }
 
     #[test]
-    fn rejects_empty_chain_ids() {
-        match "".parse::<Id>().unwrap_err().detail() {
-            ErrorDetail::Length(_) => {}
-            _ => panic!("expected length error"),
-        }
+    fn from_str_rejects_empty_chain_ids() {
+        assert!(
+            matches!(
+                "".parse::<Id>().unwrap_err().detail(),
+                ErrorDetail::Length(_)
+            ),
+            "expected length error"
+        );
     }
 
     #[test]
-    fn rejects_overlength_chain_ids() {
-        let overlong_id = String::from_utf8(vec![b'x'; MAX_LENGTH + 1]).unwrap();
-        match overlong_id.parse::<Id>().unwrap_err().detail() {
-            ErrorDetail::Length(_) => {}
-            _ => panic!("expected length error"),
-        }
+    fn from_str_rejects_overlength_chain_ids() {
+        assert!(
+            matches!(
+                OVERLENGTH_CHAIN_ID.parse::<Id>().unwrap_err().detail(),
+                ErrorDetail::Length(_)
+            ),
+            "expected length error"
+        );
+    }
+
+    #[test]
+    fn new_parses_valid_chain_ids() {
+        assert_eq!(Id::new(EXAMPLE_CHAIN_ID).as_str(), EXAMPLE_CHAIN_ID);
+        assert_eq!(Id::new(MAX_LENGTH_CHAIN_ID).as_str(), MAX_LENGTH_CHAIN_ID);
+    }
+
+    #[test]
+    #[should_panic]
+    fn new_rejects_empty_chain_ids() {
+        Id::new("");
+    }
+
+    #[test]
+    #[should_panic]
+    fn new_rejects_overlength_chain_ids() {
+        Id::new(OVERLENGTH_CHAIN_ID);
     }
 }
