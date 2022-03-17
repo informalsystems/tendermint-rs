@@ -7,15 +7,11 @@ use tendermint::Genesis;
 
 /// Get the genesis state for the current chain
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct Request<AppState> {
-    marker: PhantomData<AppState>,
-}
+pub struct Request<AppState>(#[serde(skip)] PhantomData<AppState>);
 
 impl<AppState> Default for Request<AppState> {
     fn default() -> Self {
-        Self {
-            marker: PhantomData,
-        }
+        Self(PhantomData)
     }
 }
 

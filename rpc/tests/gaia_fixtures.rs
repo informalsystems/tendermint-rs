@@ -148,7 +148,8 @@ fn outgoing_fixtures() {
             }
             "genesis" => {
                 assert!(
-                    endpoint::genesis::Request::<serde_json::Value>::from_string(content).is_ok()
+                    endpoint::genesis::Request::<Option<serde_json::Value>>::from_string(content)
+                        .is_ok()
                 )
             }
             "net_info" => {
