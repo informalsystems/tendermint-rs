@@ -200,7 +200,7 @@ mod rpc {
     /// `/genesis` endpoint
     #[tokio::test]
     async fn genesis() {
-        let genesis = localhost_http_client().genesis().await.unwrap(); // https://github.com/tendermint/tendermint/issues/5549
+        let genesis = localhost_http_client().genesis::<Option<serde_json::Value>>().await.unwrap(); // https://github.com/tendermint/tendermint/issues/5549
 
         assert_eq!(
             genesis.consensus_params.validator.pub_key_types[0].to_string(),
