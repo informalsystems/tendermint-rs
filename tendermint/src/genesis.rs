@@ -30,6 +30,5 @@ pub struct Genesis<AppState = serde_json::Value> {
     pub app_hash: Vec<u8>,
 
     /// App state
-    #[serde(default)]
     pub app_state: AppState,
 }

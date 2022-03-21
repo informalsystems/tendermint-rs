@@ -72,7 +72,9 @@ fn incoming_fixtures() {
                 assert!(endpoint::consensus_state::Response::from_string(content).is_ok())
             }
             "genesis" => {
-                assert!(endpoint::genesis::Response::from_string(content).is_ok())
+                assert!(
+                    endpoint::genesis::Response::<serde_json::Value>::from_string(content).is_ok()
+                )
             }
             "net_info" => {
                 assert!(endpoint::net_info::Response::from_string(content).is_ok())
@@ -145,7 +147,10 @@ fn outgoing_fixtures() {
                 assert!(endpoint::consensus_state::Request::from_string(content).is_ok())
             }
             "genesis" => {
-                assert!(endpoint::genesis::Request::from_string(content).is_ok())
+                assert!(
+                    endpoint::genesis::Request::<Option<serde_json::Value>>::from_string(content)
+                        .is_ok()
+                )
             }
             "net_info" => {
                 assert!(endpoint::net_info::Request::from_string(content).is_ok())
