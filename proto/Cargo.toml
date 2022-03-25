@@ -30,3 +30,17 @@ flex-error = { version = "0.4.4", default-features = false }
 
 [dev-dependencies]
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+
+[features]
+default = ['std']
+std = [
+    'prost/std',
+    'prost-types/std',
+    'bytes/std',
+    'serde/std',
+    'serde_bytes/std',
+    "subtle-encoding/std",
+    "num-traits/std",
+    "time/std",
+    "flex-error/std"
+]

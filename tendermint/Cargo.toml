@@ -42,7 +42,6 @@ prost-types = { version = "0.9", default-features = false }
 serde = { version = "1", default-features = false, features = ["derive"] }
 serde_json = { version = "1", default-features = false, features = ["alloc"] }
 serde_bytes = { version = "0.11", default-features = false }
-serde_repr = { version = "0.1", default-features = false }
 sha2 = { version = "0.9", default-features = false }
 signature = { version = "1.2", default-features = false }
 subtle = { version = "2", default-features = false }
@@ -51,13 +50,34 @@ tendermint-proto = { version = "0.24.0-pre.1", default-features = false, path = 
 time = { version = "0.3.5", default-features = false, features = ["macros", "parsing"] }
 zeroize = { version = "1.1", default-features = false, features = ["zeroize_derive", "alloc"] }
 flex-error = { version = "0.4.4", default-features = false }
-k256 = { version = "0.10", optional = true, default-features = false, features = ["ecdsa", "sha256"] }
+k256 = { version = "0.11.0-pre.0", optional = true, default-features = false, features = ["ecdsa", "sha256"] }
 ripemd160 = { version = "0.9", default-features = false, optional = true }
 
 [features]
 default = ["std"]
-std = ["flex-error/std", "flex-error/eyre_tracer", "clock"]
-clock = ["time/std"]
+std = [
+    "flex-error/std",
+    "flex-error/eyre_tracer",
+    "bytes/std",
+    "ed25519/std",
+    "ed25519-consensus/std",
+    "futures/std",
+    "num-traits/std",
+    "once_cell/std",
+    "prost/std",
+    "prost-types/std",
+    "serde/std",
+    "serde_json/std",
+    "serde_bytes/std",
+    "sha2/std",
+    "signature/std",
+    "subtle/std",
+    "subtle-encoding/std",
+    "tendermint-proto/std",
+    "time/std",
+    "k256/std",
+    "ripemd160/std"
+]
 secp256k1 = ["k256", "ripemd160"]
 
 [dev-dependencies]
