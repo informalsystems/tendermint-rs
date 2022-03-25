@@ -30,8 +30,8 @@ impl Data {
 
 #[cfg(test)]
 mod tests {
-    use crate::abci::Data;
     use crate::prelude::*;
+    use crate::Data;
 
     #[test]
     fn test_deserialization() {

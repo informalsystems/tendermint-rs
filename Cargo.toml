@@ -13,7 +13,8 @@ members = [
     "std-ext",
     "tendermint",
     "test",
-    "testgen"
+    "testgen",
+    "rpc-abci"
 ]
 
 exclude = [

@@ -79,6 +79,7 @@ url = { version = "2.2", default-features = false }
 walkdir = { version = "2.3", default-features = false }
 flex-error = { version = "0.4.4", default-features = false }
 subtle = { version = "2", default-features = false }
+tendermint-rpc-abci = { version = "0.24.0-pre.1", path = "../rpc-abci", default-features = false }
 
 # Optional dependencies
 async-trait = { version = "0.1", optional = true, default-features = false }
