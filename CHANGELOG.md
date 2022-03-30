@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## v0.23.6
+
+*Mar 29, 2022*
+
+A minor release that allows for a small UX improvement in the usage of the
+`Client::genesis()` call in `tendermint-rpc`.
+
+### DEPENDENCIES
+
+- `[tendermint-light-client]` Upgrade
+  [`contracts`](https://crates.io/crates/contracts) dependency to v0.6.2
+  ([#1097](https://github.com/informalsystems/tendermint-rs/pull/1097))
+
+### IMPROVEMENTS
+
+- `[tendermint-rpc]` Allow users to specify the `AppState` type in the `Client::genesis()` function.
+  ([#1106](https://github.com/informalsystems/tendermint-rs/issues/1106))
+
 ## v0.23.5
 
 *Jan 13, 2022*
