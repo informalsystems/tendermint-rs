@@ -28,11 +28,13 @@ amino               = [ "prost-derive" ]
 
 [dependencies]
 aead                = { version = "0.4",  default-features = false }
+async-trait         = { version = "0.1",  default-features = false }
 chacha20poly1305    = { version = "0.8",  default-features = false, features = [ "reduced-round" ] }
 ed25519-consensus   = { version = "1.2",  default-features = false }
 eyre                = { version = "0.6",  default-features = false }
 flex-error          = { version = "0.4",  default-features = false }
 flume               = { version = "0.10", default-features = false }
+futures-core        = { version = "0.3",  default-features = false, features = [ "alloc" ] }
 hkdf                = { version = "0.10", default-features = false }
 merlin              = { version = "2.0",  default-features = false }
 prost               = { version = "0.9",  default-features = false }
