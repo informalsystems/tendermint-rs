@@ -3,7 +3,9 @@
 
 use std::net::{SocketAddr, ToSocketAddrs};
 
+use async_trait::async_trait;
 use eyre::Result;
+use futures_core::Stream;
 
 use tendermint::node;
 use tendermint::public_key::PublicKey;
@@ -54,7 +56,8 @@ pub enum Direction<Conn> {
 }
 
 /// Trait that describes the send end of a stream.
-pub trait StreamSend {
+#[async_trait]
+pub trait StreamSend: Send + Sync {
     /// Sends the message to the peer over the open stream. `msg` should be a valid and properly
     /// encoded byte array according to the supported messages of the stream.
     ///
@@ -63,17 +66,18 @@ pub trait StreamSend {
     /// * If the underlying I/O operations fail.
     /// * If the stream is closed.
     /// * If the peer is gone
-    fn send<B: AsRef<[u8]>>(msg: B) -> Result<()>;
+    async fn send<B: AsRef<[u8]>>(msg: B) -> Result<()>;
 }
 
 /// Trait which describes the core concept of a connection between two peers established by
 /// `[Transport]`.
+#[async_trait]
 pub trait Connection: Send {
     /// Errors emitted by the connection.
     type Error;
     /// Read end of a bidirectional stream. Carries a finite stream of framed messages. Decoding is
     /// left to the caller and should correspond to the type of stream.
-    type StreamRead: Iterator<Item = Result<Vec<u8>>> + Send;
+    type StreamRead: Stream<Item = Result<Vec<u8>>> + Send + Sync;
     /// Send end of a stream.
     type StreamSend: StreamSend;
 
@@ -84,7 +88,7 @@ pub trait Connection: Send {
     /// # Errors
     ///
     /// * If release of attached resources failed.
-    fn close(&self) -> Result<()>;
+    async fn close(&self) -> Result<()>;
     /// Returns the local address for the connection.
     fn local_addr(&self) -> SocketAddr;
     /// Opens a new bi-bidirectional stream for the given [`StreamId`].
@@ -94,7 +98,7 @@ pub trait Connection: Send {
     /// * If the stream type is not supported.
     /// * If the peer is gone.
     /// * If resources necessary for the stream creation aren't available/accessible.
-    fn open_bidirectional(
+    async fn open_bidirectional(
         &self,
         stream_id: StreamId,
     ) -> Result<(Self::StreamRead, Self::StreamSend), Self::Error>;
@@ -105,7 +109,8 @@ pub trait Connection: Send {
 }
 
 /// Local handle on a resource which allows connecting to remote peers.
-pub trait Endpoint<A>: Send
+#[async_trait]
+pub trait Endpoint<A>: Send + Sync
 where
     A: ToSocketAddrs,
 {
@@ -118,12 +123,13 @@ where
     ///
     /// * If the remote is not reachable.
     /// * If resources necessary for the connection creation aren't available/accessible.
-    fn connect(&self, info: ConnectInfo<A>) -> Result<Self::Connection>;
+    async fn connect(&self, info: ConnectInfo<A>) -> Result<Self::Connection>;
     /// Local address(es) the endpoint listens on.
     fn listen_addrs(&self) -> Vec<SocketAddr>;
 }
 
 /// Trait that describes types which support connection management of the p2p stack.
+#[async_trait]
 pub trait Transport<A>
 where
     A: ToSocketAddrs,
@@ -133,7 +139,7 @@ where
     /// Local handle on a resource which allows connecting to remote peers.
     type Endpoint: Endpoint<A, Connection = <Self as Transport<A>>::Connection> + Drop;
     /// Infinite stream of inbound connections.
-    type Incoming: Iterator<Item = Result<<Self as Transport<A>>::Connection>> + Send;
+    type Incoming: Stream<Item = Result<<Self as Transport<A>>::Connection>> + Send + Sync;
 
     /// Consumes the transport to bind the resources in exchange for the `Endpoint` and `Incoming`
     /// stream.
@@ -141,5 +147,5 @@ where
     /// # Errors
     ///
     /// * If resource allocation fails for lack of privileges or being not available.
-    fn bind(self, bind_info: BindInfo<A>) -> Result<(Self::Endpoint, Self::Incoming)>;
+    async fn bind(self, bind_info: BindInfo<A>) -> Result<(Self::Endpoint, Self::Incoming)>;
 }
