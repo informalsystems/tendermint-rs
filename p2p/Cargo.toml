@@ -37,7 +37,7 @@ flume               = { version = "0.10", default-features = false }
 futures-core        = { version = "0.3",  default-features = false, features = [ "alloc" ] }
 hkdf                = { version = "0.10", default-features = false }
 merlin              = { version = "2.0",  default-features = false }
-prost               = { version = "0.9",  default-features = false }
+prost               = { version = "0.10", default-features = false }
 rand_core           = { version = "0.5",  default-features = false, features = [ "std" ] }
 sha2                = { version = "0.9",  default-features = false }
 signature           = { version = "1.3",  default-features = false }
@@ -51,4 +51,4 @@ tendermint-proto    = { version = "0.24.0-pre.1", default-features = false, path
 tendermint-std-ext  = { version = "0.24.0-pre.1", default-features = false, path = "../std-ext" }
 
 # optional dependencies
-prost-derive        = { version = "0.9", optional = true }
+prost-derive        = { version = "0.10", optional = true }

@@ -276,6 +276,77 @@ pub enum SignedMsgType {
     /// Proposals
     Proposal = 32,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[serde(from = "crate::serializers::evidence::EvidenceVariant", into = "crate::serializers::evidence::EvidenceVariant")]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Evidence {
+    #[prost(oneof="evidence::Sum", tags="1, 2")]
+    pub sum: ::core::option::Option<evidence::Sum>,
+}
+/// Nested message and enum types in `Evidence`.
+pub mod evidence {
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[serde(tag = "type", content = "value")]
+    #[serde(from = "crate::serializers::evidence::EvidenceVariant", into = "crate::serializers::evidence::EvidenceVariant")]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Sum {
+        #[prost(message, tag="1")]
+        #[serde(rename = "tendermint/DuplicateVoteEvidence")]
+        DuplicateVoteEvidence(super::DuplicateVoteEvidence),
+        #[prost(message, tag="2")]
+        #[serde(rename = "tendermint/LightClientAttackEvidence")]
+        LightClientAttackEvidence(super::LightClientAttackEvidence),
+    }
+}
+/// DuplicateVoteEvidence contains evidence of a validator signed two conflicting votes.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DuplicateVoteEvidence {
+    #[prost(message, optional, tag="1")]
+    pub vote_a: ::core::option::Option<Vote>,
+    #[prost(message, optional, tag="2")]
+    pub vote_b: ::core::option::Option<Vote>,
+    #[prost(int64, tag="3")]
+    pub total_voting_power: i64,
+    #[prost(int64, tag="4")]
+    pub validator_power: i64,
+    #[prost(message, optional, tag="5")]
+    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
+}
+/// LightClientAttackEvidence contains evidence of a set of validators attempting to mislead a light client.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LightClientAttackEvidence {
+    #[prost(message, optional, tag="1")]
+    pub conflicting_block: ::core::option::Option<LightBlock>,
+    #[prost(int64, tag="2")]
+    pub common_height: i64,
+    #[prost(message, repeated, tag="3")]
+    pub byzantine_validators: ::prost::alloc::vec::Vec<Validator>,
+    #[prost(int64, tag="4")]
+    pub total_voting_power: i64,
+    #[prost(message, optional, tag="5")]
+    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EvidenceList {
+    #[prost(message, repeated, tag="1")]
+    #[serde(with = "crate::serializers::nullable")]
+    pub evidence: ::prost::alloc::vec::Vec<Evidence>,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Block {
+    #[prost(message, optional, tag="1")]
+    pub header: ::core::option::Option<Header>,
+    #[prost(message, optional, tag="2")]
+    pub data: ::core::option::Option<Data>,
+    #[prost(message, optional, tag="3")]
+    pub evidence: ::core::option::Option<EvidenceList>,
+    #[prost(message, optional, tag="4")]
+    pub last_commit: ::core::option::Option<Commit>,
+}
 /// ConsensusParams contains consensus critical parameters that determine the
 /// validity of blocks.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -348,6 +419,15 @@ pub struct HashedParams {
     #[prost(int64, tag="2")]
     pub block_max_gas: i64,
 }
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventDataRoundState {
+    #[prost(int64, tag="1")]
+    pub height: i64,
+    #[prost(int32, tag="2")]
+    pub round: i32,
+    #[prost(string, tag="3")]
+    pub step: ::prost::alloc::string::String,
+}
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CanonicalBlockId {
@@ -403,84 +483,4 @@ pub struct CanonicalVote {
     pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
     #[prost(string, tag="6")]
     pub chain_id: ::prost::alloc::string::String,
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventDataRoundState {
-    #[prost(int64, tag="1")]
-    pub height: i64,
-    #[prost(int32, tag="2")]
-    pub round: i32,
-    #[prost(string, tag="3")]
-    pub step: ::prost::alloc::string::String,
-}
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(from = "crate::serializers::evidence::EvidenceVariant", into = "crate::serializers::evidence::EvidenceVariant")]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Evidence {
-    #[prost(oneof="evidence::Sum", tags="1, 2")]
-    pub sum: ::core::option::Option<evidence::Sum>,
-}
-/// Nested message and enum types in `Evidence`.
-pub mod evidence {
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
-    #[serde(tag = "type", content = "value")]
-    #[serde(from = "crate::serializers::evidence::EvidenceVariant", into = "crate::serializers::evidence::EvidenceVariant")]
-    #[derive(Clone, PartialEq, ::prost::Oneof)]
-    pub enum Sum {
-        #[prost(message, tag="1")]
-        #[serde(rename = "tendermint/DuplicateVoteEvidence")]
-        DuplicateVoteEvidence(super::DuplicateVoteEvidence),
-        #[prost(message, tag="2")]
-        #[serde(rename = "tendermint/LightClientAttackEvidence")]
-        LightClientAttackEvidence(super::LightClientAttackEvidence),
-    }
-}
-/// DuplicateVoteEvidence contains evidence of a validator signed two conflicting votes.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DuplicateVoteEvidence {
-    #[prost(message, optional, tag="1")]
-    pub vote_a: ::core::option::Option<Vote>,
-    #[prost(message, optional, tag="2")]
-    pub vote_b: ::core::option::Option<Vote>,
-    #[prost(int64, tag="3")]
-    pub total_voting_power: i64,
-    #[prost(int64, tag="4")]
-    pub validator_power: i64,
-    #[prost(message, optional, tag="5")]
-    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
-}
-/// LightClientAttackEvidence contains evidence of a set of validators attempting to mislead a light client.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct LightClientAttackEvidence {
-    #[prost(message, optional, tag="1")]
-    pub conflicting_block: ::core::option::Option<LightBlock>,
-    #[prost(int64, tag="2")]
-    pub common_height: i64,
-    #[prost(message, repeated, tag="3")]
-    pub byzantine_validators: ::prost::alloc::vec::Vec<Validator>,
-    #[prost(int64, tag="4")]
-    pub total_voting_power: i64,
-    #[prost(message, optional, tag="5")]
-    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
-}
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EvidenceList {
-    #[prost(message, repeated, tag="1")]
-    #[serde(with = "crate::serializers::nullable")]
-    pub evidence: ::prost::alloc::vec::Vec<Evidence>,
-}
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Block {
-    #[prost(message, optional, tag="1")]
-    pub header: ::core::option::Option<Header>,
-    #[prost(message, optional, tag="2")]
-    pub data: ::core::option::Option<Data>,
-    #[prost(message, optional, tag="3")]
-    pub evidence: ::core::option::Option<EvidenceList>,
-    #[prost(message, optional, tag="4")]
-    pub last_commit: ::core::option::Option<Commit>,
 }
