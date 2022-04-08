@@ -12,9 +12,11 @@
 //!
 //! (Make sure you install cargo-make using `cargo install cargo-make` first.)
 
+use async_trait::async_trait;
+
 use tendermint_light_client::{
     builder::{LightClientBuilder, SupervisorBuilder},
-    components::io::{AtHeight, Io, IoError, ProdIo},
+    components::io::{AtHeight, AsyncIo, IoError, RpcIo},
     errors::Error,
     evidence::{Evidence, EvidenceReporter},
     store::{memory::MemoryStore, LightStore},
@@ -24,17 +26,16 @@ use tendermint_light_client::{
         types::{Height, PeerId, Status, TrustThreshold},
     },
 };
-
 use tendermint_rpc as rpc;
 
 use std::convert::TryFrom;
 use std::time::Duration;
 
-use tendermint_rpc as rpc;
+struct TestEvidenceReporter;
 
-#[contracts::contract_trait]
+#[async_trait]
 impl EvidenceReporter for TestEvidenceReporter {
-    fn report(
+    async fn report(
         &self,
         evidence: Evidence,
         peer: PeerId,
@@ -46,7 +47,7 @@ impl EvidenceReporter for TestEvidenceReporter {
     }
 }
 
-fn make_instance(peer_id: PeerId, options: LightClientOptions, address: rpc::Url) -> Instance {
+async fn make_instance(peer_id: PeerId, options: LightClientOptions, address: rpc::Url) -> Instance {
     let rpc_client = rpc::HttpClient::new(address).unwrap();
     let io = RpcIo::new(peer_id, rpc_client.clone(), Some(Duration::from_secs(2)));
     let latest_block = io.fetch_light_block(AtHeight::Highest).await.unwrap();
