@@ -117,7 +117,7 @@ impl Set {
 
     /// Sort the validators according to the current Tendermint requirements
     /// (v. 0.34 -> first by validator power, descending, then by address, ascending)
-    fn sort_validators(vals: &mut Vec<Info>) {
+    fn sort_validators(vals: &mut [Info]) {
         vals.sort_by_key(|v| (core::cmp::Reverse(v.power), v.address));
     }
 
