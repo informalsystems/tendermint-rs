@@ -21,6 +21,9 @@ const PUBLIC_KEY_SIZE: usize = 32;
 #[allow(non_camel_case_types)]
 pub enum Version {
     /// Tendermint v0.34
+    V0_35,
+
+    /// Tendermint v0.34
     V0_34,
 
     /// Tendermint v0.33
@@ -41,7 +44,7 @@ impl Version {
     #[must_use]
     pub const fn is_protobuf(self) -> bool {
         match self {
-            Self::V0_34 => true,
+            Self::V0_35 | Self::V0_34 => true,
             Self::V0_33 | Self::Legacy => false,
         }
     }

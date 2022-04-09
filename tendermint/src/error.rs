@@ -187,6 +187,9 @@ define_error! {
         UnsupportedOfferSnapshotChunkResult
             |_| { format_args!("unsupported OfferSnapshotChunkResult type" ) },
 
+        UnsupportedTxIndexValue
+            |_| { format_args!("unsupported TxIndex value" ) },
+
         RawVotingPowerMismatch
             { raw: vote::Power, computed: vote::Power }
             |e| { format_args!("mismatch between raw voting ({0:?}) and computed one ({1:?})", e.raw, e.computed) },

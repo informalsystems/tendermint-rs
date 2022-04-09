@@ -5,7 +5,7 @@ use std::net::{SocketAddr, ToSocketAddrs};
 
 use async_trait::async_trait;
 use eyre::Result;
-use futures_core::Stream;
+use futures::Stream;
 
 use tendermint::node;
 use tendermint::public_key::PublicKey;

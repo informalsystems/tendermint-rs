@@ -10,6 +10,7 @@ if [ ! -d "${TM_HOME}/config" ]; then
     proxy-app=${PROXY_APP:-kvstore} \
     moniker=${MONIKER:-dockernode} \
     consensus.timeout-commit=500ms \
+    laddr=tcp://0.0.0.0:26656 \
     rpc.laddr=tcp://0.0.0.0:26657 \
     p2p.addr-book-strict=false \
     instrumentation.prometheus=true
