@@ -1,0 +1,33 @@
+[advisories]
+ignore = [
+   # TODO(xla): serde_cbor is unmaintained, but a proper replacement will take time to land in the repo.
+   # https://rustsec.org/advisories/RUSTSEC-2021-0127.html
+   # https://github.com/informalsystems/tendermint-rs/issues/1026
+   # https://github.com/informalsystems/tendermint-rs/issues/1038
+  "RUSTSEC-2021-0127",
+]
+informational_warnings = ["unmaintained"]
+severity_threshold = "low"
+
+[database]
+path = "~/.cargo/advisory-db"
+url = "https://github.com/RustSec/advisory-db.git"
+fetch = true
+stale = false
+
+[output]
+deny = ["unmaintained"] # exit on error if unmaintained dependencies are found
+format = "terminal"
+quiet = false
+show_tree = true
+
+[target]
+arch = "x86_64"
+os = "linux"
+
+[packages]
+source = "all"
+
+[yanked]
+enabled = true
+update_index = true
