@@ -1,18 +1,18 @@
 [package]
 name        = "tendermint-p2p"
 version     = "0.24.0-pre.1"
-edition     = "2018"
+edition     = "2021"
 license     = "Apache-2.0"
 repository  = "https://github.com/informalsystems/tendermint-rs"
 homepage    = "https://tendermint.com"
 readme      = "README.md"
-keywords    = ["p2p", "tendermint", "cosmos"]
-categories  = ["cryptography::cryptocurrencies", "network-programming"]
+keywords    = [ "p2p", "tendermint", "cosmos" ]
+categories  = [ "cryptography::cryptocurrencies", "network-programming" ]
 authors     = [
   "Informal Systems <hello@informal.systems>",
-  "Alexander Simmerl <a.simmerl@gmail.com>",
   "Tony Arcieri <tony@iqlusion.io>",
   "Ismail Khoffi <Ismail.Khoffi@gmail.com>",
+  "xla <self@xla.is>",
 ]
 
 description = """
@@ -20,33 +20,35 @@ description = """
     """
 
 [lib]
-test = false
+test                = false
 
 [features]
-default = ["flex-error/std", "flex-error/eyre_tracer"]
-amino = ["prost-derive"]
+default             = [ "flex-error/std", "flex-error/eyre_tracer" ]
+amino               = [ "prost-derive" ]
 
 [dependencies]
-chacha20poly1305 = { version = "0.8", default-features = false, features = ["reduced-round"] }
-ed25519-consensus = { version = "1.2", default-features = false }
-eyre = { version = "0.6", default-features = false }
-flume = { version = "0.10.7", default-features = false }
-hkdf = { version = "0.10.0", default-features = false }
-merlin = { version = "2", default-features = false }
-prost = { version = "0.10", default-features = false }
-rand_core = { version = "0.5", default-features = false, features = ["std"] }
-sha2 = { version = "0.9", default-features = false }
-subtle = { version = "2", default-features = false }
-x25519-dalek = { version = "1.1", default-features = false, features = ["u64_backend"] }
-zeroize = { version = "1", default-features = false }
-signature = { version = "1.3.0", default-features = false }
-aead = { version = "0.4.1", default-features = false }
-flex-error = { version = "0.4.4", default-features = false }
+aead                = { version = "0.4",  default-features = false }
+async-trait         = { version = "0.1",  default-features = false }
+chacha20poly1305    = { version = "0.8",  default-features = false, features = [ "reduced-round" ] }
+ed25519-consensus   = { version = "1.2",  default-features = false }
+eyre                = { version = "0.6",  default-features = false }
+flex-error          = { version = "0.4",  default-features = false }
+flume               = { version = "0.10", default-features = false }
+futures-core        = { version = "0.3",  default-features = false, features = [ "alloc" ] }
+hkdf                = { version = "0.10", default-features = false }
+merlin              = { version = "2.0",  default-features = false }
+prost               = { version = "0.10", default-features = false }
+rand_core           = { version = "0.5",  default-features = false, features = [ "std" ] }
+sha2                = { version = "0.9",  default-features = false }
+signature           = { version = "1.3",  default-features = false }
+subtle              = { version = "2.0",  default-features = false }
+x25519-dalek        = { version = "1.1",  default-features = false, features = [ "u64_backend" ] }
+zeroize             = { version = "1.0",  default-features = false }
 
 # path dependencies
-tendermint = { path = "../tendermint", version = "0.24.0-pre.1", default-features = false }
-tendermint-proto = { path = "../proto", version = "0.24.0-pre.1", default-features = false }
-tendermint-std-ext = { path = "../std-ext", version = "0.24.0-pre.1", default-features = false }
+tendermint          = { version = "0.24.0-pre.1", default-features = false, path = "../tendermint" }
+tendermint-proto    = { version = "0.24.0-pre.1", default-features = false, path = "../proto" }
+tendermint-std-ext  = { version = "0.24.0-pre.1", default-features = false, path = "../std-ext" }
 
 # optional dependencies
-prost-derive = { version = "0.10", optional = true }
+prost-derive        = { version = "0.10", optional = true }
