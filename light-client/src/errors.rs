@@ -2,8 +2,8 @@
 
 use std::{fmt::Debug, time::Duration};
 
-use crossbeam_channel as crossbeam;
 use flex_error::{define_error, DisplayError, TraceError};
+use flume;
 
 // Re-export for backward compatibility
 pub use crate::verifier::errors::ErrorExt;
@@ -148,11 +148,11 @@ impl ErrorExt for ErrorDetail {
 }
 
 impl Error {
-    pub fn send<T>(_e: crossbeam::SendError<T>) -> Error {
+    pub fn send<T>(_e: flume::SendError<T>) -> Error {
         Error::channel_disconnected()
     }
 
-    pub fn recv(_e: crossbeam::RecvError) -> Error {
+    pub fn recv(_e: flume::RecvError) -> Error {
         Error::channel_disconnected()
     }
 }

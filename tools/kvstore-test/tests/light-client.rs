@@ -93,7 +93,7 @@ async fn make_supervisor() -> Supervisor {
         .build_prod()
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn forward() -> Result<(), Error> {
     let supervisor = make_supervisor().await;
 
@@ -105,7 +105,7 @@ async fn forward() -> Result<(), Error> {
     for i in 1..=max_iterations {
         println!("[info ] - iteration {}/{}", i, max_iterations);
 
-        match handle.verify_to_highest() {
+        match handle.verify_to_highest().await {
             Ok(light_block) => {
                 println!("[info ] synced to block {}", light_block.height());
             }
@@ -118,10 +118,10 @@ async fn forward() -> Result<(), Error> {
         tokio::time::sleep(Duration::from_millis(800)).await;
     }
 
-    handle.terminate()
+    handle.terminate().await
 }
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn backward() -> Result<(), Error> {
     let supervisor = make_supervisor().await;
 
@@ -137,14 +137,14 @@ async fn backward() -> Result<(), Error> {
         println!("[info ] - iteration {}/{}", i, max_iterations);
 
         // First we sync to the highest block to have a high enough trusted state
-        let trusted_state = handle.verify_to_highest()?;
+        let trusted_state = handle.verify_to_highest().await?;
         println!("[info ] synced to highest block {}", trusted_state.height());
 
         // Then we pick a height below the trusted state
         let target_height = Height::try_from(trusted_state.height().value() / 2).unwrap();
 
         // We now try to verify a block at this height
-        let light_block = handle.verify_to_target(target_height)?;
+        let light_block = handle.verify_to_target(target_height).await?;
         println!("[info ] verified lower block {}", light_block.height());
 
         tokio::time::sleep(Duration::from_millis(800)).await;
@@ -152,5 +152,5 @@ async fn backward() -> Result<(), Error> {
 
     // NB: If terminate is not called explicitly the test would hang with the supervisor loop
     // dangled in the background.
-    handle.terminate()
+    handle.terminate().await
 }

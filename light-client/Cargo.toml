@@ -41,7 +41,8 @@ tendermint-light-client-verifier = { version = "0.24.0-pre.1", path = "../light-
 async-recursion = { version = "0.3", default-features = false }
 async-trait = { version = "0.1", default-features = false }
 contracts = { version = "0.6.2", default-features = false }
-crossbeam-channel = { version = "0.4.2", default-features = false }
+flex-error = { version = "0.4.4", default-features = false }
+flume = { version = "0.10", default-features = false, features = [ "async" ] }
 derive_more = { version = "0.99.5", default-features = false, features = ["display"] }
 futures = { version = "0.3.4", default-features = false }
 futures-timer = { version = "3.0", default-features = false }
@@ -52,7 +53,6 @@ sled = { version = "0.34.3", optional = true, default-features = false }
 static_assertions = { version = "1.1.0", default-features = false }
 time = { version = "0.3.5", default-features = false, features = ["std"] }
 tokio = { version = "1.0", default-features = false, features = ["rt"], optional = true }
-flex-error = { version = "0.4.4", default-features = false }
 
 [dev-dependencies]
 tendermint-testgen = { path = "../testgen", default-features = false }

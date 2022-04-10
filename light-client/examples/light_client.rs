@@ -118,10 +118,10 @@ fn sync_cmd(opts: SyncOpts) -> Result<(), Box<dyn std::error::Error>> {
 
     let handle = supervisor.handle();
 
-    std::thread::spawn(|| supervisor.run());
+    std::thread::spawn(|| block_on(supervisor.run()));
 
     loop {
-        match handle.verify_to_highest() {
+        match block_on(handle.verify_to_highest()) {
             Ok(light_block) => {
                 println!("[info] synced to block {}", light_block.height());
             },

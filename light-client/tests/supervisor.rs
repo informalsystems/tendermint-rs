@@ -94,7 +94,7 @@ fn run_multipeer_test(tc: LightClientTest<LightBlock>) {
 
     let target_height = tc.height_to_verify;
 
-    match handle.verify_to_target(target_height) {
+    match block_on(handle.verify_to_target(target_height)) {
         Ok(new_state) => {
             // Check that the expected state and new_state match
             let untrusted_light_block = block_on(io.fetch_light_block(AtHeight::At(target_height)))
