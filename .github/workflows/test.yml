@@ -151,7 +151,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: nightly-2022-01-11
+          toolchain: nightly-2022-04-05
           override: true
       - uses: actions-rs/cargo@v1
         with:
