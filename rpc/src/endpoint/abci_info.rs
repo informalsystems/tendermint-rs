@@ -4,8 +4,7 @@ use core::convert::{TryFrom, TryInto};
 
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
-use tendermint::block;
-use tendermint::Error;
+use tendermint::{block, Error};
 use tendermint_proto::abci::ResponseInfo;
 
 use crate::prelude::*;

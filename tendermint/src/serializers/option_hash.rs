@@ -1,8 +1,9 @@
 //! Option<Hash> serialization with validation
 
+use serde::{Deserializer, Serializer};
+
 use super::hash;
 use crate::Hash;
-use serde::{Deserializer, Serializer};
 
 /// Deserialize hexstring into Option<Hash>
 pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<Hash>, D::Error>

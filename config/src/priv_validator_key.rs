@@ -1,12 +1,15 @@
 //! Validator private keys
 
-use crate::prelude::*;
-use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};
-use tendermint::public_key::TendermintKey;
-use tendermint::{account, private_key::PrivateKey, public_key::PublicKey};
 
-use crate::error::Error;
+use serde::{Deserialize, Serialize};
+use tendermint::{
+    account,
+    private_key::PrivateKey,
+    public_key::{PublicKey, TendermintKey},
+};
+
+use crate::{error::Error, prelude::*};
 
 /// Validator private key
 #[derive(Serialize, Deserialize)] // JSON custom serialization for priv_validator_key.json

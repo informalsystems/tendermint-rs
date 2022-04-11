@@ -1,6 +1,6 @@
-use crate::prelude::*;
-
 use bytes::Bytes;
+
+use crate::prelude::*;
 
 #[doc = include_str!("../doc/request-checktx.md")]
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -40,8 +40,8 @@ impl Default for CheckTxKind {
 // =============================================================================
 
 use core::convert::TryFrom;
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<CheckTx> for pb::RequestCheckTx {
     fn from(check_tx: CheckTx) -> Self {

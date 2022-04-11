@@ -129,8 +129,7 @@ impl<K: Into<String>, V: Into<String>> From<(K, V)> for EventAttribute {
 
 use core::convert::{TryFrom, TryInto};
 
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<EventAttribute> for pb::EventAttribute {
     fn from(event: EventAttribute) -> Self {

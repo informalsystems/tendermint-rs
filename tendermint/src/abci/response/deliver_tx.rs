@@ -1,8 +1,7 @@
-use crate::prelude::*;
-
 use bytes::Bytes;
 
 use super::super::Event;
+use crate::prelude::*;
 
 #[doc = include_str!("../doc/response-delivertx.md")]
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
@@ -38,8 +37,8 @@ pub struct DeliverTx {
 // =============================================================================
 
 use core::convert::{TryFrom, TryInto};
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<DeliverTx> for pb::ResponseDeliverTx {
     fn from(deliver_tx: DeliverTx) -> Self {

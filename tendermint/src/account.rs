@@ -1,23 +1,22 @@
 //! Tendermint accounts
 
-use crate::prelude::*;
-use crate::{error::Error, public_key::Ed25519};
-
 use core::{
     convert::{TryFrom, TryInto},
     fmt::{self, Debug, Display},
     str::FromStr,
 };
+
+#[cfg(feature = "secp256k1")]
+use ripemd160::Ripemd160;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
+use tendermint_proto::Protobuf;
 
 #[cfg(feature = "secp256k1")]
 use crate::public_key::Secp256k1;
-#[cfg(feature = "secp256k1")]
-use ripemd160::Ripemd160;
-use tendermint_proto::Protobuf;
+use crate::{error::Error, prelude::*, public_key::Ed25519};
 
 /// Size of an  account ID in bytes
 pub const LENGTH: usize = 20;

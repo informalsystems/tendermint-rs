@@ -1,7 +1,3 @@
-use crate::helpers::*;
-use crate::tester::TestResult::{Failure, ParseError, ReadError, Success};
-use serde::de::DeserializeOwned;
-use simple_error::SimpleError;
 use std::{
     fs::{self, DirEntry},
     io::Write,
@@ -9,7 +5,15 @@ use std::{
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
 };
+
+use serde::de::DeserializeOwned;
+use simple_error::SimpleError;
 use tempfile::TempDir;
+
+use crate::{
+    helpers::*,
+    tester::TestResult::{Failure, ParseError, ReadError, Success},
+};
 
 /// A test environment, which is essentially a wrapper around some directory,
 /// with some utility functions operating relative to that directory.
@@ -394,7 +398,7 @@ impl Tester {
             match test(path, input) {
                 TestResult::ParseError(_) => {
                     continue;
-                }
+                },
                 res => results.push((name.to_string(), path, res)),
             }
         }
@@ -413,7 +417,7 @@ impl Tester {
                             let test_path = path.to_string() + "/" + &name;
                             res_tests.push((test_path, input));
                         }
-                    }
+                    },
                 }
             }
             if !res_tests.is_empty() {
@@ -468,7 +472,7 @@ impl Tester {
                             }
                         }
                     });
-                }
+                },
             },
         }
     }

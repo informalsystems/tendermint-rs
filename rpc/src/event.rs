@@ -1,12 +1,15 @@
 //! RPC subscription event-related data structures.
 
-use crate::abci::responses::{BeginBlock, EndBlock};
 use serde::{Deserialize, Serialize};
 use tendermint::Block;
 
-use crate::prelude::*;
-use crate::query::EventType;
-use crate::{response::Wrapper, Response};
+use crate::{
+    abci::responses::{BeginBlock, EndBlock},
+    prelude::*,
+    query::EventType,
+    response::Wrapper,
+    Response,
+};
 
 /// An incoming event produced by a [`Subscription`].
 ///

@@ -1,11 +1,9 @@
 //! Errors raised by the builder DSL
 
 use flex_error::define_error;
-use tendermint::block::Height;
-use tendermint::Hash;
+use tendermint::{block::Height, Hash};
 
-use crate::components::io::IoError;
-use crate::verifier::errors::VerificationError;
+use crate::{components::io::IoError, verifier::errors::VerificationError};
 
 define_error! {
     Error {

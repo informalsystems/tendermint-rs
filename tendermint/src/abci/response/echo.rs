@@ -12,8 +12,8 @@ pub struct Echo {
 // =============================================================================
 
 use core::convert::TryFrom;
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<Echo> for pb::ResponseEcho {
     fn from(echo: Echo) -> Self {

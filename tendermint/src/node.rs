@@ -3,5 +3,4 @@
 mod id;
 pub mod info;
 
-pub use self::id::Id;
-pub use self::info::Info;
+pub use self::{id::Id, info::Info};

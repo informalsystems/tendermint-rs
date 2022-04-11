@@ -1,12 +1,12 @@
 //! Provides an interface and default implementation for the `CommitValidator` operation
 
+use tendermint::block::CommitSig;
+
 use crate::{
     errors::VerificationError,
     operations::{Hasher, ProdHasher},
     types::{SignedHeader, ValidatorSet},
 };
-
-use tendermint::block::CommitSig;
 
 /// Validates the commit associated with a header against a validator set
 pub trait CommitValidator: Send + Sync {

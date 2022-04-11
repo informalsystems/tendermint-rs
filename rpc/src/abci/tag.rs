@@ -1,9 +1,11 @@
 //! Tags
 
-use crate::prelude::*;
 use core::{fmt, str::FromStr};
+
 use serde::{Deserialize, Serialize};
 use tendermint::error::Error;
+
+use crate::prelude::*;
 
 /// Tags
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]

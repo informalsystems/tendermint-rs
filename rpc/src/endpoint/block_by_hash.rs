@@ -1,9 +1,10 @@
 //! `/block_by_hash` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
-
-use tendermint::block::{self, Block};
-use tendermint::Hash;
+use tendermint::{
+    block::{self, Block},
+    Hash,
+};
 
 /// Get information about a specific block by its hash
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]

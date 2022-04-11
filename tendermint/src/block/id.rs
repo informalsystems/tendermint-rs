@@ -1,20 +1,24 @@
-use crate::prelude::*;
+use core::{
+    convert::{TryFrom, TryInto},
+    fmt::{self, Display},
+    str::{self, FromStr},
+};
+
+use serde::{Deserialize, Serialize};
+use tendermint_proto::{
+    types::{
+        BlockId as RawBlockId, CanonicalBlockId as RawCanonicalBlockId,
+        PartSetHeader as RawPartSetHeader,
+    },
+    Protobuf,
+};
+
 use crate::{
     block::parts::Header as PartSetHeader,
     error::Error,
     hash::{Algorithm, Hash},
+    prelude::*,
 };
-use core::convert::{TryFrom, TryInto};
-use core::{
-    fmt::{self, Display},
-    str::{self, FromStr},
-};
-use serde::{Deserialize, Serialize};
-use tendermint_proto::types::{
-    BlockId as RawBlockId, CanonicalBlockId as RawCanonicalBlockId,
-    PartSetHeader as RawPartSetHeader,
-};
-use tendermint_proto::Protobuf;
 
 /// Length of a block ID prefix displayed for debugging purposes
 pub const PREFIX_LENGTH: usize = 10;

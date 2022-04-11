@@ -51,8 +51,8 @@ impl Default for ApplySnapshotChunkResult {
 // =============================================================================
 
 use core::convert::TryFrom;
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<ApplySnapshotChunk> for pb::ResponseApplySnapshotChunk {
     fn from(apply_snapshot_chunk: ApplySnapshotChunk) -> Self {

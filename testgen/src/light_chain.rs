@@ -1,8 +1,11 @@
-use crate::{light_block::LightBlock, Generator};
-use tendermint::block::{self, Height};
-use tendermint::chain::Info;
-
 use std::convert::{TryFrom, TryInto};
+
+use tendermint::{
+    block::{self, Height},
+    chain::Info,
+};
+
+use crate::{light_block::LightBlock, Generator};
 
 #[derive(Clone, Debug)]
 pub struct LightChain {

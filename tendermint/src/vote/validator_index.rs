@@ -1,10 +1,10 @@
-use crate::error::Error;
-use crate::prelude::*;
 use core::{
     convert::{TryFrom, TryInto},
     fmt::{self, Debug, Display},
     str::FromStr,
 };
+
+use crate::{error::Error, prelude::*};
 
 /// ValidatorIndex for a particular Vote
 #[derive(Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]

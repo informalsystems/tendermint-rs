@@ -95,7 +95,7 @@ where
             eprintln!("Supported parameters for this command are: ");
             print_params(cli.self_usage());
             std::process::exit(1);
-        }
+        },
     }
 }
 
@@ -126,7 +126,7 @@ fn main() {
                 print_params(CliOptions::command_usage(cmd).unwrap())
             }
             std::process::exit(1);
-        }
+        },
         Some(Command::Validator(cli)) => run_command(cli, opts.stdin),
         Some(Command::Header(cli)) => run_command(cli, opts.stdin),
         Some(Command::Vote(cli)) => run_command(cli, opts.stdin),

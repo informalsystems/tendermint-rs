@@ -1,17 +1,18 @@
 //! Tendermint blockchain identifiers
 
-use crate::error::Error;
-use crate::prelude::*;
 use alloc::borrow::Cow;
-use core::convert::TryFrom;
 use core::{
     cmp::Ordering,
+    convert::TryFrom,
     fmt::{self, Debug, Display},
     hash::{Hash, Hasher},
     str::{self, FromStr},
 };
+
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use tendermint_proto::Protobuf;
+
+use crate::{error::Error, prelude::*};
 
 /// Maximum length of a `chain::Id` name. Matches `MaxChainIDLen` from:
 /// <https://github.com/tendermint/tendermint/blob/develop/types/genesis.go>

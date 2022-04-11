@@ -1,8 +1,8 @@
-use crate::error::Error;
-use crate::prelude::*;
-
 use core::{fmt, ops::Deref, str::FromStr, time::Duration};
+
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
+
+use crate::{error::Error, prelude::*};
 
 /// Timeout durations
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -101,7 +101,7 @@ mod tests {
     #[test]
     fn reject_no_units() {
         match "123".parse::<Timeout>().unwrap_err().detail() {
-            error::ErrorDetail::Parse(_) => {}
+            error::ErrorDetail::Parse(_) => {},
             _ => panic!("expected parse error to be returned"),
         }
     }

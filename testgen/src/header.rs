@@ -1,13 +1,16 @@
-use crate::{helpers::*, validator::generate_validators, Generator, Validator};
 use core::time::Duration;
+use std::{
+    convert::{TryFrom, TryInto},
+    str::FromStr,
+};
+
 use gumdrop::Options;
-use serde::{Deserialize, Serialize};
-use serde::{Deserializer, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use simple_error::*;
-use std::convert::{TryFrom, TryInto};
-use std::str::FromStr;
 use tendermint::{block, chain, validator, AppHash, Hash, Time};
 use time::OffsetDateTime;
+
+use crate::{helpers::*, validator::generate_validators, Generator, Validator};
 
 #[derive(Debug, Options, Serialize, Deserialize, Clone)]
 pub struct Header {
@@ -192,9 +195,11 @@ impl Generator<block::Header> for Header {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use core::time::Duration;
+
     use tendermint::Time;
+
+    use super::*;
 
     #[test]
     fn test_header() {

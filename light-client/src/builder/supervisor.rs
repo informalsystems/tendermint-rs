@@ -1,14 +1,16 @@
 use core::time::Duration;
 
-use crate::builder::error::Error;
-use crate::peer_list::{PeerList, PeerListBuilder};
-use crate::supervisor::Instance;
-use crate::verifier::types::PeerId;
-
 #[cfg(feature = "rpc-client")]
 use {
     crate::evidence::ProdEvidenceReporter, crate::fork_detector::ProdForkDetector,
     crate::supervisor::Supervisor,
+};
+
+use crate::{
+    builder::error::Error,
+    peer_list::{PeerList, PeerListBuilder},
+    supervisor::Instance,
+    verifier::types::PeerId,
 };
 
 pub struct Init;

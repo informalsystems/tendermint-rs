@@ -1,8 +1,8 @@
 //! `/block` endpoint JSON-RPC wrapper
 
 use core::ops::Range;
-use serde::{Deserialize, Serialize};
 
+use serde::{Deserialize, Serialize};
 use tendermint::block;
 
 use crate::prelude::*;

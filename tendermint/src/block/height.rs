@@ -1,12 +1,13 @@
-use crate::error::Error;
-use crate::prelude::*;
 use core::{
     convert::{TryFrom, TryInto},
     fmt::{self, Debug, Display},
     str::FromStr,
 };
+
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use tendermint_proto::Protobuf;
+
+use crate::{error::Error, prelude::*};
 
 /// Block height for a particular chain (i.e. number of blocks created since
 /// the chain began)

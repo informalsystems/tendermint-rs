@@ -1,12 +1,12 @@
 //! Persistent store backed by an on-disk `sled` database.
 
 pub mod utils;
-use utils::HeightIndexedDb;
-
-use crate::verifier::types::{Height, LightBlock};
 use std::path::Path;
 
+use utils::HeightIndexedDb;
+
 use super::{LightStore, Status};
+use crate::verifier::types::{Height, LightBlock};
 
 const UNVERIFIED: &str = "unverified";
 const VERIFIED: &str = "verified";
@@ -90,9 +90,10 @@ impl LightStore for SledStore {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use tempfile::tempdir;
     use tendermint_testgen::{light_block::TmLightBlock as TGLightBlock, Generator, LightChain};
+
+    use super::*;
 
     #[test]
     fn highest_returns_latest_block() {

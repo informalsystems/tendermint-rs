@@ -1,4 +1,5 @@
 use core::fmt::Debug;
+
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::signature::{Ed25519Signature, Signature};

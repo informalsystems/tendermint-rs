@@ -1,7 +1,9 @@
 use core::convert::TryFrom;
-use tendermint_proto::types::BlockId as RawBlockId;
-use tendermint_proto::types::PartSetHeader as RawPartSetHeader;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{
+    types::{BlockId as RawBlockId, PartSetHeader as RawPartSetHeader},
+    Protobuf,
+};
 
 impl Protobuf<RawBlockId> for BlockId {}
 

@@ -20,8 +20,10 @@
 
 //! Asynchronous in-memory pipe
 
-use std::cmp::min;
-use std::io::{self, BufRead, Read, Write};
+use std::{
+    cmp::min,
+    io::{self, BufRead, Read, Write},
+};
 
 use flume::{self, Receiver, SendError, Sender, TrySendError};
 
@@ -95,7 +97,7 @@ impl BufRead for Reader {
                 Ok(data) => {
                     self.buffer = data;
                     self.position = 0;
-                }
+                },
             }
         }
 
@@ -151,7 +153,7 @@ impl Write for BufWriter {
                     self.buffer = data;
                     self.buffer.truncate(buffer_len);
                     return Err(epipe());
-                }
+                },
             }
         }
 
@@ -167,11 +169,11 @@ impl Write for BufWriter {
                 Ok(_) => {
                     self.buffer.reserve(self.size);
                     Ok(())
-                }
+                },
                 Err(SendError(data)) => {
                     self.buffer = data;
                     Err(epipe())
-                }
+                },
             }
         }
     }

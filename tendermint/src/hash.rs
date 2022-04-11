@@ -1,16 +1,16 @@
 //! Hash functions and their outputs
 
-use crate::error::Error;
-use crate::prelude::*;
-use core::convert::TryFrom;
 use core::{
+    convert::TryFrom,
     fmt::{self, Debug, Display},
     str::FromStr,
 };
-use serde::de::Error as _;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use subtle_encoding::{Encoding, Hex};
 use tendermint_proto::Protobuf;
+
+use crate::{error::Error, prelude::*};
 
 /// Output size for the SHA-256 hash function
 pub const SHA256_HASH_SIZE: usize = 32;
@@ -69,7 +69,7 @@ impl Hash {
                 } else {
                     Err(Error::invalid_hash_size())
                 }
-            }
+            },
         }
     }
 
@@ -85,7 +85,7 @@ impl Hash {
                     .decode_to_slice(s.as_bytes(), &mut h)
                     .map_err(Error::subtle_encoding)?;
                 Ok(Hash::Sha256(h))
-            }
+            },
         }
     }
 

@@ -1,16 +1,17 @@
 //! Supervisor and Handle implementation.
 
 use crossbeam_channel as channel;
-
 use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
 
-use crate::errors::Error;
-use crate::evidence::EvidenceReporter;
-use crate::fork_detector::{Fork, ForkDetection, ForkDetector};
-use crate::light_client::LightClient;
-use crate::peer_list::PeerList;
-use crate::state::State;
-use crate::verifier::types::{Height, LatestStatus, LightBlock, PeerId, Status};
+use crate::{
+    errors::Error,
+    evidence::EvidenceReporter,
+    fork_detector::{Fork, ForkDetection, ForkDetector},
+    light_client::LightClient,
+    peer_list::PeerList,
+    state::State,
+    verifier::types::{Height, LatestStatus, LightBlock, PeerId, Status},
+};
 
 /// Provides an interface to the supervisor for use in downstream code.
 pub trait Handle: Send + Sync {
@@ -230,7 +231,7 @@ impl Supervisor {
 
                         // If there were no hard forks, perform verification again
                         self.verify(height)
-                    }
+                    },
                     ForkDetection::NotDetected => {
                         // We need to re-ask for the primary here as the compiler
                         // is not smart enough to realize that we do not mutate
@@ -241,15 +242,15 @@ impl Supervisor {
 
                         // No fork detected, exiting
                         Ok(verified_block)
-                    }
+                    },
                 }
-            }
+            },
             // Verification failed
             Err(err) => {
                 // Swap primary, and continue with new primary, if there is any witness left.
                 self.peers.replace_faulty_primary(Some(err))?;
                 self.verify(height)
-            }
+            },
         }
     }
 
@@ -265,17 +266,17 @@ impl Supervisor {
                     self.report_evidence(provider, &primary, &witness)?;
 
                     forked.push(provider);
-                }
+                },
                 // A witness has timed out, remove it from the peer list.
                 Fork::Timeout(provider, _error) => {
                     self.peers.replace_faulty_witness(provider);
                     // TODO: Log/record the error
-                }
+                },
                 // A witness has been deemed faulty, remove it from the peer list.
                 Fork::Faulty(block, _error) => {
                     self.peers.replace_faulty_witness(block.provider);
                     // TODO: Log/record the error
-                }
+                },
             }
         }
 
@@ -333,23 +334,23 @@ impl Supervisor {
                 HandleInput::LatestTrusted(sender) => {
                     let outcome = self.latest_trusted();
                     sender.send(outcome).map_err(Error::send)?;
-                }
+                },
                 HandleInput::Terminate(sender) => {
                     sender.send(()).map_err(Error::send)?;
                     return Ok(());
-                }
+                },
                 HandleInput::VerifyToTarget(height, sender) => {
                     let outcome = self.verify_to_target(height);
                     sender.send(outcome).map_err(Error::send)?;
-                }
+                },
                 HandleInput::VerifyToHighest(sender) => {
                     let outcome = self.verify_to_highest();
                     sender.send(outcome).map_err(Error::send)?;
-                }
+                },
                 HandleInput::GetStatus(sender) => {
                     let outcome = self.latest_status();
                     sender.send(outcome).map_err(Error::send)?;
-                }
+                },
             }
         }
     }
@@ -422,36 +423,35 @@ impl Handle for SupervisorHandle {
 
 #[cfg(test)]
 mod tests {
+    use core::{
+        convert::{Into, TryFrom},
+        time::Duration,
+    };
+    use std::collections::HashMap;
+
+    use tendermint::{
+        block::Height, evidence::Duration as DurationStr, trust_threshold::TrustThresholdFraction,
+    };
+    use tendermint_rpc::{
+        self as rpc,
+        response_error::{Code, ResponseError},
+    };
+    use tendermint_testgen::{
+        helpers::get_time, light_block::TmLightBlock, Commit, Generator, Header,
+        LightBlock as TestgenLightBlock, LightChain, ValidatorSet,
+    };
+
     use super::*;
-    use crate::errors::{Error, ErrorDetail};
     use crate::{
         components::{
             io::{self, AtHeight, Io},
             scheduler,
         },
+        errors::{Error, ErrorDetail},
         fork_detector::ProdForkDetector,
         store::{memory::MemoryStore, LightStore},
         tests::{MockClock, MockEvidenceReporter, MockIo, TrustOptions},
-    };
-
-    use crate::verifier::operations::ProdHasher;
-    use crate::verifier::options::Options;
-    use crate::verifier::types::Time;
-    use crate::verifier::ProdVerifier;
-    use core::convert::{Into, TryFrom};
-    use core::time::Duration;
-    use std::collections::HashMap;
-    use tendermint::block::Height;
-    use tendermint::evidence::Duration as DurationStr;
-    use tendermint::trust_threshold::TrustThresholdFraction;
-    use tendermint_rpc::{
-        self as rpc,
-        response_error::{Code, ResponseError},
-    };
-    use tendermint_testgen::helpers::get_time;
-    use tendermint_testgen::light_block::TmLightBlock;
-    use tendermint_testgen::{
-        Commit, Generator, Header, LightBlock as TestgenLightBlock, LightChain, ValidatorSet,
+        verifier::{operations::ProdHasher, options::Options, types::Time, ProdVerifier},
     };
 
     trait IntoLightBlock {
@@ -642,7 +642,7 @@ mod tests {
         let (result, _) = run_bisection_test(peer_list, 10);
 
         match result {
-            Err(Error(ErrorDetail::NoWitnesses(_), _)) => {}
+            Err(Error(ErrorDetail::NoWitnesses(_), _)) => {},
             _ => panic!("expected NoWitnesses error, instead got {:?}", result),
         }
     }
@@ -669,7 +669,7 @@ mod tests {
                 io::IoErrorDetail::Rpc(e) => match e.source {
                     rpc::error::ErrorDetail::Response(e) => {
                         assert_eq!(e.source, ResponseError::new(Code::InvalidRequest, None))
-                    }
+                    },
                     _ => panic!("expected Response error"),
                 },
                 _ => panic!("expected Rpc error"),
@@ -701,14 +701,14 @@ mod tests {
                 crate::components::io::IoErrorDetail::Rpc(e) => match e.source {
                     rpc::error::ErrorDetail::Response(e) => {
                         assert_eq!(e.source.code(), rpc::Code::InvalidRequest)
-                    }
+                    },
                     _ => {
                         panic!("expected Response error, instead got {:?}", e)
-                    }
+                    },
                 },
                 _ => {
                     panic!("expected Rpc error, instead got {:?}", e)
-                }
+                },
             },
             _ => panic!("expected Io error, instead got {:?}", result),
         }
@@ -744,7 +744,7 @@ mod tests {
         let (result, _) = run_bisection_test(peer_list, 5);
 
         match result {
-            Err(Error(ErrorDetail::ForkDetected(_), _)) => {}
+            Err(Error(ErrorDetail::ForkDetected(_), _)) => {},
             _ => panic!("expected ForkDetected error"),
         }
     }

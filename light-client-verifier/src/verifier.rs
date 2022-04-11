@@ -1,19 +1,18 @@
 //! Provides an interface and default implementation of the `Verifier` component
 
-use crate::errors::{ErrorExt, VerificationError, VerificationErrorDetail};
-use crate::operations::voting_power::VotingPowerTally;
-use crate::predicates as preds;
-use crate::types::{TrustedBlockState, UntrustedBlockState};
-use crate::{
-    operations::{
-        CommitValidator, Hasher, ProdCommitValidator, ProdHasher, ProdVotingPowerCalculator,
-        VotingPowerCalculator,
-    },
-    options::Options,
-    types::Time,
-};
 use preds::{ProdPredicates, VerificationPredicates};
 use serde::{Deserialize, Serialize};
+
+use crate::{
+    errors::{ErrorExt, VerificationError, VerificationErrorDetail},
+    operations::{
+        voting_power::VotingPowerTally, CommitValidator, Hasher, ProdCommitValidator, ProdHasher,
+        ProdVotingPowerCalculator, VotingPowerCalculator,
+    },
+    options::Options,
+    predicates as preds,
+    types::{Time, TrustedBlockState, UntrustedBlockState},
+};
 
 /// Represents the result of the verification performed by the
 /// verifier component.

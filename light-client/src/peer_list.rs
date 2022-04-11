@@ -1,10 +1,10 @@
 //! Provides a peer list for use within the `Supervisor`
 
-use contracts::*;
 use std::collections::{BTreeSet, HashMap};
 
-use crate::errors::Error;
-use crate::verifier::types::PeerId;
+use contracts::*;
+
+use crate::{errors::Error, verifier::types::PeerId};
 
 /// A generic container mapping `PeerId`s to some type `T`,
 /// which keeps track of the primary peer, witnesses, full nodes,
@@ -307,7 +307,7 @@ mod tests {
         let _ = peer_list.replace_faulty_primary(None).unwrap();
         let new_primary = peer_list.replace_faulty_primary(None);
         match new_primary {
-            Err(Error(ErrorDetail::NoWitnessesLeft(_), _)) => {}
+            Err(Error(ErrorDetail::NoWitnessesLeft(_), _)) => {},
             _ => panic!(
                 "expected NoWitnessesLeft error, instead got {:?}",
                 new_primary

@@ -1,7 +1,11 @@
-use crate::{Error, PublicKey};
 use core::convert::{TryFrom, TryInto};
-use tendermint_proto::privval::{PubKeyResponse as RawPubKeyResponse, RemoteSignerError};
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{
+    privval::{PubKeyResponse as RawPubKeyResponse, RemoteSignerError},
+    Protobuf,
+};
+
+use crate::{Error, PublicKey};
 
 /// PubKeyResponse
 #[derive(Clone, PartialEq, Debug)]

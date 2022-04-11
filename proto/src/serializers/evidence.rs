@@ -1,5 +1,4 @@
-use crate::tendermint::types::evidence::Sum;
-use crate::tendermint::types::Evidence;
+use crate::tendermint::types::{evidence::Sum, Evidence};
 
 /// EvidenceVariant helper struct for evidence serialization
 /// This is a workaround until we figure a better way of JSON serializing evidence.
@@ -52,7 +51,7 @@ impl From<EvidenceVariant> for Sum {
             // `impl From<EvidenceVariant> for Evidence` above.
             EvidenceVariant::None => {
                 panic!("non-existent evidence cannot be converted into its protobuf representation")
-            }
+            },
             EvidenceVariant::DuplicateVoteEvidence(d) => Self::DuplicateVoteEvidence(d),
             EvidenceVariant::LightClientAttackEvidence(l) => Self::LightClientAttackEvidence(l),
         }

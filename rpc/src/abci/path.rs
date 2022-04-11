@@ -1,12 +1,14 @@
 //! Paths to ABCI data
 
-use crate::prelude::*;
 use core::{
     fmt::{self, Display},
     str::FromStr,
 };
+
 use serde::{Deserialize, Serialize};
 use tendermint::error::Error;
+
+use crate::prelude::*;
 
 /// Path to ABCI data
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]

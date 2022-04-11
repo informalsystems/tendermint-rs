@@ -1,13 +1,13 @@
 //! Provides an interface and a default implementation of the `Io` component
 
-use flex_error::{define_error, TraceError};
 use std::time::Duration;
 
+use flex_error::{define_error, TraceError};
+use tendermint_rpc as rpc;
 #[cfg(feature = "rpc-client")]
 use tendermint_rpc::Client;
 
 use crate::verifier::types::{Height, LightBlock};
-use tendermint_rpc as rpc;
 
 #[cfg(feature = "tokio")]
 type TimeoutError = flex_error::DisplayOnly<tokio::time::error::Elapsed>;
@@ -94,17 +94,16 @@ pub use self::prod::ProdIo;
 
 #[cfg(feature = "rpc-client")]
 mod prod {
-    use super::*;
-
     use std::time::Duration;
 
-    use crate::utils::block_on;
-    use crate::verifier::types::PeerId;
-
-    use tendermint::account::Id as TMAccountId;
-    use tendermint::block::signed_header::SignedHeader as TMSignedHeader;
-    use tendermint::validator::Set as TMValidatorSet;
+    use tendermint::{
+        account::Id as TMAccountId, block::signed_header::SignedHeader as TMSignedHeader,
+        validator::Set as TMValidatorSet,
+    };
     use tendermint_rpc::Paging;
+
+    use super::*;
+    use crate::{utils::block_on, verifier::types::PeerId};
 
     /// Production implementation of the Io component, which fetches
     /// light blocks from full nodes via RPC.
@@ -175,7 +174,7 @@ mod prod {
             let height = match height {
                 AtHeight::Highest => {
                     return Err(IoError::invalid_height());
-                }
+                },
                 AtHeight::At(height) => height,
             };
 
@@ -189,7 +188,7 @@ mod prod {
                 Some(proposer_address) => {
                     TMValidatorSet::with_proposer(response.validators, proposer_address)
                         .map_err(IoError::invalid_validator_set)?
-                }
+                },
                 None => TMValidatorSet::without_proposer(response.validators),
             };
 

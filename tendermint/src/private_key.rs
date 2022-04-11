@@ -1,13 +1,12 @@
 //! Cryptographic private keys
 
 pub use ed25519_consensus::SigningKey as Ed25519;
-
-use crate::prelude::*;
-use crate::public_key::PublicKey;
 use ed25519_consensus::VerificationKey;
 use serde::{de, ser, Deserialize, Serialize};
 use subtle_encoding::{Base64, Encoding};
 use zeroize::Zeroizing;
+
+use crate::{prelude::*, public_key::PublicKey};
 
 pub const ED25519_KEYPAIR_SIZE: usize = 64;
 

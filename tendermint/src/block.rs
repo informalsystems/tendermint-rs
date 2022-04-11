@@ -11,6 +11,11 @@ mod round;
 pub mod signed_header;
 mod size;
 
+use core::convert::{TryFrom, TryInto};
+
+use serde::{Deserialize, Serialize};
+use tendermint_proto::{types::Block as RawBlock, Protobuf};
+
 pub use self::{
     commit::*,
     commit_sig::*,
@@ -21,12 +26,7 @@ pub use self::{
     round::*,
     size::Size,
 };
-use crate::prelude::*;
-use crate::{error::Error, evidence};
-use core::convert::{TryFrom, TryInto};
-use serde::{Deserialize, Serialize};
-use tendermint_proto::types::Block as RawBlock;
-use tendermint_proto::Protobuf;
+use crate::{error::Error, evidence, prelude::*};
 
 /// Blocks consist of a header, transactions, votes (the commit), and a list of
 /// evidence of malfeasance (i.e. signing conflicting votes).
@@ -69,7 +69,7 @@ impl TryFrom<RawBlock> for Block {
             ));
         }
         // Todo: Figure out requirements.
-        //if last_commit.is_some() && header.height.value() == 1 {
+        // if last_commit.is_some() && header.height.value() == 1 {
         //    return Err(Kind::InvalidFirstBlock.context("last_commit is not null on first
         // height").into());
         //}

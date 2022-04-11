@@ -12,8 +12,8 @@ pub struct EndBlock {
 // =============================================================================
 
 use core::convert::TryFrom;
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<EndBlock> for pb::RequestEndBlock {
     fn from(end_block: EndBlock) -> Self {

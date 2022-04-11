@@ -1,6 +1,6 @@
-use crate::{block, prelude::*, Error};
-
 use bytes::Bytes;
+
+use crate::{block, prelude::*, Error};
 
 #[doc = include_str!("../doc/response-info.md")]
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -23,8 +23,8 @@ pub struct Info {
 // =============================================================================
 
 use core::convert::TryFrom;
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<Info> for pb::ResponseInfo {
     fn from(info: Info) -> Self {

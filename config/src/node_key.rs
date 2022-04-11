@@ -1,11 +1,11 @@
 //! Node keys
 
-use crate::prelude::*;
-use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};
+
+use serde::{Deserialize, Serialize};
 use tendermint::{node, private_key::PrivateKey, public_key::PublicKey};
 
-use crate::error::Error;
+use crate::{error::Error, prelude::*};
 
 /// P2P node private keys
 #[derive(Serialize, Deserialize)]

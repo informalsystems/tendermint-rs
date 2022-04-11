@@ -1,8 +1,9 @@
 //! Serialize/deserialize core::time::Duration type from and into string:
-use crate::prelude::*;
+use core::time::Duration;
+
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
-use core::time::Duration;
+use crate::prelude::*;
 
 /// Deserialize string into Duration
 pub fn deserialize<'de, D>(deserializer: D) -> Result<Duration, D::Error>

@@ -1,12 +1,14 @@
 //! HTTP-based transport for Tendermint RPC Client.
 
-use crate::client::Client;
-use crate::prelude::*;
-use crate::{Error, Scheme, SimpleRequest, Url};
+use core::{
+    convert::{TryFrom, TryInto},
+    str::FromStr,
+};
+
 use async_trait::async_trait;
-use core::convert::{TryFrom, TryInto};
-use core::str::FromStr;
 use tendermint_config::net;
+
+use crate::{client::Client, prelude::*, Error, Scheme, SimpleRequest, Url};
 
 /// A JSON-RPC/HTTP Tendermint RPC client (implements [`crate::Client`]).
 ///
@@ -154,15 +156,17 @@ impl TryFrom<HttpClientUrl> for hyper::Uri {
 }
 
 mod sealed {
-    use crate::prelude::*;
-    use crate::{Error, Response, SimpleRequest};
-    use hyper::body::Buf;
-    use hyper::client::connect::Connect;
-    use hyper::client::HttpConnector;
-    use hyper::{header, Uri};
+    use std::io::Read;
+
+    use hyper::{
+        body::Buf,
+        client::{connect::Connect, HttpConnector},
+        header, Uri,
+    };
     use hyper_proxy::{Intercept, Proxy, ProxyConnector};
     use hyper_rustls::HttpsConnector;
-    use std::io::Read;
+
+    use crate::{prelude::*, Error, Response, SimpleRequest};
 
     /// A wrapper for a `hyper`-based client, generic over the connector type.
     #[derive(Debug, Clone)]

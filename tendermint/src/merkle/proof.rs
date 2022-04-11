@@ -1,14 +1,13 @@
 //! Merkle proofs
 use core::convert::TryFrom;
+
 use serde::{Deserialize, Serialize};
+use tendermint_proto::{
+    crypto::{ProofOp as RawProofOp, ProofOps as RawProofOps},
+    Protobuf,
+};
 
-use tendermint_proto::crypto::ProofOp as RawProofOp;
-use tendermint_proto::crypto::ProofOps as RawProofOps;
-use tendermint_proto::Protobuf;
-
-use crate::prelude::*;
-use crate::serializers;
-use crate::Error;
+use crate::{prelude::*, serializers, Error};
 
 /// Proof is Merkle proof defined by the list of ProofOps
 /// <https://github.com/tendermint/tendermint/blob/c8483531d8e756f7fbb812db1dd16d841cdf298a/crypto/merkle/merkle.proto#L26>

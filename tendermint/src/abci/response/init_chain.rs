@@ -1,8 +1,7 @@
 use bytes::Bytes;
 
-use crate::{consensus, prelude::*};
-
 use super::super::types::ValidatorUpdate;
+use crate::{consensus, prelude::*};
 
 #[doc = include_str!("../doc/response-initchain.md")]
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
@@ -27,8 +26,8 @@ pub struct InitChain {
 // =============================================================================
 
 use core::convert::{TryFrom, TryInto};
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<InitChain> for pb::ResponseInitChain {
     fn from(init_chain: InitChain) -> Self {

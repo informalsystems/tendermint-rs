@@ -1,14 +1,16 @@
-use super::Proposal;
-use crate::chain::Id as ChainId;
-use crate::error::Error;
-use crate::prelude::*;
-use bytes::BufMut;
 use core::convert::{TryFrom, TryInto};
-use tendermint_proto::privval::RemoteSignerError;
-use tendermint_proto::privval::SignProposalRequest as RawSignProposalRequest;
-use tendermint_proto::privval::SignedProposalResponse as RawSignedProposalResponse;
-use tendermint_proto::Error as ProtobufError;
-use tendermint_proto::Protobuf;
+
+use bytes::BufMut;
+use tendermint_proto::{
+    privval::{
+        RemoteSignerError, SignProposalRequest as RawSignProposalRequest,
+        SignedProposalResponse as RawSignedProposalResponse,
+    },
+    Error as ProtobufError, Protobuf,
+};
+
+use super::Proposal;
+use crate::{chain::Id as ChainId, error::Error, prelude::*};
 
 /// SignProposalRequest is a request to sign a proposal
 #[derive(Clone, PartialEq, Debug)]

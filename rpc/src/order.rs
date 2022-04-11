@@ -1,9 +1,10 @@
 //! Ordering of paginated RPC responses.
 
-use crate::prelude::*;
-use crate::Error;
 use core::str::FromStr;
+
 use serde::{Deserialize, Serialize};
+
+use crate::{prelude::*, Error};
 
 /// Ordering of paginated RPC responses.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

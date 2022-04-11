@@ -1,14 +1,15 @@
 use std::{path::PathBuf, time::Duration};
 
 use gumdrop::Options;
-
 use tendermint::Hash;
-use tendermint_light_client::supervisor::{Handle as _, Instance};
-use tendermint_light_client::verifier::options::Options as LightClientOptions;
-use tendermint_light_client::verifier::types::{Height, PeerId, TrustThreshold};
 use tendermint_light_client::{
     builder::{LightClientBuilder, SupervisorBuilder},
     store::memory::MemoryStore,
+    supervisor::{Handle as _, Instance},
+    verifier::{
+        options::Options as LightClientOptions,
+        types::{Height, PeerId, TrustThreshold},
+    },
 };
 use tendermint_rpc as rpc;
 
@@ -66,7 +67,7 @@ fn main() {
             eprintln!("{}\n", CliOptions::command_list().unwrap());
             eprintln!("{}\n", CliOptions::usage());
             std::process::exit(1);
-        }
+        },
         Some(Command::Sync(sync_opts)) => sync_cmd(sync_opts).unwrap_or_else(|e| {
             eprintln!("Command failed: {}", e);
             std::process::exit(1);
@@ -122,10 +123,10 @@ fn sync_cmd(opts: SyncOpts) -> Result<(), Box<dyn std::error::Error>> {
         match handle.verify_to_highest() {
             Ok(light_block) => {
                 println!("[info] synced to block {}", light_block.height());
-            }
+            },
             Err(err) => {
                 println!("[error] sync failed: {}", err);
-            }
+            },
         }
 
         std::thread::sleep(Duration::from_millis(800));

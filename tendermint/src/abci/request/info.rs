@@ -18,8 +18,8 @@ pub struct Info {
 // =============================================================================
 
 use core::convert::TryFrom;
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<Info> for pb::RequestInfo {
     fn from(info: Info) -> Self {

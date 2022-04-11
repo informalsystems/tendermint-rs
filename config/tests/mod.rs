@@ -2,9 +2,10 @@
 //!
 //! Test config files are located in the `tests/support/config` subdirectory.
 
+use std::{fs, path::PathBuf, time::Duration};
+
 #[cfg(test)]
 use pretty_assertions::assert_eq;
-use std::{fs, path::PathBuf, time::Duration};
 use tendermint::node;
 use tendermint_config::*;
 

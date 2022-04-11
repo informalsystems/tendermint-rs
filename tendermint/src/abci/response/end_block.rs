@@ -1,6 +1,5 @@
-use crate::{consensus, prelude::*};
-
 use super::super::{types::ValidatorUpdate, Event};
+use crate::{consensus, prelude::*};
 
 #[doc = include_str!("../doc/response-endblock.md")]
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
@@ -20,8 +19,8 @@ pub struct EndBlock {
 // =============================================================================
 
 use core::convert::{TryFrom, TryInto};
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<EndBlock> for pb::ResponseEndBlock {
     fn from(end_block: EndBlock) -> Self {

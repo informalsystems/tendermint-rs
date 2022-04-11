@@ -1,8 +1,7 @@
-use crate::prelude::*;
-
 use bytes::Bytes;
 
 use super::super::Event;
+use crate::prelude::*;
 
 #[doc = include_str!("../doc/response-checktx.md")]
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
@@ -35,9 +34,9 @@ pub struct CheckTx {
     pub sender: String,
     /// The transaction's priority (for mempool ordering).
     pub priority: i64,
-    /* mempool_error is contained in the proto, but skipped here:
-     * > mempool_error is set by Tendermint.
-     * > ABCI applictions creating a ResponseCheckTX should not set mempool_error. */
+    // mempool_error is contained in the proto, but skipped here:
+    // > mempool_error is set by Tendermint.
+    // > ABCI applictions creating a ResponseCheckTX should not set mempool_error.
 }
 
 // =============================================================================
@@ -45,8 +44,8 @@ pub struct CheckTx {
 // =============================================================================
 
 use core::convert::{TryFrom, TryInto};
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<CheckTx> for pb::ResponseCheckTx {
     fn from(check_tx: CheckTx) -> Self {

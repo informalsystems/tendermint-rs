@@ -1,14 +1,10 @@
 //! Event routing for subscriptions.
 
-use alloc::collections::BTreeMap as HashMap;
-use alloc::collections::BTreeSet as HashSet;
+use alloc::collections::{BTreeMap as HashMap, BTreeSet as HashSet};
 
 use tracing::debug;
 
-use crate::client::subscription::SubscriptionTx;
-use crate::error::Error;
-use crate::event::Event;
-use crate::prelude::*;
+use crate::{client::subscription::SubscriptionTx, error::Error, event::Event, prelude::*};
 
 pub type SubscriptionQuery = String;
 pub type SubscriptionId = String;
@@ -102,7 +98,7 @@ impl SubscriptionRouter {
             None => {
                 self.subscriptions.insert(query.clone(), HashMap::new());
                 self.subscriptions.get_mut(&query).unwrap()
-            }
+            },
         };
 
         subs_for_query.insert(id.to_string(), tx);
@@ -138,13 +134,19 @@ pub enum PublishResult {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use crate::client::sync::{unbounded, ChannelRx};
-    use crate::event::{Event, WrappedEvent};
-    use crate::utils::uuid_str;
     use std::path::PathBuf;
-    use tokio::fs;
-    use tokio::time::{self, Duration};
+
+    use tokio::{
+        fs,
+        time::{self, Duration},
+    };
+
+    use super::*;
+    use crate::{
+        client::sync::{unbounded, ChannelRx},
+        event::{Event, WrappedEvent},
+        utils::uuid_str,
+    };
 
     async fn read_json_fixture(name: &str) -> String {
         fs::read_to_string(

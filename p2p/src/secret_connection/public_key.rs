@@ -1,10 +1,11 @@
 //! Secret Connection peer public keys
 
-use sha2::{digest::Digest, Sha256};
 use std::{
     convert::TryFrom,
     fmt::{self, Display},
 };
+
+use sha2::{digest::Digest, Sha256};
 use tendermint::{error::Error, node};
 
 /// Secret Connection peer public keys (signing, presently Ed25519-only)
@@ -44,7 +45,7 @@ impl PublicKey {
                 let mut bytes = [0_u8; 20];
                 bytes.copy_from_slice(&digest[..20]);
                 node::Id::new(bytes)
-            }
+            },
         }
     }
 }

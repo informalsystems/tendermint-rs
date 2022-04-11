@@ -1,7 +1,8 @@
-use crate::prelude::*;
-use core::fmt;
-use core::fmt::Display;
+use core::{fmt, fmt::Display};
+
 use serde::{Deserialize, Serialize};
+
+use crate::prelude::*;
 
 /// ABCI log data
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]

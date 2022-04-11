@@ -2,12 +2,12 @@
 
 mod id;
 
-pub use self::id::Id;
-
-use crate::prelude::*;
-use crate::serializers;
 use core::fmt::{self, Display};
+
 use serde::{Deserialize, Serialize};
+
+pub use self::id::Id;
+use crate::{prelude::*, serializers};
 
 /// Channels
 #[derive(Clone, Debug, Deserialize, Serialize)]

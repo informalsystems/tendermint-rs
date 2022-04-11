@@ -1,9 +1,9 @@
 //! Hash serialization with validation
 
-use crate::prelude::*;
-use crate::{hash::Algorithm, Hash};
 use serde::{Deserialize, Deserializer, Serializer};
 use subtle_encoding::hex;
+
+use crate::{hash::Algorithm, prelude::*, Hash};
 
 /// Deserialize hexstring into Hash
 pub fn deserialize<'de, D>(deserializer: D) -> Result<Hash, D::Error>

@@ -1,13 +1,15 @@
-use crate::chain;
-use crate::error::Error;
-use crate::prelude::*;
-use crate::Vote;
-use bytes::BufMut;
 use core::convert::{TryFrom, TryInto};
-use tendermint_proto::privval::SignedVoteResponse as RawSignedVoteResponse;
-use tendermint_proto::privval::{RemoteSignerError, SignVoteRequest as RawSignVoteRequest};
-use tendermint_proto::Error as ProtobufError;
-use tendermint_proto::Protobuf;
+
+use bytes::BufMut;
+use tendermint_proto::{
+    privval::{
+        RemoteSignerError, SignVoteRequest as RawSignVoteRequest,
+        SignedVoteResponse as RawSignedVoteResponse,
+    },
+    Error as ProtobufError, Protobuf,
+};
+
+use crate::{chain, error::Error, prelude::*, Vote};
 
 /// SignVoteRequest is a request to sign a vote
 #[derive(Clone, PartialEq, Debug)]
@@ -90,24 +92,25 @@ impl From<SignedVoteResponse> for RawSignedVoteResponse {
 
 #[cfg(test)]
 mod tests {
-    use crate::account::Id as AccountId;
-    use crate::block::parts::Header;
-    use crate::block::Height;
-    use crate::block::Id as BlockId;
-    use crate::block::Round;
-    use crate::chain::Id as ChainId;
-    use crate::hash::Algorithm;
-    use crate::prelude::*;
-    use crate::signature::{Ed25519Signature, Signature};
-    use crate::vote::{CanonicalVote, ValidatorIndex};
-    use crate::vote::{SignVoteRequest, Type};
-    use crate::Hash;
-    use crate::Vote;
-    use core::convert::{TryFrom, TryInto};
-    use core::str::FromStr;
+    use core::{
+        convert::{TryFrom, TryInto},
+        str::FromStr,
+    };
     use std::println;
+
     use tendermint_proto::Protobuf;
     use time::macros::datetime;
+
+    use crate::{
+        account::Id as AccountId,
+        block::{parts::Header, Height, Id as BlockId, Round},
+        chain::Id as ChainId,
+        hash::Algorithm,
+        prelude::*,
+        signature::{Ed25519Signature, Signature},
+        vote::{CanonicalVote, SignVoteRequest, Type, ValidatorIndex},
+        Hash, Vote,
+    };
 
     #[test]
     fn test_vote_serialization() {
@@ -152,6 +155,7 @@ mod tests {
         // Option 2 using Vec<u8>:
         let got2 = request.to_signable_vec().unwrap();
 
+        #[rustfmt::skip]
         // the following vector is generated via:
         /*
            import (
@@ -233,6 +237,7 @@ mod tests {
 
         let got = request.to_signable_vec().unwrap();
 
+        #[rustfmt::skip]
         // the following vector is generated via:
         /*
            import (
@@ -357,7 +362,7 @@ mod tests {
             vote_type: Type::Prevote,
             block_id: Some(BlockId {
                 hash: Hash::from_hex_upper(Algorithm::Sha256, "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA")
-                    .unwrap(), //Hash::new(Algorithm::Sha256,
+                    .unwrap(), // Hash::new(Algorithm::Sha256,
                 // b"hash".to_vec().as_slice()).unwrap(),
                 part_set_header: Header::new(
                     1_000_000,
