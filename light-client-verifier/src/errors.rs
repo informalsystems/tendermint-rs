@@ -1,14 +1,16 @@
 //! Errors which may be raised when verifying a `LightBlock`
 
 use core::time::Duration;
+
 use flex_error::define_error;
 use serde::{Deserialize, Serialize};
-use tendermint::account::Id;
-use tendermint::Error as TendermintError;
+use tendermint::{account::Id, Error as TendermintError};
 
-use crate::operations::voting_power::VotingPowerTally;
-use crate::prelude::*;
-use crate::types::{Hash, Height, Time, Validator, ValidatorAddress};
+use crate::{
+    operations::voting_power::VotingPowerTally,
+    prelude::*,
+    types::{Hash, Height, Time, Validator, ValidatorAddress},
+};
 
 define_error! {
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

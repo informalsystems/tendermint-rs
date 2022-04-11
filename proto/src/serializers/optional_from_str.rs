@@ -1,10 +1,10 @@
 //! De/serialize an optional type that must be converted from/to a string.
 
+use core::{fmt::Display, str::FromStr};
+
+use serde::{de::Error, Deserialize, Deserializer, Serializer};
+
 use crate::prelude::*;
-use core::fmt::Display;
-use core::str::FromStr;
-use serde::de::Error;
-use serde::{Deserialize, Deserializer, Serializer};
 
 pub fn serialize<S, T>(value: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
 where

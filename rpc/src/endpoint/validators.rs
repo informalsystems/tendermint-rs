@@ -1,9 +1,9 @@
 //! `/validators` endpoint JSON-RPC wrapper
 
-use crate::prelude::*;
-use crate::{PageNumber, PerPage};
 use serde::{Deserialize, Serialize};
 use tendermint::{block, validator};
+
+use crate::{prelude::*, PageNumber, PerPage};
 
 /// The default number of validators to return per page.
 pub const DEFAULT_VALIDATORS_PER_PAGE: u8 = 30;

@@ -1,13 +1,16 @@
 //! Block headers
 
-use crate::merkle::simple_hash_from_byte_vectors;
-use crate::prelude::*;
-use crate::{account, block, chain, AppHash, Error, Hash, Time};
 use core::convert::{TryFrom, TryInto};
+
 use serde::{Deserialize, Serialize};
-use tendermint_proto::types::Header as RawHeader;
-use tendermint_proto::version::Consensus as RawConsensusVersion;
-use tendermint_proto::Protobuf;
+use tendermint_proto::{
+    types::Header as RawHeader, version::Consensus as RawConsensusVersion, Protobuf,
+};
+
+use crate::{
+    account, block, chain, merkle::simple_hash_from_byte_vectors, prelude::*, AppHash, Error, Hash,
+    Time,
+};
 
 /// Block `Header` values contain metadata about the block and about the
 /// consensus, as well as commitments to the data in the current block, the
@@ -85,27 +88,27 @@ impl TryFrom<RawHeader> for Header {
         let height: block::Height = value.height.try_into()?;
 
         // Todo: fix domain logic
-        //if last_block_id.is_none() && height.value() != 1 {
+        // if last_block_id.is_none() && height.value() != 1 {
         //    return Err(Kind::InvalidHeader.context("last_block_id is null on non-first
         // height").into());
         //}
         if last_block_id.is_some() && height.value() == 1 {
             return Err(Error::invalid_first_header());
         }
-        //if last_commit_hash.is_none() && height.value() != 1 {
+        // if last_commit_hash.is_none() && height.value() != 1 {
         //    return Err(Kind::InvalidHeader.context("last_commit_hash is null on non-first
         // height").into());
         //}
-        //if height.value() == 1 && last_commit_hash.is_some() &&
+        // if height.value() == 1 && last_commit_hash.is_some() &&
         // last_commit_hash.as_ref().unwrap() != simple_hash_from_byte_vectors(Vec::new()) {
         //    return Err(Kind::InvalidFirstHeader.context("last_commit_hash is not empty Merkle tree
         // on first height").into());
         //}
-        //if last_results_hash.is_none() && height.value() != 1 {
+        // if last_results_hash.is_none() && height.value() != 1 {
         //    return Err(Kind::InvalidHeader.context("last_results_hash is null on non-first
         // height").into());
         //}
-        //if last_results_hash.is_some() && height.value() == 1 {
+        // if last_results_hash.is_some() && height.value() == 1 {
         //    return Err(Kind::InvalidFirstHeader.context("last_results_hash is not ull on first
         // height").into());
         //}
@@ -225,9 +228,7 @@ impl From<Version> for RawConsensusVersion {
 #[cfg(test)]
 mod tests {
     use super::Header;
-    use crate::hash::Algorithm;
-    use crate::test::test_serialization_roundtrip;
-    use crate::Hash;
+    use crate::{hash::Algorithm, test::test_serialization_roundtrip, Hash};
 
     #[test]
     fn serialization_roundtrip() {

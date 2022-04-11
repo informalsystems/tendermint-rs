@@ -11,14 +11,16 @@
 
 mod utils;
 
-use serde::{Deserialize, Serialize};
 use std::time::Duration;
+
+use serde::{Deserialize, Serialize};
 use tendermint::Time;
-use tendermint_light_client_verifier::options::Options;
-use tendermint_light_client_verifier::types::{LightBlock, TrustThreshold};
-use tendermint_light_client_verifier::{ProdVerifier, Verifier};
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsValue;
+use tendermint_light_client_verifier::{
+    options::Options,
+    types::{LightBlock, TrustThreshold},
+    ProdVerifier, Verifier,
+};
+use wasm_bindgen::{prelude::*, JsValue};
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.

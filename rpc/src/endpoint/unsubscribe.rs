@@ -1,7 +1,8 @@
 //! `/unsubscribe` endpoint JSON-RPC wrapper
 
-use crate::prelude::*;
 use serde::{Deserialize, Serialize};
+
+use crate::prelude::*;
 
 /// Request to unsubscribe from events relating to a given query.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

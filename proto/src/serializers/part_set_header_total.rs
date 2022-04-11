@@ -5,10 +5,14 @@
 //! string-quoted integer value into an integer value without quotes in Tendermint Core v0.34.0.
 //! This deserializer allows backwards-compatibility by deserializing both ways.
 //! See also: <https://github.com/informalsystems/tendermint-rs/issues/679>
+use core::{convert::TryFrom, fmt::Formatter};
+
+use serde::{
+    de::{Error, Visitor},
+    Deserializer, Serialize, Serializer,
+};
+
 use crate::prelude::*;
-use core::convert::TryFrom;
-use core::fmt::Formatter;
-use serde::{de::Error, de::Visitor, Deserializer, Serialize, Serializer};
 
 struct PartSetHeaderTotalStringOrU32;
 

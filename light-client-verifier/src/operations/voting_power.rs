@@ -1,19 +1,20 @@
 //! Provides an interface and default implementation for the `VotingPower` operation
 
-use crate::prelude::*;
-use crate::{
-    errors::VerificationError,
-    types::{Commit, SignedHeader, TrustThreshold, ValidatorSet},
+use alloc::collections::BTreeSet as HashSet;
+use core::{convert::TryFrom, fmt};
+
+use serde::{Deserialize, Serialize};
+use tendermint::{
+    block::CommitSig,
+    trust_threshold::TrustThreshold as _,
+    vote::{SignedVote, ValidatorIndex, Vote},
 };
 
-use alloc::collections::BTreeSet as HashSet;
-use core::fmt;
-use serde::{Deserialize, Serialize};
-
-use core::convert::TryFrom;
-use tendermint::block::CommitSig;
-use tendermint::trust_threshold::TrustThreshold as _;
-use tendermint::vote::{SignedVote, ValidatorIndex, Vote};
+use crate::{
+    errors::VerificationError,
+    prelude::*,
+    types::{Commit, SignedHeader, TrustThreshold, ValidatorSet},
+};
 
 /// Tally for the voting power computed by the `VotingPowerCalculator`
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize, Eq)]
@@ -220,15 +221,14 @@ fn non_absent_vote(
 // TODO: We plan to add Lightweight MBT for `voting_power_in` in the near future
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::errors::VerificationErrorDetail;
-    use crate::types::LightBlock;
     use tendermint::trust_threshold::TrustThresholdFraction;
-    use tendermint_testgen::light_block::generate_signed_header;
     use tendermint_testgen::{
-        Commit, Generator, Header, LightBlock as TestgenLightBlock, ValidatorSet,
-        Vote as TestgenVote,
+        light_block::generate_signed_header, Commit, Generator, Header,
+        LightBlock as TestgenLightBlock, ValidatorSet, Vote as TestgenVote,
     };
+
+    use super::*;
+    use crate::{errors::VerificationErrorDetail, types::LightBlock};
 
     const EXPECTED_RESULT: VotingPowerTally = VotingPowerTally {
         total: 100,
@@ -324,7 +324,7 @@ mod tests {
         );
 
         match result_err {
-            Err(VerificationError(VerificationErrorDetail::InvalidSignature(_), _)) => {}
+            Err(VerificationError(VerificationErrorDetail::InvalidSignature(_), _)) => {},
             _ => panic!("expected InvalidSignature error"),
         }
     }
@@ -346,7 +346,7 @@ mod tests {
         );
 
         match result_err {
-            Err(VerificationError(VerificationErrorDetail::InvalidSignature(_), _)) => {}
+            Err(VerificationError(VerificationErrorDetail::InvalidSignature(_), _)) => {},
             _ => panic!("expected InvalidSignature error"),
         }
     }

@@ -1,9 +1,10 @@
 //! Node information (used in RPC responses)
 
-use crate::prelude::*;
-use crate::{chain, channel::Channels, node, serializers, Moniker, Version};
 use core::fmt::{self, Display};
+
 use serde::{Deserialize, Serialize};
+
+use crate::{chain, channel::Channels, node, prelude::*, serializers, Moniker, Version};
 
 /// Node information
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

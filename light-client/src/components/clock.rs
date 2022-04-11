@@ -1,8 +1,10 @@
 //! Provides an interface and a default implementation of the `Clock` component
 
-use crate::verifier::types::Time;
 use std::convert::TryInto;
+
 use time::OffsetDateTime;
+
+use crate::verifier::types::Time;
 
 /// Abstracts over the current time.
 pub trait Clock: Send + Sync {

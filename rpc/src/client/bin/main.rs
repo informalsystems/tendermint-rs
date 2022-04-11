@@ -1,17 +1,17 @@
 //! CLI for performing simple interactions against a Tendermint node's RPC.
 
 use core::str::FromStr;
+
 use futures::StreamExt;
 use structopt::StructOpt;
-use tendermint_rpc::abci::{transaction::Hash, Path, Transaction};
-use tendermint_rpc::query::Query;
 use tendermint_rpc::{
+    abci::{transaction::Hash, Path, Transaction},
+    query::Query,
     Client, Error, HttpClient, Order, Paging, Scheme, Subscription, SubscriptionClient, Url,
     WebSocketClient,
 };
 use tokio::time::Duration;
-use tracing::level_filters::LevelFilter;
-use tracing::{error, info, warn};
+use tracing::{error, info, level_filters::LevelFilter, warn};
 
 /// CLI for performing simple interactions against a Tendermint node's RPC.
 ///
@@ -206,7 +206,7 @@ async fn main() {
         Err(e) => {
             error!("Failed to obtain proxy URL: {}", e);
             std::process::exit(-1);
-        }
+        },
     };
     let result = match opt.url.scheme() {
         Scheme::Http | Scheme::Https => http_request(opt.url, proxy_url, opt.req).await,
@@ -242,7 +242,7 @@ fn get_http_proxy_url(url_scheme: Scheme, proxy_url: Option<Url>) -> Result<Opti
                     );
                 }
                 None
-            }
+            },
         }
         .map(|u| u.parse())
         .transpose(),
@@ -257,11 +257,11 @@ async fn http_request(url: Url, proxy_url: Option<Url>, req: Request) -> Result<
                 proxy_url, url
             );
             HttpClient::new_with_proxy(url, proxy_url)
-        }
+        },
         None => {
             info!("Using HTTP client to submit request to: {}", url);
             HttpClient::new(url)
-        }
+        },
     }?;
 
     match req {
@@ -296,7 +296,7 @@ where
     let result = match req {
         ClientRequest::AbciInfo => {
             serde_json::to_string_pretty(&client.abci_info().await?).map_err(Error::serde)?
-        }
+        },
         ClientRequest::AbciQuery {
             path,
             data,
@@ -317,7 +317,7 @@ where
         .map_err(Error::serde)?,
         ClientRequest::Block { height } => {
             serde_json::to_string_pretty(&client.block(height).await?).map_err(Error::serde)?
-        }
+        },
         ClientRequest::BlockByHash { hash } => serde_json::to_string_pretty(
             &client
                 .block_by_hash(
@@ -329,11 +329,11 @@ where
         ClientRequest::Blockchain { min, max } => {
             serde_json::to_string_pretty(&client.blockchain(min, max).await?)
                 .map_err(Error::serde)?
-        }
+        },
         ClientRequest::BlockResults { height } => {
             serde_json::to_string_pretty(&client.block_results(height).await?)
                 .map_err(Error::serde)?
-        }
+        },
         ClientRequest::BlockSearch {
             query,
             page,
@@ -342,7 +342,7 @@ where
         } => {
             serde_json::to_string_pretty(&client.block_search(query, page, per_page, order).await?)
                 .map_err(Error::serde)?
-        }
+        },
         ClientRequest::BroadcastTxAsync { tx } => serde_json::to_string_pretty(
             &client
                 .broadcast_tx_async(Transaction::from(tx.into_bytes()))
@@ -364,39 +364,39 @@ where
         ClientRequest::ConsensusParams { height } => {
             serde_json::to_string_pretty(&client.consensus_params(height).await?)
                 .map_err(Error::serde)?
-        }
+        },
         ClientRequest::Commit { height } => {
             serde_json::to_string_pretty(&client.commit(height).await?).map_err(Error::serde)?
-        }
+        },
         ClientRequest::LatestBlock => {
             serde_json::to_string_pretty(&client.latest_block().await?).map_err(Error::serde)?
-        }
+        },
         ClientRequest::LatestBlockResults => {
             serde_json::to_string_pretty(&client.latest_block_results().await?)
                 .map_err(Error::serde)?
-        }
+        },
         ClientRequest::LatestCommit => {
             serde_json::to_string_pretty(&client.latest_commit().await?).map_err(Error::serde)?
-        }
+        },
         ClientRequest::LatestConsensusParams => {
             serde_json::to_string_pretty(&client.latest_consensus_params().await?)
                 .map_err(Error::serde)?
-        }
+        },
         ClientRequest::ConsensusState => {
             serde_json::to_string_pretty(&client.consensus_state().await?).map_err(Error::serde)?
-        }
+        },
         ClientRequest::Genesis => {
             serde_json::to_string_pretty(&client.genesis().await?).map_err(Error::serde)?
-        }
+        },
         ClientRequest::Health => {
             serde_json::to_string_pretty(&client.health().await?).map_err(Error::serde)?
-        }
+        },
         ClientRequest::NetInfo => {
             serde_json::to_string_pretty(&client.net_info().await?).map_err(Error::serde)?
-        }
+        },
         ClientRequest::Status => {
             serde_json::to_string_pretty(&client.status().await?).map_err(Error::serde)?
-        }
+        },
         ClientRequest::Tx { hash, prove } => serde_json::to_string_pretty(
             &client
                 .tx(
@@ -437,7 +437,7 @@ where
             };
             serde_json::to_string_pretty(&client.validators(height, paging).await?)
                 .map_err(Error::serde)?
-        }
+        },
     };
 
     println!("{}", result);

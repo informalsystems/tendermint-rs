@@ -41,8 +41,8 @@ pub struct Query {
 // =============================================================================
 
 use core::convert::{TryFrom, TryInto};
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<Query> for pb::ResponseQuery {
     fn from(query: Query) -> Self {

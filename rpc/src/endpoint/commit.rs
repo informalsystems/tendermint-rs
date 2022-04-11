@@ -1,7 +1,6 @@
 //! `/commit` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
-
 use tendermint::{block, block::signed_header::SignedHeader};
 
 /// Get commit information about a specific block

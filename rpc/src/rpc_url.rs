@@ -1,12 +1,10 @@
 //! URL representation for RPC clients.
 
-use crate::error::Error;
-use crate::prelude::*;
-use core::convert::TryFrom;
-use core::fmt;
-use core::str::FromStr;
-use serde::de::Error as SerdeError;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use core::{convert::TryFrom, fmt, str::FromStr};
+
+use serde::{de::Error as SerdeError, Deserialize, Deserializer, Serialize, Serializer};
+
+use crate::{error::Error, prelude::*};
 
 /// The various schemes supported by Tendermint RPC clients.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -158,8 +156,9 @@ impl<'de> Deserialize<'de> for Url {
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use lazy_static::lazy_static;
+
+    use super::*;
 
     struct ExpectedUrl {
         scheme: Scheme,

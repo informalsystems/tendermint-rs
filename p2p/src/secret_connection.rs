@@ -1,14 +1,17 @@
 //! `SecretConnection`: Transport layer encryption for Tendermint P2P connections.
 
-use std::cmp;
-use std::convert::{TryFrom, TryInto};
-use std::io::{self, Read, Write};
-use std::marker::{Send, Sync};
-use std::slice;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::{
+    cmp,
+    convert::{TryFrom, TryInto},
+    io::{self, Read, Write},
+    marker::{Send, Sync},
+    slice,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+};
 
-use crate::error::Error;
 use chacha20poly1305::{
     aead::{generic_array::GenericArray, AeadInPlace, NewAead},
     ChaCha20Poly1305,
@@ -16,10 +19,9 @@ use chacha20poly1305::{
 use merlin::Transcript;
 use rand_core::OsRng;
 use subtle::ConstantTimeEq;
-use x25519_dalek::{EphemeralSecret, PublicKey as EphemeralPublic};
-
 use tendermint_proto as proto;
 use tendermint_std_ext::TryClone;
+use x25519_dalek::{EphemeralSecret, PublicKey as EphemeralPublic};
 
 pub use self::{
     kdf::Kdf,
@@ -27,6 +29,7 @@ pub use self::{
     protocol::Version,
     public_key::PublicKey,
 };
+use crate::error::Error;
 
 #[cfg(feature = "amino")]
 mod amino_types;
@@ -184,7 +187,7 @@ impl Handshake<AwaitingAuthSig> {
             proto::crypto::public_key::Sum::Ed25519(ref bytes) => {
                 ed25519_consensus::VerificationKey::try_from(&bytes[..])
                     .map_err(|_| Error::signature())
-            }
+            },
             _ => Err(Error::unsupported_key()),
         }?;
 
@@ -311,7 +314,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         let auth_sig_msg = match local_pubkey {
             PublicKey::Ed25519(ref pk) => {
                 share_auth_signature(&mut sc, pk, &h.state.local_signature)?
-            }
+            },
         };
 
         // Authenticate remote pubkey.

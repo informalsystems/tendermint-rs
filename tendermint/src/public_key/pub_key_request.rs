@@ -1,9 +1,8 @@
-use crate::chain::Id as ChainId;
-use crate::prelude::*;
-use crate::Error;
 use core::convert::TryFrom;
-use tendermint_proto::privval::PubKeyRequest as RawPubKeyRequest;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{privval::PubKeyRequest as RawPubKeyRequest, Protobuf};
+
+use crate::{chain::Id as ChainId, prelude::*, Error};
 
 /// PubKeyRequest requests the consensus public key from the remote signer.
 #[derive(Clone, PartialEq, Debug)]
@@ -34,29 +33,28 @@ impl From<PubKeyRequest> for RawPubKeyRequest {
 
 #[cfg(test)]
 mod tests {
-    use super::PubKeyRequest;
-    use crate::chain::Id as ChainId;
-    use crate::prelude::*;
     use core::str::FromStr;
+
     use tendermint_proto::Protobuf;
+
+    use super::PubKeyRequest;
+    use crate::{chain::Id as ChainId, prelude::*};
 
     #[test]
     fn test_empty_pubkey_msg() {
         // test-vector generated via the following go code:
-        /*
-           import (
-               "fmt"
-               "github.com/tendermint/tendermint/proto/tendermint/privval"
-           )
-           func ed25519_empty() {
-               pkr := &privval.PubKeyRequest{
-                   ChainId: "A",
-               }
-               pbpk, _ := pkr.Marshal()
-               fmt.Printf("%#v\n", pbpk)
-
-           }
-        */
+        // import (
+        // "fmt"
+        // "github.com/tendermint/tendermint/proto/tendermint/privval"
+        // )
+        // func ed25519_empty() {
+        // pkr := &privval.PubKeyRequest{
+        // ChainId: "A",
+        // }
+        // pbpk, _ := pkr.Marshal()
+        // fmt.Printf("%#v\n", pbpk)
+        //
+        // }
 
         let want: Vec<u8> = vec![10, 1, 65];
         let msg = PubKeyRequest {

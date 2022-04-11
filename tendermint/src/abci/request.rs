@@ -4,8 +4,6 @@
 //! contain data are modeled as a separate struct, to avoid duplication of field
 //! definitions.
 
-use crate::prelude::*;
-
 // IMPORTANT NOTE ON DOCUMENTATION:
 //
 // The documentation for each request type is adapted from the ABCI Methods and
@@ -20,15 +18,13 @@ use crate::prelude::*;
 // This is also why certain submodules have #[allow(unused)] imports to bring
 // items into scope for doc links, rather than changing the doc links -- it
 // allows the doc comments to be copied without editing.
-
 use core::convert::{TryFrom, TryInto};
-
-use super::MethodKind;
-use crate::Error;
 
 // bring into scope for doc links
 #[allow(unused)]
 use super::types::Snapshot;
+use super::MethodKind;
+use crate::{prelude::*, Error};
 
 mod apply_snapshot_chunk;
 mod begin_block;
@@ -252,8 +248,7 @@ impl TryFrom<Request> for SnapshotRequest {
 // Protobuf conversions
 // =============================================================================
 
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<Request> for pb::Request {
     fn from(request: Request) -> pb::Request {

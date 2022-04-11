@@ -1,15 +1,15 @@
 //! Remote addresses (`tcp://` or `unix://`)
 
-use crate::error::Error;
-use crate::prelude::*;
-
 use core::{
     fmt::{self, Display},
     str::{self, FromStr},
 };
+
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use tendermint::node::{self, info::ListenAddress};
 use url::Url;
+
+use crate::{error::Error, prelude::*};
 
 /// URI prefix for TCP connections
 pub const TCP_PREFIX: &str = "tcp://";
@@ -128,8 +128,9 @@ impl Serialize for Address {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use tendermint::node;
+
+    use super::*;
 
     const EXAMPLE_TCP_ADDR: &str =
         "tcp://abd636b766dcefb5322d8ca40011ec2cb35efbc2@35.192.61.41:26656";
@@ -157,7 +158,7 @@ mod tests {
                     );
                     assert_eq!(host, "35.192.61.41");
                     assert_eq!(port, 26656);
-                }
+                },
                 other => panic!("unexpected address type: {:?}", other),
             }
         }
@@ -179,7 +180,7 @@ mod tests {
                     assert!(peer_id.is_none());
                     assert_eq!(host, "35.192.61.41");
                     assert_eq!(*port, 26656);
-                }
+                },
                 other => panic!("unexpected address type: {:?}", other),
             }
         }
@@ -191,7 +192,7 @@ mod tests {
         match addr {
             Address::Unix { path } => {
                 assert_eq!(path, "/tmp/node.sock");
-            }
+            },
             other => panic!("unexpected address type: {:?}", other),
         }
     }
@@ -218,7 +219,7 @@ mod tests {
                     // The parser URL strips the leading zeroes and converts to lowercase hex
                     assert_eq!(host, "[2001:0:3238:dfe1:63::fefb]");
                     assert_eq!(*port, 26656);
-                }
+                },
                 other => panic!("unexpected address type: {:?}", other),
             }
         }

@@ -1,10 +1,12 @@
 //! SignedHeader contains commit and and block header.
 //! It is what the rpc endpoint /commit returns and hence can be used by a
 //! light client.
-use crate::{block, Error};
 use core::convert::{TryFrom, TryInto};
+
 use serde::{Deserialize, Serialize};
 use tendermint_proto::{types::SignedHeader as RawSignedHeader, Protobuf};
+
+use crate::{block, Error};
 
 /// Signed block headers
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

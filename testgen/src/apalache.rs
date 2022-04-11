@@ -1,6 +1,8 @@
-use crate::{command::*, tester::TestEnv};
-use serde::{Deserialize, Serialize};
 use std::io;
+
+use serde::{Deserialize, Serialize};
+
+use crate::{command::*, tester::TestEnv};
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct ApalacheTestBatch {
@@ -118,7 +120,7 @@ pub fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> io::Result<Apalac
             } else {
                 Ok(ApalacheRun::Timeout(run))
             }
-        }
+        },
         Err(e) => Err(e),
     }
 }

@@ -24,14 +24,15 @@ mod error;
 #[allow(warnings)]
 mod tendermint;
 
-pub use error::Error;
-pub use tendermint::*;
+use core::{
+    convert::{TryFrom, TryInto},
+    fmt::Display,
+};
 
 use bytes::{Buf, BufMut};
-use core::convert::{TryFrom, TryInto};
-use core::fmt::Display;
-use prost::encoding::encoded_len_varint;
-use prost::Message;
+pub use error::Error;
+use prost::{encoding::encoded_len_varint, Message};
+pub use tendermint::*;
 
 pub mod serializers;
 

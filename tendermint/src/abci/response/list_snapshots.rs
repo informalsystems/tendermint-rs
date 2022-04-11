@@ -1,6 +1,5 @@
-use crate::prelude::*;
-
 use super::super::types::Snapshot;
+use crate::prelude::*;
 
 #[doc = include_str!("../doc/response-listsnapshots.md")]
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
@@ -14,8 +13,8 @@ pub struct ListSnapshots {
 // =============================================================================
 
 use core::convert::{TryFrom, TryInto};
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<ListSnapshots> for pb::ResponseListSnapshots {
     fn from(list_snapshots: ListSnapshots) -> Self {

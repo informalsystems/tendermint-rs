@@ -1,6 +1,6 @@
-use crate::{block, prelude::*};
-
 use bytes::Bytes;
+
+use crate::{block, prelude::*};
 
 #[doc = include_str!("../doc/response-commit.md")]
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
@@ -19,8 +19,8 @@ pub struct Commit {
 // =============================================================================
 
 use core::convert::TryFrom;
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<Commit> for pb::ResponseCommit {
     fn from(commit: Commit) -> Self {

@@ -4,9 +4,11 @@
 use std::convert::TryInto;
 
 use proptest::prelude::*;
-use time::format_description::well_known::Rfc3339;
-use time::macros::{datetime, offset};
-use time::{Date, OffsetDateTime, UtcOffset};
+use time::{
+    format_description::well_known::Rfc3339,
+    macros::{datetime, offset},
+    Date, OffsetDateTime, UtcOffset,
+};
 
 /// Any higher, and we're at seconds
 pub const MAX_NANO_SECS: u32 = 999_999_999u32;

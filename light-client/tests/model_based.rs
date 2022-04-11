@@ -1,21 +1,27 @@
 #[cfg(feature = "mbt")]
 mod mbt {
-    use rand::Rng;
-    use serde::de::DeserializeOwned;
-    use serde::{Deserialize, Serialize};
-    use serde_json::Error;
-    use std::convert::{TryFrom, TryInto};
-    use std::str::FromStr;
-    use std::time::Duration;
-    use tendermint::validator::Set;
-    use tendermint_light_client::tests::*;
-    use tendermint_light_client::verifier::types::{
-        LightBlock, Time, TrustThreshold, ValidatorSet,
+    use std::{
+        convert::{TryFrom, TryInto},
+        str::FromStr,
+        time::Duration,
     };
-    use tendermint_light_client::verifier::Verdict;
-    use tendermint_testgen::light_block::default_peer_id;
+
+    use rand::Rng;
+    use serde::{de::DeserializeOwned, Deserialize, Serialize};
+    use serde_json::Error;
+    use tendermint::validator::Set;
+    use tendermint_light_client::{
+        tests::*,
+        verifier::{
+            types::{LightBlock, Time, TrustThreshold, ValidatorSet},
+            Verdict,
+        },
+    };
     use tendermint_testgen::{
-        apalache::*, jsonatr::*, light_block::TmLightBlock, validator::generate_validators,
+        apalache::*,
+        jsonatr::*,
+        light_block::{default_peer_id, TmLightBlock},
+        validator::generate_validators,
         Command, Generator, LightBlock as TestgenLightBlock, TestEnv, Tester, Validator, Vote,
     };
     use time::OffsetDateTime;
@@ -505,7 +511,7 @@ mod mbt {
             serialized.err().unwrap()
         );
 
-        //deserialize
+        // deserialize
         let serialized = serialized.unwrap();
 
         serde_json::from_str::<T>(&serialized)
@@ -578,19 +584,19 @@ mod mbt {
                             new_state.next_validators,
                             new_state.provider,
                         );
-                    }
+                    },
                     Err(e) => {
                         output_env.logln(&format!("      > lite: {:?}", e));
                         match e {
                             Verdict::Invalid(_) => assert_eq!(input.verdict, LiteVerdict::Invalid),
                             Verdict::NotEnoughTrust(_) => {
                                 assert_eq!(input.verdict, LiteVerdict::NotEnoughTrust)
-                            }
+                            },
                             Verdict::Success => {
                                 panic!("verify_single() returned error with Verdict::Success")
-                            }
+                            },
                         }
-                    }
+                    },
                 }
             }
         }

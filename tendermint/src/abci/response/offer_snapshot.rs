@@ -1,8 +1,7 @@
-use crate::prelude::*;
-
 // bring into scope for doc links
 #[allow(unused)]
 use super::super::types::Snapshot;
+use crate::prelude::*;
 
 #[doc = include_str!("../doc/response-offersnapshot.md")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -33,8 +32,8 @@ impl Default for OfferSnapshot {
 // =============================================================================
 
 use core::convert::TryFrom;
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<OfferSnapshot> for pb::ResponseOfferSnapshot {
     fn from(offer_snapshot: OfferSnapshot) -> Self {

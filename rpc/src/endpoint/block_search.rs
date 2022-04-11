@@ -1,10 +1,9 @@
 //! `/block_search` endpoint JSON-RPC wrapper
 
-pub use super::{block, block_results};
-
-use crate::prelude::*;
-use crate::{Method, Order};
 use serde::{Deserialize, Serialize};
+
+pub use super::{block, block_results};
+use crate::{prelude::*, Method, Order};
 
 /// Request for searching for blocks by their BeginBlock and EndBlock events.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

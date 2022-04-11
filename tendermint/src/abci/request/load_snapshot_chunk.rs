@@ -16,8 +16,8 @@ pub struct LoadSnapshotChunk {
 // =============================================================================
 
 use core::convert::TryFrom;
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<LoadSnapshotChunk> for pb::RequestLoadSnapshotChunk {
     fn from(load_snapshot_chunk: LoadSnapshotChunk) -> Self {

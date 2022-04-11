@@ -1,13 +1,16 @@
 //! `/consensus_state` endpoint JSON-RPC wrapper
 
-use crate::prelude::*;
-use crate::{Error, Method};
-use core::fmt;
-use core::str::FromStr;
+use core::{fmt, str::FromStr};
+
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use subtle_encoding::hex;
-use tendermint::block::{Height, Round};
-use tendermint::{account, hash, vote, Hash, Time};
+use tendermint::{
+    account,
+    block::{Height, Round},
+    hash, vote, Hash, Time,
+};
+
+use crate::{prelude::*, Error, Method};
 
 // From <https://github.com/tendermint/tendermint/blob/e820e68acd69737cfb63bc9ccca5f5450a42b5cf/types/vote.go#L16>
 const NIL_VOTE_STR: &str = "nil-Vote";
@@ -342,8 +345,9 @@ pub struct ValidatorInfo {
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use lazy_static::lazy_static;
+
+    use super::*;
 
     lazy_static! {
         // An array of (received, deserialized, serialized) vote summaries

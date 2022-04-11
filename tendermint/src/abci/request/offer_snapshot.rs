@@ -1,12 +1,10 @@
-use crate::prelude::*;
-
 use bytes::Bytes;
 
 use super::super::types::Snapshot;
-
 // bring into scope for doc links
 #[allow(unused)]
 use super::ApplySnapshotChunk;
+use crate::prelude::*;
 
 #[doc = include_str!("../doc/request-offersnapshot.md")]
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -23,8 +21,8 @@ pub struct OfferSnapshot {
 // =============================================================================
 
 use core::convert::{TryFrom, TryInto};
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<OfferSnapshot> for pb::RequestOfferSnapshot {
     fn from(offer_snapshot: OfferSnapshot) -> Self {

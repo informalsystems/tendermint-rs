@@ -12,8 +12,8 @@ pub struct Exception {
 // =============================================================================
 
 use core::convert::TryFrom;
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<Exception> for pb::ResponseException {
     fn from(exception: Exception) -> Self {

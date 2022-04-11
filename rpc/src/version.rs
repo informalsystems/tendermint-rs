@@ -1,12 +1,14 @@
 //! JSON-RPC versions
 
-use super::error::Error;
-use crate::prelude::*;
 use core::{
     fmt::{self, Display},
     str::FromStr,
 };
+
 use serde::{Deserialize, Serialize};
+
+use super::error::Error;
+use crate::prelude::*;
 
 /// Supported JSON-RPC version
 const SUPPORTED_VERSION: &str = "2.0";

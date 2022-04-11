@@ -1,10 +1,9 @@
-use crate::prelude::*;
-
 use bytes::Bytes;
 
 // bring into scope for doc links
 #[allow(unused)]
 use super::{super::types::Snapshot, Info, LoadSnapshotChunk};
+use crate::prelude::*;
 
 /// Applies a snapshot chunk.
 ///
@@ -42,8 +41,8 @@ pub struct ApplySnapshotChunk {
 // =============================================================================
 
 use core::convert::TryFrom;
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<ApplySnapshotChunk> for pb::RequestApplySnapshotChunk {
     fn from(apply_snapshot_chunk: ApplySnapshotChunk) -> Self {

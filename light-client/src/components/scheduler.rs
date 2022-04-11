@@ -1,10 +1,10 @@
 //! Provides an interface and default implementation of the `Scheduler` component
 
+use core::convert::TryInto;
+
 use contracts::*;
 
-use crate::store::LightStore;
-use crate::verifier::types::Height;
-use core::convert::TryInto;
+use crate::{store::LightStore, verifier::types::Height};
 
 /// The scheduler decides what block to verify next given the current and target heights.
 ///

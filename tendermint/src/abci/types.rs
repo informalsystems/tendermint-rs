@@ -133,8 +133,7 @@ pub struct Snapshot {
 // Protobuf conversions
 // =============================================================================
 
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<Validator> for pb::Validator {
     fn from(v: Validator) -> Self {

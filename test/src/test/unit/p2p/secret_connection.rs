@@ -1,13 +1,13 @@
-use std::io::Read as _;
-use std::io::Write as _;
-use std::net::{TcpListener, TcpStream};
-use std::thread;
+use std::{
+    io::{Read as _, Write as _},
+    net::{TcpListener, TcpStream},
+    thread,
+};
 
 use rand_core::OsRng;
-use x25519_dalek::PublicKey as EphemeralPublic;
-
 use tendermint_p2p::secret_connection::{sort32, Handshake, SecretConnection, Version};
 use tendermint_proto as proto;
+use x25519_dalek::PublicKey as EphemeralPublic;
 
 use crate::pipe;
 

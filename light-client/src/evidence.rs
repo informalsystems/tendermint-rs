@@ -1,12 +1,10 @@
 //! Fork evidence data structures and interfaces.
 
 use contracts::contract_trait;
+pub use tendermint::evidence::Evidence;
 use tendermint_rpc::abci::transaction::Hash;
 
-use crate::components::io::IoError;
-use crate::verifier::types::PeerId;
-
-pub use tendermint::evidence::Evidence;
+use crate::{components::io::IoError, verifier::types::PeerId};
 
 /// Interface for reporting evidence to full nodes, typically via the RPC client.
 #[contract_trait]
@@ -21,14 +19,14 @@ pub use self::prod::ProdEvidenceReporter;
 
 #[cfg(feature = "rpc-client")]
 mod prod {
-    use super::*;
-    use crate::utils::block_on;
-
-    use contracts::requires;
     use std::{collections::HashMap, time::Duration};
 
+    use contracts::requires;
     use tendermint_rpc as rpc;
     use tendermint_rpc::Client;
+
+    use super::*;
+    use crate::utils::block_on;
 
     /// Production implementation of the EvidenceReporter component, which reports evidence to full
     /// nodes via RPC.

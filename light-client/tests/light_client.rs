@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use std::time::Duration;
+use std::{collections::HashMap, time::Duration};
 
 use tendermint_light_client::{
     components::{
@@ -18,9 +17,7 @@ use tendermint_light_client::{
         ProdVerifier,
     },
 };
-
-use tendermint_testgen::light_block::default_peer_id;
-use tendermint_testgen::Tester;
+use tendermint_testgen::{light_block::default_peer_id, Tester};
 
 // Link to JSON test files repo:
 // https://github.com/informalsystems/conformance-tests
@@ -105,13 +102,13 @@ fn forward_test(tc: LightClientTest<LightBlock>) {
             assert_eq!(new_states[0].height(), expected_state.height());
             assert_eq!(new_states[0], expected_state);
             assert!(!expect_error);
-        }
+        },
         Err(e) => {
             if !expect_error {
                 dbg!(e);
             }
             assert!(expect_error);
-        }
+        },
     }
 }
 

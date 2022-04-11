@@ -1,9 +1,11 @@
 //! Amino types used by Secret Connection
 
-use crate::error::Error;
 use core::convert::TryFrom;
+
 use prost_derive::Message;
 use tendermint_proto as proto;
+
+use crate::error::Error;
 
 /// Amino prefix for "tendermint/PubKeyEd25519" (4-bytes) + length prefix (1-byte)
 const PUB_KEY_ED25519_AMINO_PREFIX: [u8; 5] = [0x16, 0x24, 0xde, 0x64, 0x20];

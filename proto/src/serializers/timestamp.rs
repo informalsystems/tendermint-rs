@@ -1,15 +1,13 @@
 //! Serialize/deserialize Timestamp type from and into string:
 
-use crate::google::protobuf::Timestamp;
-use crate::prelude::*;
-
 use core::fmt;
-use serde::de::Error as _;
-use serde::ser::Error;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use time::format_description::well_known::Rfc3339 as Rfc3339Format;
-use time::macros::offset;
-use time::OffsetDateTime;
+
+use serde::{de::Error as _, ser::Error, Deserialize, Deserializer, Serialize, Serializer};
+use time::{
+    format_description::well_known::Rfc3339 as Rfc3339Format, macros::offset, OffsetDateTime,
+};
+
+use crate::{google::protobuf::Timestamp, prelude::*};
 
 /// Helper struct to serialize and deserialize Timestamp into an RFC3339-compatible string
 /// This is required because the serde `with` attribute is only available to fields of a struct but
@@ -129,9 +127,10 @@ pub fn fmt_as_rfc3339_nanos(t: OffsetDateTime, f: &mut impl fmt::Write) -> fmt::
 #[allow(warnings)]
 #[cfg(test)]
 mod test {
+    use serde::{Deserialize, Serialize};
+
     use super::*;
     use crate::google::protobuf::Timestamp;
-    use serde::{Deserialize, Serialize};
 
     // The Go code with which the following timestamps
     // were tested is as follows:

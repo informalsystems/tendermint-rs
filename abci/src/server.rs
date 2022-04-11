@@ -1,11 +1,13 @@
 //! ABCI application server interface.
 
-use crate::application::RequestDispatcher;
-use crate::codec::ServerCodec;
-use crate::{error::Error, Application};
-use std::net::{TcpListener, TcpStream, ToSocketAddrs};
-use std::thread;
+use std::{
+    net::{TcpListener, TcpStream, ToSocketAddrs},
+    thread,
+};
+
 use tracing::{error, info};
+
+use crate::{application::RequestDispatcher, codec::ServerCodec, error::Error, Application};
 
 /// The size of the read buffer for each incoming connection to the ABCI
 /// server (1MB).
@@ -104,12 +106,12 @@ impl<App: Application> Server<App> {
                             addr, e
                         );
                         return;
-                    }
+                    },
                 },
                 None => {
                     info!("Client {} terminated stream", addr);
                     return;
-                }
+                },
             };
             let response = app.handle(request);
             if let Err(e) = codec.send(response) {

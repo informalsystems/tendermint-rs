@@ -1,7 +1,8 @@
-use crate::{helpers::*, Generator};
 use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
+
+use crate::{helpers::*, Generator};
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Time {

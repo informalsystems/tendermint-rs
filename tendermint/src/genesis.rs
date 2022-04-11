@@ -1,9 +1,8 @@
 //! Genesis data
 
-use crate::prelude::*;
-use crate::serializers;
-use crate::{chain, consensus, validator, Time};
 use serde::{Deserialize, Serialize};
+
+use crate::{chain, consensus, prelude::*, serializers, validator, Time};
 
 /// Genesis data
 #[derive(Clone, Debug, Serialize, Deserialize)]

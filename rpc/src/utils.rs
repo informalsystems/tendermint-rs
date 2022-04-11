@@ -1,7 +1,8 @@
 //! Utility methods for the Tendermint RPC crate.
 
-use crate::prelude::*;
 use getrandom::getrandom;
+
+use crate::prelude::*;
 
 /// Produce a string containing a UUID.
 ///

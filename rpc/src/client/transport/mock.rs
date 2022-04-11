@@ -1,15 +1,21 @@
 //! Mock client implementation for use in testing.
 
-use crate::client::subscription::SubscriptionTx;
-use crate::client::sync::{unbounded, ChannelRx, ChannelTx};
-use crate::client::transport::router::SubscriptionRouter;
-use crate::event::Event;
-use crate::prelude::*;
-use crate::query::Query;
-use crate::utils::uuid_str;
-use crate::{Client, Error, Method, Request, Response, Subscription, SubscriptionClient};
 use alloc::collections::BTreeMap as HashMap;
+
 use async_trait::async_trait;
+
+use crate::{
+    client::{
+        subscription::SubscriptionTx,
+        sync::{unbounded, ChannelRx, ChannelTx},
+        transport::router::SubscriptionRouter,
+    },
+    event::Event,
+    prelude::*,
+    query::Query,
+    utils::uuid_str,
+    Client, Error, Method, Request, Response, Subscription, SubscriptionClient,
+};
 
 /// A mock client implementation for use in testing.
 ///
@@ -230,13 +236,14 @@ impl MockRequestMethodMatcher {
 
 #[cfg(test)]
 mod test {
+    use std::path::PathBuf;
+
+    use futures::StreamExt;
+    use tendermint::{block::Height, chain::Id};
+    use tokio::fs;
+
     use super::*;
     use crate::query::EventType;
-    use futures::StreamExt;
-    use std::path::PathBuf;
-    use tendermint::block::Height;
-    use tendermint::chain::Id;
-    use tokio::fs;
 
     async fn read_json_fixture(name: &str) -> String {
         fs::read_to_string(

@@ -1,15 +1,10 @@
-use crate::prelude::*;
-
 use bytes::Bytes;
 
-use crate::block;
-
 use super::super::types::{Evidence, LastCommitInfo};
-use crate::Error;
-
 // bring into scope for doc links
 #[allow(unused)]
 use super::DeliverTx;
+use crate::{block, prelude::*, Error};
 
 #[doc = include_str!("../doc/request-beginblock.md")]
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -34,8 +29,8 @@ pub struct BeginBlock {
 // =============================================================================
 
 use core::convert::{TryFrom, TryInto};
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<BeginBlock> for pb::RequestBeginBlock {
     fn from(begin_block: BeginBlock) -> Self {

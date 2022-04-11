@@ -2,8 +2,9 @@
 
 pub mod proof;
 
-use crate::prelude::*;
 use sha2::{Digest, Sha256};
+
+use crate::prelude::*;
 
 /// Size of Merkle root hash
 pub const HASH_SIZE: usize = 32;
@@ -29,7 +30,7 @@ fn simple_hash_from_byte_slices_inner(byte_slices: &[Vec<u8>]) -> Hash {
             let left = simple_hash_from_byte_slices_inner(&byte_slices[..k]);
             let right = simple_hash_from_byte_slices_inner(&byte_slices[k..]);
             inner_hash(&left, &right)
-        }
+        },
     }
 }
 
@@ -92,8 +93,9 @@ fn inner_hash(left: &[u8], right: &[u8]) -> Hash {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use subtle_encoding::hex; // TODO: use non-subtle ?
+    use subtle_encoding::hex;
+
+    use super::*; // TODO: use non-subtle ?
 
     #[test]
     fn test_get_split_point() {

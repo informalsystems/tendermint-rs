@@ -1,13 +1,12 @@
 //! `/abci_query` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
+use tendermint::{block, merkle::proof::Proof, serializers};
 
-use crate::abci::{Code, Log, Path};
-use tendermint::block;
-use tendermint::merkle::proof::Proof;
-use tendermint::serializers;
-
-use crate::prelude::*;
+use crate::{
+    abci::{Code, Log, Path},
+    prelude::*,
+};
 
 /// Query the ABCI application for information
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

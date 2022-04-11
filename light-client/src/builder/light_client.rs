@@ -1,21 +1,6 @@
 //! DSL for building a light client [`Instance`]
 
 use tendermint::{block::Height, Hash};
-
-use crate::builder::error::Error;
-use crate::components::clock::Clock;
-use crate::components::io::{AtHeight, Io};
-use crate::components::scheduler::Scheduler;
-use crate::light_client::LightClient;
-use crate::state::{State, VerificationTrace};
-use crate::store::LightStore;
-use crate::supervisor::Instance;
-use crate::verifier::operations::Hasher;
-use crate::verifier::options::Options;
-use crate::verifier::predicates::VerificationPredicates;
-use crate::verifier::types::{LightBlock, PeerId, Status};
-use crate::verifier::Verifier;
-
 #[cfg(feature = "rpc-client")]
 use {
     crate::components::clock::SystemClock,
@@ -24,6 +9,26 @@ use {
     crate::verifier::{operations::ProdHasher, predicates::ProdPredicates, ProdVerifier},
     core::time::Duration,
     tendermint_rpc as rpc,
+};
+
+use crate::{
+    builder::error::Error,
+    components::{
+        clock::Clock,
+        io::{AtHeight, Io},
+        scheduler::Scheduler,
+    },
+    light_client::LightClient,
+    state::{State, VerificationTrace},
+    store::LightStore,
+    supervisor::Instance,
+    verifier::{
+        operations::Hasher,
+        options::Options,
+        predicates::VerificationPredicates,
+        types::{LightBlock, PeerId, Status},
+        Verifier,
+    },
 };
 
 /// No trusted state has been set yet

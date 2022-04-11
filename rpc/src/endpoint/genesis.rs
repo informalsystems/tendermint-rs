@@ -1,7 +1,6 @@
 //! `/genesis` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
-
 use tendermint::Genesis;
 
 /// Get the genesis state for the current chain

@@ -1,6 +1,5 @@
-use crate::prelude::*;
-
 use super::super::Event;
+use crate::prelude::*;
 
 #[doc = include_str!("../doc/response-beginblock.md")]
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
@@ -14,8 +13,8 @@ pub struct BeginBlock {
 // =============================================================================
 
 use core::convert::{TryFrom, TryInto};
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<BeginBlock> for pb::ResponseBeginBlock {
     fn from(begin_block: BeginBlock) -> Self {

@@ -1,6 +1,6 @@
-use crate::prelude::*;
-
 use bytes::Bytes;
+
+use crate::prelude::*;
 
 #[doc = include_str!("../doc/response-loadsnapshotchunk.md")]
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
@@ -17,8 +17,8 @@ pub struct LoadSnapshotChunk {
 // =============================================================================
 
 use core::convert::TryFrom;
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{abci as pb, Protobuf};
 
 impl From<LoadSnapshotChunk> for pb::ResponseLoadSnapshotChunk {
     fn from(load_snapshot_chunk: LoadSnapshotChunk) -> Self {

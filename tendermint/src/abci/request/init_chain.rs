@@ -1,8 +1,7 @@
 use bytes::Bytes;
 
-use crate::{block, consensus, prelude::*, Time};
-
 use super::super::types::ValidatorUpdate;
+use crate::{block, consensus, prelude::*, Time};
 
 /// Called on genesis to initialize chain state.
 ///
@@ -27,10 +26,11 @@ pub struct InitChain {
 // Protobuf conversions
 // =============================================================================
 
-use crate::Error;
 use core::convert::{TryFrom, TryInto};
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+
+use tendermint_proto::{abci as pb, Protobuf};
+
+use crate::Error;
 
 impl From<InitChain> for pb::RequestInitChain {
     fn from(init_chain: InitChain) -> Self {

@@ -3,6 +3,7 @@
 #[cfg(all(feature = "client", feature = "kvstore-app"))]
 mod kvstore_app_integration {
     use std::thread;
+
     use tendermint_abci::{ClientBuilder, KeyValueStoreApp, ServerBuilder};
     use tendermint_proto::abci::{RequestDeliverTx, RequestEcho, RequestQuery};
 

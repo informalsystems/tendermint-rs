@@ -2,12 +2,12 @@
 
 use core::str::FromStr;
 use std::{fs, path::PathBuf};
+
 use subtle_encoding::{base64, hex};
-use tendermint::evidence::Duration;
-use tendermint::public_key;
+use tendermint::{evidence::Duration, public_key};
 use tendermint_config::net::Address;
-use tendermint_rpc::abci::transaction::Hash;
 use tendermint_rpc::{
+    abci::transaction::Hash,
     endpoint,
     error::{Error, ErrorDetail},
     request::Wrapper as RequestWrapper,
@@ -59,7 +59,7 @@ fn outgoing_fixtures() {
                 assert_eq!(wrapped.params().data, hex::decode("747830").unwrap());
                 assert!(wrapped.params().height.is_none());
                 assert!(!wrapped.params().prove);
-            }
+            },
             "abci_query_with_non_existent_key" => {
                 let wrapped =
                     serde_json::from_str::<RequestWrapper<endpoint::abci_query::Request>>(&content)
@@ -71,25 +71,25 @@ fn outgoing_fixtures() {
                 );
                 assert!(wrapped.params().height.is_none());
                 assert!(!wrapped.params().prove);
-            }
+            },
             "block_at_height_0" => {
                 let wrapped =
                     serde_json::from_str::<RequestWrapper<endpoint::block::Request>>(&content)
                         .unwrap();
                 assert_eq!(wrapped.params().height.unwrap().value(), 0);
-            }
+            },
             "block_at_height_1" => {
                 let wrapped =
                     serde_json::from_str::<RequestWrapper<endpoint::block::Request>>(&content)
                         .unwrap();
                 assert_eq!(wrapped.params().height.unwrap().value(), 1);
-            }
+            },
             "block_at_height_10" => {
                 let wrapped =
                     serde_json::from_str::<RequestWrapper<endpoint::block::Request>>(&content)
                         .unwrap();
                 assert_eq!(wrapped.params().height.unwrap().value(), 10);
-            }
+            },
             "block_by_hash" => {
                 // First, get the hash at height 1.
                 let wrapped = serde_json::from_str::<
@@ -100,14 +100,14 @@ fn outgoing_fixtures() {
                     wrapped.params().hash.unwrap().to_string(),
                     "00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF"
                 );
-            }
+            },
             "block_results_at_height_10" => {
                 let wrapped = serde_json::from_str::<
                     RequestWrapper<endpoint::block_results::Request>,
                 >(&content)
                 .unwrap();
                 assert_eq!(wrapped.params().height.unwrap().value(), 10);
-            }
+            },
             "block_search" => {
                 let wrapped =
                     serde_json::from_str::<RequestWrapper<endpoint::block_search::Request>>(
@@ -118,14 +118,14 @@ fn outgoing_fixtures() {
                 assert_eq!(wrapped.params().page, 1);
                 assert_eq!(wrapped.params().per_page, 10);
                 assert_eq!(wrapped.params().order_by, Order::Ascending);
-            }
+            },
             "blockchain_from_1_to_10" => {
                 let wrapped =
                     serde_json::from_str::<RequestWrapper<endpoint::blockchain::Request>>(&content)
                         .unwrap();
                 assert_eq!(wrapped.params().min_height.value(), 1);
                 assert_eq!(wrapped.params().max_height.value(), 10);
-            }
+            },
             "broadcast_tx_async" => {
                 let wrapped = serde_json::from_str::<
                     RequestWrapper<endpoint::broadcast::tx_async::Request>,
@@ -135,7 +135,7 @@ fn outgoing_fixtures() {
                     wrapped.params().tx.as_bytes(),
                     base64::decode("YXN5bmMta2V5PXZhbHVl").unwrap()
                 );
-            }
+            },
             "broadcast_tx_commit" => {
                 let wrapped = serde_json::from_str::<
                     RequestWrapper<endpoint::broadcast::tx_commit::Request>,
@@ -145,7 +145,7 @@ fn outgoing_fixtures() {
                     wrapped.params().tx.as_bytes(),
                     base64::decode("Y29tbWl0LWtleT12YWx1ZQ==").unwrap()
                 );
-            }
+            },
             "broadcast_tx_sync" => {
                 let wrapped = serde_json::from_str::<
                     RequestWrapper<endpoint::broadcast::tx_sync::Request>,
@@ -155,13 +155,13 @@ fn outgoing_fixtures() {
                     wrapped.params().tx.as_bytes(),
                     base64::decode("c3luYy1rZXk9dmFsdWU=").unwrap()
                 );
-            }
+            },
             "commit_at_height_10" => {
                 let wrapped =
                     serde_json::from_str::<RequestWrapper<endpoint::commit::Request>>(&content)
                         .unwrap();
                 assert_eq!(wrapped.params().height.unwrap().value(), 10);
-            }
+            },
             "consensus_params" => {
                 let wrapped = serde_json::from_str::<
                     RequestWrapper<endpoint::consensus_params::Request>,
@@ -169,7 +169,7 @@ fn outgoing_fixtures() {
                 .unwrap();
                 let height = wrapped.params().height.unwrap();
                 assert_eq!(u64::from(height), 10u64);
-            }
+            },
             "consensus_state" => assert!(serde_json::from_str::<
                 RequestWrapper<endpoint::consensus_state::Request>,
             >(&content)
@@ -190,19 +190,19 @@ fn outgoing_fixtures() {
                     serde_json::from_str::<RequestWrapper<endpoint::subscribe::Request>>(&content)
                         .unwrap();
                 assert_eq!(wrapped.params().query, "malformed query");
-            }
+            },
             "subscribe_newblock" => {
                 let wrapped =
                     serde_json::from_str::<RequestWrapper<endpoint::subscribe::Request>>(&content)
                         .unwrap();
                 assert_eq!(wrapped.params().query, "tm.event = 'NewBlock'");
-            }
+            },
             "subscribe_txs" => {
                 let wrapped =
                     serde_json::from_str::<RequestWrapper<endpoint::subscribe::Request>>(&content)
                         .unwrap();
                 assert_eq!(wrapped.params().query, "tm.event = 'Tx'");
-            }
+            },
             "subscribe_txs_broadcast_tx_0" => {
                 let wrapped = serde_json::from_str::<
                     RequestWrapper<endpoint::broadcast::tx_async::Request>,
@@ -212,7 +212,7 @@ fn outgoing_fixtures() {
                     wrapped.params().tx.as_bytes(),
                     base64::decode("dHgwPXZhbHVl").unwrap()
                 );
-            }
+            },
             "subscribe_txs_broadcast_tx_1" => {
                 let wrapped = serde_json::from_str::<
                     RequestWrapper<endpoint::broadcast::tx_async::Request>,
@@ -222,7 +222,7 @@ fn outgoing_fixtures() {
                     wrapped.params().tx.as_bytes(),
                     base64::decode("dHgxPXZhbHVl").unwrap()
                 );
-            }
+            },
             "subscribe_txs_broadcast_tx_2" => {
                 let wrapped = serde_json::from_str::<
                     RequestWrapper<endpoint::broadcast::tx_async::Request>,
@@ -232,7 +232,7 @@ fn outgoing_fixtures() {
                     wrapped.params().tx.as_bytes(),
                     base64::decode("dHgyPXZhbHVl").unwrap()
                 );
-            }
+            },
             "subscribe_txs_broadcast_tx_3" => {
                 let wrapped = serde_json::from_str::<
                     RequestWrapper<endpoint::broadcast::tx_async::Request>,
@@ -242,7 +242,7 @@ fn outgoing_fixtures() {
                     wrapped.params().tx.as_bytes(),
                     base64::decode("dHgzPXZhbHVl").unwrap()
                 );
-            }
+            },
             "subscribe_txs_broadcast_tx_4" => {
                 let wrapped = serde_json::from_str::<
                     RequestWrapper<endpoint::broadcast::tx_async::Request>,
@@ -252,7 +252,7 @@ fn outgoing_fixtures() {
                     wrapped.params().tx.as_bytes(),
                     base64::decode("dHg0PXZhbHVl").unwrap()
                 );
-            }
+            },
             "subscribe_txs_broadcast_tx_5" => {
                 let wrapped = serde_json::from_str::<
                     RequestWrapper<endpoint::broadcast::tx_async::Request>,
@@ -262,7 +262,7 @@ fn outgoing_fixtures() {
                     wrapped.params().tx.as_bytes(),
                     base64::decode("dHg1PXZhbHVl").unwrap()
                 );
-            }
+            },
             "tx_prove" => {
                 let wrapped =
                     serde_json::from_str::<RequestWrapper<endpoint::tx::Request>>(&content)
@@ -275,7 +275,7 @@ fn outgoing_fixtures() {
                     ])
                 );
                 assert!(wrapped.params().prove);
-            }
+            },
             "tx_no_prove" => {
                 let wrapped =
                     serde_json::from_str::<RequestWrapper<endpoint::tx::Request>>(&content)
@@ -288,7 +288,7 @@ fn outgoing_fixtures() {
                     ])
                 );
                 assert!(!wrapped.params().prove);
-            }
+            },
             "tx_search_no_prove" => {
                 let wrapped =
                     serde_json::from_str::<RequestWrapper<endpoint::tx_search::Request>>(&content)
@@ -298,7 +298,7 @@ fn outgoing_fixtures() {
                 assert_eq!(wrapped.params().page, 1);
                 assert_eq!(wrapped.params().per_page, 10);
                 assert_eq!(wrapped.params().order_by, Order::Ascending);
-            }
+            },
             "tx_search_with_prove" => {
                 let wrapped =
                     serde_json::from_str::<RequestWrapper<endpoint::tx_search::Request>>(&content)
@@ -308,10 +308,10 @@ fn outgoing_fixtures() {
                 assert_eq!(wrapped.params().page, 1);
                 assert_eq!(wrapped.params().per_page, 10);
                 assert_eq!(wrapped.params().order_by, Order::Ascending);
-            }
+            },
             _ => {
                 panic!("cannot parse file name: {}", file_name);
-            }
+            },
         }
     }
 }
@@ -344,7 +344,7 @@ fn incoming_fixtures() {
                 assert_eq!(result.response.data, "{\"size\":0}");
                 assert_eq!(result.response.last_block_app_hash, b"AAAAAAAAAAA="[..]);
                 assert_eq!(result.response.version, "0.17.0");
-            }
+            },
             "abci_query_with_existing_key" => {
                 let result = endpoint::abci_query::Response::from_string(content).unwrap();
                 assert_eq!(result.response.code.value(), 0);
@@ -355,7 +355,7 @@ fn incoming_fixtures() {
                 assert_eq!(result.response.log.value(), "exists");
                 assert!(result.response.proof.is_none());
                 assert_eq!(result.response.value, base64::decode("dmFsdWU=").unwrap());
-            }
+            },
             "abci_query_with_non_existent_key" => {
                 let result = endpoint::abci_query::Response::from_string(content).unwrap();
                 assert_eq!(result.response.code.value(), 0);
@@ -369,7 +369,7 @@ fn incoming_fixtures() {
                 assert_eq!(result.response.log.value(), "does not exist");
                 assert!(result.response.proof.is_none());
                 assert!(result.response.value.is_empty());
-            }
+            },
             "block_at_height_0" => {
                 let res = endpoint::block::Response::from_string(&content);
 
@@ -382,10 +382,10 @@ fn incoming_fixtures() {
                             response.data(),
                             Some("height must be greater than zero (requested height: 0)")
                         );
-                    }
+                    },
                     _ => panic!("expected Response error"),
                 }
-            }
+            },
             "block_at_height_1" => {
                 let result = endpoint::block::Response::from_string(content).unwrap();
                 assert!(result.block.data.get(0).is_none());
@@ -426,7 +426,7 @@ fn incoming_fixtures() {
                 assert!(!result.block_id.hash.is_empty());
                 assert!(!result.block_id.part_set_header.hash.is_empty());
                 assert_eq!(result.block_id.part_set_header.total, 1);
-            }
+            },
             "block_at_height_10" => {
                 let result = endpoint::block::Response::from_string(content).unwrap();
                 assert!(result.block.data.get(0).is_none());
@@ -473,7 +473,7 @@ fn incoming_fixtures() {
                 assert!(!result.block_id.hash.is_empty());
                 assert!(!result.block_id.part_set_header.hash.is_empty());
                 assert_eq!(result.block_id.part_set_header.total, 1);
-            }
+            },
             "block_results_at_height_10" => {
                 let result = endpoint::block_results::Response::from_string(content).unwrap();
                 assert!(result.begin_block_events.is_none());
@@ -482,21 +482,21 @@ fn incoming_fixtures() {
                 assert_eq!(result.height.value(), 10);
                 assert!(result.txs_results.is_none());
                 assert!(result.validator_updates.is_empty());
-            }
+            },
             "block_by_hash" => {
                 let result = endpoint::block::Response::from_string(content).unwrap();
                 assert_eq!(
                     result.block_id.hash.to_string(),
                     "BCF3DB412E80A396D10BF5B5E6D3E63D3B06DEB25AA958BCB8CE18D023838042"
                 );
-            }
+            },
             "block_search" => {
                 let result = endpoint::block_search::Response::from_string(content).unwrap();
                 assert_eq!(result.total_count as usize, result.blocks.len());
                 for response in result.blocks {
                     assert!(response.block.header.height.value() > 1);
                 }
-            }
+            },
             "blockchain_from_1_to_10" => {
                 let result = endpoint::blockchain::Response::from_string(content).unwrap();
                 assert_eq!(result.block_metas.len(), 10);
@@ -543,7 +543,7 @@ fn incoming_fixtures() {
                     );
                     assert_eq!(block_meta.num_txs, 0);
                 }
-            }
+            },
             "broadcast_tx_async" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
                 assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
@@ -553,7 +553,7 @@ fn incoming_fixtures() {
                     tendermint_rpc::abci::transaction::Hash::new([0; 32])
                 );
                 assert!(result.log.value().is_empty());
-            }
+            },
             "broadcast_tx_commit" => {
                 let result =
                     endpoint::broadcast::tx_commit::Response::from_string(content).unwrap();
@@ -566,7 +566,7 @@ fn incoming_fixtures() {
                 assert!(result.check_tx.events.is_empty());
                 assert_eq!(result.check_tx.gas_used.value(), 0);
                 // Todo: https://github.com/informalsystems/tendermint-rs/issues/761
-                //assert_eq!(result.check_tx.gas_wanted.value(), 1);
+                // assert_eq!(result.check_tx.gas_wanted.value(), 1);
                 assert!(result.check_tx.info.to_string().is_empty());
                 assert!(result.check_tx.log.value().is_empty());
                 assert_eq!(result.deliver_tx.code, tendermint_rpc::abci::Code::Ok);
@@ -642,7 +642,7 @@ fn incoming_fixtures() {
                     result.hash,
                     tendermint_rpc::abci::transaction::Hash::new([0; 32])
                 );
-            }
+            },
             "broadcast_tx_sync" => {
                 let result = endpoint::broadcast::tx_sync::Response::from_string(content).unwrap();
                 assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
@@ -652,7 +652,7 @@ fn incoming_fixtures() {
                     tendermint_rpc::abci::transaction::Hash::new([0; 32])
                 );
                 assert!(result.log.value().is_empty());
-            }
+            },
             "commit_at_height_10" => {
                 let result = endpoint::commit::Response::from_string(content).unwrap();
                 assert!(!result.signed_header.commit.block_id.hash.is_empty());
@@ -698,7 +698,7 @@ fn incoming_fixtures() {
                     result.signed_header.header.version,
                     tendermint::block::header::Version { block: 11, app: 1 }
                 );
-            }
+            },
             "consensus_params" => {
                 let result = endpoint::consensus_params::Response::from_string(content).unwrap();
                 assert_eq!(u64::from(result.block_height), 10_u64);
@@ -718,10 +718,10 @@ fn incoming_fixtures() {
                     result.consensus_params.validator.pub_key_types,
                     vec![public_key::Algorithm::Ed25519]
                 );
-            }
+            },
             "consensus_state" => {
                 assert!(endpoint::consensus_state::Response::from_string(content).is_ok());
-            }
+            },
             "genesis" => {
                 let result = endpoint::genesis::Response::from_string(content).unwrap();
                 assert!(result.genesis.app_hash.is_empty());
@@ -778,7 +778,7 @@ fn incoming_fixtures() {
                     result.genesis.consensus_params.block.time_iota_ms,
                     tendermint::block::Size::default_time_iota_ms(),
                 );
-            }
+            },
             "net_info" => {
                 let result = endpoint::net_info::Response::from_string(content).unwrap();
                 assert_eq!(result.listeners.len(), 1);
@@ -786,7 +786,7 @@ fn incoming_fixtures() {
                 assert!(result.listening);
                 assert_eq!(result.n_peers, 0);
                 assert!(result.peers.is_none());
-            }
+            },
             "status" => {
                 let result = endpoint::status::Response::from_string(content).unwrap();
                 assert_eq!(
@@ -829,7 +829,7 @@ fn incoming_fixtures() {
                 );
                 assert!(result.validator_info.pub_key.ed25519().is_some());
                 assert_eq!(result.validator_info.power.value(), 10);
-            }
+            },
             "subscribe_malformed" => {
                 let result = endpoint::subscribe::Response::from_string(content);
 
@@ -840,18 +840,18 @@ fn incoming_fixtures() {
                         assert_eq!(response.code(), Code::InternalError);
                         assert_eq!(response.message(), "Internal error");
                         assert_eq!(response.data().unwrap(),"failed to parse query: \nparse error near PegText (line 1 symbol 2 - line 1 symbol 11):\n\"malformed\"\n");
-                    }
+                    },
                     _ => panic!("expected Response error"),
                 }
-            }
+            },
             "subscribe_newblock" => {
                 let result = endpoint::subscribe::Response::from_string(content);
 
                 match result {
-                    Err(Error(ErrorDetail::Serde(_), _)) => {}
+                    Err(Error(ErrorDetail::Serde(_), _)) => {},
                     _ => panic!("expected Serde parse error, instead got {:?}", result),
                 }
-            }
+            },
             "subscribe_newblock_0" => {
                 let result = tendermint_rpc::event::Event::from_string(content).unwrap();
                 if let tendermint_rpc::event::EventData::NewBlock {
@@ -906,7 +906,7 @@ fn incoming_fixtures() {
                     panic!("not a newblock");
                 }
                 assert_eq!(result.query, "tm.event = 'NewBlock'");
-            }
+            },
             "subscribe_newblock_1" => {
                 let result = tendermint_rpc::event::Event::from_string(content).unwrap();
                 if let tendermint_rpc::event::EventData::NewBlock {
@@ -961,7 +961,7 @@ fn incoming_fixtures() {
                     panic!("not a newblock");
                 }
                 assert_eq!(result.query, "tm.event = 'NewBlock'");
-            }
+            },
             "subscribe_newblock_2" => {
                 let result = tendermint_rpc::event::Event::from_string(content).unwrap();
                 if let tendermint_rpc::event::EventData::NewBlock {
@@ -1016,7 +1016,7 @@ fn incoming_fixtures() {
                     panic!("not a newblock");
                 }
                 assert_eq!(result.query, "tm.event = 'NewBlock'");
-            }
+            },
             "subscribe_newblock_3" => {
                 let result = tendermint_rpc::event::Event::from_string(content).unwrap();
                 if let tendermint_rpc::event::EventData::NewBlock {
@@ -1071,7 +1071,7 @@ fn incoming_fixtures() {
                     panic!("not a newblock");
                 }
                 assert_eq!(result.query, "tm.event = 'NewBlock'");
-            }
+            },
             "subscribe_newblock_4" => {
                 let result = tendermint_rpc::event::Event::from_string(content).unwrap();
                 if let tendermint_rpc::event::EventData::NewBlock {
@@ -1126,10 +1126,10 @@ fn incoming_fixtures() {
                     panic!("not a newblock");
                 }
                 assert_eq!(result.query, "tm.event = 'NewBlock'");
-            }
+            },
             "subscribe_txs" => {
                 assert!(endpoint::subscribe::Response::from_string(content).is_ok());
-            }
+            },
             "subscribe_txs_0" => {
                 let result = tendermint_rpc::event::Event::from_string(content).unwrap();
                 let height;
@@ -1144,14 +1144,14 @@ fn incoming_fixtures() {
                         match attr.key.as_ref() {
                             "creator" => {
                                 assert_eq!(attr.value.as_ref(), "Cosmoshi Netowoko")
-                            }
+                            },
                             "key" => assert_eq!(attr.value.as_ref(), "tx0"),
                             "index_key" => {
                                 assert_eq!(attr.value.as_ref(), "index is working")
-                            }
+                            },
                             "noindex_key" => {
                                 assert_eq!(attr.value.as_ref(), "index is working")
-                            }
+                            },
                             _ => panic!("unknown attribute found {}", attr.key),
                         }
                     }
@@ -1161,7 +1161,7 @@ fn incoming_fixtures() {
                 }
                 check_event_attrs(&result.events.unwrap(), "tx0", height);
                 assert_eq!(result.query, "tm.event = 'Tx'");
-            }
+            },
             "subscribe_txs_1" => {
                 let result = tendermint_rpc::event::Event::from_string(content).unwrap();
                 let height;
@@ -1176,14 +1176,14 @@ fn incoming_fixtures() {
                         match attr.key.as_ref() {
                             "creator" => {
                                 assert_eq!(attr.value.as_ref(), "Cosmoshi Netowoko")
-                            }
+                            },
                             "key" => assert_eq!(attr.value.as_ref(), "tx1"),
                             "index_key" => {
                                 assert_eq!(attr.value.as_ref(), "index is working")
-                            }
+                            },
                             "noindex_key" => {
                                 assert_eq!(attr.value.as_ref(), "index is working")
-                            }
+                            },
                             _ => panic!("unknown attribute found {}", attr.key),
                         }
                     }
@@ -1194,7 +1194,7 @@ fn incoming_fixtures() {
 
                 check_event_attrs(&result.events.unwrap(), "tx1", height);
                 assert_eq!(result.query, "tm.event = 'Tx'");
-            }
+            },
             "subscribe_txs_2" => {
                 let result = tendermint_rpc::event::Event::from_string(content).unwrap();
                 let height;
@@ -1209,14 +1209,14 @@ fn incoming_fixtures() {
                         match attr.key.as_ref() {
                             "creator" => {
                                 assert_eq!(attr.value.as_ref(), "Cosmoshi Netowoko")
-                            }
+                            },
                             "key" => assert_eq!(attr.value.as_ref(), "tx2"),
                             "index_key" => {
                                 assert_eq!(attr.value.as_ref(), "index is working")
-                            }
+                            },
                             "noindex_key" => {
                                 assert_eq!(attr.value.as_ref(), "index is working")
-                            }
+                            },
                             _ => panic!("unknown attribute found {}", attr.key),
                         }
                     }
@@ -1226,7 +1226,7 @@ fn incoming_fixtures() {
                 }
                 check_event_attrs(&result.events.unwrap(), "tx2", height);
                 assert_eq!(result.query, "tm.event = 'Tx'");
-            }
+            },
             "subscribe_txs_3" => {
                 let result = tendermint_rpc::event::Event::from_string(content).unwrap();
                 let height;
@@ -1241,14 +1241,14 @@ fn incoming_fixtures() {
                         match attr.key.as_ref() {
                             "creator" => {
                                 assert_eq!(attr.value.as_ref(), "Cosmoshi Netowoko")
-                            }
+                            },
                             "key" => assert_eq!(attr.value.as_ref(), "tx3"),
                             "index_key" => {
                                 assert_eq!(attr.value.as_ref(), "index is working")
-                            }
+                            },
                             "noindex_key" => {
                                 assert_eq!(attr.value.as_ref(), "index is working")
-                            }
+                            },
                             _ => panic!("unknown attribute found {}", attr.key),
                         }
                     }
@@ -1258,7 +1258,7 @@ fn incoming_fixtures() {
                 }
                 check_event_attrs(&result.events.unwrap(), "tx3", height);
                 assert_eq!(result.query, "tm.event = 'Tx'");
-            }
+            },
             "subscribe_txs_4" => {
                 let result = tendermint_rpc::event::Event::from_string(content).unwrap();
                 let height;
@@ -1273,14 +1273,14 @@ fn incoming_fixtures() {
                         match attr.key.as_ref() {
                             "creator" => {
                                 assert_eq!(attr.value.as_ref(), "Cosmoshi Netowoko")
-                            }
+                            },
                             "key" => assert_eq!(attr.value.as_ref(), "tx4"),
                             "index_key" => {
                                 assert_eq!(attr.value.as_ref(), "index is working")
-                            }
+                            },
                             "noindex_key" => {
                                 assert_eq!(attr.value.as_ref(), "index is working")
-                            }
+                            },
                             _ => panic!("unknown attribute found {}", attr.key),
                         }
                     }
@@ -1290,7 +1290,7 @@ fn incoming_fixtures() {
                 }
                 check_event_attrs(&result.events.unwrap(), "tx4", height);
                 assert_eq!(result.query, "tm.event = 'Tx'");
-            }
+            },
             "subscribe_txs_broadcast_tx_0" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
                 assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
@@ -1300,7 +1300,7 @@ fn incoming_fixtures() {
                     tendermint_rpc::abci::transaction::Hash::new([0; 32])
                 );
                 assert!(result.log.value().is_empty());
-            }
+            },
             "subscribe_txs_broadcast_tx_1" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
                 assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
@@ -1310,7 +1310,7 @@ fn incoming_fixtures() {
                     tendermint_rpc::abci::transaction::Hash::new([0; 32])
                 );
                 assert!(result.log.value().is_empty());
-            }
+            },
             "subscribe_txs_broadcast_tx_2" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
                 assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
@@ -1320,7 +1320,7 @@ fn incoming_fixtures() {
                     tendermint_rpc::abci::transaction::Hash::new([0; 32])
                 );
                 assert!(result.log.value().is_empty());
-            }
+            },
             "subscribe_txs_broadcast_tx_3" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
                 assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
@@ -1330,7 +1330,7 @@ fn incoming_fixtures() {
                     tendermint_rpc::abci::transaction::Hash::new([0; 32])
                 );
                 assert!(result.log.value().is_empty());
-            }
+            },
             "subscribe_txs_broadcast_tx_4" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
                 assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
@@ -1340,7 +1340,7 @@ fn incoming_fixtures() {
                     tendermint_rpc::abci::transaction::Hash::new([0; 32])
                 );
                 assert!(result.log.value().is_empty());
-            }
+            },
             "subscribe_txs_broadcast_tx_5" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
                 assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
@@ -1350,7 +1350,7 @@ fn incoming_fixtures() {
                     tendermint_rpc::abci::transaction::Hash::new([0; 32])
                 );
                 assert!(result.log.value().is_empty());
-            }
+            },
             "tx_prove" => {
                 let result = endpoint::tx::Response::from_string(content).unwrap();
                 assert_eq!(
@@ -1371,7 +1371,7 @@ fn incoming_fixtures() {
                     ]
                 );
                 assert_eq!(proof.proof.unwrap().total, 2);
-            }
+            },
             "tx_no_prove" => {
                 let result = endpoint::tx::Response::from_string(content).unwrap();
                 assert_eq!(
@@ -1383,7 +1383,7 @@ fn incoming_fixtures() {
                 );
                 assert_eq!(result.height.value(), 20);
                 assert!(result.proof.is_none());
-            }
+            },
             "tx_search_no_prove" => {
                 let result = endpoint::tx_search::Response::from_string(content).unwrap();
                 assert_eq!(result.total_count as usize, result.txs.len());
@@ -1399,7 +1399,7 @@ fn incoming_fixtures() {
                     assert!(tx.tx_result.log.value().is_empty());
                     assert!(tx.proof.is_none());
                 }
-            }
+            },
             "tx_search_with_prove" => {
                 let result = endpoint::tx_search::Response::from_string(content).unwrap();
                 assert_eq!(result.total_count as usize, result.txs.len());
@@ -1418,10 +1418,10 @@ fn incoming_fixtures() {
                     assert!(proof.proof.is_some());
                     assert_ne!(proof.root_hash, [0; 32]);
                 }
-            }
+            },
             _ => {
                 panic!("cannot parse file name: {}", file_name);
-            }
+            },
         }
     }
 }
