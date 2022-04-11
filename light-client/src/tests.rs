@@ -8,13 +8,14 @@ use tendermint::{
     block::Height as HeightStr,
     evidence::{Duration as DurationStr, Evidence},
 };
-
 use tendermint_rpc as rpc;
 use tendermint_rpc::abci::transaction::Hash;
 
 use crate::{
-    components::clock::Clock,
-    components::io::{AsyncIo, AtHeight, IoError},
+    components::{
+        clock::Clock,
+        io::{AsyncIo, AtHeight, IoError},
+    },
     errors::Error,
     evidence::EvidenceReporter,
     light_client::LightClient,

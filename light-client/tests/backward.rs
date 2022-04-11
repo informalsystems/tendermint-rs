@@ -4,7 +4,6 @@ use std::{collections::HashMap, time::Duration};
 
 use futures::executor::block_on;
 use proptest::{prelude::*, test_runner::TestRng};
-
 use tendermint::{hash::Algorithm, Hash, Time};
 use tendermint_light_client::{
     components::{

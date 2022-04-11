@@ -1,7 +1,6 @@
 //! DSL for building a light client [`Instance`]
 
 use tendermint::{block::Height, Hash};
-
 #[cfg(feature = "rpc-client")]
 use {
     crate::components::clock::SystemClock,

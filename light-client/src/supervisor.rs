@@ -3,7 +3,6 @@
 use async_recursion::async_recursion;
 use async_trait::async_trait;
 use flume;
-
 use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
 
 use crate::{

@@ -1,7 +1,6 @@
 use std::{collections::HashMap, time::Duration};
 
 use futures::executor::block_on;
-
 use tendermint_light_client::{
     components::{
         io::{AsyncIo as _, AtHeight},

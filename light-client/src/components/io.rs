@@ -5,8 +5,10 @@ use std::time::Duration;
 use async_trait::async_trait;
 use flex_error::{define_error, TraceError};
 
-use crate::utils::time::TimeError;
-use crate::verifier::types::{Height, LightBlock};
+use crate::{
+    utils::time::TimeError,
+    verifier::types::{Height, LightBlock},
+};
 
 /// Type for selecting either a specific height or the latest one
 pub enum AtHeight {
@@ -87,15 +89,14 @@ mod rpc {
     use std::time::Duration;
 
     use futures::future::FutureExt;
-    use tendermint::account::Id as TMAccountId;
-    use tendermint::block::signed_header::SignedHeader as TMSignedHeader;
-    use tendermint::validator::Set as TMValidatorSet;
+    use tendermint::{
+        account::Id as TMAccountId, block::signed_header::SignedHeader as TMSignedHeader,
+        validator::Set as TMValidatorSet,
+    };
     use tendermint_rpc::{Client as _, Paging};
 
-    use crate::utils::time::timeout;
-    use crate::verifier::types::PeerId;
-
     use super::*;
+    use crate::{utils::time::timeout, verifier::types::PeerId};
 
     /// Implementation of the Io component backed by an RPC client, which fetches
     /// light blocks from full nodes.
@@ -137,7 +138,8 @@ mod rpc {
         /// A peer map which maps peer IDS to their network address must be supplied.
         pub fn new(
             peer_id: PeerId,
-            rpc_client: tendermint_rpc::HttpClient, /* TODO(thane): Generalize over client transport
+            rpc_client: tendermint_rpc::HttpClient, /* TODO(thane): Generalize over client
+                                                     * transport
                                                      * (instead of using HttpClient directly) */
             timeout: Option<Duration>,
         ) -> Self {

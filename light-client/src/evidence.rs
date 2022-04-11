@@ -1,7 +1,6 @@
 //! Fork evidence data structures and interfaces.
 
 use async_trait::async_trait;
-
 pub use tendermint::evidence::Evidence;
 use tendermint_rpc::abci::transaction::Hash;
 
@@ -24,12 +23,10 @@ mod prod {
 
     use contracts::requires;
     use futures::future::FutureExt as _;
-
     use tendermint_rpc as rpc;
     use tendermint_rpc::Client;
 
     use super::*;
-
     use crate::utils::time::timeout;
 
     /// Production implementation of the EvidenceReporter component, which reports evidence to full

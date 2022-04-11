@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use flex_error::define_error;
-
 #[cfg(feature = "rpc-client")]
 use futures::future::{FusedFuture, FutureExt as _};
 #[cfg(feature = "rpc-client")]
