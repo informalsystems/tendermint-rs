@@ -1,8 +1,9 @@
 use std::{collections::HashMap, time::Duration};
 
+use futures::executor::block_on;
 use tendermint_light_client::{
     components::{
-        io::{AtHeight, Io},
+        io::{AsyncIo as _, AtHeight},
         scheduler,
     },
     errors::Error,
@@ -51,8 +52,7 @@ fn run_test(tc: LightClientTest<LightBlock>) -> BisectionTestResult {
     let io = MockIo::new(provider.lite_blocks);
 
     let trusted_height = tc.trust_options.height;
-    let trusted_state = io
-        .fetch_light_block(AtHeight::At(trusted_height))
+    let trusted_state = block_on(io.fetch_light_block(AtHeight::At(trusted_height)))
         .expect("could not 'request' light block");
 
     let mut light_store = MemoryStore::new();
@@ -76,10 +76,13 @@ fn run_test(tc: LightClientTest<LightBlock>) -> BisectionTestResult {
         io.clone(),
     );
 
-    let result = verify_bisection(untrusted_height, &mut light_client, &mut state);
+    let result = block_on(verify_bisection(
+        untrusted_height,
+        &mut light_client,
+        &mut state,
+    ));
 
-    let untrusted_light_block = io
-        .fetch_light_block(AtHeight::At(untrusted_height))
+    let untrusted_light_block = block_on(io.fetch_light_block(AtHeight::At(untrusted_height)))
         .expect("header at untrusted height not found");
 
     BisectionTestResult {

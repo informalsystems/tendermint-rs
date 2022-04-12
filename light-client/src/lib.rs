@@ -1,6 +1,5 @@
 #![forbid(unsafe_code)]
-#![deny(
-    warnings,
+#![warn(
     trivial_casts,
     trivial_numeric_casts,
     unused_import_braces,

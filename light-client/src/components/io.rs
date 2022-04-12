@@ -2,18 +2,13 @@
 
 use std::time::Duration;
 
+use async_trait::async_trait;
 use flex_error::{define_error, TraceError};
-use tendermint_rpc as rpc;
-#[cfg(feature = "rpc-client")]
-use tendermint_rpc::Client;
 
-use crate::verifier::types::{Height, LightBlock};
-
-#[cfg(feature = "tokio")]
-type TimeoutError = flex_error::DisplayOnly<tokio::time::error::Elapsed>;
-
-#[cfg(not(feature = "tokio"))]
-type TimeoutError = flex_error::NoSource;
+use crate::{
+    utils::time::TimeError,
+    verifier::types::{Height, LightBlock},
+};
 
 /// Type for selecting either a specific height or the latest one
 pub enum AtHeight {
@@ -37,7 +32,7 @@ define_error! {
     #[derive(Debug)]
     IoError {
         Rpc
-            [ rpc::Error ]
+            [ tendermint_rpc::Error ]
             | _ | { "rpc error" },
 
         InvalidHeight
@@ -49,13 +44,9 @@ define_error! {
             [ tendermint::Error ]
             | _ | { "fetched validator set is invalid" },
 
-        Timeout
-            { duration: Duration }
-            [ TimeoutError ]
-            | e | {
-                format_args!("task timed out after {} ms",
-                    e.duration.as_millis())
-            },
+        Time
+            [ TimeError ]
+            | _ | { "time error" },
 
         Runtime
             [ TraceError<std::io::Error> ]
@@ -68,60 +59,67 @@ impl IoErrorDetail {
     /// Whether this error means that a timeout occured when querying a node.
     pub fn is_timeout(&self) -> Option<Duration> {
         match self {
-            Self::Timeout(e) => Some(e.duration),
+            Self::Time(e) => e.source.is_timeout(),
             _ => None,
         }
     }
 }
 
-/// Interface for fetching light blocks from a full node, typically via the RPC client.
-pub trait Io: Send + Sync {
-    /// Fetch a light block at the given height from a peer
-    fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError>;
+#[async_trait]
+pub trait AsyncIo: Send + Sync {
+    async fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError>;
 }
 
-impl<F: Send + Sync> Io for F
+#[async_trait]
+impl<F, R> AsyncIo for F
 where
-    F: Fn(AtHeight) -> Result<LightBlock, IoError>,
+    F: Fn(AtHeight) -> R + Send + Sync,
+    R: std::future::Future<Output = Result<LightBlock, IoError>> + Send,
 {
-    fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
-        self(height)
+    async fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
+        self(height).await
     }
 }
 
 #[cfg(feature = "rpc-client")]
-pub use self::prod::ProdIo;
+pub use self::rpc::RpcIo;
 
 #[cfg(feature = "rpc-client")]
-mod prod {
+mod rpc {
     use std::time::Duration;
 
+    use futures::future::FutureExt;
     use tendermint::{
         account::Id as TMAccountId, block::signed_header::SignedHeader as TMSignedHeader,
         validator::Set as TMValidatorSet,
     };
-    use tendermint_rpc::Paging;
+    use tendermint_rpc::{Client as _, Paging};
 
     use super::*;
-    use crate::{utils::block_on, verifier::types::PeerId};
+    use crate::{utils::time::timeout, verifier::types::PeerId};
 
-    /// Production implementation of the Io component, which fetches
-    /// light blocks from full nodes via RPC.
+    /// Implementation of the Io component backed by an RPC client, which fetches
+    /// light blocks from full nodes.
     #[derive(Clone, Debug)]
-    pub struct ProdIo {
+    pub struct RpcIo {
         peer_id: PeerId,
-        rpc_client: rpc::HttpClient,
-        timeout: Option<Duration>,
+        rpc_client: tendermint_rpc::HttpClient,
+        timeout: Duration,
     }
 
-    impl Io for ProdIo {
-        fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
-            let signed_header = self.fetch_signed_header(height)?;
+    #[async_trait]
+    impl AsyncIo for RpcIo {
+        async fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
+            let signed_header = self.fetch_signed_header(height).await?;
             let height = signed_header.header.height;
             let proposer_address = signed_header.header.proposer_address;
 
-            let validator_set = self.fetch_validator_set(height.into(), Some(proposer_address))?;
-            let next_validator_set = self.fetch_validator_set(height.increment().into(), None)?;
+            let validator_set = self
+                .fetch_validator_set(height.into(), Some(proposer_address))
+                .await?;
+            let next_validator_set = self
+                .fetch_validator_set(height.increment().into(), None)
+                .await?;
 
             let light_block = LightBlock::new(
                 signed_header,
@@ -134,31 +132,33 @@ mod prod {
         }
     }
 
-    impl ProdIo {
-        /// Constructs a new ProdIo component.
+    impl RpcIo {
+        /// Constructs a new RpcIo component.
         ///
         /// A peer map which maps peer IDS to their network address must be supplied.
         pub fn new(
             peer_id: PeerId,
-            rpc_client: rpc::HttpClient, /* TODO(thane): Generalize over client transport
-                                          * (instead of using HttpClient directly) */
+            rpc_client: tendermint_rpc::HttpClient, /* TODO(thane): Generalize over client
+                                                     * transport
+                                                     * (instead of using HttpClient directly) */
             timeout: Option<Duration>,
         ) -> Self {
             Self {
                 peer_id,
                 rpc_client,
-                timeout,
+                timeout: timeout.unwrap_or_else(|| Duration::from_secs(5)),
             }
         }
 
-        fn fetch_signed_header(&self, height: AtHeight) -> Result<TMSignedHeader, IoError> {
+        async fn fetch_signed_header(&self, height: AtHeight) -> Result<TMSignedHeader, IoError> {
             let client = self.rpc_client.clone();
-            let res = block_on(self.timeout, async move {
-                match height {
-                    AtHeight::Highest => client.latest_commit().await,
-                    AtHeight::At(height) => client.commit(height).await,
-                }
-            })?;
+            let fetch_commit = match height {
+                AtHeight::Highest => client.latest_commit().fuse(),
+                AtHeight::At(height) => client.commit(height).fuse(),
+            };
+            let res = timeout(self.timeout, fetch_commit)
+                .await
+                .map_err(IoError::time)?;
 
             match res {
                 Ok(response) => Ok(response.signed_header),
@@ -166,7 +166,7 @@ mod prod {
             }
         }
 
-        fn fetch_validator_set(
+        async fn fetch_validator_set(
             &self,
             height: AtHeight,
             proposer_address: Option<TMAccountId>,
@@ -179,10 +179,10 @@ mod prod {
             };
 
             let client = self.rpc_client.clone();
-            let response = block_on(self.timeout, async move {
-                client.validators(height, Paging::All).await
-            })?
-            .map_err(IoError::rpc)?;
+            let response = timeout(self.timeout, client.validators(height, Paging::All).fuse())
+                .await
+                .map_err(IoError::time)?
+                .map_err(IoError::rpc)?;
 
             let validator_set = match proposer_address {
                 Some(proposer_address) => {

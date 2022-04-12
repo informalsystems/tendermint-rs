@@ -1,6 +1,8 @@
 //! Supervisor and Handle implementation.
 
-use crossbeam_channel as channel;
+use async_recursion::async_recursion;
+use async_trait::async_trait;
+use flume;
 use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
 
 use crate::{
@@ -14,21 +16,22 @@ use crate::{
 };
 
 /// Provides an interface to the supervisor for use in downstream code.
+#[async_trait]
 pub trait Handle: Send + Sync {
     /// Get latest trusted block.
-    fn latest_trusted(&self) -> Result<Option<LightBlock>, Error>;
+    async fn latest_trusted(&self) -> Result<Option<LightBlock>, Error>;
 
     /// Get the latest status.
-    fn latest_status(&self) -> Result<LatestStatus, Error>;
+    async fn latest_status(&self) -> Result<LatestStatus, Error>;
 
     /// Verify to the highest block.
-    fn verify_to_highest(&self) -> Result<LightBlock, Error>;
+    async fn verify_to_highest(&self) -> Result<LightBlock, Error>;
 
     /// Verify to the block at the given height.
-    fn verify_to_target(&self, _height: Height) -> Result<LightBlock, Error>;
+    async fn verify_to_target(&self, _height: Height) -> Result<LightBlock, Error>;
 
     /// Terminate the underlying [`Supervisor`].
-    fn terminate(&self) -> Result<(), Error>;
+    async fn terminate(&self) -> Result<(), Error>;
 }
 
 /// Input events sent by the [`Handle`]s to the [`Supervisor`]. They carry a [`Callback`] which is
@@ -36,19 +39,19 @@ pub trait Handle: Send + Sync {
 #[derive(Debug)]
 enum HandleInput {
     /// Terminate the supervisor process
-    Terminate(channel::Sender<()>),
+    Terminate(flume::Sender<()>),
 
     /// Verify to the highest height, call the provided callback with result
-    VerifyToHighest(channel::Sender<Result<LightBlock, Error>>),
+    VerifyToHighest(flume::Sender<Result<LightBlock, Error>>),
 
     /// Verify to the given height, call the provided callback with result
-    VerifyToTarget(Height, channel::Sender<Result<LightBlock, Error>>),
+    VerifyToTarget(Height, flume::Sender<Result<LightBlock, Error>>),
 
     /// Get the latest trusted block.
-    LatestTrusted(channel::Sender<Option<LightBlock>>),
+    LatestTrusted(flume::Sender<Option<LightBlock>>),
 
     /// Get the current status of the LightClient
-    GetStatus(channel::Sender<LatestStatus>),
+    GetStatus(flume::Sender<LatestStatus>),
 }
 
 /// A light client `Instance` packages a `LightClient` together with its `State`.
@@ -125,9 +128,9 @@ pub struct Supervisor {
     /// Reporter of fork evidence
     evidence_reporter: Box<dyn EvidenceReporter>,
     /// Channel through which to reply to `Handle`s
-    sender: channel::Sender<HandleInput>,
+    sender: flume::Sender<HandleInput>,
     /// Channel through which to receive events from the `Handle`s
-    receiver: channel::Receiver<HandleInput>,
+    receiver: flume::Receiver<HandleInput>,
 }
 
 impl std::fmt::Debug for Supervisor {
@@ -148,7 +151,7 @@ impl Supervisor {
         fork_detector: impl ForkDetector + 'static,
         evidence_reporter: impl EvidenceReporter + 'static,
     ) -> Self {
-        let (sender, receiver) = channel::unbounded::<HandleInput>();
+        let (sender, receiver) = flume::unbounded::<HandleInput>();
 
         Self {
             peers,
@@ -170,8 +173,8 @@ impl Supervisor {
     }
 
     /// Verify to the highest block.
-    pub fn verify_to_highest(&mut self) -> Result<LightBlock, Error> {
-        self.verify(None)
+    pub async fn verify_to_highest(&mut self) -> Result<LightBlock, Error> {
+        self.verify(None).await
     }
 
     /// Return latest trusted status summary.
@@ -193,21 +196,30 @@ impl Supervisor {
     }
 
     /// Verify to the block at the given height.
-    pub fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error> {
-        self.verify(Some(height))
+    pub async fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error> {
+        self.verify(Some(height)).await
     }
 
     /// Verify either to the latest block (if `height == None`) or to a given block (if `height ==
     /// Some(height)`).
-    fn verify(&mut self, height: Option<Height>) -> Result<LightBlock, Error> {
+    #[async_recursion]
+    async fn verify(&mut self, height: Option<Height>) -> Result<LightBlock, Error> {
         let primary = self.peers.primary_mut();
 
         // Perform light client core verification for the given height (or highest).
         let verdict = match height {
-            None => primary.light_client.verify_to_highest(&mut primary.state),
-            Some(height) => primary
-                .light_client
-                .verify_to_target(height, &mut primary.state),
+            None => {
+                primary
+                    .light_client
+                    .verify_to_highest(&mut primary.state)
+                    .await
+            },
+            Some(height) => {
+                primary
+                    .light_client
+                    .verify_to_target(height, &mut primary.state)
+                    .await
+            },
         };
 
         match verdict {
@@ -218,19 +230,19 @@ impl Supervisor {
                     .ok_or_else(|| Error::no_trusted_state(Status::Trusted))?;
 
                 // Perform fork detection with the highest verified block and the trusted block.
-                let outcome = self.detect_forks(&verified_block, &trusted_block)?;
+                let outcome = self.detect_forks(&verified_block, &trusted_block).await?;
 
                 match outcome {
                     // There was a fork or a faulty peer
                     ForkDetection::Detected(forks) => {
-                        let forked = self.process_forks(forks)?;
+                        let forked = self.process_forks(forks).await?;
                         if !forked.is_empty() {
                             // Fork detected, exiting
                             return Err(Error::fork_detected(forked));
                         }
 
                         // If there were no hard forks, perform verification again
-                        self.verify(height)
+                        self.verify(height).await
                     },
                     ForkDetection::NotDetected => {
                         // We need to re-ask for the primary here as the compiler
@@ -249,12 +261,12 @@ impl Supervisor {
             Err(err) => {
                 // Swap primary, and continue with new primary, if there is any witness left.
                 self.peers.replace_faulty_primary(Some(err))?;
-                self.verify(height)
+                self.verify(height).await
             },
         }
     }
 
-    fn process_forks(&mut self, forks: Vec<Fork>) -> Result<Vec<PeerId>, Error> {
+    async fn process_forks(&mut self, forks: Vec<Fork>) -> Result<Vec<PeerId>, Error> {
         let mut forked = Vec::with_capacity(forks.len());
 
         for fork in forks {
@@ -263,7 +275,7 @@ impl Supervisor {
                 // TODO: also report to primary
                 Fork::Forked { primary, witness } => {
                     let provider = witness.provider;
-                    self.report_evidence(provider, &primary, &witness)?;
+                    self.report_evidence(provider, &primary, &witness).await?;
 
                     forked.push(provider);
                 },
@@ -284,7 +296,7 @@ impl Supervisor {
     }
 
     /// Report the given evidence of a fork.
-    fn report_evidence(
+    async fn report_evidence(
         &mut self,
         provider: PeerId,
         primary: &LightBlock,
@@ -297,13 +309,14 @@ impl Supervisor {
 
         self.evidence_reporter
             .report(Evidence::ConflictingHeaders(Box::new(evidence)), provider)
+            .await
             .map_err(Error::io)?;
 
         Ok(())
     }
 
     /// Perform fork detection with the given verified block and trusted block.
-    fn detect_forks(
+    async fn detect_forks(
         &self,
         verified_block: &LightBlock,
         trusted_block: &LightBlock,
@@ -321,14 +334,15 @@ impl Supervisor {
 
         self.fork_detector
             .detect_forks(verified_block, trusted_block, witnesses)
+            .await
     }
 
-    /// Run the supervisor event loop in the same thread.
+    /// Run the supervisor event loop.
     ///
-    /// This method should typically be called within a new thread with `std::thread::spawn`.
-    pub fn run(mut self) -> Result<(), Error> {
+    /// This should typically be scheduled as a task with an async executor.
+    pub async fn run(mut self) -> Result<(), Error> {
         loop {
-            let event = self.receiver.recv().map_err(Error::recv)?;
+            let event = self.receiver.recv_async().await.map_err(Error::recv)?;
 
             match event {
                 HandleInput::LatestTrusted(sender) => {
@@ -340,11 +354,11 @@ impl Supervisor {
                     return Ok(());
                 },
                 HandleInput::VerifyToTarget(height, sender) => {
-                    let outcome = self.verify_to_target(height);
+                    let outcome = self.verify_to_target(height).await;
                     sender.send(outcome).map_err(Error::send)?;
                 },
                 HandleInput::VerifyToHighest(sender) => {
-                    let outcome = self.verify_to_highest();
+                    let outcome = self.verify_to_highest().await;
                     sender.send(outcome).map_err(Error::send)?;
                 },
                 HandleInput::GetStatus(sender) => {
@@ -360,64 +374,69 @@ impl Supervisor {
 /// the supervisor across thread boundaries via message passing.
 #[derive(Clone)]
 pub struct SupervisorHandle {
-    sender: channel::Sender<HandleInput>,
+    sender: flume::Sender<HandleInput>,
 }
 
 impl SupervisorHandle {
     /// Crate a new handle that sends events to the supervisor via
     /// the given channel. For internal use only.
-    fn new(sender: channel::Sender<HandleInput>) -> Self {
+    fn new(sender: flume::Sender<HandleInput>) -> Self {
         Self { sender }
     }
 
-    fn verify(
+    async fn verify(
         &self,
-        make_event: impl FnOnce(channel::Sender<Result<LightBlock, Error>>) -> HandleInput,
+        make_event: impl FnOnce(flume::Sender<Result<LightBlock, Error>>) -> HandleInput,
     ) -> Result<LightBlock, Error> {
-        let (sender, receiver) = channel::bounded::<Result<LightBlock, Error>>(1);
+        let (sender, receiver) = flume::bounded::<Result<LightBlock, Error>>(1);
 
         let event = make_event(sender);
-        self.sender.send(event).map_err(Error::send)?;
+        self.sender.send_async(event).await.map_err(Error::send)?;
 
-        receiver.recv().map_err(Error::recv)?
+        receiver.recv_async().await.map_err(Error::recv)?
     }
 }
 
+#[async_trait]
 impl Handle for SupervisorHandle {
-    fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
-        let (sender, receiver) = channel::bounded::<Option<LightBlock>>(1);
+    async fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
+        let (sender, receiver) = flume::bounded::<Option<LightBlock>>(1);
 
         self.sender
-            .send(HandleInput::LatestTrusted(sender))
+            .send_async(HandleInput::LatestTrusted(sender))
+            .await
             .map_err(Error::send)?;
 
-        receiver.recv().map_err(Error::recv)
+        receiver.recv_async().await.map_err(Error::recv)
     }
 
-    fn latest_status(&self) -> Result<LatestStatus, Error> {
-        let (sender, receiver) = channel::bounded::<LatestStatus>(1);
+    async fn latest_status(&self) -> Result<LatestStatus, Error> {
+        let (sender, receiver) = flume::bounded::<LatestStatus>(1);
         self.sender
-            .send(HandleInput::GetStatus(sender))
+            .send_async(HandleInput::GetStatus(sender))
+            .await
             .map_err(Error::send)?;
-        receiver.recv().map_err(Error::recv)
+        receiver.recv_async().await.map_err(Error::recv)
     }
 
-    fn verify_to_highest(&self) -> Result<LightBlock, Error> {
-        self.verify(HandleInput::VerifyToHighest)
+    async fn verify_to_highest(&self) -> Result<LightBlock, Error> {
+        self.verify(HandleInput::VerifyToHighest).await
     }
 
-    fn verify_to_target(&self, height: Height) -> Result<LightBlock, Error> {
+    async fn verify_to_target(&self, height: Height) -> Result<LightBlock, Error> {
         self.verify(|sender| HandleInput::VerifyToTarget(height, sender))
+            .await
     }
 
-    fn terminate(&self) -> Result<(), Error> {
-        let (sender, receiver) = channel::bounded::<()>(1);
+    async fn terminate(&self) -> Result<(), Error> {
+        let (sender, receiver) = flume::bounded::<()>(1);
 
         self.sender
-            .send(HandleInput::Terminate(sender))
+            .send_async(HandleInput::Terminate(sender))
+            .await
             .map_err(Error::send)?;
 
-        receiver.recv().map_err(Error::recv)
+        receiver.recv_async().await.map_err(Error::recv)
     }
 }
 
@@ -429,6 +448,7 @@ mod tests {
     };
     use std::collections::HashMap;
 
+    use futures::executor::block_on;
     use tendermint::{
         block::Height, evidence::Duration as DurationStr, trust_threshold::TrustThresholdFraction,
     };
@@ -444,7 +464,7 @@ mod tests {
     use super::*;
     use crate::{
         components::{
-            io::{self, AtHeight, Io},
+            io::{self, AsyncIo as _, AtHeight},
             scheduler,
         },
         errors::{Error, ErrorDetail},
@@ -476,8 +496,7 @@ mod tests {
         now: Time,
     ) -> Instance {
         let trusted_height = trust_options.height;
-        let trusted_state = io
-            .fetch_light_block(AtHeight::At(trusted_height))
+        let trusted_state = block_on(io.fetch_light_block(AtHeight::At(trusted_height)))
             .expect("could not 'request' light block");
 
         let mut light_store = MemoryStore::new();
@@ -505,7 +524,7 @@ mod tests {
         Instance::new(light_client, state)
     }
 
-    fn run_bisection_test(
+    async fn run_bisection_test(
         peer_list: PeerList<Instance>,
         height_to_verify: u64,
     ) -> (Result<LightBlock, Error>, LatestStatus) {
@@ -516,13 +535,13 @@ mod tests {
         );
 
         let handle = supervisor.handle();
-        std::thread::spawn(|| supervisor.run());
+        tokio::spawn(supervisor.run());
 
         let target_height = Height::try_from(height_to_verify).expect("Error while making height");
 
         (
-            handle.verify_to_target(target_height),
-            handle.latest_status().unwrap(),
+            handle.verify_to_target(target_height).await,
+            handle.latest_status().await.unwrap(),
         )
     }
 
@@ -603,8 +622,8 @@ mod tests {
         witness
     }
 
-    #[test]
-    fn test_bisection_happy_path() {
+    #[tokio::test]
+    async fn test_bisection_happy_path() {
         let chain = LightChain::default_with_length(10);
         let primary = chain
             .light_blocks
@@ -620,7 +639,7 @@ mod tests {
             get_time(11).unwrap(),
         );
 
-        let (result, _) = run_bisection_test(peer_list, 10);
+        let (result, _) = run_bisection_test(peer_list, 10).await;
 
         let expected_state = primary[9].clone();
         let new_state = result.unwrap();
@@ -628,8 +647,8 @@ mod tests {
         assert_eq!(expected_state, new_state);
     }
 
-    #[test]
-    fn test_bisection_no_witnesses() {
+    #[tokio::test]
+    async fn test_bisection_no_witnesses() {
         let chain = LightChain::default_with_length(10);
         let primary = chain
             .light_blocks
@@ -639,7 +658,7 @@ mod tests {
 
         let peer_list = make_peer_list(Some(primary), None, get_time(11).unwrap());
 
-        let (result, _) = run_bisection_test(peer_list, 10);
+        let (result, _) = run_bisection_test(peer_list, 10).await;
 
         match result {
             Err(Error(ErrorDetail::NoWitnesses(_), _)) => {},
@@ -647,8 +666,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_bisection_io_error() {
+    #[tokio::test]
+    async fn test_bisection_io_error() {
         let chain = LightChain::default_with_length(10);
         let primary = chain
             .light_blocks
@@ -662,7 +681,7 @@ mod tests {
 
         let peer_list = make_peer_list(Some(primary), Some(vec![witness]), get_time(11).unwrap());
 
-        let (result, _) = run_bisection_test(peer_list, 10);
+        let (result, _) = run_bisection_test(peer_list, 10).await;
 
         match result {
             Err(Error(ErrorDetail::Io(e), _)) => match e.source {
@@ -678,8 +697,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_bisection_no_witness_left() {
+    #[tokio::test]
+    async fn test_bisection_no_witness_left() {
         let chain = LightChain::default_with_length(5);
         let primary = chain
             .light_blocks
@@ -691,7 +710,7 @@ mod tests {
 
         let peer_list = make_peer_list(Some(primary), Some(vec![witness]), get_time(11).unwrap());
 
-        let (result, _) = run_bisection_test(peer_list, 10);
+        let (result, _) = run_bisection_test(peer_list, 10).await;
 
         // FIXME: currently this test does not test what it is supposed to test,
         // because MockIo returns an InvalidRequest error. This was previously
@@ -714,8 +733,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_bisection_fork_detected() {
+    #[tokio::test]
+    async fn test_bisection_fork_detected() {
         let mut chain = LightChain::default_with_length(5);
         let primary = chain
             .light_blocks
@@ -741,7 +760,7 @@ mod tests {
 
         let peer_list = make_peer_list(Some(primary), Some(vec![witness]), get_time(11).unwrap());
 
-        let (result, _) = run_bisection_test(peer_list, 5);
+        let (result, _) = run_bisection_test(peer_list, 5).await;
 
         match result {
             Err(Error(ErrorDetail::ForkDetected(_), _)) => {},
@@ -749,8 +768,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_bisection_no_initial_trusted_state() {
+    #[tokio::test]
+    async fn test_bisection_no_initial_trusted_state() {
         let chain = LightChain::default_with_length(10);
         let primary = chain
             .light_blocks
@@ -779,7 +798,7 @@ mod tests {
                 Status::Trusted,
             );
 
-        let (result, latest_status) = run_bisection_test(peer_list, 10);
+        let (result, latest_status) = run_bisection_test(peer_list, 10).await;
 
         // In the case where there is no initial trusted state found from a primary peer,
         // the primary node is marked as faulty and replaced with a witness node (if available)
@@ -797,8 +816,8 @@ mod tests {
             .any(|&peer| peer == primary[0].provider));
     }
 
-    #[test]
-    fn test_bisection_trusted_state_outside_trusting_period() {
+    #[tokio::test]
+    async fn test_bisection_trusted_state_outside_trusting_period() {
         let chain = LightChain::default_with_length(10);
         let primary = chain
             .light_blocks
@@ -814,7 +833,7 @@ mod tests {
             get_time(604801).unwrap(),
         );
 
-        let (_, latest_status) = run_bisection_test(peer_list, 2);
+        let (_, latest_status) = run_bisection_test(peer_list, 2).await;
 
         // In the case where trusted state of a primary peer is outside the trusting period,
         // the primary node is marked as faulty and replaced with a witness node (if available)
@@ -827,8 +846,8 @@ mod tests {
             .any(|&peer| peer == primary[0].provider));
     }
 
-    #[test]
-    fn test_bisection_invalid_light_block() {
+    #[tokio::test]
+    async fn test_bisection_invalid_light_block() {
         let chain = LightChain::default_with_length(10);
         let mut primary = chain
             .light_blocks
@@ -846,7 +865,7 @@ mod tests {
             get_time(11).unwrap(),
         );
 
-        let (_, latest_status) = run_bisection_test(peer_list, 10);
+        let (_, latest_status) = run_bisection_test(peer_list, 10).await;
 
         // In the case where a primary peer provides an invalid light block
         // i.e. verification for the light block failed,

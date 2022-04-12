@@ -4,7 +4,7 @@ use tendermint::{block::Height, Hash};
 #[cfg(feature = "rpc-client")]
 use {
     crate::components::clock::SystemClock,
-    crate::components::io::ProdIo,
+    crate::components::io::RpcIo,
     crate::components::scheduler,
     crate::verifier::{operations::ProdHasher, predicates::ProdPredicates, ProdVerifier},
     core::time::Duration,
@@ -15,7 +15,7 @@ use crate::{
     builder::error::Error,
     components::{
         clock::Clock,
-        io::{AtHeight, Io},
+        io::{AsyncIo, AtHeight},
         scheduler::Scheduler,
     },
     light_client::LightClient,
@@ -42,7 +42,7 @@ pub struct HasTrustedState;
 pub struct LightClientBuilder<State> {
     peer_id: PeerId,
     options: Options,
-    io: Box<dyn Io>,
+    io: Box<dyn AsyncIo>,
     clock: Box<dyn Clock>,
     hasher: Box<dyn Hasher>,
     verifier: Box<dyn Verifier>,
@@ -86,7 +86,7 @@ impl LightClientBuilder<NoTrustedState> {
             peer_id,
             options,
             light_store,
-            Box::new(ProdIo::new(peer_id, rpc_client, timeout)),
+            Box::new(RpcIo::new(peer_id, rpc_client, timeout)),
             Box::new(ProdHasher),
             Box::new(SystemClock),
             Box::new(ProdVerifier::default()),
@@ -101,7 +101,7 @@ impl LightClientBuilder<NoTrustedState> {
         peer_id: PeerId,
         options: Options,
         light_store: Box<dyn LightStore>,
-        io: Box<dyn Io>,
+        io: Box<dyn AsyncIo>,
         hasher: Box<dyn Hasher>,
         clock: Box<dyn Clock>,
         verifier: Box<dyn Verifier>,
@@ -147,7 +147,7 @@ impl LightClientBuilder<NoTrustedState> {
     }
 
     /// Set the block from the primary peer at the given height as the trusted state.
-    pub fn trust_primary_at(
+    pub async fn trust_primary_at(
         self,
         trusted_height: Height,
         trusted_hash: Hash,
@@ -155,6 +155,7 @@ impl LightClientBuilder<NoTrustedState> {
         let trusted_state = self
             .io
             .fetch_light_block(AtHeight::At(trusted_height))
+            .await
             .map_err(Error::io)?;
 
         if trusted_state.height() != trusted_height {

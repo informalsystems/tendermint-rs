@@ -1,8 +1,9 @@
 use std::{collections::HashMap, time::Duration};
 
+use futures::executor::block_on;
 use tendermint_light_client::{
     components::{
-        io::{AtHeight, Io},
+        io::{AsyncIo as _, AtHeight},
         scheduler,
     },
     fork_detector::ProdForkDetector,
@@ -25,8 +26,7 @@ const TEST_FILES_PATH: &str = "./tests/support/";
 
 fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: Time) -> Instance {
     let trusted_height = trust_options.height;
-    let trusted_state = io
-        .fetch_light_block(AtHeight::At(trusted_height))
+    let trusted_state = block_on(io.fetch_light_block(AtHeight::At(trusted_height)))
         .expect("could not 'request' light block");
 
     let mut light_store = MemoryStore::new();
@@ -89,15 +89,14 @@ fn run_multipeer_test(tc: LightClientTest<LightBlock>) {
     // TODO: Add method to `Handle` to get a copy of the current peer list
 
     let handle = supervisor.handle();
-    std::thread::spawn(|| supervisor.run());
+    std::thread::spawn(|| block_on(supervisor.run()));
 
     let target_height = tc.height_to_verify;
 
-    match handle.verify_to_target(target_height) {
+    match block_on(handle.verify_to_target(target_height)) {
         Ok(new_state) => {
             // Check that the expected state and new_state match
-            let untrusted_light_block = io
-                .fetch_light_block(AtHeight::At(target_height))
+            let untrusted_light_block = block_on(io.fetch_light_block(AtHeight::At(target_height)))
                 .expect("header at untrusted height not found");
 
             let expected_state = untrusted_light_block;

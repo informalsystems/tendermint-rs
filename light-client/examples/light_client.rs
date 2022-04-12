@@ -1,5 +1,6 @@
 use std::{path::PathBuf, time::Duration};
 
+use futures::executor::block_on;
 use gumdrop::Options;
 use tendermint::Hash;
 use tendermint_light_client::{
@@ -92,7 +93,7 @@ fn make_instance(
         LightClientBuilder::prod(peer_id, rpc_client, Box::new(light_store), options, None);
 
     let builder = if let (Some(height), Some(hash)) = (opts.trusted_height, opts.trusted_hash) {
-        builder.trust_primary_at(height, hash)
+        block_on(builder.trust_primary_at(height, hash))
     } else {
         builder.trust_from_store()
     }?;
@@ -117,10 +118,10 @@ fn sync_cmd(opts: SyncOpts) -> Result<(), Box<dyn std::error::Error>> {
 
     let handle = supervisor.handle();
 
-    std::thread::spawn(|| supervisor.run());
+    std::thread::spawn(|| block_on(supervisor.run()));
 
     loop {
-        match handle.verify_to_highest() {
+        match block_on(handle.verify_to_highest()) {
             Ok(light_block) => {
                 println!("[info] synced to block {}", light_block.height());
             },
