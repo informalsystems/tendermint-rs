@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## v0.23.7
+
+*Apr 25, 2022*
+
+A minor update to use the latest version of `prost`.
+
+### DEPENDENCIES
+
+- Update `prost` to v0.10 ([#1113](https://github.com/informalsystems/tendermint-
+  rs/issues/1113))
+
 ## v0.23.6
 
 *Mar 29, 2022*
