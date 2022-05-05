@@ -4,7 +4,7 @@
 #![deny(warnings, trivial_casts, trivial_numeric_casts, unused_import_braces)]
 #![allow(clippy::large_enum_variant)]
 #![forbid(unsafe_code)]
-#![doc(html_root_url = "https://docs.rs/tendermint-proto/0.24.0-pre.1")]
+#![doc(html_root_url = "https://docs.rs/tendermint-proto/0.24.0-pre.2")]
 
 extern crate alloc;
 

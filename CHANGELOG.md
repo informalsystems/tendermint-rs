@@ -1,5 +1,43 @@
 # CHANGELOG
 
+## v0.24.0-pre.2
+
+*May 4, 2022*
+
+The major change in this pre-release is the introduction of a fully `async`
+light client interface.
+
+### BREAKING CHANGES
+
+- `[tendermint-light-client]` Replace Io with async variant
+  ([#953](https://github.com/informalsystems/tendermint-rs/issues/953))
+- `[tendermint-proto]` Make `Protobuf::encode_vec()` infallible
+  ([#1064](https://github.com/informalsystems/tendermint-rs/issues/1064))
+- `[tools/rpc-probe]` CLI updated to support probing Gaia nodes in addition
+  to kvstore-based Tendermint nodes to generate static fixtures for RPC tests
+  ([#1084](https://github.com/informalsystems/tendermint-rs/pull/1084))
+
+### DEPENDENCIES
+
+- `[tendermint-light-client]` Upgrade
+  [`contracts`](https://crates.io/crates/contracts) dependency to v0.6.2
+  ([#1097](https://github.com/informalsystems/tendermint-rs/pull/1097))
+- Update `prost` to v0.10 ([#1113](https://github.com/informalsystems/tendermint-
+  rs/issues/1113))
+
+### FEATURES
+
+- `[tendermint-rpc]` Add support for the `/block_by_hash` RPC endpoint. See <https://docs.tendermint.com/master/rpc/#/Info/block_by_hash> for details ([#832](https://github.com/informalsystems/tendermint-rs/issues/832)).
+- `[tendermint]` Add `tendermint::chain::Id::new` with support for chain ID constants
+  ([#1105](https://github.com/informalsystems/tendermint-rs/issues/1105)).
+
+### WORKAROUNDS
+
+- `[tendermint-rpc]` Allow deserialization of public keys from validator updates
+  from `block_results` endpoint in multiple JSON formats until this is fixed in
+  Tendermint
+  ([#1021](https://github.com/informalsystems/tendermint-rs/issues/1021))
+
 ## v0.24.0-pre.1
 
 *Jan 13, 2022*
