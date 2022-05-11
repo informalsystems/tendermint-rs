@@ -7,7 +7,7 @@ use core::{
 };
 
 #[cfg(feature = "secp256k1")]
-use ripemd160::Ripemd160;
+use ripemd::Ripemd160;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
 use subtle::{self, ConstantTimeEq};
