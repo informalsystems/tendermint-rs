@@ -98,6 +98,7 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         ".tendermint.abci.ResponseInfo.last_block_height",
         QUOTED_WITH_DEFAULT,
     ),
+    (".tendermint.abci.ResponseInfo.last_block_app_hash", DEFAULT),
     (
         ".tendermint.abci.ResponseInfo.last_block_app_hash",
         BYTES_SKIP_IF_EMPTY,

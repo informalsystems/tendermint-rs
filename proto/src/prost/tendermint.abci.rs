@@ -229,6 +229,7 @@ pub struct ResponseInfo {
     #[serde(with = "crate::serializers::from_str", default)]
     pub last_block_height: i64,
     #[prost(bytes="bytes", tag="5")]
+    #[serde(default)]
     #[serde(skip_serializing_if = "bytes::Bytes::is_empty")]
     pub last_block_app_hash: ::prost::bytes::Bytes,
 }
