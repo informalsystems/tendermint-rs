@@ -67,7 +67,7 @@ peg = { version = "0.7.0", default-features = false }
 pin-project = { version = "1.0.1", default-features = false }
 serde = { version = "1", default-features = false, features = [ "derive" ] }
 serde_bytes = { version = "0.11", default-features = false }
-serde_json = { version = "1", default-features = false, features = ["std"] }
+serde_json = { version = "1", default-features = false }
 tendermint-config = { version = "0.24.0-pre.2", path = "../config", default-features = false }
 tendermint = { version = "0.24.0-pre.2", default-features = false, path = "../tendermint" }
 tendermint-proto = { version = "0.24.0-pre.2", default-features = false, path = "../proto" }
