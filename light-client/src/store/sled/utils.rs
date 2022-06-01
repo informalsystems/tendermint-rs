@@ -1,6 +1,5 @@
 //! This modules provides type-safe interfaces over the `sled` API,
-//! by taking care of (de)serializing keys and values with the
-//! CBOR binary encoding.
+//! by taking care of (de)serializing keys and values with JSON encoding.
 
 use std::marker::PhantomData;
 
@@ -43,7 +42,7 @@ where
 
         match value {
             Some(bytes) => {
-                let value = serde_cbor::from_slice(&bytes).map_err(Error::serde_cbor)?;
+                let value = serde_json::from_slice(&bytes).map_err(Error::serde_json)?;
                 Ok(value)
             },
             None => Ok(None),
@@ -62,7 +61,7 @@ where
     /// Insert a value associated with a height within this tree
     pub fn insert(&self, height: Height, value: &V) -> Result<(), Error> {
         let key = key_bytes(height);
-        let bytes = serde_cbor::to_vec(&value).map_err(Error::serde_cbor)?;
+        let bytes = serde_json::to_vec(&value).map_err(Error::serde_json)?;
 
         self.tree.insert(key, bytes).map_err(Error::sled)?;
 
@@ -83,7 +82,7 @@ where
         self.tree
             .iter()
             .flatten()
-            .flat_map(|(_, v)| serde_cbor::from_slice(&v))
+            .flat_map(|(_, v)| serde_json::from_slice(&v))
     }
 }
 

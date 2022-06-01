@@ -23,6 +23,12 @@ type SledError = TraceError<sled::Error>;
 #[cfg(not(feature = "sled"))]
 type SledError = flex_error::NoSource;
 
+#[cfg(feature = "serde_json")]
+type JsonError = TraceError<serde_json::Error>;
+
+#[cfg(not(feature = "serde_json"))]
+type JsonError = flex_error::NoSource;
+
 define_error! {
     #[derive(Debug)]
     Error {
@@ -113,9 +119,9 @@ define_error! {
             [ SledError ]
             | _ | { "sled error" },
 
-        SerdeCbor
-            [ TraceError<serde_cbor::Error> ]
-            | _ | { "serde cbor error" },
+        SerdeJson
+            [ JsonError ]
+            | _ | { "serde json error" },
 
     }
 }
