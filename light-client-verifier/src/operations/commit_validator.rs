@@ -1,12 +1,14 @@
 //! Provides an interface and default implementation for the `CommitValidator` operation
 
+use core::marker::PhantomData;
 use tendermint::block::CommitSig;
 
 use crate::{
     errors::VerificationError,
-    operations::{Hasher, ProdHasher},
     types::{SignedHeader, ValidatorSet},
 };
+use crate::host_functions::HostFunctionsProvider;
+use crate::merkle::simple_hash_from_byte_vectors;
 
 /// Validates the commit associated with a header against a validator set
 pub trait CommitValidator: Send + Sync {
@@ -27,25 +29,16 @@ pub trait CommitValidator: Send + Sync {
 
 /// Production-ready implementation of a commit validator
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ProdCommitValidator {
-    hasher: ProdHasher,
-}
+pub struct ProdCommitValidator<H: HostFunctionsProvider>(PhantomData<H>);
 
-impl ProdCommitValidator {
-    /// Create a new commit validator using the given [`Hasher`]
-    /// to compute the hash of headers and validator sets.
-    pub fn new(hasher: ProdHasher) -> Self {
-        Self { hasher }
-    }
-}
 
-impl Default for ProdCommitValidator {
+impl<H: HostFunctionsProvider> Default for ProdCommitValidator<H> {
     fn default() -> Self {
-        Self::new(ProdHasher::default())
+        Self(PhantomData)
     }
 }
 
-impl CommitValidator for ProdCommitValidator {
+impl<H: HostFunctionsProvider> CommitValidator for ProdCommitValidator<H> {
     fn validate(
         &self,
         signed_header: &SignedHeader,
@@ -94,9 +87,10 @@ impl CommitValidator for ProdCommitValidator {
             };
 
             if validator_set.validator(*validator_address) == None {
+                let bytes = validator_set.serialize_to_preimage();
                 return Err(VerificationError::faulty_signer(
                     *validator_address,
-                    self.hasher.hash_validator_set(validator_set),
+                    simple_hash_from_byte_vectors::<H>(bytes).into()
                 ));
             }
         }

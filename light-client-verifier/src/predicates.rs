@@ -1,12 +1,15 @@
 //! Predicates for light block validation and verification.
 
+use core::marker::PhantomData;
 use core::time::Duration;
 
 use tendermint::{block::Height, hash::Hash};
 
 use crate::{
     errors::VerificationError,
-    operations::{CommitValidator, Hasher, VotingPowerCalculator},
+    host_functions::HostFunctionsProvider,
+    merkle::simple_hash_from_byte_vectors,
+    operations::{CommitValidator, VotingPowerCalculator},
     prelude::*,
     types::{Header, SignedHeader, Time, TrustThreshold, ValidatorSet},
 };
@@ -14,8 +17,9 @@ use crate::{
 /// Production predicates, using the default implementation
 /// of the `VerificationPredicates` trait.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub struct ProdPredicates;
-impl VerificationPredicates for ProdPredicates {}
+pub struct ProdPredicates<H>(PhantomData<H>);
+
+impl<H: HostFunctionsProvider> VerificationPredicates<H> for ProdPredicates<H> {}
 
 /// Defines the various predicates used to validate and verify light blocks.
 ///
@@ -23,22 +27,22 @@ impl VerificationPredicates for ProdPredicates {}
 ///
 /// This enables test implementations to only override a single method rather than
 /// have to re-define every predicate.
-pub trait VerificationPredicates: Send + Sync {
+pub trait VerificationPredicates<H: HostFunctionsProvider>: Send + Sync {
     /// Compare the provided validator_set_hash against the hash produced from hashing the validator
     /// set.
     fn validator_sets_match(
         &self,
         validators: &ValidatorSet,
         header_validators_hash: Hash,
-        hasher: &dyn Hasher,
     ) -> Result<(), VerificationError> {
-        let validators_hash = hasher.hash_validator_set(validators);
+        let validators_hash =
+            simple_hash_from_byte_vectors::<H>(validators.serialize_to_preimage()).into();
         if header_validators_hash == validators_hash {
             Ok(())
         } else {
             Err(VerificationError::invalid_validator_set(
                 header_validators_hash,
-                validators_hash,
+                validators_hash.into(),
             ))
         }
     }
@@ -48,9 +52,9 @@ pub trait VerificationPredicates: Send + Sync {
         &self,
         next_validators: &ValidatorSet,
         header_next_validators_hash: Hash,
-        hasher: &dyn Hasher,
     ) -> Result<(), VerificationError> {
-        let next_validators_hash = hasher.hash_validator_set(next_validators);
+        let next_validators_hash =
+            simple_hash_from_byte_vectors::<H>(next_validators.serialize_to_preimage()).into();
         if header_next_validators_hash == next_validators_hash {
             Ok(())
         } else {
@@ -66,10 +70,9 @@ pub trait VerificationPredicates: Send + Sync {
         &self,
         header: &Header,
         commit_hash: Hash,
-        hasher: &dyn Hasher,
     ) -> Result<(), VerificationError> {
-        let header_hash = hasher.hash_header(header);
-        if header_hash == commit_hash {
+        let header_hash = simple_hash_from_byte_vectors::<H>(header.serialize_to_preimage()).into();
+        if commit_hash == header_hash {
             Ok(())
         } else {
             Err(VerificationError::invalid_commit_value(
@@ -167,7 +170,7 @@ pub trait VerificationPredicates: Send + Sync {
         untrusted_sh: &SignedHeader,
         trusted_validators: &ValidatorSet,
         trust_threshold: &TrustThreshold,
-        calculator: &dyn VotingPowerCalculator,
+        calculator: &dyn VotingPowerCalculator<H>,
     ) -> Result<(), VerificationError> {
         calculator.check_enough_trust(untrusted_sh, trusted_validators, *trust_threshold)?;
         Ok(())
@@ -179,7 +182,7 @@ pub trait VerificationPredicates: Send + Sync {
         &self,
         untrusted_sh: &SignedHeader,
         untrusted_validators: &ValidatorSet,
-        calculator: &dyn VotingPowerCalculator,
+        calculator: &dyn VotingPowerCalculator<H>,
     ) -> Result<(), VerificationError> {
         calculator.check_signers_overlap(untrusted_sh, untrusted_validators)?;
         Ok(())

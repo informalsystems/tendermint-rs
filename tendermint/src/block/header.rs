@@ -164,14 +164,14 @@ impl From<Header> for RawHeader {
 }
 
 impl Header {
-    /// Hash this header
-    pub fn hash(&self) -> Hash {
+    /// Serialize the header to the preimage bytes
+    pub fn serialize_to_preimage(&self) -> Vec<Vec<u8>> {
         // Note that if there is an encoding problem this will
         // panic (as the golang code would):
         // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/block.go#L393
         // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/encoding_helper.go#L9:6
 
-        let fields_bytes = vec![
+        vec![
             self.version.encode_vec(),
             self.chain_id.encode_vec(),
             self.height.encode_vec(),
@@ -186,7 +186,12 @@ impl Header {
             self.last_results_hash.unwrap_or_default().encode_vec(),
             self.evidence_hash.unwrap_or_default().encode_vec(),
             self.proposer_address.encode_vec(),
-        ];
+        ]
+    }
+
+    /// Hash this header
+    pub fn hash(&self) -> Hash {
+        let fields_bytes = self.serialize_to_preimage();
 
         Hash::Sha256(simple_hash_from_byte_vectors(fields_bytes))
     }

@@ -24,6 +24,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 default = ["flex-error/std", "flex-error/eyre_tracer"]
+secp256k1 = ["tendermint/secp256k1"]
 
 [dependencies]
 tendermint = { version = "0.24.0-pre.2", path = "../tendermint", default-features = false }
