@@ -5,6 +5,8 @@ extern crate alloc;
 mod prelude;
 
 pub mod errors;
+pub mod host_functions;
+pub mod merkle;
 pub mod operations;
 pub mod options;
 pub mod predicates;

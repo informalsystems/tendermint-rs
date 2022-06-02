@@ -133,13 +133,17 @@ impl Set {
             .cloned()
     }
 
-    /// Compute the hash of this validator set
-    pub fn hash(&self) -> Hash {
-        let validator_bytes: Vec<Vec<u8>> = self
-            .validators()
+    /// Serialize the validator set to the preimage bytes
+    pub fn serialize_to_preimage(&self) -> Vec<Vec<u8>> {
+        self.validators()
             .iter()
             .map(|validator| validator.hash_bytes())
-            .collect();
+            .collect()
+    }
+
+    /// Compute the hash of this validator set
+    pub fn hash(&self) -> Hash {
+        let validator_bytes = self.serialize_to_preimage();
 
         Hash::Sha256(merkle::simple_hash_from_byte_vectors(validator_bytes))
     }

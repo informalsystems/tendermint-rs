@@ -23,7 +23,14 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
+std = [
+  "tendermint/std",
+  "serde/std",
+  "time/std",
+  "flex-error/std"
+]
 default = ["flex-error/std", "flex-error/eyre_tracer"]
+secp256k1 = ["tendermint/secp256k1"]
 
 [dependencies]
 tendermint = { version = "0.24.0-pre.2", path = "../tendermint", default-features = false }
@@ -34,3 +41,6 @@ flex-error = { version = "0.4.4", default-features = false }
 
 [dev-dependencies]
 tendermint-testgen = { path = "../testgen", default-features = false }
+hex = "0.4.3"
+sp-core = { version = "6.0.0", features = ["full_crypto"] }
+hex-literal = "0.3.4"

@@ -1,17 +1,19 @@
 //! Provides an interface and default implementation for the `VotingPower` operation
 
 use alloc::collections::BTreeSet as HashSet;
-use core::{convert::TryFrom, fmt};
+use core::{convert::TryFrom, fmt, marker::PhantomData};
 
 use serde::{Deserialize, Serialize};
 use tendermint::{
     block::CommitSig,
     trust_threshold::TrustThreshold as _,
     vote::{SignedVote, ValidatorIndex, Vote},
+    PublicKey,
 };
 
 use crate::{
     errors::VerificationError,
+    host_functions::HostFunctionsProvider,
     prelude::*,
     types::{Commit, SignedHeader, TrustThreshold, ValidatorSet},
 };
@@ -40,7 +42,7 @@ impl fmt::Display for VotingPowerTally {
 /// Computes the voting power in a commit against a validator set.
 ///
 /// This trait provides default implementation of some helper functions.
-pub trait VotingPowerCalculator: Send + Sync {
+pub trait VotingPowerCalculator<H: HostFunctionsProvider>: Send + Sync {
     /// Compute the total voting power in a validator set
     fn total_power_of(&self, validator_set: &ValidatorSet) -> u64 {
         validator_set
@@ -101,9 +103,9 @@ pub trait VotingPowerCalculator: Send + Sync {
 
 /// Default implementation of a `VotingPowerCalculator`
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub struct ProdVotingPowerCalculator;
+pub struct ProdVotingPowerCalculator<H: HostFunctionsProvider>(PhantomData<H>);
 
-impl VotingPowerCalculator for ProdVotingPowerCalculator {
+impl<H: HostFunctionsProvider> VotingPowerCalculator<H> for ProdVotingPowerCalculator<H> {
     fn voting_power_in(
         &self,
         signed_header: &SignedHeader,
@@ -146,10 +148,11 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
 
             // Check vote is valid
             let sign_bytes = signed_vote.sign_bytes();
-            if validator
-                .verify_signature(&sign_bytes, signed_vote.signature())
-                .is_err()
-            {
+            if !verify_signature::<H>(
+                validator.pub_key,
+                &sign_bytes,
+                signed_vote.signature().as_bytes(),
+            ) {
                 return Err(VerificationError::invalid_signature(
                     signed_vote.signature().as_bytes().to_vec(),
                     Box::new(validator),
@@ -176,6 +179,20 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
         };
 
         Ok(voting_power)
+    }
+}
+
+fn verify_signature<H: HostFunctionsProvider>(
+    pubkey: PublicKey,
+    message: &[u8],
+    signature: &[u8],
+) -> bool {
+    match pubkey {
+        PublicKey::Ed25519(pk) => H::ed25519_verify(signature, message, pk.as_ref()),
+        /// TODO: secp256k1
+        #[cfg(feature = "secp256k1")]
+        PublicKey::Secp256k1(pk) => H::secp256k1_verify(signature, message, &pk.to_bytes()[..]),
+        _ => unreachable!(),
     }
 }
 
@@ -228,7 +245,9 @@ mod tests {
     };
 
     use super::*;
-    use crate::{errors::VerificationErrorDetail, types::LightBlock};
+    use crate::{
+        errors::VerificationErrorDetail, host_functions::TestHostFunctions, types::LightBlock,
+    };
 
     const EXPECTED_RESULT: VotingPowerTally = VotingPowerTally {
         total: 100,
@@ -238,7 +257,7 @@ mod tests {
 
     #[test]
     fn test_empty_signatures() {
-        let vp_calculator = ProdVotingPowerCalculator::default();
+        let vp_calculator = ProdVotingPowerCalculator::<TestHostFunctions>::default();
         let trust_threshold = TrustThreshold::default();
 
         let mut light_block: LightBlock = TestgenLightBlock::new_default(10)
@@ -259,7 +278,7 @@ mod tests {
 
     #[test]
     fn test_all_signatures_absent() {
-        let vp_calculator = ProdVotingPowerCalculator::default();
+        let vp_calculator = ProdVotingPowerCalculator::<TestHostFunctions>::default();
         let trust_threshold = TrustThreshold::default();
 
         let mut testgen_lb = TestgenLightBlock::new_default(10);
@@ -281,7 +300,7 @@ mod tests {
 
     #[test]
     fn test_all_signatures_nil() {
-        let vp_calculator = ProdVotingPowerCalculator::default();
+        let vp_calculator = ProdVotingPowerCalculator::<TestHostFunctions>::default();
         let trust_threshold = TrustThreshold::default();
 
         let validator_set = ValidatorSet::new(vec!["a", "b"]);
@@ -303,7 +322,7 @@ mod tests {
 
     #[test]
     fn test_one_invalid_signature() {
-        let vp_calculator = ProdVotingPowerCalculator::default();
+        let vp_calculator = ProdVotingPowerCalculator::<TestHostFunctions>::default();
         let trust_threshold = TrustThreshold::default();
 
         let mut testgen_lb = TestgenLightBlock::new_default(10);
@@ -331,7 +350,7 @@ mod tests {
 
     #[test]
     fn test_all_signatures_invalid() {
-        let vp_calculator = ProdVotingPowerCalculator::default();
+        let vp_calculator = ProdVotingPowerCalculator::<TestHostFunctions>::default();
         let trust_threshold = TrustThreshold::default();
 
         let mut testgen_lb = TestgenLightBlock::new_default(10);
@@ -353,7 +372,7 @@ mod tests {
 
     #[test]
     fn test_signatures_from_diff_valset() {
-        let vp_calculator = ProdVotingPowerCalculator::default();
+        let vp_calculator = ProdVotingPowerCalculator::<TestHostFunctions>::default();
         let trust_threshold = TrustThreshold::default();
 
         let mut light_block: LightBlock = TestgenLightBlock::new_default(10)
