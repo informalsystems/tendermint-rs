@@ -1,0 +1,1 @@
+- `[light-client]` Replace `serde_cbor` with `serde_json` in `light_client` dependencies ([#1133](https://github.com/informalsystems/tendermint-rs/pull/1133)).
