@@ -74,9 +74,8 @@ fn inner_hash<H: HostFunctionsProvider>(left: &[u8], right: &[u8]) -> Hash {
 
 #[cfg(test)]
 mod tests {
-    use subtle_encoding::hex;
-
-    use super::*; // TODO: use non-subtle ?
+    use super::*;
+    use crate::host_functions::TestHostFunctions; // TODO: use non-subtle ?
 
     #[test]
     fn test_get_split_point() {
@@ -99,7 +98,7 @@ mod tests {
         let empty_tree_root = &hex::decode(empty_tree_root_hex).unwrap();
         let empty_tree: Vec<Vec<u8>> = vec![vec![]; 0];
 
-        let root = simple_hash_from_byte_vectors(empty_tree);
+        let root = simple_hash_from_byte_vectors::<TestHostFunctions>(empty_tree);
         assert_eq!(empty_tree_root, &root);
     }
 
@@ -110,7 +109,7 @@ mod tests {
         let empty_leaf_root = &hex::decode(empty_leaf_root_hex).unwrap();
         let one_empty_leaf: Vec<Vec<u8>> = vec![vec![]; 1];
 
-        let root = simple_hash_from_byte_vectors(one_empty_leaf);
+        let root = simple_hash_from_byte_vectors::<TestHostFunctions>(one_empty_leaf);
         assert_eq!(empty_leaf_root, &root);
     }
 
@@ -122,7 +121,7 @@ mod tests {
         let leaf_root = &hex::decode(leaf_root_hex).unwrap();
         let leaf_tree: Vec<Vec<u8>> = vec![leaf_string.as_bytes().to_vec(); 1];
 
-        let root = simple_hash_from_byte_vectors(leaf_tree);
+        let root = simple_hash_from_byte_vectors::<TestHostFunctions>(leaf_tree);
         assert_eq!(leaf_root, &root);
     }
 
@@ -133,7 +132,7 @@ mod tests {
         let right_string = "N456";
 
         let node_hash = &hex::decode(node_hash_hex).unwrap();
-        let hash = inner_hash(left_string.as_bytes(), right_string.as_bytes());
+        let hash = inner_hash::<TestHostFunctions>(left_string.as_bytes(), right_string.as_bytes());
         assert_eq!(node_hash, &hash);
     }
 }

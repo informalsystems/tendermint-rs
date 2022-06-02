@@ -1,8 +1,7 @@
 //! Provides an interface and default implementation for the `VotingPower` operation
 
 use alloc::collections::BTreeSet as HashSet;
-use core::{convert::TryFrom, fmt};
-use core::marker::PhantomData;
+use core::{convert::TryFrom, fmt, marker::PhantomData};
 
 use serde::{Deserialize, Serialize};
 use tendermint::{
@@ -202,7 +201,7 @@ fn verify_signature<H: HostFunctionsProvider>(
             ))),
         },
 
-        _ =>  unreachable!()
+        _ => unreachable!(),
     }
 }
 
@@ -255,7 +254,9 @@ mod tests {
     };
 
     use super::*;
-    use crate::{errors::VerificationErrorDetail, types::LightBlock};
+    use crate::{
+        errors::VerificationErrorDetail, host_functions::TestHostFunctions, types::LightBlock,
+    };
 
     const EXPECTED_RESULT: VotingPowerTally = VotingPowerTally {
         total: 100,
@@ -265,7 +266,7 @@ mod tests {
 
     #[test]
     fn test_empty_signatures() {
-        let vp_calculator = ProdVotingPowerCalculator::default();
+        let vp_calculator = ProdVotingPowerCalculator::<TestHostFunctions>::default();
         let trust_threshold = TrustThreshold::default();
 
         let mut light_block: LightBlock = TestgenLightBlock::new_default(10)
@@ -286,7 +287,7 @@ mod tests {
 
     #[test]
     fn test_all_signatures_absent() {
-        let vp_calculator = ProdVotingPowerCalculator::default();
+        let vp_calculator = ProdVotingPowerCalculator::<TestHostFunctions>::default();
         let trust_threshold = TrustThreshold::default();
 
         let mut testgen_lb = TestgenLightBlock::new_default(10);
@@ -308,7 +309,7 @@ mod tests {
 
     #[test]
     fn test_all_signatures_nil() {
-        let vp_calculator = ProdVotingPowerCalculator::default();
+        let vp_calculator = ProdVotingPowerCalculator::<TestHostFunctions>::default();
         let trust_threshold = TrustThreshold::default();
 
         let validator_set = ValidatorSet::new(vec!["a", "b"]);
@@ -330,7 +331,7 @@ mod tests {
 
     #[test]
     fn test_one_invalid_signature() {
-        let vp_calculator = ProdVotingPowerCalculator::default();
+        let vp_calculator = ProdVotingPowerCalculator::<TestHostFunctions>::default();
         let trust_threshold = TrustThreshold::default();
 
         let mut testgen_lb = TestgenLightBlock::new_default(10);
@@ -358,7 +359,7 @@ mod tests {
 
     #[test]
     fn test_all_signatures_invalid() {
-        let vp_calculator = ProdVotingPowerCalculator::default();
+        let vp_calculator = ProdVotingPowerCalculator::<TestHostFunctions>::default();
         let trust_threshold = TrustThreshold::default();
 
         let mut testgen_lb = TestgenLightBlock::new_default(10);
@@ -380,7 +381,7 @@ mod tests {
 
     #[test]
     fn test_signatures_from_diff_valset() {
-        let vp_calculator = ProdVotingPowerCalculator::default();
+        let vp_calculator = ProdVotingPowerCalculator::<TestHostFunctions>::default();
         let trust_threshold = TrustThreshold::default();
 
         let mut light_block: LightBlock = TestgenLightBlock::new_default(10)

@@ -1,7 +1,6 @@
 //! Predicates for light block validation and verification.
 
-use core::marker::PhantomData;
-use core::time::Duration;
+use core::{marker::PhantomData, time::Duration};
 
 use tendermint::{block::Height, hash::Hash};
 
@@ -219,9 +218,8 @@ mod tests {
 
     use crate::{
         errors::{VerificationError, VerificationErrorDetail},
-        operations::{
-            Hasher, ProdCommitValidator, ProdHasher, ProdVotingPowerCalculator, VotingPowerTally,
-        },
+        host_functions::TestHostFunctions,
+        operations::{ProdCommitValidator, ProdVotingPowerCalculator, VotingPowerTally},
         predicates::{ProdPredicates, VerificationPredicates},
         prelude::*,
         types::{LightBlock, TrustThreshold},
@@ -244,7 +242,7 @@ mod tests {
         let header_one = Header::new(&val).generate().unwrap();
         let header_two = Header::new(&val).generate().unwrap();
 
-        let vp = ProdPredicates::default();
+        let vp = ProdPredicates::<TestHostFunctions>::default();
 
         // 1. ensure valid header verifies
         let result_ok = vp.is_monotonic_bft_time(header_two.time, header_one.time);
@@ -267,7 +265,7 @@ mod tests {
         let header_one = Header::new(&val).generate().unwrap();
         let header_two = Header::new(&val).height(2).generate().unwrap();
 
-        let vp = ProdPredicates::default();
+        let vp = ProdPredicates::<TestHostFunctions>::default();
 
         // 1. ensure valid header verifies
         let result_ok = vp.is_monotonic_height(header_two.height, header_one.height);
@@ -290,7 +288,7 @@ mod tests {
         let val = Validator::new("val-1");
         let header = Header::new(&[val]).generate().unwrap();
 
-        let vp = ProdPredicates::default();
+        let vp = ProdPredicates::<TestHostFunctions>::default();
 
         // 1. ensure valid header verifies
         let mut trusting_period = Duration::new(1000, 0);
@@ -319,7 +317,7 @@ mod tests {
         let val = Validator::new("val-1");
         let header = Header::new(&[val]).generate().unwrap();
 
-        let vp = ProdPredicates::default();
+        let vp = ProdPredicates::<TestHostFunctions>::default();
         let one_second = Duration::new(1, 0);
 
         let now = OffsetDateTime::now_utc().try_into().unwrap();
@@ -350,15 +348,13 @@ mod tests {
 
         let bad_validator_set = ValidatorSet::new(vec!["bad-val"]).generate().unwrap();
 
-        let vp = ProdPredicates::default();
-        let hasher = ProdHasher::default();
+        let vp = ProdPredicates::<TestHostFunctions>::default();
 
         // Test positive case
         // 1. For predicate: validator_sets_match
         let val_sets_match_ok = vp.validator_sets_match(
             &light_block.validators,
             light_block.signed_header.header.validators_hash,
-            &hasher,
         );
 
         assert!(val_sets_match_ok.is_ok());
@@ -367,7 +363,6 @@ mod tests {
         let next_val_sets_match_ok = vp.next_validators_match(
             &light_block.next_validators,
             light_block.signed_header.header.next_validators_hash,
-            &hasher,
         );
 
         assert!(next_val_sets_match_ok.is_ok());
@@ -379,7 +374,6 @@ mod tests {
         let val_sets_match_err = vp.validator_sets_match(
             &light_block.validators,
             light_block.signed_header.header.validators_hash,
-            &hasher,
         );
 
         match val_sets_match_err {
@@ -388,10 +382,7 @@ mod tests {
                     e.header_validators_hash,
                     light_block.signed_header.header.validators_hash
                 );
-                assert_eq!(
-                    e.validators_hash,
-                    hasher.hash_validator_set(&light_block.validators)
-                );
+                assert_eq!(e.validators_hash, light_block.validators.hash());
             },
             _ => panic!("expected InvalidValidatorSet error"),
         }
@@ -401,7 +392,6 @@ mod tests {
         let next_val_sets_match_err = vp.next_validators_match(
             &light_block.next_validators,
             light_block.signed_header.header.next_validators_hash,
-            &hasher,
         );
 
         match next_val_sets_match_err {
@@ -410,10 +400,7 @@ mod tests {
                     e.header_next_validators_hash,
                     light_block.signed_header.header.next_validators_hash
                 );
-                assert_eq!(
-                    e.next_validators_hash,
-                    hasher.hash_validator_set(&light_block.next_validators)
-                );
+                assert_eq!(e.next_validators_hash, light_block.next_validators.hash());
             },
             _ => panic!("expected InvalidNextValidatorSet error"),
         }
@@ -426,15 +413,11 @@ mod tests {
             .unwrap()
             .signed_header;
 
-        let vp = ProdPredicates::default();
-        let hasher = ProdHasher::default();
+        let vp = ProdPredicates::<TestHostFunctions>::default();
 
         // 1. ensure valid signed header verifies
-        let result_ok = vp.header_matches_commit(
-            &signed_header.header,
-            signed_header.commit.block_id.hash,
-            &hasher,
-        );
+        let result_ok =
+            vp.header_matches_commit(&signed_header.header, signed_header.commit.block_id.hash);
 
         assert!(result_ok.is_ok());
 
@@ -443,14 +426,11 @@ mod tests {
             "15F15EF50BDE2018F4B129A827F90C18222C757770C8295EB8EE7BF50E761BC0"
                 .parse()
                 .unwrap();
-        let result_err = vp.header_matches_commit(
-            &signed_header.header,
-            signed_header.commit.block_id.hash,
-            &hasher,
-        );
+        let result_err =
+            vp.header_matches_commit(&signed_header.header, signed_header.commit.block_id.hash);
 
         // 3. ensure it fails with: VerificationVerificationError::InvalidCommitValue
-        let header_hash = hasher.hash_header(&signed_header.header);
+        let header_hash = signed_header.header.hash();
 
         match result_err {
             Err(VerificationError(VerificationErrorDetail::InvalidCommitValue(e), _)) => {
@@ -468,9 +448,8 @@ mod tests {
         let mut signed_header = light_block.signed_header;
         let val_set = light_block.validators;
 
-        let vp = ProdPredicates::default();
-        let hasher = ProdHasher::default();
-        let commit_validator = ProdCommitValidator::new(hasher);
+        let vp = ProdPredicates::<TestHostFunctions>::default();
+        let commit_validator = ProdCommitValidator::<TestHostFunctions>::default();
 
         // Test scenarios -->
         // 1. valid commit - must result "Ok"
@@ -543,10 +522,7 @@ mod tests {
                         .unwrap()
                 );
 
-                assert_eq!(
-                    e.validator_set,
-                    hasher.hash_validator_set(&val_set_with_faulty_signer)
-                );
+                assert_eq!(e.validator_set, val_set_with_faulty_signer.hash());
             },
             _ => panic!("expected FaultySigner error"),
         }
@@ -559,7 +535,7 @@ mod tests {
 
         let light_block2: LightBlock = test_lb1.next().generate().unwrap().into();
 
-        let vp = ProdPredicates::default();
+        let vp = ProdPredicates::<TestHostFunctions>::default();
 
         // Test scenarios -->
         // 1. next_validator_set hash matches
@@ -606,7 +582,7 @@ mod tests {
         let val_set = light_block.validators;
         let signed_header = light_block.signed_header;
 
-        let vp = ProdPredicates::default();
+        let vp = ProdPredicates::<TestHostFunctions>::default();
         let mut trust_threshold = TrustThreshold::new(1, 3).expect("Cannot make trust threshold");
         let voting_power_calculator = ProdVotingPowerCalculator::default();
 
@@ -660,7 +636,7 @@ mod tests {
         let mut light_block: LightBlock =
             TestgenLightBlock::new_default(2).generate().unwrap().into();
 
-        let vp = ProdPredicates::default();
+        let vp = ProdPredicates::<TestHostFunctions>::default();
         let voting_power_calculator = ProdVotingPowerCalculator::default();
 
         // Test scenarios -->

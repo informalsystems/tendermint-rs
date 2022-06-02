@@ -1,14 +1,15 @@
 //! Provides an interface and default implementation for the `CommitValidator` operation
 
 use core::marker::PhantomData;
+
 use tendermint::block::CommitSig;
 
 use crate::{
     errors::VerificationError,
+    host_functions::HostFunctionsProvider,
+    merkle::simple_hash_from_byte_vectors,
     types::{SignedHeader, ValidatorSet},
 };
-use crate::host_functions::HostFunctionsProvider;
-use crate::merkle::simple_hash_from_byte_vectors;
 
 /// Validates the commit associated with a header against a validator set
 pub trait CommitValidator: Send + Sync {
@@ -30,7 +31,6 @@ pub trait CommitValidator: Send + Sync {
 /// Production-ready implementation of a commit validator
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProdCommitValidator<H: HostFunctionsProvider>(PhantomData<H>);
-
 
 impl<H: HostFunctionsProvider> Default for ProdCommitValidator<H> {
     fn default() -> Self {
@@ -90,7 +90,7 @@ impl<H: HostFunctionsProvider> CommitValidator for ProdCommitValidator<H> {
                 let bytes = validator_set.serialize_to_preimage();
                 return Err(VerificationError::faulty_signer(
                     *validator_address,
-                    simple_hash_from_byte_vectors::<H>(bytes).into()
+                    simple_hash_from_byte_vectors::<H>(bytes).into(),
                 ));
             }
         }
