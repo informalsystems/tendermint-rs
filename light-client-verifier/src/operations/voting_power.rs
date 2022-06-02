@@ -191,16 +191,7 @@ fn verify_signature<H: HostFunctionsProvider>(
         PublicKey::Ed25519(pk) => H::ed25519_verify(signature, message, pk.as_ref()),
         /// TODO: secp256k1
         #[cfg(feature = "secp256k1")]
-        PublicKey::Secp256k1(pk) => match k256::ecdsa::Signature::try_from(signature.as_bytes()) {
-            Ok(sig) => pk.verify(msg, &sig).map_err(|_| {
-                Error::signature_invalid("Secp256k1 signature verification failed".to_string())
-            }),
-            Err(e) => Err(Error::signature_invalid(format!(
-                "invalid Secp256k1 signature: {}",
-                e
-            ))),
-        },
-
+        PublicKey::Secp256k1(pk) => H::secp256k1_verify(signature, message, &pk.to_bytes()[..]),
         _ => unreachable!(),
     }
 }
