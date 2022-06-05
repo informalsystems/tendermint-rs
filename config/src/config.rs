@@ -28,10 +28,17 @@ pub struct TendermintConfig {
     /// A custom human readable name for this node
     pub moniker: Moniker,
 
-    /// If this node is many blocks behind the tip of the chain, FastSync
-    /// allows them to catchup quickly by downloading blocks in parallel
-    /// and verifying their commits
-    pub fast_sync: bool,
+    /// Mode of Node: full | validator | seed
+    /// * validator node
+    ///   - all reactors
+    ///   - with priv_validator_key.json, priv_validator_state.json
+    /// * full node
+    ///   - all reactors
+    ///   - No priv_validator_key.json, priv_validator_state.json
+    /// * seed node
+    ///   - only P2P, PEX Reactor
+    ///   - No priv_validator_key.json, priv_validator_state.json
+    pub mode: String,
 
     /// Database backend: `goleveldb | cleveldb | boltdb | rocksdb | badgerdb`
     pub db_backend: DbBackend,
@@ -48,21 +55,6 @@ pub struct TendermintConfig {
     /// Path to the JSON file containing the initial validator set and other meta data
     pub genesis_file: PathBuf,
 
-    /// Path to the JSON file containing the private key to use as a validator in the consensus
-    /// protocol
-    pub priv_validator_key_file: Option<PathBuf>,
-
-    /// Path to the JSON file containing the last sign state of a validator
-    pub priv_validator_state_file: PathBuf,
-
-    /// TCP or UNIX socket address for Tendermint to listen on for
-    /// connections from an external PrivValidator process
-    #[serde(
-        deserialize_with = "deserialize_optional_value",
-        serialize_with = "serialize_optional_value"
-    )]
-    pub priv_validator_laddr: Option<net::Address>,
-
     /// Path to the JSON file containing the private key to use for node authentication in the p2p
     /// protocol
     pub node_key_file: PathBuf,
@@ -73,6 +65,9 @@ pub struct TendermintConfig {
     /// If `true`, query the ABCI app on connecting to a new peer
     /// so the app can decide if we should keep the connection or not
     pub filter_peers: bool,
+
+    /// private validator configuration options
+    pub priv_validator: PrivValidatorConfig,
 
     /// rpc server configuration options
     pub rpc: RpcConfig,
@@ -94,15 +89,13 @@ pub struct TendermintConfig {
 
     /// statesync configuration options
     pub statesync: StatesyncConfig,
-
-    /// fastsync configuration options
-    pub fastsync: FastsyncConfig,
 }
 
 impl TendermintConfig {
     /// Parse Tendermint `config.toml`
     pub fn parse_toml<T: AsRef<str>>(toml_string: T) -> Result<Self, Error> {
-        let res = toml::from_str(toml_string.as_ref()).map_err(Error::toml)?;
+        // the style of toml field has been changed from 'a_b_c' to 'a-b-c' in Tendermint-v0.35.x
+        let res = toml::from_str(&toml_string.as_ref().replace("-", "_")).map_err(Error::toml)?;
 
         Ok(res)
     }
@@ -276,6 +269,25 @@ pub enum AbciMode {
     /// GRPC
     #[serde(rename = "grpc")]
     Grpc,
+}
+
+/// Tendermint `config.toml` file's `[priv-validator]` section
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub struct PrivValidatorConfig {
+    /// Path to the JSON file containing the private key to use as a validator in the consensus
+    /// protocol
+    pub key_file: Option<PathBuf>,
+
+    /// Path to the JSON file containing the last sign state of a validator
+    pub state_file: PathBuf,
+
+    /// TCP or UNIX socket address for Tendermint to listen on for
+    /// connections from an external PrivValidator process
+    #[serde(
+        deserialize_with = "deserialize_optional_value",
+        serialize_with = "serialize_optional_value"
+    )]
+    pub laddr: Option<net::Address>,
 }
 
 /// Tendermint `config.toml` file's `[rpc]` section
@@ -475,12 +487,6 @@ pub struct P2PConfig {
     /// Set `true` to enable the peer-exchange reactor
     pub pex: bool,
 
-    /// Seed mode, in which node constantly crawls the network and looks for
-    /// peers. If another node asks it for addresses, it responds and disconnects.
-    ///
-    /// Does not work if the peer-exchange reactor is disabled.
-    pub seed_mode: bool,
-
     /// Comma separated list of peer IDs to keep private (will not be gossiped to other peers)
     #[serde(
         serialize_with = "serialize_comma_separated_list",
@@ -507,13 +513,6 @@ pub struct MempoolConfig {
     /// Broadcast enabled
     pub broadcast: bool,
 
-    /// WAL dir
-    #[serde(
-        deserialize_with = "deserialize_optional_value",
-        serialize_with = "serialize_optional_value"
-    )]
-    pub wal_dir: Option<PathBuf>,
-
     /// Maximum number of transactions in the mempool
     pub size: u64,
 
@@ -528,7 +527,6 @@ pub struct MempoolConfig {
     /// Do not remove invalid transactions from the cache (default: false)
     /// Set to true if it's not possible for any invalid transaction to become valid
     /// again in the future.
-    #[serde(rename = "keep-invalid-txs-in-cache")]
     pub keep_invalid_txs_in_cache: bool,
 
     /// Maximum size of a single transaction.
@@ -596,27 +594,7 @@ pub struct ConsensusConfig {
 pub struct TxIndexConfig {
     /// What indexer to use for transactions
     #[serde(default)]
-    pub indexer: TxIndexer,
-}
-
-/// What indexer to use for transactions
-#[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-pub enum TxIndexer {
-    /// "null"
-    // TODO(tarcieri): use an `Option` type here?
-    #[serde(rename = "null")]
-    Null,
-
-    /// "kv" (default) - the simplest possible indexer, backed by key-value storage (defaults to
-    /// levelDB; see DBBackend).
-    #[serde(rename = "kv")]
-    Kv,
-}
-
-impl Default for TxIndexer {
-    fn default() -> TxIndexer {
-        TxIndexer::Kv
-    }
+    pub indexer: Vec<String>,
 }
 
 /// instrumentation configuration options
