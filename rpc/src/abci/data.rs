@@ -23,8 +23,8 @@ impl From<Data> for Vec<u8> {
 }
 
 impl Data {
-    /// Get value
-    pub fn value(&self) -> &Vec<u8> {
+    /// Get the data as a byte array
+    pub fn as_bytes(&self) -> &[u8] {
         &self.0
     }
 }

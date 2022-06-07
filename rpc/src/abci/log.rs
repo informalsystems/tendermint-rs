@@ -10,8 +10,8 @@ use crate::prelude::*;
 pub struct Log(String);
 
 impl Log {
-    /// Convenience function: get value
-    pub fn value(&self) -> &String {
+    /// Access to the log message as a string.
+    pub fn as_str(&self) -> &str {
         &self.0
     }
 }
