@@ -3,6 +3,7 @@
 use crate::event::EventData;
 use crate::prelude::*;
 use crate::query::EventType;
+use crate::response::Wrapper;
 use crate::Response;
 use alloc::collections::BTreeMap as HashMap;
 use serde::{Deserialize, Serialize};
@@ -23,6 +24,9 @@ pub struct Event {
     pub events: Option<HashMap<String, Vec<String>>>,
 }
 impl Response for Event {}
+
+/// A JSON-RPC-wrapped event.
+pub type WrappedEvent = Wrapper<Event>;
 
 impl Event {
     /// Returns the type associated with this event, if we recognize it.

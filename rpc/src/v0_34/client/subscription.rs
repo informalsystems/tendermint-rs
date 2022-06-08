@@ -11,7 +11,11 @@ use pin_project::pin_project;
 
 use crate::prelude::*;
 use crate::v0_34::event::Event;
-use crate::{client::sync::ChannelRx, query::Query, Error};
+use crate::{
+    client::sync::{ChannelRx, ChannelTx},
+    query::Query,
+    Error,
+};
 
 /// A client that exclusively provides [`Event`] subscription capabilities,
 /// without any other RPC method support.
@@ -36,6 +40,7 @@ pub trait SubscriptionClient {
     fn close(self) -> Result<(), Error>;
 }
 
+pub(crate) type SubscriptionTx = ChannelTx<Result<Event, Error>>;
 pub(crate) type SubscriptionRx = ChannelRx<Result<Event, Error>>;
 
 /// An interface that can be used to asynchronously receive [`Event`]s for a

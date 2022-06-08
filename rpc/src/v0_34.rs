@@ -6,7 +6,9 @@
 //! [tendermint]: https://github.com/tendermint/tendermint
 
 mod client;
-mod event;
+pub mod event;
 
 pub use client::{Subscription, SubscriptionClient};
-pub use event::Event;
+
+#[cfg(feature = "websocket-client")]
+pub use client::WebSocketClient;

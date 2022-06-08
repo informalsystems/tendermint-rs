@@ -1,10 +1,10 @@
 //! Tendermint RPC client.
 
-mod subscription;
+pub(crate) mod subscription;
 pub use subscription::{Subscription, SubscriptionClient};
 pub mod sync;
 
-mod transport;
+pub(crate) mod transport;
 use core::time::Duration;
 
 use async_trait::async_trait;

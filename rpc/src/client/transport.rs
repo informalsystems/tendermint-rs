@@ -1,7 +1,7 @@
 //! Tendermint RPC client implementations for different transports.
 
 pub mod mock;
-mod router;
+pub(crate) mod router;
 
 #[cfg(feature = "http-client")]
 pub mod http;
