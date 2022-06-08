@@ -2,8 +2,11 @@
 
 use std::{fmt::Debug, time::Duration};
 
-use flex_error::{define_error, DisplayError, TraceError};
+use flex_error::{define_error, DisplayError};
 use flume;
+
+#[cfg(any(feature = "sled", feature = "serde_json"))]
+use flex_error::TraceError;
 
 // Re-export for backward compatibility
 pub use crate::verifier::errors::ErrorExt;
