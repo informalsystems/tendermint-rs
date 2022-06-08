@@ -58,6 +58,8 @@ pub mod response;
 pub mod response_error;
 mod rpc_url;
 mod utils;
+#[cfg(feature = "tendermint-0.34")]
+pub mod v0_34;
 mod version;
 
 pub use error::Error;

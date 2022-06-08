@@ -29,7 +29,7 @@ path = "src/client/bin/main.rs"
 required-features = [ "cli" ]
 
 [features]
-default = ["flex-error/std", "flex-error/eyre_tracer"]
+default = ["flex-error/std", "flex-error/eyre_tracer", "tendermint-0.34"]
 cli = [
   "http-client",
   "structopt",
@@ -48,6 +48,7 @@ http-client = [
   "tracing"
 ]
 secp256k1 = [ "tendermint/secp256k1" ]
+"tendermint-0.34" = []
 websocket-client = [
   "async-trait",
   "async-tungstenite",
