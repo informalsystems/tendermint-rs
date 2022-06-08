@@ -5,6 +5,8 @@
 //!
 //! [tendermint]: https://github.com/tendermint/tendermint
 
+mod client;
 mod event;
 
+pub use client::{Subscription, SubscriptionClient};
 pub use event::Event;
