@@ -14,6 +14,7 @@ const SERIALIZED: &str = r#"#[derive(::serde::Deserialize, ::serde::Serialize)]"
 const TYPE_TAG: &str = r#"#[serde(tag = "type", content = "value")]"#;
 
 /// Predefined custom attributes for field annotations
+const DEFAULT: &str = r#"#[serde(default)]"#;
 const QUOTED: &str = r#"#[serde(with = "crate::serializers::from_str")]"#;
 const QUOTED_WITH_DEFAULT: &str = r#"#[serde(with = "crate::serializers::from_str", default)]"#;
 const HEXSTRING: &str = r#"#[serde(with = "crate::serializers::bytes::hexstring")]"#;
@@ -85,14 +86,23 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         ".tendermint.types.EvidenceParams.max_bytes",
         QUOTED_WITH_DEFAULT,
     ),
-    (".tendermint.abci.ResponseInfo.last_block_height", QUOTED),
     (".tendermint.version.Consensus.block", QUOTED),
     (".tendermint.version.Consensus.app", QUOTED_WITH_DEFAULT),
+    (".tendermint.abci.ResponseInfo.data", DEFAULT),
+    (".tendermint.abci.ResponseInfo.version", DEFAULT),
+    (
+        ".tendermint.abci.ResponseInfo.app_version",
+        QUOTED_WITH_DEFAULT,
+    ),
+    (
+        ".tendermint.abci.ResponseInfo.last_block_height",
+        QUOTED_WITH_DEFAULT,
+    ),
+    (".tendermint.abci.ResponseInfo.last_block_app_hash", DEFAULT),
     (
         ".tendermint.abci.ResponseInfo.last_block_app_hash",
         BYTES_SKIP_IF_EMPTY,
     ),
-    (".tendermint.abci.ResponseInfo.app_version", QUOTED),
     (".tendermint.types.BlockID.hash", HEXSTRING),
     (".tendermint.types.BlockID.part_set_header", ALIAS_PARTS),
     (
