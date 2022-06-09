@@ -19,9 +19,6 @@ show_tree = true
 arch = "x86_64"
 os = "linux"
 
-[packages]
-source = "all"
-
 [yanked]
 enabled = true
 update_index = true
