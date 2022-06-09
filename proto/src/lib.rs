@@ -13,11 +13,7 @@ mod prelude;
 /// Built-in prost_types with slight customization to enable JSON-encoding
 #[allow(warnings)]
 pub mod google {
-    pub mod protobuf {
-        include!("prost/google.protobuf.rs");
-        // custom Timeout and Duration types that have valid doctest documentation texts
-        include!("protobuf.rs");
-    }
+    pub use prost_wkt_types as protobuf;
 }
 
 mod error;
