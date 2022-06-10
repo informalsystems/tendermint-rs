@@ -23,6 +23,7 @@ mod error;
 mod node_key;
 mod prelude;
 mod priv_validator_key;
+mod serialization;
 
 pub use config::*;
 pub use error::*;

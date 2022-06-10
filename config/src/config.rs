@@ -16,10 +16,20 @@ use std::{
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
 use tendermint::{genesis::Genesis, node, Moniker, Timeout};
 
-use crate::{net, node_key::NodeKey, prelude::*, Error};
+use crate::{
+    net,
+    node_key::NodeKey,
+    prelude::*,
+    serialization::{
+        deserialize_comma_separated_list, deserialize_from_str, deserialize_optional_value,
+        serialize_comma_separated_list, serialize_optional_value, serialize_to_str,
+    },
+    Error,
+};
 
 /// Tendermint `config.toml` file
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
 pub struct TendermintConfig {
     /// TCP or UNIX socket address of the ABCI application,
     /// or the name of an ABCI application compiled in with the Tendermint binary.
@@ -28,10 +38,17 @@ pub struct TendermintConfig {
     /// A custom human readable name for this node
     pub moniker: Moniker,
 
-    /// If this node is many blocks behind the tip of the chain, FastSync
-    /// allows them to catchup quickly by downloading blocks in parallel
-    /// and verifying their commits
-    pub fast_sync: bool,
+    /// Mode of Node: full | validator | seed
+    /// * validator node
+    ///   - all reactors
+    ///   - with priv_validator_key.json, priv_validator_state.json
+    /// * full node
+    ///   - all reactors
+    ///   - No priv_validator_key.json, priv_validator_state.json
+    /// * seed node
+    ///   - only P2P, PEX Reactor
+    ///   - No priv_validator_key.json, priv_validator_state.json
+    pub mode: NodeMode,
 
     /// Database backend: `goleveldb | cleveldb | boltdb | rocksdb | badgerdb`
     pub db_backend: DbBackend,
@@ -48,23 +65,8 @@ pub struct TendermintConfig {
     /// Path to the JSON file containing the initial validator set and other meta data
     pub genesis_file: PathBuf,
 
-    /// Path to the JSON file containing the private key to use as a validator in the consensus
-    /// protocol
-    pub priv_validator_key_file: Option<PathBuf>,
-
-    /// Path to the JSON file containing the last sign state of a validator
-    pub priv_validator_state_file: PathBuf,
-
-    /// TCP or UNIX socket address for Tendermint to listen on for
-    /// connections from an external PrivValidator process
-    #[serde(
-        deserialize_with = "deserialize_optional_value",
-        serialize_with = "serialize_optional_value"
-    )]
-    pub priv_validator_laddr: Option<net::Address>,
-
-    /// Path to the JSON file containing the private key to use for node authentication in the p2p
-    /// protocol
+    /// Path to the JSON file containing the private key to use for node
+    /// authentication in the p2p protocol
     pub node_key_file: PathBuf,
 
     /// Mechanism to connect to the ABCI application: socket | grpc
@@ -73,6 +75,9 @@ pub struct TendermintConfig {
     /// If `true`, query the ABCI app on connecting to a new peer
     /// so the app can decide if we should keep the connection or not
     pub filter_peers: bool,
+
+    /// Private validator configuration options
+    pub priv_validator: PrivValidatorConfig,
 
     /// rpc server configuration options
     pub rpc: RpcConfig,
@@ -95,8 +100,8 @@ pub struct TendermintConfig {
     /// statesync configuration options
     pub statesync: StatesyncConfig,
 
-    /// fastsync configuration options
-    pub fastsync: FastsyncConfig,
+    /// blocksync configuration options
+    pub blocksync: BlocksyncConfig,
 }
 
 impl TendermintConfig {
@@ -134,6 +139,67 @@ impl TendermintConfig {
         let path = home.as_ref().join(&self.node_key_file);
         NodeKey::load_json_file(&path)
     }
+}
+
+/// The mode in which a node is to be started.
+#[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+pub enum NodeMode {
+    /// Validator node:
+    /// - all reactors
+    /// - with priv_validator_key.json, priv_validator_state.json
+    #[serde(rename = "validator")]
+    Validator,
+
+    /// Full node:
+    /// - all reactors
+    /// - No priv_validator_key.json, priv_validator_state.json
+    #[serde(rename = "full")]
+    Full,
+
+    /// Seed node:
+    /// - only P2P, PEX Reactor
+    /// - No priv_validator_key.json, priv_validator_state.json
+    #[serde(rename = "seed")]
+    Seed,
+}
+
+impl Default for NodeMode {
+    fn default() -> Self {
+        Self::Validator
+    }
+}
+
+/// Private validator configuration options
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub struct PrivValidatorConfig {
+    /// Path to the JSON file containing the private key to use as a validator
+    /// in the consensus protocol
+    pub key_file: PathBuf,
+
+    /// Path to the JSON file containing the last sign state of a validator
+    pub state_file: PathBuf,
+
+    /// TCP or UNIX socket address for Tendermint to listen on for connections
+    /// from an external PrivValidator process when the listenAddr is prefixed
+    /// with grpc instead of tcp it will use the gRPC Client
+    #[serde(
+        deserialize_with = "deserialize_optional_value",
+        serialize_with = "serialize_optional_value"
+    )]
+    pub laddr: Option<net::Address>,
+
+    /// Path to the client certificate generated while creating needed files for
+    /// secure connection. If a remote validator address is provided but no
+    /// certificate, the connection will be insecure
+    pub client_certificate_file: PathBuf,
+
+    /// Client key generated while creating certificates for secure connection
+    pub client_key_file: PathBuf,
+
+    /// Path to the Root Certificate Authority used to sign both client and
+    /// server certificates
+    pub root_ca_file: PathBuf,
 }
 
 /// Database backend
@@ -280,6 +346,7 @@ pub enum AbciMode {
 
 /// Tendermint `config.toml` file's `[rpc]` section
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
 pub struct RpcConfig {
     /// TCP or UNIX socket address for the RPC server to listen on
     pub laddr: net::Address,
@@ -297,17 +364,21 @@ pub struct RpcConfig {
 
     /// TCP or UNIX socket address for the gRPC server to listen on
     /// NOTE: This server only supports `/broadcast_tx_commit`
+    /// Deprecated gRPC in the RPC layer of Tendermint will be deprecated in
+    /// 0.36.
     #[serde(
         deserialize_with = "deserialize_optional_value",
         serialize_with = "serialize_optional_value"
     )]
     pub grpc_laddr: Option<net::Address>,
 
-    /// Maximum number of simultaneous GRPC connections.
-    /// Does not include RPC (HTTP&WebSocket) connections. See `max_open_connections`.
+    /// Maximum number of simultaneous GRPC connections. Does not include RPC
+    /// (HTTP&WebSocket) connections. See `max_open_connections`.
+    /// Deprecated gRPC  in the RPC layer of Tendermint will be deprecated in
+    /// 0.36.
     pub grpc_max_open_connections: u64,
 
-    /// Activate unsafe RPC commands like `/dial_seeds` and `/unsafe_flush_mempool`
+    /// Activate unsafe RPC commands like /dial-seeds and /unsafe-flush-mempool
     #[serde(rename = "unsafe")]
     pub unsafe_commands: bool,
 
@@ -405,26 +476,42 @@ impl fmt::Display for CorsHeader {
 
 /// peer to peer configuration options
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
 pub struct P2PConfig {
+    /// Enable the legacy p2p layer.
+    pub use_legacy: bool,
+
+    /// Select the p2p internal queue
+    pub queue_type: P2PQueueType,
+
     /// Address to listen for incoming connections
     pub laddr: net::Address,
 
-    /// Address to advertise to peers for them to dial
-    /// If empty, will use the same port as the laddr,
-    /// and will introspect on the listener or use UPnP
-    /// to figure out the address.
+    /// Address to advertise to peers for them to dial If empty, will use the
+    /// same port as the laddr, and will introspect on the listener or use UPnP
+    /// to figure out the address. IP and port are required.
     #[serde(
         deserialize_with = "deserialize_optional_value",
         serialize_with = "serialize_optional_value"
     )]
     pub external_address: Option<net::Address>,
 
-    /// Comma separated list of seed nodes to connect to
+    /// Comma separated list of seed nodes to connect to. We only use these if
+    /// we can’t connect to peers in the addrbook.
     #[serde(
         serialize_with = "serialize_comma_separated_list",
         deserialize_with = "deserialize_comma_separated_list"
     )]
     pub seeds: Vec<net::Address>,
+
+    /// Comma separated list of peers to be added to the peer store on startup.
+    /// Either `bootstrap_peers` or `persistent_peers` are needed for peer
+    /// discovery
+    #[serde(
+        serialize_with = "serialize_comma_separated_list",
+        deserialize_with = "deserialize_comma_separated_list"
+    )]
+    pub bootstrap_peers: Vec<net::Address>,
 
     /// Comma separated list of nodes to keep persistent connections to
     #[serde(
@@ -436,18 +523,21 @@ pub struct P2PConfig {
     /// UPNP port forwarding
     pub upnp: bool,
 
-    /// Path to address book
+    /// Path to address book.
     pub addr_book_file: PathBuf,
 
     /// Set `true` for strict address routability rules
     /// Set `false` for private or local networks
     pub addr_book_strict: bool,
 
-    /// Maximum number of inbound peers
+    /// Maximum number of inbound peers.
     pub max_num_inbound_peers: u64,
 
     /// Maximum number of outbound peers to connect to, excluding persistent peers
     pub max_num_outbound_peers: u64,
+
+    /// Maximum number of connections (inbound and outbound).
+    pub max_connections: u64,
 
     /// List of node IDs, to which a connection will be (re)established ignoring any existing
     /// limits
@@ -475,12 +565,6 @@ pub struct P2PConfig {
     /// Set `true` to enable the peer-exchange reactor
     pub pex: bool,
 
-    /// Seed mode, in which node constantly crawls the network and looks for
-    /// peers. If another node asks it for addresses, it responds and disconnects.
-    ///
-    /// Does not work if the peer-exchange reactor is disabled.
-    pub seed_mode: bool,
-
     /// Comma separated list of peer IDs to keep private (will not be gossiped to other peers)
     #[serde(
         serialize_with = "serialize_comma_separated_list",
@@ -498,21 +582,33 @@ pub struct P2PConfig {
     pub dial_timeout: Timeout,
 }
 
+/// Makes it possible to configure which queue backend the P2P layer uses.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub enum P2PQueueType {
+    #[serde(rename = "fifo")]
+    FIFO,
+    #[serde(rename = "priority")]
+    Priority,
+}
+
+impl Default for P2PQueueType {
+    fn default() -> Self {
+        Self::Priority
+    }
+}
+
 /// mempool configuration options
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
 pub struct MempoolConfig {
+    /// Mempool version to use.
+    pub version: MempoolVersion,
+
     /// Recheck enabled
     pub recheck: bool,
 
     /// Broadcast enabled
     pub broadcast: bool,
-
-    /// WAL dir
-    #[serde(
-        deserialize_with = "deserialize_optional_value",
-        serialize_with = "serialize_optional_value"
-    )]
-    pub wal_dir: Option<PathBuf>,
 
     /// Maximum number of transactions in the mempool
     pub size: u64,
@@ -528,7 +624,6 @@ pub struct MempoolConfig {
     /// Do not remove invalid transactions from the cache (default: false)
     /// Set to true if it's not possible for any invalid transaction to become valid
     /// again in the future.
-    #[serde(rename = "keep-invalid-txs-in-cache")]
     pub keep_invalid_txs_in_cache: bool,
 
     /// Maximum size of a single transaction.
@@ -539,10 +634,46 @@ pub struct MempoolConfig {
     /// Including space needed by encoding (one varint per transaction).
     /// XXX: Unused due to <https://github.com/tendermint/tendermint/issues/5796>
     pub max_batch_bytes: u64,
+
+    /// If non-zero, defines the maximum amount of time a transaction can exist
+    /// for in the mempool.
+    ///
+    /// Note, if `ttl_num_blocks` is also defined, a transaction will be removed
+    /// if it has existed in the mempool at least `ttl_num_blocks` number of
+    /// blocks or if it's insertion time into the mempool is beyond
+    /// `ttl_duration`.
+    pub ttl_duration: Timeout,
+
+    /// If non-zero, defines the maximum number of blocks a transaction can
+    /// exist for in the mempool.
+    ///
+    /// Note, if `ttl_duration` is also defined, a transaction will be removed
+    /// if it has existed in the mempool at least `ttl_num_blocks` number of
+    /// blocks or if it's insertion time into the mempool is beyond
+    /// `ttl_duration`.
+    pub ttl_num_blocks: u64,
+}
+
+/// The mempool version to use.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub enum MempoolVersion {
+    /// v0 of the mempool
+    #[serde(rename = "v0")]
+    Legacy,
+    /// v1 of the mempool (the default)
+    #[serde(rename = "v1")]
+    Prioritized,
+}
+
+impl Default for MempoolVersion {
+    fn default() -> Self {
+        Self::Prioritized
+    }
 }
 
 /// consensus configuration options
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
 pub struct ConsensusConfig {
     /// Path to WAL file
     pub wal_file: PathBuf,
@@ -593,34 +724,48 @@ pub struct ConsensusConfig {
 
 /// transactions indexer configuration options
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
 pub struct TxIndexConfig {
-    /// What indexer to use for transactions
+    /// The backend database list to back the indexer. If list contains "null"
+    /// or "", meaning no indexer service will be used.
+    ///
+    /// The application will set which txs to index. In some cases a node
+    /// operator will be able to decide which txs to index based on
+    /// configuration set in the application.
     #[serde(default)]
-    pub indexer: TxIndexer,
+    pub indexer: Vec<TxIndexer>,
+
+    /// The PostgreSQL connection configuration, the connection format:
+    ///   `postgresql://<user>:<password>@<host>:<port>/<db>?<opts>`
+    pub psql_conn: String,
 }
 
 /// What indexer to use for transactions
 #[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub enum TxIndexer {
-    /// "null"
-    // TODO(tarcieri): use an `Option` type here?
+    /// "null" - no indexer
     #[serde(rename = "null")]
     Null,
 
-    /// "kv" (default) - the simplest possible indexer, backed by key-value storage (defaults to
-    /// levelDB; see DBBackend).
+    /// "kv" (default) - the simplest possible indexer, backed by key-value
+    /// storage (defaults to levelDB; see DBBackend).
     #[serde(rename = "kv")]
-    Kv,
+    KV,
+
+    /// "psql" - the indexer services backed by PostgreSQL.
+    #[serde(rename = "psql")]
+    PostgreSQL,
 }
 
 impl Default for TxIndexer {
     fn default() -> TxIndexer {
-        TxIndexer::Kv
+        TxIndexer::KV
     }
 }
 
 /// instrumentation configuration options
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
 pub struct InstrumentationConfig {
     /// When `true`, Prometheus metrics are served under /metrics on
     /// PrometheusListenAddr.
@@ -639,6 +784,7 @@ pub struct InstrumentationConfig {
 
 /// statesync configuration options
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
 pub struct StatesyncConfig {
     /// State sync rapidly bootstraps a new node by discovering, fetching, and restoring a state
     /// machine snapshot from peers instead of fetching and replaying historical blocks.
@@ -647,23 +793,23 @@ pub struct StatesyncConfig {
     /// will have a truncated block history, starting from the height of the snapshot.
     pub enable: bool,
 
-    /// RPC servers (comma-separated) for light client verification of the synced state machine and
-    /// retrieval of state data for node bootstrapping. Also needs a trusted height and
-    /// corresponding header hash obtained from a trusted source, and a period during which
-    /// validators can be trusted.
-    ///
-    /// For Cosmos SDK-based chains, trust-period should usually be about 2/3 of the unbonding time
-    /// (~2 weeks) during which they can be financially punished (slashed) for misbehavior.
+    /// State sync uses light client verification to verify state. This can be
+    /// done either through the P2P layer or RPC layer. Set this to true to use
+    /// the P2P layer. If false (default), RPC layer will be used.
+    pub use_p2p: bool,
+
+    /// If using RPC, at least two addresses need to be provided. They should be
+    /// compatible with net.Dial, for example: "host.example.com:2125"
     #[serde(
         serialize_with = "serialize_comma_separated_list",
         deserialize_with = "deserialize_comma_separated_list"
     )]
     pub rpc_servers: Vec<String>,
 
-    /// Trust height. See `rpc_servers` above.
+    /// The height of a trusted block. Must be within the `trust_period`.
     pub trust_height: u64,
 
-    /// Trust hash. See `rpc_servers` above.
+    /// The hash of a trusted block.
     pub trust_hash: String,
 
     /// Trust period. See `rpc_servers` above.
@@ -675,15 +821,43 @@ pub struct StatesyncConfig {
     /// Temporary directory for state sync snapshot chunks, defaults to the OS tempdir (typically
     /// /tmp). Will create a new, randomly named directory within, and remove it when done.
     pub temp_dir: String,
+
+    /// The timeout duration before re-requesting a chunk, possibly from a
+    /// different peer (default: 15 seconds).
+    pub chunk_request_timeout: Timeout,
+
+    /// The number of concurrent chunk and block fetchers to run (default: 4).
+    #[serde(
+        serialize_with = "serialize_to_str",
+        deserialize_with = "deserialize_from_str"
+    )]
+    pub fetchers: u16,
 }
 
-/// fastsync configuration options
+/// blocksync configuration options
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-pub struct FastsyncConfig {
-    /// Fast Sync version to use:
-    ///   1) "v0" (default) - the legacy fast sync implementation
-    ///   2) "v2" - complete redesign of v0, optimized for testability & readability
-    pub version: String,
+#[serde(rename_all = "kebab-case")]
+pub struct BlocksyncConfig {
+    /// If this node is many blocks behind the tip of the chain, BlockSync
+    /// allows them to catchup quickly by downloading blocks in parallel and
+    /// verifying their commits
+    pub enable: bool,
+
+    /// Block Sync version to use:
+    ///   1) "v0" (default) - the standard Block Sync implementation
+    ///   2) "v2" - DEPRECATED, please use v0
+    pub version: BlocksyncVersion,
+}
+
+/// Block sync version to use.
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub enum BlocksyncVersion {
+    /// The standard block sync implementation.
+    #[serde(rename = "v0")]
+    V0,
+    /// Deprecated. Please use `V0`.
+    #[serde(rename = "v1")]
+    V2,
 }
 
 /// Rate at which bytes can be sent/received
@@ -695,68 +869,4 @@ impl TransferRate {
     pub fn bytes_per_sec(self) -> u64 {
         self.0
     }
-}
-
-/// Deserialize `Option<T: FromStr>` where an empty string indicates `None`
-fn deserialize_optional_value<'de, D, T, E>(deserializer: D) -> Result<Option<T>, D::Error>
-where
-    D: de::Deserializer<'de>,
-    T: FromStr<Err = E>,
-    E: fmt::Display,
-{
-    let string = Option::<String>::deserialize(deserializer).map(|str| str.unwrap_or_default())?;
-
-    if string.is_empty() {
-        return Ok(None);
-    }
-
-    string
-        .parse()
-        .map(Some)
-        .map_err(|e| D::Error::custom(format!("{}", e)))
-}
-
-fn serialize_optional_value<S, T>(value: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: ser::Serializer,
-    T: Serialize,
-{
-    match value {
-        Some(value) => value.serialize(serializer),
-        None => "".serialize(serializer),
-    }
-}
-
-/// Deserialize a comma separated list of types that impl `FromStr` as a `Vec`
-fn deserialize_comma_separated_list<'de, D, T, E>(deserializer: D) -> Result<Vec<T>, D::Error>
-where
-    D: de::Deserializer<'de>,
-    T: FromStr<Err = E>,
-    E: fmt::Display,
-{
-    let mut result = vec![];
-    let string = String::deserialize(deserializer)?;
-
-    if string.is_empty() {
-        return Ok(result);
-    }
-
-    for item in string.split(',') {
-        result.push(
-            item.parse()
-                .map_err(|e| D::Error::custom(format!("{}", e)))?,
-        );
-    }
-
-    Ok(result)
-}
-
-/// Serialize a comma separated list types that impl `ToString`
-fn serialize_comma_separated_list<S, T>(list: &[T], serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: ser::Serializer,
-    T: ToString,
-{
-    let str_list = list.iter().map(|addr| addr.to_string()).collect::<Vec<_>>();
-    str_list.join(",").serialize(serializer)
 }
