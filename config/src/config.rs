@@ -750,7 +750,7 @@ pub enum TxIndexer {
     /// "kv" (default) - the simplest possible indexer, backed by key-value
     /// storage (defaults to levelDB; see DBBackend).
     #[serde(rename = "kv")]
-    KV,
+    Kv,
 
     /// "psql" - the indexer services backed by PostgreSQL.
     #[serde(rename = "psql")]
@@ -759,7 +759,7 @@ pub enum TxIndexer {
 
 impl Default for TxIndexer {
     fn default() -> TxIndexer {
-        TxIndexer::KV
+        TxIndexer::Kv
     }
 }
 

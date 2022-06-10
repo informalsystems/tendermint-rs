@@ -184,7 +184,7 @@ fn config_toml_parser() {
     // transactions indexer configuration options
 
     let tx_index = &config.tx_index;
-    assert_eq!(tx_index.indexer, vec![TxIndexer::KV]);
+    assert_eq!(tx_index.indexer, vec![TxIndexer::Kv]);
 
     // instrumentation configuration options
 
