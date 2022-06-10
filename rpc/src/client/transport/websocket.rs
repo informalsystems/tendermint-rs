@@ -8,15 +8,14 @@ use core::{
 };
 
 use async_trait::async_trait;
+/// Low-level WebSocket configuration
+pub use async_tungstenite::tungstenite::protocol::WebSocketConfig;
 use tendermint_config::net;
 
 use crate::{
     error::Error, event::Event, prelude::*, query::Query, Client, Request, Scheme, SimpleRequest,
     Subscription, SubscriptionClient, Url,
 };
-
-/// Low-level WebSocket configuration
-pub use async_tungstenite::tungstenite::protocol::WebSocketConfig;
 
 /// Tendermint RPC client that provides access to all RPC functionality
 /// (including [`Event`] subscription) over a WebSocket connection.

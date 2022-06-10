@@ -9,11 +9,7 @@ use futures::{
 };
 use pin_project::pin_project;
 
-use crate::client::subscription::Inner;
-use crate::prelude::*;
-use crate::query::Query;
-use crate::v0_34::event::Event;
-use crate::Error;
+use crate::{client::subscription::Inner, prelude::*, query::Query, v0_34::event::Event, Error};
 
 /// A client that exclusively provides [`Event`] subscription capabilities,
 /// without any other RPC method support.

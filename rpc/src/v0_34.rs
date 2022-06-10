@@ -8,7 +8,6 @@
 mod client;
 pub mod event;
 
-pub use client::{Subscription, SubscriptionClient};
-
 #[cfg(feature = "websocket-client")]
 pub use client::WebSocketClient;
+pub use client::{Subscription, SubscriptionClient};

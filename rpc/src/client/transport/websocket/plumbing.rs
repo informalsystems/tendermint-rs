@@ -5,9 +5,8 @@ use async_tungstenite::{
     tokio::{
         connect_async_with_config, connect_async_with_tls_connector_and_config, ConnectStream,
     },
-    tungstenite::protocol::WebSocketConfig,
     tungstenite::{
-        protocol::{frame::coding::CloseCode, CloseFrame},
+        protocol::{frame::coding::CloseCode, CloseFrame, WebSocketConfig},
         Message,
     },
     WebSocketStream,

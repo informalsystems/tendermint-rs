@@ -5,6 +5,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
 };
+
 use subtle_encoding::{base64, hex};
 use tendermint::{evidence::Duration, public_key};
 use tendermint_config::net::Address;
@@ -1435,9 +1436,9 @@ fn incoming_fixtures() {
 
 #[cfg(feature = "tendermint-0.34")]
 mod v0_34 {
+    use tendermint_rpc::{event::EventData, v0_34::event::Event};
+
     use super::*;
-    use tendermint_rpc::event::EventData;
-    use tendermint_rpc::v0_34::event::Event;
 
     #[test]
     fn incoming_fixtures() {

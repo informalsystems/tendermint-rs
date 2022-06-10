@@ -4,10 +4,17 @@ use core::convert::TryInto;
 
 use async_trait::async_trait;
 
-use crate::client::transport::websocket::{plumbing, WebSocketClientUrl, WebSocketConfig};
-use crate::v0_34::client::subscription::{Subscription, SubscriptionClient};
-use crate::v0_34::event::Event;
-use crate::{error::Error, prelude::*, query::Query, Client, Request, SimpleRequest, Url};
+use crate::{
+    client::transport::websocket::{plumbing, WebSocketClientUrl, WebSocketConfig},
+    error::Error,
+    prelude::*,
+    query::Query,
+    v0_34::{
+        client::subscription::{Subscription, SubscriptionClient},
+        event::Event,
+    },
+    Client, Request, SimpleRequest, Url,
+};
 
 /// Tendermint RPC client that provides access to all RPC functionality
 /// (including [`Event`] subscription) over a WebSocket connection.
