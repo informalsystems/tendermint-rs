@@ -18,11 +18,12 @@ use tracing::{debug, error};
 
 use crate::{
     client::{
-        subscription::{self, SubscriptionEvent, SubscriptionTx},
+        subscription::{self, SubscriptionTx},
         sync::{unbounded, ChannelRx, ChannelTx},
         transport::router::{PublishResult, SubscriptionId, SubscriptionIdRef, SubscriptionRouter},
     },
     endpoint::{subscribe, unsubscribe},
+    event::SubscriptionEvent,
     prelude::*,
     query::Query,
     request::Wrapper,

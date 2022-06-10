@@ -5,7 +5,6 @@ use tendermint::Block;
 
 use crate::{
     abci::responses::{BeginBlock, EndBlock},
-    client::subscription::SubscriptionEvent,
     prelude::*,
     query::EventType,
     response::Wrapper,
@@ -25,6 +24,12 @@ pub struct Event {
     pub events: Option<Vec<crate::abci::Event>>,
 }
 impl Response for Event {}
+
+// Utility trait to reuse implementation code between `event::Event` and `v0_34::event::Event`.
+pub(crate) trait SubscriptionEvent {
+    /// The query that produced the event.
+    fn query(&self) -> &str;
+}
 
 impl SubscriptionEvent for Event {
     fn query(&self) -> &str {

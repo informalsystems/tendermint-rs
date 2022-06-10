@@ -5,9 +5,7 @@ use alloc::collections::{BTreeMap as HashMap, BTreeSet as HashSet};
 use tracing::debug;
 
 use crate::{
-    client::subscription::{SubscriptionEvent, SubscriptionTx},
-    error::Error,
-    prelude::*,
+    client::subscription::SubscriptionTx, error::Error, event::SubscriptionEvent, prelude::*,
 };
 
 pub type SubscriptionQuery = String;

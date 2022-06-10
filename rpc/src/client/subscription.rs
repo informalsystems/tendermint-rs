@@ -43,11 +43,6 @@ pub trait SubscriptionClient {
 pub(crate) type SubscriptionTx<Ev> = ChannelTx<Result<Ev, Error>>;
 pub(crate) type SubscriptionRx<Ev> = ChannelRx<Result<Ev, Error>>;
 
-pub(crate) trait SubscriptionEvent {
-    /// The query that produced the event.
-    fn query(&self) -> &str;
-}
-
 /// An interface that can be used to asynchronously receive [`Event`]s for a
 /// particular subscription.
 ///

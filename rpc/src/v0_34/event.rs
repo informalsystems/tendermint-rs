@@ -5,8 +5,11 @@ use alloc::collections::BTreeMap as HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    client::subscription::SubscriptionEvent, event::EventData, prelude::*, query::EventType,
-    response::Wrapper, Response,
+    event::{EventData, SubscriptionEvent},
+    prelude::*,
+    query::EventType,
+    response::Wrapper,
+    Response,
 };
 
 /// An incoming event produced by a [`Subscription`].
