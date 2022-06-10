@@ -1464,7 +1464,7 @@ mod v0_34 {
                     } = result.data
                     {
                         let b = block.unwrap();
-                        assert!(b.data.iter().next().is_none());
+                        assert!(b.data.get(0).is_none());
                         assert!(b.evidence.iter().next().is_none());
                         assert!(!b.header.app_hash.value().is_empty());
                         assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
@@ -1519,7 +1519,7 @@ mod v0_34 {
                     } = result.data
                     {
                         let b = block.unwrap();
-                        assert!(b.data.iter().next().is_none());
+                        assert!(b.data.get(0).is_none());
                         assert!(b.evidence.iter().next().is_none());
                         assert!(!b.header.app_hash.value().is_empty());
                         assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
@@ -1574,7 +1574,7 @@ mod v0_34 {
                     } = result.data
                     {
                         let b = block.unwrap();
-                        assert!(b.data.iter().next().is_none());
+                        assert!(b.data.get(0).is_none());
                         assert!(b.evidence.iter().next().is_none());
                         assert!(!b.header.app_hash.value().is_empty());
                         assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
