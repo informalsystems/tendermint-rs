@@ -5,12 +5,14 @@ use core::convert::TryInto;
 use async_trait::async_trait;
 
 use crate::{
+    abci,
     client::transport::websocket::{plumbing, WebSocketClientUrl, WebSocketConfig},
     error::Error,
     prelude::*,
     query::Query,
     v0_34::{
         client::subscription::{Subscription, SubscriptionClient},
+        endpoint::tx,
         event::Event,
     },
     Client, Request, SimpleRequest, Url,
@@ -145,6 +147,10 @@ impl Client for WebSocketClient {
         R: SimpleRequest,
     {
         self.inner.perform(request).await
+    }
+
+    async fn tx(&self, hash: abci::transaction::Hash, prove: bool) -> Result<tx::Response, Error> {
+        self.perform(tx::Request::new(hash, prove)).await
     }
 }
 

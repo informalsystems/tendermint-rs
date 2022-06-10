@@ -6,7 +6,9 @@
 //! [tendermint]: https://github.com/tendermint/tendermint
 
 mod client;
+mod endpoint;
 pub mod event;
+mod serializers;
 
 #[cfg(feature = "websocket-client")]
 pub use client::WebSocketClient;
