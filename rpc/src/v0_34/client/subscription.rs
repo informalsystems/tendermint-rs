@@ -9,13 +9,11 @@ use futures::{
 };
 use pin_project::pin_project;
 
+use crate::client::subscription::Inner;
 use crate::prelude::*;
+use crate::query::Query;
 use crate::v0_34::event::Event;
-use crate::{
-    client::sync::{ChannelRx, ChannelTx},
-    query::Query,
-    Error,
-};
+use crate::Error;
 
 /// A client that exclusively provides [`Event`] subscription capabilities,
 /// without any other RPC method support.
@@ -39,9 +37,6 @@ pub trait SubscriptionClient {
     /// transports that will need to be closed at some point.
     fn close(self) -> Result<(), Error>;
 }
-
-pub(crate) type SubscriptionTx = ChannelTx<Result<Event, Error>>;
-pub(crate) type SubscriptionRx = ChannelRx<Result<Event, Error>>;
 
 /// An interface that can be used to asynchronously receive [`Event`]s for a
 /// particular subscription.
@@ -71,34 +66,31 @@ pub(crate) type SubscriptionRx = ChannelRx<Result<Event, Error>>;
 #[pin_project]
 #[derive(Debug)]
 pub struct Subscription {
-    // A unique identifier for this subscription.
-    id: String,
-    // The query for which events will be produced.
-    query: Query,
-    // Our internal result event receiver for this subscription.
     #[pin]
-    rx: SubscriptionRx,
+    inner: Inner<Event>,
+}
+
+impl From<Inner<Event>> for Subscription {
+    fn from(inner: Inner<Event>) -> Self {
+        Self { inner }
+    }
 }
 
 impl Stream for Subscription {
     type Item = Result<Event, Error>;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        self.project().rx.poll_next(cx)
+        self.project().inner.project().rx.poll_next(cx)
     }
 }
 
 impl Subscription {
-    pub(crate) fn new(id: String, query: Query, rx: SubscriptionRx) -> Self {
-        Self { id, query, rx }
-    }
-
     /// Return this subscription's ID for informational purposes.
     pub fn id(&self) -> &str {
-        &self.id
+        &self.inner.id
     }
 
     pub fn query(&self) -> &Query {
-        &self.query
+        &self.inner.query
     }
 }

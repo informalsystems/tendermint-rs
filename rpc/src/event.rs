@@ -5,6 +5,7 @@ use tendermint::Block;
 
 use crate::{
     abci::responses::{BeginBlock, EndBlock},
+    client::subscription::SubscriptionEvent,
     prelude::*,
     query::EventType,
     response::Wrapper,
@@ -24,6 +25,12 @@ pub struct Event {
     pub events: Option<Vec<crate::abci::Event>>,
 }
 impl Response for Event {}
+
+impl SubscriptionEvent for Event {
+    fn query(&self) -> &str {
+        &self.query
+    }
+}
 
 /// A JSON-RPC-wrapped event.
 pub type WrappedEvent = Wrapper<Event>;

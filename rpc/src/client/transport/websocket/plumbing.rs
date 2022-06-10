@@ -1,4 +1,5 @@
 use alloc::{borrow::Cow, collections::BTreeMap as HashMap};
+use core::marker::PhantomData;
 
 use async_tungstenite::{
     tokio::{
@@ -18,18 +19,17 @@ use tracing::{debug, error};
 
 use crate::{
     client::{
-        subscription::SubscriptionTx,
+        subscription::{self, SubscriptionEvent, SubscriptionTx},
         sync::{unbounded, ChannelRx, ChannelTx},
         transport::router::{PublishResult, SubscriptionId, SubscriptionIdRef, SubscriptionRouter},
     },
     endpoint::{subscribe, unsubscribe},
-    event::Event,
     prelude::*,
     query::Query,
     request::Wrapper,
     response,
     utils::uuid_str,
-    Error, Id, Request, Response, SimpleRequest, Subscription, Url,
+    Error, Id, Request, Response, SimpleRequest, Url,
 };
 
 // WebSocket connection times out if we haven't heard anything at all from the
@@ -61,13 +61,22 @@ pub struct Secure;
 /// different variants of this type.
 ///
 /// [`async-tungstenite`]: https://crates.io/crates/async-tungstenite
-#[derive(Debug, Clone)]
-pub struct AsyncTungsteniteClient<C> {
-    cmd_tx: ChannelTx<DriverCommand>,
-    _client_type: core::marker::PhantomData<C>,
+#[derive(Debug)]
+pub(crate) struct AsyncTungsteniteClient<C, Ev> {
+    cmd_tx: ChannelTx<DriverCommand<Ev>>,
+    _client_type: PhantomData<C>,
 }
 
-impl AsyncTungsteniteClient<Unsecure> {
+impl<C, Ev> Clone for AsyncTungsteniteClient<C, Ev> {
+    fn clone(&self) -> Self {
+        Self {
+            cmd_tx: self.cmd_tx.clone(),
+            _client_type: PhantomData,
+        }
+    }
+}
+
+impl<Ev> AsyncTungsteniteClient<Unsecure, Ev> {
     /// Construct a WebSocket client. Immediately attempts to open a WebSocket
     /// connection to the node with the given address.
     ///
@@ -75,7 +84,10 @@ impl AsyncTungsteniteClient<Unsecure> {
     /// The execution of this driver becomes the responsibility of the client owner, and must be
     /// executed in a separate asynchronous context to the client to ensure it
     /// doesn't block the client.
-    pub async fn new(url: Url, config: Option<WebSocketConfig>) -> Result<(Self, Driver), Error> {
+    pub async fn new(
+        url: Url,
+        config: Option<WebSocketConfig>,
+    ) -> Result<(Self, Driver<Ev>), Error> {
         let url = url.to_string();
         debug!("Connecting to unsecure WebSocket endpoint: {}", url);
 
@@ -94,7 +106,7 @@ impl AsyncTungsteniteClient<Unsecure> {
     }
 }
 
-impl AsyncTungsteniteClient<Secure> {
+impl<Ev> AsyncTungsteniteClient<Secure, Ev> {
     /// Construct a WebSocket client. Immediately attempts to open a WebSocket
     /// connection to the node with the given address, but over a secure
     /// connection.
@@ -104,7 +116,10 @@ impl AsyncTungsteniteClient<Secure> {
     /// this driver becomes the responsibility of the client owner, and must be
     /// executed in a separate asynchronous context to the client to ensure it
     /// doesn't block the client.
-    pub async fn new(url: Url, config: Option<WebSocketConfig>) -> Result<(Self, Driver), Error> {
+    pub async fn new(
+        url: Url,
+        config: Option<WebSocketConfig>,
+    ) -> Result<(Self, Driver<Ev>), Error> {
         let url = url.to_string();
         debug!("Connecting to secure WebSocket endpoint: {}", url);
 
@@ -125,8 +140,8 @@ impl AsyncTungsteniteClient<Secure> {
     }
 }
 
-impl<C> AsyncTungsteniteClient<C> {
-    fn send_cmd(&self, cmd: DriverCommand) -> Result<(), Error> {
+impl<C, Ev> AsyncTungsteniteClient<C, Ev> {
+    fn send_cmd(&self, cmd: DriverCommand<Ev>) -> Result<(), Error> {
         self.cmd_tx.send(cmd)
     }
 
@@ -150,7 +165,7 @@ impl<C> AsyncTungsteniteClient<C> {
         R::Response::from_string(response)
     }
 
-    pub async fn subscribe(&self, query: Query) -> Result<Subscription, Error> {
+    pub async fn subscribe(&self, query: Query) -> Result<subscription::Inner<Ev>, Error> {
         let (subscription_tx, subscription_rx) = unbounded();
         let (response_tx, mut response_rx) = unbounded();
         // By default we use UUIDs to differentiate subscriptions
@@ -165,7 +180,7 @@ impl<C> AsyncTungsteniteClient<C> {
         let _ = response_rx.recv().await.ok_or_else(|| {
             Error::client_internal("failed to hear back from WebSocket driver".to_string())
         })??;
-        Ok(Subscription::new(id, query, subscription_rx))
+        Ok(subscription::Inner::new(id, query, subscription_rx))
     }
 
     pub async fn unsubscribe(&self, query: Query) -> Result<(), Error> {
@@ -188,26 +203,35 @@ impl<C> AsyncTungsteniteClient<C> {
 
 /// Allows us to erase the type signatures associated with the different
 /// WebSocket client variants.
-#[derive(Debug, Clone)]
-pub enum Client {
-    Unsecure(AsyncTungsteniteClient<Unsecure>),
-    Secure(AsyncTungsteniteClient<Secure>),
+#[derive(Debug)]
+pub(crate) enum Client<Ev> {
+    Unsecure(AsyncTungsteniteClient<Unsecure, Ev>),
+    Secure(AsyncTungsteniteClient<Secure, Ev>),
 }
 
-impl Client {
+impl<Ev> Clone for Client<Ev> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Unsecure(inner) => Self::Unsecure(inner.clone()),
+            Self::Secure(inner) => Self::Secure(inner.clone()),
+        }
+    }
+}
+
+impl<Ev> Client<Ev> {
     pub async fn new_unsecure(
         url: Url,
         config: Option<WebSocketConfig>,
-    ) -> Result<(Self, Driver), Error> {
-        let (client, driver) = AsyncTungsteniteClient::<Unsecure>::new(url, config).await?;
+    ) -> Result<(Self, Driver<Ev>), Error> {
+        let (client, driver) = AsyncTungsteniteClient::<Unsecure, _>::new(url, config).await?;
         Ok((Self::Unsecure(client), driver))
     }
 
     pub async fn new_secure(
         url: Url,
         config: Option<WebSocketConfig>,
-    ) -> Result<(Self, Driver), Error> {
-        let (client, driver) = AsyncTungsteniteClient::<Secure>::new(url, config).await?;
+    ) -> Result<(Self, Driver<Ev>), Error> {
+        let (client, driver) = AsyncTungsteniteClient::<Secure, _>::new(url, config).await?;
         Ok((Self::Secure(client), driver))
     }
 
@@ -221,7 +245,7 @@ impl Client {
         }
     }
 
-    pub async fn subscribe(&self, query: Query) -> Result<Subscription, Error> {
+    pub async fn subscribe(&self, query: Query) -> Result<subscription::Inner<Ev>, Error> {
         match self {
             Client::Unsecure(c) => c.subscribe(query).await,
             Client::Secure(c) => c.subscribe(query).await,
@@ -246,9 +270,9 @@ impl Client {
 // The different types of commands that can be sent from the WebSocketClient to
 // the driver.
 #[derive(Debug, Clone)]
-enum DriverCommand {
+enum DriverCommand<Ev> {
     // Initiate a subscription request.
-    Subscribe(SubscribeCommand),
+    Subscribe(SubscribeCommand<Ev>),
     // Initiate an unsubscribe request.
     Unsubscribe(UnsubscribeCommand),
     // For non-subscription-related requests.
@@ -257,13 +281,13 @@ enum DriverCommand {
 }
 
 #[derive(Debug, Clone)]
-struct SubscribeCommand {
+struct SubscribeCommand<Ev> {
     // The desired ID for the outgoing JSON-RPC request.
     id: String,
     // The query for which we want to receive events.
     query: String,
     // Where to send subscription events.
-    subscription_tx: SubscriptionTx,
+    subscription_tx: SubscriptionTx<Ev>,
     // Where to send the result of the subscription request.
     response_tx: ChannelTx<Result<(), Error>>,
 }
@@ -297,20 +321,20 @@ impl Response for GenericJsonResponse {}
 ///
 /// This is the primary component responsible for transport-level interaction
 /// with the remote WebSocket endpoint.
-pub struct Driver {
+pub(crate) struct Driver<Ev> {
     // The underlying WebSocket network connection.
     stream: WebSocketStream<ConnectStream>,
     // Facilitates routing of events to their respective subscriptions.
-    router: SubscriptionRouter,
+    router: SubscriptionRouter<Ev>,
     // How we receive incoming commands from the Client.
-    cmd_rx: ChannelRx<DriverCommand>,
+    cmd_rx: ChannelRx<DriverCommand<Ev>>,
     // Commands we've received but have not yet completed, indexed by their ID.
     // A Terminate command is executed immediately.
-    pending_commands: HashMap<SubscriptionId, DriverCommand>,
+    pending_commands: HashMap<SubscriptionId, DriverCommand<Ev>>,
 }
 
-impl Driver {
-    fn new(stream: WebSocketStream<ConnectStream>, cmd_rx: ChannelRx<DriverCommand>) -> Self {
+impl<Ev> Driver<Ev> {
+    fn new(stream: WebSocketStream<ConnectStream>, cmd_rx: ChannelRx<DriverCommand<Ev>>) -> Self {
         Self {
             stream,
             router: SubscriptionRouter::default(),
@@ -318,10 +342,18 @@ impl Driver {
             pending_commands: HashMap::new(),
         }
     }
+}
 
+impl<Ev> Driver<Ev>
+where
+    Ev: Clone + Response + SubscriptionEvent,
+{
     /// Executes the WebSocket driver, which manages the underlying WebSocket
     /// transport.
-    pub async fn run(mut self) -> Result<(), Error> {
+    pub async fn run(mut self) -> Result<(), Error>
+    where
+        Ev: Response,
+    {
         let mut ping_interval =
             tokio::time::interval_at(Instant::now() + PING_INTERVAL, PING_INTERVAL);
 
@@ -374,7 +406,7 @@ impl Driver {
         .await
     }
 
-    async fn subscribe(&mut self, cmd: SubscribeCommand) -> Result<(), Error> {
+    async fn subscribe(&mut self, cmd: SubscribeCommand<Ev>) -> Result<(), Error> {
         // If we already have an active subscription for the given query,
         // there's no need to initiate another one. Just add this subscription
         // to the router.
@@ -445,7 +477,7 @@ impl Driver {
     }
 
     async fn handle_text_msg(&mut self, msg: String) -> Result<(), Error> {
-        if let Ok(ev) = Event::from_string(&msg) {
+        if let Ok(ev) = Ev::from_string(&msg) {
             self.publish_event(ev).await;
             return Ok(());
         }
@@ -501,7 +533,7 @@ impl Driver {
         }
     }
 
-    async fn publish_event(&mut self, ev: Event) {
+    async fn publish_event(&mut self, ev: Ev) {
         if let PublishResult::AllDisconnected(query) = self.router.publish_event(ev) {
             debug!(
                 "All subscribers for query \"{}\" have disconnected. Unsubscribing from query...",
@@ -522,7 +554,7 @@ impl Driver {
 
     async fn respond_to_pending_command(
         &mut self,
-        pending_cmd: DriverCommand,
+        pending_cmd: DriverCommand<Ev>,
         response: String,
     ) -> Result<(), Error> {
         match pending_cmd {

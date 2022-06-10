@@ -40,8 +40,13 @@ pub trait SubscriptionClient {
     fn close(self) -> Result<(), Error>;
 }
 
-pub(crate) type SubscriptionTx = ChannelTx<Result<Event, Error>>;
-pub(crate) type SubscriptionRx = ChannelRx<Result<Event, Error>>;
+pub(crate) type SubscriptionTx<Ev> = ChannelTx<Result<Ev, Error>>;
+pub(crate) type SubscriptionRx<Ev> = ChannelRx<Result<Ev, Error>>;
+
+pub(crate) trait SubscriptionEvent {
+    /// The query that produced the event.
+    fn query(&self) -> &str;
+}
 
 /// An interface that can be used to asynchronously receive [`Event`]s for a
 /// particular subscription.
@@ -71,34 +76,55 @@ pub(crate) type SubscriptionRx = ChannelRx<Result<Event, Error>>;
 #[pin_project]
 #[derive(Debug)]
 pub struct Subscription {
+    #[pin]
+    inner: Inner<Event>,
+}
+
+#[pin_project]
+#[derive(Debug)]
+pub(crate) struct Inner<Ev> {
     // A unique identifier for this subscription.
-    id: String,
+    pub id: String,
     // The query for which events will be produced.
-    query: Query,
+    pub query: Query,
     // Our internal result event receiver for this subscription.
     #[pin]
-    rx: SubscriptionRx,
+    pub rx: SubscriptionRx<Ev>,
+}
+
+impl<Ev> Inner<Ev> {
+    pub fn new(id: String, query: Query, rx: SubscriptionRx<Ev>) -> Self {
+        Self { id, query, rx }
+    }
+}
+
+impl From<Inner<Event>> for Subscription {
+    fn from(inner: Inner<Event>) -> Self {
+        Self { inner }
+    }
 }
 
 impl Stream for Subscription {
     type Item = Result<Event, Error>;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        self.project().rx.poll_next(cx)
+        self.project().inner.project().rx.poll_next(cx)
     }
 }
 
 impl Subscription {
-    pub(crate) fn new(id: String, query: Query, rx: SubscriptionRx) -> Self {
-        Self { id, query, rx }
+    pub(crate) fn new(id: String, query: Query, rx: SubscriptionRx<Event>) -> Self {
+        Self {
+            inner: Inner::new(id, query, rx),
+        }
     }
 
     /// Return this subscription's ID for informational purposes.
     pub fn id(&self) -> &str {
-        &self.id
+        &self.inner.id
     }
 
     pub fn query(&self) -> &Query {
-        &self.query
+        &self.inner.query
     }
 }

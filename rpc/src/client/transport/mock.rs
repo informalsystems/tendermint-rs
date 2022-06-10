@@ -127,7 +127,7 @@ pub enum DriverCommand {
     Subscribe {
         id: String,
         query: Query,
-        subscription_tx: SubscriptionTx,
+        subscription_tx: SubscriptionTx<Event>,
         result_tx: ChannelTx<Result<(), Error>>,
     },
     Unsubscribe {
@@ -140,7 +140,7 @@ pub enum DriverCommand {
 
 #[derive(Debug)]
 pub struct MockClientDriver {
-    router: SubscriptionRouter,
+    router: SubscriptionRouter<Event>,
     rx: ChannelRx<DriverCommand>,
 }
 
@@ -173,7 +173,7 @@ impl MockClientDriver {
         &mut self,
         id: String,
         query: Query,
-        subscription_tx: SubscriptionTx,
+        subscription_tx: SubscriptionTx<Event>,
         result_tx: ChannelTx<Result<(), Error>>,
     ) {
         self.router.add(id, query, subscription_tx);

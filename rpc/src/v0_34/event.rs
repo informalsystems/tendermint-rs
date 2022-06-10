@@ -1,12 +1,15 @@
 //! RPC subscription event-related data structures.
 
+use alloc::collections::BTreeMap as HashMap;
+
+use serde::{Deserialize, Serialize};
+
+use crate::client::subscription::SubscriptionEvent;
 use crate::event::EventData;
 use crate::prelude::*;
 use crate::query::EventType;
 use crate::response::Wrapper;
 use crate::Response;
-use alloc::collections::BTreeMap as HashMap;
-use serde::{Deserialize, Serialize};
 
 /// An incoming event produced by a [`Subscription`].
 ///
@@ -24,6 +27,12 @@ pub struct Event {
     pub events: Option<HashMap<String, Vec<String>>>,
 }
 impl Response for Event {}
+
+impl SubscriptionEvent for Event {
+    fn query(&self) -> &str {
+        &self.query
+    }
+}
 
 /// A JSON-RPC-wrapped event.
 pub type WrappedEvent = Wrapper<Event>;

@@ -4,7 +4,11 @@ use alloc::collections::{BTreeMap as HashMap, BTreeSet as HashSet};
 
 use tracing::debug;
 
-use crate::{client::subscription::SubscriptionTx, error::Error, event::Event, prelude::*};
+use crate::{
+    client::subscription::{SubscriptionEvent, SubscriptionTx},
+    error::Error,
+    prelude::*,
+};
 
 pub type SubscriptionQuery = String;
 pub type SubscriptionId = String;
@@ -17,48 +21,47 @@ pub type SubscriptionIdRef<'a> = &'a str;
 ///
 /// [`Subscription`]: struct.Subscription.html
 /// [`Event`]: ./event/struct.Event.html
-#[derive(Debug, Default)]
-pub struct SubscriptionRouter {
+#[derive(Debug)]
+pub(crate) struct SubscriptionRouter<Ev> {
     /// A map of subscription queries to collections of subscription IDs and
     /// their result channels. Used for publishing events relating to a specific
     /// query.
-    subscriptions: HashMap<SubscriptionQuery, HashMap<SubscriptionId, SubscriptionTx>>,
+    subscriptions: HashMap<SubscriptionQuery, HashMap<SubscriptionId, SubscriptionTx<Ev>>>,
 }
 
-impl SubscriptionRouter {
+impl<Ev> Default for SubscriptionRouter<Ev> {
+    fn default() -> Self {
+        SubscriptionRouter {
+            subscriptions: Default::default(),
+        }
+    }
+}
+
+impl<Ev: Clone> SubscriptionRouter<Ev> {
     /// Publishes the given error to all of the subscriptions to which the
     /// error is relevant, based on the given subscription id query.
     #[cfg_attr(not(feature = "websocket"), allow(dead_code))]
     pub fn publish_error(&mut self, id: SubscriptionIdRef<'_>, err: Error) -> PublishResult {
-        if let Some(query) = self.subscription_query(id).cloned() {
+        if let Some(query) = self.subscription_query(id) {
             self.publish(query, Err(err))
         } else {
             PublishResult::NoSubscribers
         }
     }
 
-    /// Get the query associated with the given subscription.
-    #[cfg_attr(not(feature = "websocket"), allow(dead_code))]
-    fn subscription_query(&self, id: SubscriptionIdRef<'_>) -> Option<&SubscriptionQuery> {
-        for (query, subs) in &self.subscriptions {
-            if subs.contains_key(id) {
-                return Some(query);
-            }
-        }
-
-        None
-    }
-
     /// Publishes the given event to all of the subscriptions to which the
     /// event is relevant, based on the associated query.
     #[cfg_attr(not(feature = "websocket"), allow(dead_code))]
-    pub fn publish_event(&mut self, ev: Event) -> PublishResult {
-        self.publish(ev.query.clone(), Ok(ev))
+    pub fn publish_event(&mut self, ev: Ev) -> PublishResult
+    where
+        Ev: SubscriptionEvent,
+    {
+        self.publish(ev.query().to_owned(), Ok(ev))
     }
 
     /// Publishes the given event/error to all of the subscriptions to which the
     /// event/error is relevant, based on the given query.
-    pub fn publish(&mut self, query: SubscriptionQuery, ev: Result<Event, Error>) -> PublishResult {
+    pub fn publish(&mut self, query: SubscriptionQuery, ev: Result<Ev, Error>) -> PublishResult {
         let subs_for_query = match self.subscriptions.get_mut(&query) {
             Some(s) => s,
             None => return PublishResult::NoSubscribers,
@@ -68,7 +71,7 @@ impl SubscriptionRouter {
         // that the receiver end of the channel has been dropped, which allows
         // us to safely stop tracking the subscription.
         let mut disconnected = HashSet::new();
-        for (id, event_tx) in subs_for_query.iter_mut() {
+        for (id, event_tx) in subs_for_query.iter() {
             if let Err(e) = event_tx.send(ev.clone()) {
                 disconnected.insert(id.clone());
                 debug!(
@@ -83,15 +86,29 @@ impl SubscriptionRouter {
         }
 
         if subs_for_query.is_empty() {
-            PublishResult::AllDisconnected(query)
+            PublishResult::AllDisconnected(query.to_owned())
         } else {
             PublishResult::Success
         }
     }
+}
+
+impl<Ev> SubscriptionRouter<Ev> {
+    /// Get the query associated with the given subscription.
+    #[cfg_attr(not(feature = "websocket"), allow(dead_code))]
+    fn subscription_query(&self, id: SubscriptionIdRef<'_>) -> Option<SubscriptionQuery> {
+        for (query, subs) in &self.subscriptions {
+            if subs.contains_key(id) {
+                return Some(query.clone());
+            }
+        }
+
+        None
+    }
 
     /// Immediately add a new subscription to the router without waiting for
     /// confirmation.
-    pub fn add(&mut self, id: impl ToString, query: impl ToString, tx: SubscriptionTx) {
+    pub fn add(&mut self, id: impl ToString, query: impl ToString, tx: SubscriptionTx<Ev>) {
         let query = query.to_string();
         let subs_for_query = match self.subscriptions.get_mut(&query) {
             Some(s) => s,
@@ -114,7 +131,7 @@ impl SubscriptionRouter {
 }
 
 #[cfg(feature = "websocket-client")]
-impl SubscriptionRouter {
+impl<Ev> SubscriptionRouter<Ev> {
     /// Returns the number of active subscriptions for the given query.
     pub fn num_subscriptions_for_query(&self, query: impl ToString) -> usize {
         self.subscriptions

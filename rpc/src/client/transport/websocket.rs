@@ -11,8 +11,8 @@ use async_trait::async_trait;
 use tendermint_config::net;
 
 use crate::{
-    error::Error, prelude::*, query::Query, Client, Request, Scheme, SimpleRequest, Subscription,
-    SubscriptionClient, Url,
+    error::Error, event::Event, prelude::*, query::Query, Client, Request, Scheme, SimpleRequest,
+    Subscription, SubscriptionClient, Url,
 };
 
 /// Low-level WebSocket configuration
@@ -99,7 +99,7 @@ pub use async_tungstenite::tungstenite::protocol::WebSocketConfig;
 /// [tendermint-websocket-ping]: https://github.com/tendermint/tendermint/blob/309e29c245a01825fc9630103311fd04de99fa5e/rpc/jsonrpc/server/ws_handler.go#L28
 #[derive(Debug, Clone)]
 pub struct WebSocketClient {
-    inner: plumbing::Client,
+    inner: plumbing::Client<Event>,
 }
 
 impl WebSocketClient {
@@ -150,7 +150,8 @@ impl Client for WebSocketClient {
 #[async_trait]
 impl SubscriptionClient for WebSocketClient {
     async fn subscribe(&self, query: Query) -> Result<Subscription, Error> {
-        self.inner.subscribe(query).await
+        let subscription = self.inner.subscribe(query).await?;
+        Ok(subscription.into())
     }
 
     async fn unsubscribe(&self, query: Query) -> Result<(), Error> {
@@ -227,7 +228,7 @@ impl From<WebSocketClientUrl> for Url {
 /// This is the primary component responsible for transport-level interaction
 /// with the remote WebSocket endpoint.
 pub struct WebSocketClientDriver {
-    inner: plumbing::Driver,
+    inner: plumbing::Driver<Event>,
 }
 
 impl WebSocketClientDriver {

@@ -25,8 +25,14 @@ pub fn unbounded<T>() -> (ChannelTx<T>, ChannelRx<T>) {
 ///
 /// Can be cloned because the underlying channel used is
 /// [`mpsc`](https://docs.rs/tokio/*/tokio/sync/mpsc/index.html).
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ChannelTx<T>(mpsc::UnboundedSender<T>);
+
+impl<T> Clone for ChannelTx<T> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
 
 impl<T> ChannelTx<T> {
     pub fn send(&self, value: T) -> Result<(), Error> {
