@@ -28,7 +28,6 @@ fn config_toml_parser() {
         "tcp://127.0.0.1:26658".parse::<net::Address>().unwrap()
     );
     assert_eq!(config.moniker.as_ref(), "technodrome");
-    assert!(config.fast_sync);
     assert_eq!(config.db_backend, DbBackend::GoLevelDb);
     assert_eq!(config.db_dir, PathBuf::from("data"));
     assert_eq!(config.log_level.global, Some("info".to_string()));
@@ -38,14 +37,14 @@ fn config_toml_parser() {
     assert_eq!(config.log_format, LogFormat::Plain);
     assert_eq!(config.genesis_file, PathBuf::from("config/genesis.json"));
     assert_eq!(
-        config.priv_validator_key_file,
-        Some(PathBuf::from("config/priv_validator_key.json"))
+        config.priv_validator.key_file,
+        PathBuf::from("config/priv_validator_key.json")
     );
     assert_eq!(
-        config.priv_validator_state_file,
+        config.priv_validator.state_file,
         PathBuf::from("data/priv_validator_state.json")
     );
-    assert_eq!(config.priv_validator_laddr, None);
+    assert_eq!(config.priv_validator.laddr, None);
     assert_eq!(config.node_key_file, PathBuf::from("config/node_key.json"));
     assert_eq!(config.abci, AbciMode::Socket);
     assert!(!config.filter_peers);
@@ -118,11 +117,10 @@ fn config_toml_parser() {
     assert_eq!(p2p.max_num_inbound_peers, 40);
     assert_eq!(p2p.max_num_outbound_peers, 10);
     assert_eq!(*p2p.flush_throttle_timeout, Duration::from_millis(100));
-    assert_eq!(p2p.max_packet_msg_payload_size, 1024);
+    assert_eq!(p2p.max_packet_msg_payload_size, 1400);
     assert_eq!(p2p.send_rate.bytes_per_sec(), 5_120_000);
     assert_eq!(p2p.recv_rate.bytes_per_sec(), 5_120_000);
     assert!(p2p.pex);
-    assert!(!p2p.seed_mode);
     assert_eq!(p2p.private_peer_ids.len(), 3);
     assert_eq!(
         p2p.private_peer_ids[0],
@@ -151,7 +149,6 @@ fn config_toml_parser() {
     let mempool = &config.mempool;
     assert!(mempool.recheck);
     assert!(mempool.broadcast);
-    assert_eq!(mempool.wal_dir, None);
     assert_eq!(mempool.size, 5000);
     assert_eq!(mempool.max_txs_bytes, 1_073_741_824);
     assert_eq!(mempool.cache_size, 10000);
@@ -169,7 +166,7 @@ fn config_toml_parser() {
         *consensus.timeout_precommit_delta,
         Duration::from_millis(500)
     );
-    assert_eq!(*consensus.timeout_commit, Duration::from_secs(5));
+    assert_eq!(*consensus.timeout_commit, Duration::from_secs(1));
     assert!(!consensus.skip_timeout_commit);
     assert_eq!(
         *consensus.create_empty_blocks_interval,
@@ -187,7 +184,7 @@ fn config_toml_parser() {
     // transactions indexer configuration options
 
     let tx_index = &config.tx_index;
-    assert_eq!(tx_index.indexer, TxIndexer::Kv);
+    assert_eq!(tx_index.indexer, vec![TxIndexer::Kv]);
 
     // instrumentation configuration options
 
