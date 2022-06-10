@@ -1,8 +1,10 @@
 //! Tendermint kvstore RPC endpoint testing.
 
 use core::str::FromStr;
-use std::{fs, path::PathBuf};
-
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 use subtle_encoding::{base64, hex};
 use tendermint::{evidence::Duration, public_key};
 use tendermint_config::net::Address;
@@ -17,7 +19,7 @@ use walkdir::WalkDir;
 
 const CHAIN_ID: &str = "dockerchain";
 
-fn find_fixtures(in_out_folder_name: &str) -> Vec<PathBuf> {
+fn find_fixtures(in_out_folder_name: impl AsRef<Path>) -> Vec<PathBuf> {
     WalkDir::new(
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("tests")
@@ -316,17 +318,22 @@ fn outgoing_fixtures() {
     }
 }
 
+fn empty_merkle_root_hash() -> tendermint::Hash {
+    tendermint::Hash::from_hex_upper(
+        tendermint::hash::Algorithm::Sha256,
+        "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    )
+    .unwrap()
+}
+
+fn informal_epoch() -> tendermint::Time {
+    tendermint::Time::parse_from_rfc3339("2020-01-01T00:00:00.000000000Z").unwrap()
+}
+
 #[test]
 fn incoming_fixtures() {
-    let empty_merkle_root_hash = Some(
-        tendermint::Hash::from_hex_upper(
-            tendermint::hash::Algorithm::Sha256,
-            "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
-        )
-        .unwrap(),
-    );
-    let informal_epoch =
-        tendermint::Time::parse_from_rfc3339("2020-01-01T00:00:00.000000000Z").unwrap();
+    let empty_merkle_root_hash = Some(empty_merkle_root_hash());
+    let informal_epoch = informal_epoch();
 
     for json_file in find_fixtures("incoming") {
         let file_name = json_file
@@ -1422,6 +1429,200 @@ fn incoming_fixtures() {
             _ => {
                 panic!("cannot parse file name: {}", file_name);
             },
+        }
+    }
+}
+
+#[cfg(feature = "tendermint-0.34")]
+mod v0_34 {
+    use super::*;
+    use tendermint_rpc::event::EventData;
+    use tendermint_rpc::v0_34::event::Event;
+
+    #[test]
+    fn incoming_fixtures() {
+        let empty_merkle_root_hash = Some(empty_merkle_root_hash());
+        let informal_epoch = informal_epoch();
+
+        for json_file in find_fixtures(Path::new("v0_34").join("incoming")) {
+            let file_name = json_file
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .strip_suffix(".json")
+                .unwrap();
+            let content = fs::read_to_string(&json_file).unwrap();
+            match file_name {
+                "subscribe_newblock_0" => {
+                    let result = Event::from_string(content).unwrap();
+                    if let EventData::NewBlock {
+                        block,
+                        result_begin_block,
+                        result_end_block,
+                    } = result.data
+                    {
+                        let b = block.unwrap();
+                        assert!(b.data.iter().next().is_none());
+                        assert!(b.evidence.iter().next().is_none());
+                        assert!(!b.header.app_hash.value().is_empty());
+                        assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
+                        assert!(!b.header.consensus_hash.is_empty());
+                        assert_eq!(b.header.data_hash, empty_merkle_root_hash);
+                        assert_eq!(b.header.evidence_hash, empty_merkle_root_hash);
+                        assert!(b.header.last_block_id.is_some());
+                        assert!(b.header.last_commit_hash.is_some());
+                        assert!(b.header.last_results_hash.is_some());
+                        assert!(!b.header.next_validators_hash.is_empty());
+                        assert_ne!(
+                            b.header.proposer_address.as_bytes(),
+                            [0u8; tendermint::account::LENGTH]
+                        );
+                        assert!(
+                            b.header
+                                .time
+                                .duration_since(informal_epoch)
+                                .unwrap()
+                                .as_secs()
+                                > 0
+                        );
+                        assert!(!b.header.validators_hash.is_empty());
+                        assert_eq!(
+                            b.header.version,
+                            tendermint::block::header::Version { block: 11, app: 1 }
+                        );
+                        let last_commit = b.last_commit.unwrap();
+                        assert!(!last_commit.block_id.hash.is_empty());
+                        assert!(!last_commit.block_id.part_set_header.hash.is_empty());
+                        assert_eq!(last_commit.block_id.part_set_header.total, 1);
+                        assert_eq!(last_commit.round.value(), 0);
+                        assert_eq!(last_commit.signatures.len(), 1);
+                        assert!(last_commit.signatures[0].is_commit());
+                        assert!(last_commit.signatures[0].validator_address().is_some());
+                        assert!(result_begin_block.unwrap().tags.is_empty());
+                        let reb = result_end_block.unwrap();
+                        assert!(reb.validator_updates.is_empty());
+                        assert!(reb.consensus_param_updates.is_none());
+                        assert!(reb.tags.is_empty());
+                    } else {
+                        panic!("not a newblock");
+                    }
+                    assert_eq!(result.query, "tm.event = 'NewBlock'");
+                },
+                "subscribe_newblock_1" => {
+                    let result = Event::from_string(content).unwrap();
+                    if let EventData::NewBlock {
+                        block,
+                        result_begin_block,
+                        result_end_block,
+                    } = result.data
+                    {
+                        let b = block.unwrap();
+                        assert!(b.data.iter().next().is_none());
+                        assert!(b.evidence.iter().next().is_none());
+                        assert!(!b.header.app_hash.value().is_empty());
+                        assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
+                        assert!(!b.header.consensus_hash.is_empty());
+                        assert_eq!(b.header.data_hash, empty_merkle_root_hash);
+                        assert_eq!(b.header.evidence_hash, empty_merkle_root_hash);
+                        assert!(b.header.last_block_id.is_some());
+                        assert!(b.header.last_commit_hash.is_some());
+                        assert!(b.header.last_results_hash.is_some());
+                        assert!(!b.header.next_validators_hash.is_empty());
+                        assert_ne!(
+                            b.header.proposer_address.as_bytes(),
+                            [0u8; tendermint::account::LENGTH]
+                        );
+                        assert!(
+                            b.header
+                                .time
+                                .duration_since(informal_epoch)
+                                .unwrap()
+                                .as_secs()
+                                > 0
+                        );
+                        assert!(!b.header.validators_hash.is_empty());
+                        assert_eq!(
+                            b.header.version,
+                            tendermint::block::header::Version { block: 11, app: 1 }
+                        );
+                        let last_commit = b.last_commit.unwrap();
+                        assert!(!last_commit.block_id.hash.is_empty());
+                        assert!(!last_commit.block_id.part_set_header.hash.is_empty());
+                        assert_eq!(last_commit.block_id.part_set_header.total, 1);
+                        assert_eq!(last_commit.round.value(), 0);
+                        assert_eq!(last_commit.signatures.len(), 1);
+                        assert!(last_commit.signatures[0].is_commit());
+                        assert!(last_commit.signatures[0].validator_address().is_some());
+                        assert!(result_begin_block.unwrap().tags.is_empty());
+                        let reb = result_end_block.unwrap();
+                        assert!(reb.validator_updates.is_empty());
+                        assert!(reb.consensus_param_updates.is_none());
+                        assert!(reb.tags.is_empty());
+                    } else {
+                        panic!("not a newblock");
+                    }
+                    assert_eq!(result.query, "tm.event = 'NewBlock'");
+                },
+                "subscribe_newblock_2" => {
+                    let result = Event::from_string(content).unwrap();
+                    if let EventData::NewBlock {
+                        block,
+                        result_begin_block,
+                        result_end_block,
+                    } = result.data
+                    {
+                        let b = block.unwrap();
+                        assert!(b.data.iter().next().is_none());
+                        assert!(b.evidence.iter().next().is_none());
+                        assert!(!b.header.app_hash.value().is_empty());
+                        assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
+                        assert!(!b.header.consensus_hash.is_empty());
+                        assert_eq!(b.header.data_hash, empty_merkle_root_hash);
+                        assert_eq!(b.header.evidence_hash, empty_merkle_root_hash);
+                        assert!(b.header.last_block_id.is_some());
+                        assert!(b.header.last_commit_hash.is_some());
+                        assert!(b.header.last_results_hash.is_some());
+                        assert!(!b.header.next_validators_hash.is_empty());
+                        assert_ne!(
+                            b.header.proposer_address.as_bytes(),
+                            [0u8; tendermint::account::LENGTH]
+                        );
+                        assert!(
+                            b.header
+                                .time
+                                .duration_since(informal_epoch)
+                                .unwrap()
+                                .as_secs()
+                                > 0
+                        );
+                        assert!(!b.header.validators_hash.is_empty());
+                        assert_eq!(
+                            b.header.version,
+                            tendermint::block::header::Version { block: 11, app: 1 }
+                        );
+                        let last_commit = b.last_commit.unwrap();
+                        assert!(!last_commit.block_id.hash.is_empty());
+                        assert!(!last_commit.block_id.part_set_header.hash.is_empty());
+                        assert_eq!(last_commit.block_id.part_set_header.total, 1);
+                        assert_eq!(last_commit.round.value(), 0);
+                        assert_eq!(last_commit.signatures.len(), 1);
+                        assert!(last_commit.signatures[0].is_commit());
+                        assert!(last_commit.signatures[0].validator_address().is_some());
+                        assert!(result_begin_block.unwrap().tags.is_empty());
+                        let reb = result_end_block.unwrap();
+                        assert!(reb.validator_updates.is_empty());
+                        assert!(reb.consensus_param_updates.is_none());
+                        assert!(reb.tags.is_empty());
+                    } else {
+                        panic!("not a newblock");
+                    }
+                    assert_eq!(result.query, "tm.event = 'NewBlock'");
+                },
+                _ => {
+                    panic!("cannot parse file name: {}", file_name);
+                },
+            }
         }
     }
 }

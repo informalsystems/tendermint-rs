@@ -1,0 +1,73 @@
+{
+  "id": "4375b246-297f-42cc-937f-a9cf69a538e2",
+  "jsonrpc": "2.0",
+  "result": {
+    "data": {
+      "type": "tendermint/event/NewBlock",
+      "value": {
+        "block": {
+          "data": {
+            "txs": []
+          },
+          "evidence": {
+            "evidence": []
+          },
+          "header": {
+            "app_hash": "0600000000000000",
+            "chain_id": "dockerchain",
+            "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
+            "data_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+            "evidence_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+            "height": "37",
+            "last_block_id": {
+              "hash": "231E2122BB41CCF58E6C05B93AF30571725120F0034C7ACEBB790B41FF967681",
+              "parts": {
+                "hash": "D7324EFCD611A77E82F51D76DD618A1B8A66E3E230CD86BBEA75A838DC06F832",
+                "total": 1
+              }
+            },
+            "last_commit_hash": "3EC5A6297B9190B0BB510B9473D646B81D50B005B7585CB9DD1ECF6904757D6A",
+            "last_results_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+            "next_validators_hash": "ADFA3B40824D69EAD7828B9A78D16D80DFA93499D1DB0EC362916AE61182A64D",
+            "proposer_address": "ABA577531E6D6F4119E7E1E0EE1909B908A8346D",
+            "time": "2021-07-16T12:16:47.983741392Z",
+            "validators_hash": "ADFA3B40824D69EAD7828B9A78D16D80DFA93499D1DB0EC362916AE61182A64D",
+            "version": {
+              "app": "1",
+              "block": "11"
+            }
+          },
+          "last_commit": {
+            "block_id": {
+              "hash": "231E2122BB41CCF58E6C05B93AF30571725120F0034C7ACEBB790B41FF967681",
+              "parts": {
+                "hash": "D7324EFCD611A77E82F51D76DD618A1B8A66E3E230CD86BBEA75A838DC06F832",
+                "total": 1
+              }
+            },
+            "height": "36",
+            "round": 0,
+            "signatures": [
+              {
+                "block_id_flag": 2,
+                "signature": "xq3AtJ1K/QfZ7vAnRjgOSRJoOMFUgLIIKvBtuC1Qgf6PFi3a70H/zWOOezaGPbQDhPVEF5zDba4ju/WzF0dEDQ==",
+                "timestamp": "2021-07-16T12:16:47.983741392Z",
+                "validator_address": "ABA577531E6D6F4119E7E1E0EE1909B908A8346D"
+              }
+            ]
+          }
+        },
+        "result_begin_block": {},
+        "result_end_block": {
+          "validator_updates": null
+        }
+      }
+    },
+    "events": {
+      "tm.event": [
+        "NewBlock"
+      ]
+    },
+    "query": "tm.event = 'NewBlock'"
+  }
+}

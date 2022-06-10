@@ -484,7 +484,7 @@ mod test {
 
     async fn read_json_fixture(name: &str) -> String {
         fs::read_to_string(
-            PathBuf::from("./tests/kvstore_fixtures/").join(name.to_owned() + ".json"),
+            PathBuf::from("./tests/kvstore_fixtures/v0_34").join(name.to_owned() + ".json"),
         )
         .await
         .unwrap()
