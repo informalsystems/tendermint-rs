@@ -80,7 +80,15 @@ fn main() {
         "super::super::google::protobuf::Timestamp",
     );
     println!("[info] => Creating structs.");
-    pb.compile_protos(&protos, &proto_includes_paths).unwrap();
+    tonic_build::configure()
+        .out_dir(&out_dir)
+        .build_client(false)
+        .build_server(true)
+        .server_mod_attribute("tendermint.abci", "#[cfg(feature = \"grpc\")]")
+        .server_mod_attribute("tendermint.privval", "#[cfg(feature = \"grpc\")]")
+        .server_mod_attribute("tendermint.rpc.grpc", "#[cfg(feature = \"grpc\")]")
+        .compile_with_config(pb, &protos, &proto_includes_paths)
+        .unwrap();
 
     println!("[info] => Removing old structs and copying new structs.");
     copy_files(&out_dir, &target_dir); // This panics if it fails.
