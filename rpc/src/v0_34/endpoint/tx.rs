@@ -6,8 +6,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::v0_34::serializers;
-use crate::{abci, Method};
+use crate::{abci, v0_34::serializers, Method};
 
 /// Request for finding a transaction by its hash.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

@@ -1436,8 +1436,10 @@ fn incoming_fixtures() {
 
 #[cfg(feature = "tendermint-0.34")]
 mod v0_34 {
-    use tendermint_rpc::event::EventData;
-    use tendermint_rpc::v0_34::{endpoint, event::Event};
+    use tendermint_rpc::{
+        event::EventData,
+        v0_34::{endpoint, event::Event},
+    };
 
     use super::*;
 
