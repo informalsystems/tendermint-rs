@@ -6,7 +6,7 @@
 //! [tendermint]: https://github.com/tendermint/tendermint
 
 mod client;
-mod endpoint;
+pub mod endpoint;
 pub mod event;
 mod serializers;
 

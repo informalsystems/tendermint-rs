@@ -1436,7 +1436,8 @@ fn incoming_fixtures() {
 
 #[cfg(feature = "tendermint-0.34")]
 mod v0_34 {
-    use tendermint_rpc::{event::EventData, v0_34::event::Event};
+    use tendermint_rpc::event::EventData;
+    use tendermint_rpc::v0_34::{endpoint, event::Event};
 
     use super::*;
 
@@ -1619,6 +1620,39 @@ mod v0_34 {
                         panic!("not a newblock");
                     }
                     assert_eq!(result.query, "tm.event = 'NewBlock'");
+                },
+                _ => {
+                    panic!("cannot parse file name: {}", file_name);
+                },
+            }
+        }
+    }
+
+    #[test]
+    fn outgoing_fixtures() {
+        for json_file in find_fixtures(Path::new("v0_34").join("outgoing")) {
+            let file_name = json_file
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .strip_suffix(".json")
+                .unwrap();
+            let content = fs::read_to_string(&json_file).unwrap();
+            match file_name {
+                "tx" => {
+                    let wrapped =
+                        serde_json::from_str::<RequestWrapper<endpoint::tx::Request>>(&content)
+                            .unwrap();
+                    assert_eq!(
+                        wrapped.params().hash,
+                        Hash::new([
+                            214, 63, 156, 35, 121, 30, 97, 4, 16, 181, 118, 216, 194, 123, 181,
+                            174, 172, 147, 204, 26, 88, 82, 36, 40, 167, 179, 42, 18, 118, 8, 88,
+                            96
+                        ])
+                    );
+                    assert!(!wrapped.params().prove);
                 },
                 _ => {
                     panic!("cannot parse file name: {}", file_name);
