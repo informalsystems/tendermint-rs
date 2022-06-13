@@ -84,7 +84,7 @@ impl<Ev: Clone> SubscriptionRouter<Ev> {
         }
 
         if subs_for_query.is_empty() {
-            PublishResult::AllDisconnected(query.to_owned())
+            PublishResult::AllDisconnected(query)
         } else {
             PublishResult::Success
         }
