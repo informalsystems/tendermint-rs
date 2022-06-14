@@ -48,7 +48,7 @@ http-client = [
   "tracing"
 ]
 secp256k1 = [ "tendermint/secp256k1" ]
-"tendermint-0.34" = []
+v0_34 = []
 websocket-client = [
   "async-trait",
   "async-tungstenite",
