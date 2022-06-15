@@ -88,7 +88,7 @@ that stores the signing key in-memory and uses text files for the validator stat
 
 ## Status
 
-Proposed
+Accepted
 
 ## Consequences
 
