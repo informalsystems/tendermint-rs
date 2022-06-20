@@ -12,12 +12,12 @@ use tendermint_light_client::{
     store::{memory::MemoryStore, LightStore},
     tests::*,
     verifier::{
-        operations::ProdHasher,
         options::Options,
         types::{LightBlock, Status},
         ProdVerifier,
     },
 };
+use tendermint_light_client_verifier::host_functions::helper::HostFunctionsManager;
 use tendermint_testgen::{light_block::default_peer_id, Tester};
 
 // Link to JSON test files repo:
@@ -63,8 +63,7 @@ fn run_test(tc: LightClientTest<LightBlock>) -> BisectionTestResult {
         verification_trace: HashMap::new(),
     };
 
-    let verifier = ProdVerifier::default();
-    let hasher = ProdHasher::default();
+    let verifier = ProdVerifier::<HostFunctionsManager>::default();
 
     let mut light_client = LightClient::new(
         primary,
@@ -72,7 +71,6 @@ fn run_test(tc: LightClientTest<LightBlock>) -> BisectionTestResult {
         clock,
         scheduler::basic_bisecting_schedule,
         verifier,
-        hasher,
         io.clone(),
     );
 

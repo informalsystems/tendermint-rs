@@ -2,7 +2,10 @@
 //!
 //! [1]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification/verification.md
 
-use core::fmt;
+use sp_std::fmt;
+
+use sp_std::marker::PhantomData;
+use tendermint_light_client_verifier::host_functions::HostFunctionsProvider;
 
 // Re-export for backward compatibility
 pub use crate::verifier::options::Options;
@@ -12,7 +15,6 @@ use crate::{
     errors::Error,
     state::State,
     verifier::{
-        operations::Hasher,
         types::{Height, LightBlock, PeerId, Status},
         Verdict, Verifier,
     },
@@ -28,7 +30,7 @@ use crate::{
 /// of the header, more than two-thirds of the next validators of a new block are
 /// correct for the duration of the trusted period.  The fault-tolerant read operation
 /// is designed for this security model.
-pub struct LightClient {
+pub struct LightClient<HostFunctions> {
     /// The peer id of the peer this client is connected to
     pub peer: PeerId,
     /// Options for this light client
@@ -38,13 +40,10 @@ pub struct LightClient {
     scheduler: Box<dyn Scheduler>,
     verifier: Box<dyn Verifier>,
     io: Box<dyn AsyncIo>,
-
-    // Only used in verify_backwards when "unstable" feature is enabled
-    #[allow(dead_code)]
-    hasher: Box<dyn Hasher>,
+    _phantom: PhantomData<HostFunctions>,
 }
 
-impl fmt::Debug for LightClient {
+impl<HostFunctions> fmt::Debug for LightClient<HostFunctions> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("LightClient")
             .field("peer", &self.peer)
@@ -53,7 +52,10 @@ impl fmt::Debug for LightClient {
     }
 }
 
-impl LightClient {
+impl<HostFunctions> LightClient<HostFunctions>
+    where
+        HostFunctions: HostFunctionsProvider,
+{
     /// Constructs a new light client
     pub fn new(
         peer: PeerId,
@@ -61,7 +63,6 @@ impl LightClient {
         clock: impl Clock + 'static,
         scheduler: impl Scheduler + 'static,
         verifier: impl Verifier + 'static,
-        hasher: impl Hasher + 'static,
         io: impl AsyncIo + 'static,
     ) -> Self {
         Self {
@@ -70,8 +71,8 @@ impl LightClient {
             clock: Box::new(clock),
             scheduler: Box::new(scheduler),
             verifier: Box::new(verifier),
-            hasher: Box::new(hasher),
             io: Box::new(io),
+            _phantom: PhantomData,
         }
     }
 
@@ -82,7 +83,6 @@ impl LightClient {
         clock: Box<dyn Clock>,
         scheduler: Box<dyn Scheduler>,
         verifier: Box<dyn Verifier>,
-        hasher: Box<dyn Hasher>,
         io: Box<dyn AsyncIo>,
     ) -> Self {
         Self {
@@ -92,7 +92,7 @@ impl LightClient {
             scheduler,
             verifier,
             io,
-            hasher,
+            _phantom: PhantomData,
         }
     }
 
@@ -167,7 +167,7 @@ impl LightClient {
 
         assert!(trusted_store_contains_block_at_target_height(
             state.light_store.as_ref(),
-            target_height
+            target_height,
         ));
 
         Ok(block)
@@ -232,14 +232,14 @@ impl LightClient {
                     // the `Verified` status or higher if already trusted.
                     let new_status = Status::most_trusted(Status::Verified, status);
                     state.light_store.update(&current_block, new_status);
-                },
+                }
                 Verdict::Invalid(e) => {
                     // Verification failed, add the block to the light store with `Failed` status,
                     // and abort.
                     state.light_store.update(&current_block, Status::Failed);
 
                     return Err(Error::invalid_light_block(e));
-                },
+                }
                 Verdict::NotEnoughTrust(_) => {
                     // The current block cannot be trusted because of a missing overlap in the
                     // validator sets. Add the block to the light store with
@@ -247,7 +247,7 @@ impl LightClient {
                     // attempt to raise the height of the highest trusted state
                     // until there is enough overlap.
                     state.light_store.update(&current_block, Status::Unverified);
-                },
+                }
             }
 
             // Compute the next height to fetch and verify
@@ -300,7 +300,10 @@ impl LightClient {
         target_height: Height,
         state: &mut State,
     ) -> Result<LightBlock, Error> {
-        use std::convert::TryFrom;
+        use sp_std::convert::TryFrom;
+        use tendermint::Hash;
+
+        use tendermint_light_client_verifier::merkle::simple_hash_from_byte_vectors;
 
         let root = state
             .light_store
@@ -332,7 +335,10 @@ impl LightClient {
                 .last_block_id
                 .ok_or_else(|| Error::missing_last_block_id(latest.height()))?;
 
-            let current_hash = self.hasher.hash_header(&current.signed_header.header);
+            let current_hash = {
+                let serialized = current.signed_header.header.serialize_to_preimage();
+                Hash::Sha256(simple_hash_from_byte_vectors::<HostFunctions>(serialized))
+            };
 
             if current_hash != latest_last_block_id.hash {
                 return Err(Error::invalid_adjacent_headers(

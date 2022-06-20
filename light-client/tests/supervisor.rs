@@ -14,17 +14,17 @@ use tendermint_light_client::{
     supervisor::{Handle, Instance, Supervisor},
     tests::{LightClientTest, MockClock, MockEvidenceReporter, MockIo, TrustOptions},
     verifier::{
-        operations::ProdHasher,
         options::Options,
         types::{LightBlock, PeerId, Status, Time},
         ProdVerifier,
     },
 };
+use tendermint_light_client_verifier::host_functions::helper::HostFunctionsManager;
 use tendermint_testgen::Tester;
 
 const TEST_FILES_PATH: &str = "./tests/support/";
 
-fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: Time) -> Instance {
+fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: Time) -> Instance<HostFunctionsManager> {
     let trusted_height = trust_options.height;
     let trusted_state = block_on(io.fetch_light_block(AtHeight::At(trusted_height)))
         .expect("could not 'request' light block");
@@ -44,11 +44,10 @@ fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: 
     };
 
     let clock = MockClock { now };
-    let verifier = ProdVerifier::default();
-    let hasher = ProdHasher::default();
+    let verifier = ProdVerifier::<HostFunctionsManager>::default();
     let scheduler = scheduler::basic_bisecting_schedule;
 
-    let light_client = LightClient::new(peer_id, options, clock, scheduler, verifier, hasher, io);
+    let light_client = LightClient::new(peer_id, options, clock, scheduler, verifier,  io);
 
     Instance::new(light_client, state)
 }

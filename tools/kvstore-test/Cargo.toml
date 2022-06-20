@@ -14,7 +14,7 @@ contracts = "0.4.0"
 futures = "0.3"
 tendermint = { version = "0.24.0-pre.2", path = "../../tendermint" }
 tendermint-light-client = { version = "0.24.0-pre.2", path = "../../light-client", features = ["unstable"] }
-tendermint-light-client-verifier = { version = "0.24.0-pre.2", path = "../../light-client-verifier" }
+tendermint-light-client-verifier = { version = "0.24.0-pre.2", path = "../../light-client-verifier", features = ["test-helpers"] }
 tendermint-rpc = { version = "0.24.0-pre.2", path = "../../rpc", features = [ "http-client", "websocket-client" ] }
 tokio = { version = "1.17", features = [ "rt-multi-thread", "macros" ] }
 tracing = "0.1"
