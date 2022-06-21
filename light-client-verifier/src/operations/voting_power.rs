@@ -188,10 +188,10 @@ fn verify_signature<H: HostFunctionsProvider>(
     signature: &[u8],
 ) -> bool {
     match pubkey {
-        PublicKey::Ed25519(pk) => H::ed25519_verify(signature, message, pk.as_ref()),
+        PublicKey::Ed25519(pk) => H::ed25519_verify(signature, message, pk.as_ref()).is_ok(),
         /// TODO: secp256k1
         #[cfg(feature = "secp256k1")]
-        PublicKey::Secp256k1(pk) => H::secp256k1_verify(signature, message, &pk.to_bytes()[..]),
+        PublicKey::Secp256k1(pk) => H::secp256k1_verify(signature, message, &pk.to_bytes()[..]).is_ok(),
         _ => unreachable!(),
     }
 }
