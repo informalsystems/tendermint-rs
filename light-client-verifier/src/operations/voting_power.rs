@@ -13,7 +13,7 @@ use tendermint::{
 
 use crate::{
     errors::VerificationError,
-    host_functions::HostFunctionsProvider,
+    host_functions::CryptoProvider,
     prelude::*,
     types::{Commit, SignedHeader, TrustThreshold, ValidatorSet},
 };
@@ -42,7 +42,7 @@ impl fmt::Display for VotingPowerTally {
 /// Computes the voting power in a commit against a validator set.
 ///
 /// This trait provides default implementation of some helper functions.
-pub trait VotingPowerCalculator<H: HostFunctionsProvider>: Send + Sync {
+pub trait VotingPowerCalculator<H: CryptoProvider>: Send + Sync {
     /// Compute the total voting power in a validator set
     fn total_power_of(&self, validator_set: &ValidatorSet) -> u64 {
         validator_set
@@ -103,9 +103,9 @@ pub trait VotingPowerCalculator<H: HostFunctionsProvider>: Send + Sync {
 
 /// Default implementation of a `VotingPowerCalculator`
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub struct ProdVotingPowerCalculator<H: HostFunctionsProvider>(PhantomData<H>);
+pub struct ProdVotingPowerCalculator<H: CryptoProvider>(PhantomData<H>);
 
-impl<H: HostFunctionsProvider> VotingPowerCalculator<H> for ProdVotingPowerCalculator<H> {
+impl<H: CryptoProvider> VotingPowerCalculator<H> for ProdVotingPowerCalculator<H> {
     fn voting_power_in(
         &self,
         signed_header: &SignedHeader,
@@ -182,7 +182,7 @@ impl<H: HostFunctionsProvider> VotingPowerCalculator<H> for ProdVotingPowerCalcu
     }
 }
 
-fn verify_signature<H: HostFunctionsProvider>(
+fn verify_signature<H: CryptoProvider>(
     pubkey: PublicKey,
     message: &[u8],
     signature: &[u8],
@@ -246,7 +246,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        errors::VerificationErrorDetail, host_functions::helper::HostFunctionsManager,
+        errors::VerificationErrorDetail, host_functions::helper::CryptoManager,
         types::LightBlock,
     };
 
@@ -258,7 +258,7 @@ mod tests {
 
     #[test]
     fn test_empty_signatures() {
-        let vp_calculator = ProdVotingPowerCalculator::<HostFunctionsManager>::default();
+        let vp_calculator = ProdVotingPowerCalculator::<CryptoManager>::default();
         let trust_threshold = TrustThreshold::default();
 
         let mut light_block: LightBlock = TestgenLightBlock::new_default(10)
@@ -279,7 +279,7 @@ mod tests {
 
     #[test]
     fn test_all_signatures_absent() {
-        let vp_calculator = ProdVotingPowerCalculator::<HostFunctionsManager>::default();
+        let vp_calculator = ProdVotingPowerCalculator::<CryptoManager>::default();
         let trust_threshold = TrustThreshold::default();
 
         let mut testgen_lb = TestgenLightBlock::new_default(10);
@@ -301,7 +301,7 @@ mod tests {
 
     #[test]
     fn test_all_signatures_nil() {
-        let vp_calculator = ProdVotingPowerCalculator::<HostFunctionsManager>::default();
+        let vp_calculator = ProdVotingPowerCalculator::<CryptoManager>::default();
         let trust_threshold = TrustThreshold::default();
 
         let validator_set = ValidatorSet::new(vec!["a", "b"]);
@@ -323,7 +323,7 @@ mod tests {
 
     #[test]
     fn test_one_invalid_signature() {
-        let vp_calculator = ProdVotingPowerCalculator::<HostFunctionsManager>::default();
+        let vp_calculator = ProdVotingPowerCalculator::<CryptoManager>::default();
         let trust_threshold = TrustThreshold::default();
 
         let mut testgen_lb = TestgenLightBlock::new_default(10);
@@ -351,7 +351,7 @@ mod tests {
 
     #[test]
     fn test_all_signatures_invalid() {
-        let vp_calculator = ProdVotingPowerCalculator::<HostFunctionsManager>::default();
+        let vp_calculator = ProdVotingPowerCalculator::<CryptoManager>::default();
         let trust_threshold = TrustThreshold::default();
 
         let mut testgen_lb = TestgenLightBlock::new_default(10);
@@ -373,7 +373,7 @@ mod tests {
 
     #[test]
     fn test_signatures_from_diff_valset() {
-        let vp_calculator = ProdVotingPowerCalculator::<HostFunctionsManager>::default();
+        let vp_calculator = ProdVotingPowerCalculator::<CryptoManager>::default();
         let trust_threshold = TrustThreshold::default();
 
         let mut light_block: LightBlock = TestgenLightBlock::new_default(10)

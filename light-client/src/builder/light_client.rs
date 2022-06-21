@@ -25,7 +25,7 @@ use crate::{
     store::LightStore,
     supervisor::Instance,
     verifier::{
-        host_functions::HostFunctionsProvider,
+        host_functions::CryptoProvider,
         options::Options,
         predicates::VerificationPredicates,
         types::{LightBlock, PeerId, Status},
@@ -76,7 +76,7 @@ impl<Current, HostFunctions> LightClientBuilder<Current, HostFunctions> {
 
 impl<HostFunctions> LightClientBuilder<NoTrustedState, HostFunctions>
 where
-    HostFunctions: HostFunctionsProvider,
+    HostFunctions: CryptoProvider,
 {
     /// Initialize a builder for a production (non-mock) light client.
     #[cfg(feature = "rpc-client")]
@@ -214,7 +214,7 @@ where
 
 impl<HostFunctions> LightClientBuilder<HasTrustedState, HostFunctions>
 where
-    HostFunctions: HostFunctionsProvider,
+    HostFunctions: CryptoProvider,
 {
     /// Build the light client [`Instance`].
     #[must_use]

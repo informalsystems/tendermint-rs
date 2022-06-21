@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use sp_std::marker::PhantomData;
 use tendermint::Hash;
 use tendermint_light_client_verifier::{
-    host_functions::HostFunctionsProvider, merkle::simple_hash_from_byte_vectors,
+    host_functions::CryptoProvider, merkle::simple_hash_from_byte_vectors,
 };
 
 use crate::{
@@ -72,7 +72,7 @@ pub struct ProdForkDetector<HostFunctions: Default>(PhantomData<HostFunctions>);
 #[async_trait]
 impl<HostFunctions> ForkDetector<HostFunctions> for ProdForkDetector<HostFunctions>
 where
-    HostFunctions: HostFunctionsProvider,
+    HostFunctions: CryptoProvider,
 {
     /// Perform fork detection. See the documentation `ProdForkDetector` for details.
     async fn detect_forks(

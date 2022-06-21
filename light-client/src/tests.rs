@@ -8,7 +8,7 @@ use tendermint::{
     block::Height as HeightStr,
     evidence::{Duration as DurationStr, Evidence},
 };
-use tendermint_light_client_verifier::host_functions::helper::HostFunctionsManager;
+use tendermint_light_client_verifier::host_functions::helper::CryptoManager;
 use tendermint_rpc as rpc;
 use tendermint_rpc::abci::transaction::Hash;
 
@@ -153,7 +153,7 @@ pub fn verify_single(
     clock_drift: Duration,
     now: Time,
 ) -> Result<LightBlock, Verdict> {
-    let verifier = ProdVerifier::<HostFunctionsManager>::default();
+    let verifier = ProdVerifier::<CryptoManager>::default();
 
     let options = Options {
         trust_threshold,
@@ -176,7 +176,7 @@ pub fn verify_single(
 
 pub async fn verify_bisection(
     untrusted_height: Height,
-    light_client: &mut LightClient<HostFunctionsManager>,
+    light_client: &mut LightClient<CryptoManager>,
     state: &mut State,
 ) -> Result<Vec<LightBlock>, Error> {
     light_client

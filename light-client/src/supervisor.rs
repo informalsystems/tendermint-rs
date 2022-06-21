@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use flume;
 use sp_std::fmt::Debug;
 use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
-use tendermint_light_client_verifier::host_functions::HostFunctionsProvider;
+use tendermint_light_client_verifier::host_functions::CryptoProvider;
 
 use crate::{
     errors::Error,
@@ -137,7 +137,7 @@ pub struct Supervisor<HostFunctions> {
 
 impl<HostFunctions> Debug for Supervisor<HostFunctions>
 where
-    HostFunctions: HostFunctionsProvider,
+    HostFunctions: CryptoProvider,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Supervisor")
@@ -151,7 +151,7 @@ where
 
 impl<HostFunctions> Supervisor<HostFunctions>
 where
-    HostFunctions: HostFunctionsProvider,
+    HostFunctions: CryptoProvider,
 {
     /// Constructs a new supervisor from the given list of peers and fork detector instance.
     pub fn new(
@@ -460,7 +460,7 @@ mod tests {
     use tendermint::{
         block::Height, evidence::Duration as DurationStr, trust_threshold::TrustThresholdFraction,
     };
-    use tendermint_light_client_verifier::host_functions::helper::HostFunctionsManager;
+    use tendermint_light_client_verifier::host_functions::helper::CryptoManager;
     use tendermint_rpc::{
         self as rpc,
         response_error::{Code, ResponseError},
@@ -503,7 +503,7 @@ mod tests {
         trust_options: TrustOptions,
         io: MockIo,
         now: Time,
-    ) -> Instance<HostFunctionsManager> {
+    ) -> Instance<CryptoManager> {
         let trusted_height = trust_options.height;
         let trusted_state = block_on(io.fetch_light_block(AtHeight::At(trusted_height)))
             .expect("could not 'request' light block");
@@ -522,7 +522,7 @@ mod tests {
             clock_drift: Duration::from_secs(0),
         };
 
-        let verifier = ProdVerifier::<HostFunctionsManager>::default();
+        let verifier = ProdVerifier::<CryptoManager>::default();
         let clock = MockClock { now };
         let scheduler = scheduler::basic_bisecting_schedule;
 
@@ -533,7 +533,7 @@ mod tests {
     }
 
     async fn run_bisection_test(
-        peer_list: PeerList<Instance<HostFunctionsManager>>,
+        peer_list: PeerList<Instance<CryptoManager>>,
         height_to_verify: u64,
     ) -> (Result<LightBlock, Error>, LatestStatus) {
         let supervisor = Supervisor::new(
@@ -557,7 +557,7 @@ mod tests {
         primary: Option<Vec<LightBlock>>,
         witnesses: Option<Vec<Vec<LightBlock>>>,
         now: Time,
-    ) -> PeerList<Instance<HostFunctionsManager>> {
+    ) -> PeerList<Instance<CryptoManager>> {
         let trust_options = TrustOptions {
             period: DurationStr(Duration::new(604800, 0)),
             height: Height::try_from(1_u64).expect("Error while making height"),

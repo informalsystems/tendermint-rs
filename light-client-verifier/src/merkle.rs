@@ -1,6 +1,6 @@
 //! Merkle tree used in Tendermint networks
 
-use crate::{host_functions::HostFunctionsProvider, prelude::*};
+use crate::{host_functions::CryptoProvider, prelude::*};
 
 /// Size of Merkle root hash
 pub const HASH_SIZE: usize = 32;
@@ -11,12 +11,12 @@ pub type Hash = [u8; HASH_SIZE];
 /// Compute a simple Merkle root from vectors of arbitrary byte vectors.
 /// The leaves of the tree are the bytes of the given byte vectors in
 /// the given order.
-pub fn simple_hash_from_byte_vectors<H: HostFunctionsProvider>(byte_vecs: Vec<Vec<u8>>) -> Hash {
+pub fn simple_hash_from_byte_vectors<H: CryptoProvider>(byte_vecs: Vec<Vec<u8>>) -> Hash {
     simple_hash_from_byte_slices_inner::<H>(byte_vecs.as_slice())
 }
 
 // recurse into subtrees
-fn simple_hash_from_byte_slices_inner<H: HostFunctionsProvider>(byte_slices: &[Vec<u8>]) -> Hash {
+fn simple_hash_from_byte_slices_inner<H: CryptoProvider>(byte_slices: &[Vec<u8>]) -> Hash {
     let length = byte_slices.len();
     match length {
         0 => empty_hash::<H>(),
@@ -41,7 +41,7 @@ fn get_split_point(length: usize) -> usize {
 }
 
 // tmhash({})
-fn empty_hash<H: HostFunctionsProvider>() -> Hash {
+fn empty_hash<H: CryptoProvider>() -> Hash {
     // the empty string / byte slice
     let empty = Vec::with_capacity(0);
 
@@ -50,7 +50,7 @@ fn empty_hash<H: HostFunctionsProvider>() -> Hash {
 }
 
 // tmhash(0x00 || leaf)
-fn leaf_hash<H: HostFunctionsProvider>(bytes: &[u8]) -> Hash {
+fn leaf_hash<H: CryptoProvider>(bytes: &[u8]) -> Hash {
     // make a new array starting with 0 and copy in the bytes
     let mut leaf_bytes = Vec::with_capacity(bytes.len() + 1);
     leaf_bytes.push(0x00);
@@ -61,7 +61,7 @@ fn leaf_hash<H: HostFunctionsProvider>(bytes: &[u8]) -> Hash {
 }
 
 // tmhash(0x01 || left || right)
-fn inner_hash<H: HostFunctionsProvider>(left: &[u8], right: &[u8]) -> Hash {
+fn inner_hash<H: CryptoProvider>(left: &[u8], right: &[u8]) -> Hash {
     // make a new array starting with 0x1 and copy in the bytes
     let mut inner_bytes = Vec::with_capacity(left.len() + right.len() + 1);
     inner_bytes.push(0x01);
@@ -75,7 +75,7 @@ fn inner_hash<H: HostFunctionsProvider>(left: &[u8], right: &[u8]) -> Hash {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::host_functions::helper::HostFunctionsManager; // TODO: use non-subtle ?
+    use crate::host_functions::helper::CryptoManager; // TODO: use non-subtle ?
 
     #[test]
     fn test_get_split_point() {
@@ -98,7 +98,7 @@ mod tests {
         let empty_tree_root = &hex::decode(empty_tree_root_hex).unwrap();
         let empty_tree: Vec<Vec<u8>> = vec![vec![]; 0];
 
-        let root = simple_hash_from_byte_vectors::<HostFunctionsManager>(empty_tree);
+        let root = simple_hash_from_byte_vectors::<CryptoManager>(empty_tree);
         assert_eq!(empty_tree_root, &root);
     }
 
@@ -109,7 +109,7 @@ mod tests {
         let empty_leaf_root = &hex::decode(empty_leaf_root_hex).unwrap();
         let one_empty_leaf: Vec<Vec<u8>> = vec![vec![]; 1];
 
-        let root = simple_hash_from_byte_vectors::<HostFunctionsManager>(one_empty_leaf);
+        let root = simple_hash_from_byte_vectors::<CryptoManager>(one_empty_leaf);
         assert_eq!(empty_leaf_root, &root);
     }
 
@@ -121,7 +121,7 @@ mod tests {
         let leaf_root = &hex::decode(leaf_root_hex).unwrap();
         let leaf_tree: Vec<Vec<u8>> = vec![leaf_string.as_bytes().to_vec(); 1];
 
-        let root = simple_hash_from_byte_vectors::<HostFunctionsManager>(leaf_tree);
+        let root = simple_hash_from_byte_vectors::<CryptoManager>(leaf_tree);
         assert_eq!(leaf_root, &root);
     }
 
@@ -133,7 +133,7 @@ mod tests {
 
         let node_hash = &hex::decode(node_hash_hex).unwrap();
         let hash =
-            inner_hash::<HostFunctionsManager>(left_string.as_bytes(), right_string.as_bytes());
+            inner_hash::<CryptoManager>(left_string.as_bytes(), right_string.as_bytes());
         assert_eq!(node_hash, &hash);
     }
 }

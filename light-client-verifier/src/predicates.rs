@@ -6,7 +6,7 @@ use tendermint::{block::Height, hash::Hash};
 
 use crate::{
     errors::VerificationError,
-    host_functions::HostFunctionsProvider,
+    host_functions::CryptoProvider,
     merkle::simple_hash_from_byte_vectors,
     operations::{CommitValidator, VotingPowerCalculator},
     prelude::*,
@@ -18,7 +18,7 @@ use crate::{
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct ProdPredicates<H>(PhantomData<H>);
 
-impl<H: HostFunctionsProvider> VerificationPredicates<H> for ProdPredicates<H> {}
+impl<H: CryptoProvider> VerificationPredicates<H> for ProdPredicates<H> {}
 
 /// Defines the various predicates used to validate and verify light blocks.
 ///
@@ -26,7 +26,7 @@ impl<H: HostFunctionsProvider> VerificationPredicates<H> for ProdPredicates<H> {
 ///
 /// This enables test implementations to only override a single method rather than
 /// have to re-define every predicate.
-pub trait VerificationPredicates<H: HostFunctionsProvider>: Send + Sync {
+pub trait VerificationPredicates<H: CryptoProvider>: Send + Sync {
     /// Compare the provided validator_set_hash against the hash produced from hashing the validator
     /// set.
     fn validator_sets_match(
@@ -218,7 +218,7 @@ mod tests {
 
     use crate::{
         errors::{VerificationError, VerificationErrorDetail},
-        host_functions::helper::HostFunctionsManager,
+        host_functions::helper::CryptoManager,
         operations::{ProdCommitValidator, ProdVotingPowerCalculator, VotingPowerTally},
         predicates::{ProdPredicates, VerificationPredicates},
         prelude::*,
@@ -242,7 +242,7 @@ mod tests {
         let header_one = Header::new(&val).generate().unwrap();
         let header_two = Header::new(&val).generate().unwrap();
 
-        let vp = ProdPredicates::<HostFunctionsManager>::default();
+        let vp = ProdPredicates::<CryptoManager>::default();
 
         // 1. ensure valid header verifies
         let result_ok = vp.is_monotonic_bft_time(header_two.time, header_one.time);
@@ -265,7 +265,7 @@ mod tests {
         let header_one = Header::new(&val).generate().unwrap();
         let header_two = Header::new(&val).height(2).generate().unwrap();
 
-        let vp = ProdPredicates::<HostFunctionsManager>::default();
+        let vp = ProdPredicates::<CryptoManager>::default();
 
         // 1. ensure valid header verifies
         let result_ok = vp.is_monotonic_height(header_two.height, header_one.height);
@@ -288,7 +288,7 @@ mod tests {
         let val = Validator::new("val-1");
         let header = Header::new(&[val]).generate().unwrap();
 
-        let vp = ProdPredicates::<HostFunctionsManager>::default();
+        let vp = ProdPredicates::<CryptoManager>::default();
 
         // 1. ensure valid header verifies
         let mut trusting_period = Duration::new(1000, 0);
@@ -317,7 +317,7 @@ mod tests {
         let val = Validator::new("val-1");
         let header = Header::new(&[val]).generate().unwrap();
 
-        let vp = ProdPredicates::<HostFunctionsManager>::default();
+        let vp = ProdPredicates::<CryptoManager>::default();
         let one_second = Duration::new(1, 0);
 
         let now = OffsetDateTime::now_utc().try_into().unwrap();
@@ -348,7 +348,7 @@ mod tests {
 
         let bad_validator_set = ValidatorSet::new(vec!["bad-val"]).generate().unwrap();
 
-        let vp = ProdPredicates::<HostFunctionsManager>::default();
+        let vp = ProdPredicates::<CryptoManager>::default();
 
         // Test positive case
         // 1. For predicate: validator_sets_match
@@ -413,7 +413,7 @@ mod tests {
             .unwrap()
             .signed_header;
 
-        let vp = ProdPredicates::<HostFunctionsManager>::default();
+        let vp = ProdPredicates::<CryptoManager>::default();
 
         // 1. ensure valid signed header verifies
         let result_ok =
@@ -448,8 +448,8 @@ mod tests {
         let mut signed_header = light_block.signed_header;
         let val_set = light_block.validators;
 
-        let vp = ProdPredicates::<HostFunctionsManager>::default();
-        let commit_validator = ProdCommitValidator::<HostFunctionsManager>::default();
+        let vp = ProdPredicates::<CryptoManager>::default();
+        let commit_validator = ProdCommitValidator::<CryptoManager>::default();
 
         // Test scenarios -->
         // 1. valid commit - must result "Ok"
@@ -535,7 +535,7 @@ mod tests {
 
         let light_block2: LightBlock = test_lb1.next().generate().unwrap().into();
 
-        let vp = ProdPredicates::<HostFunctionsManager>::default();
+        let vp = ProdPredicates::<CryptoManager>::default();
 
         // Test scenarios -->
         // 1. next_validator_set hash matches
@@ -582,7 +582,7 @@ mod tests {
         let val_set = light_block.validators;
         let signed_header = light_block.signed_header;
 
-        let vp = ProdPredicates::<HostFunctionsManager>::default();
+        let vp = ProdPredicates::<CryptoManager>::default();
         let mut trust_threshold = TrustThreshold::new(1, 3).expect("Cannot make trust threshold");
         let voting_power_calculator = ProdVotingPowerCalculator::default();
 
@@ -636,7 +636,7 @@ mod tests {
         let mut light_block: LightBlock =
             TestgenLightBlock::new_default(2).generate().unwrap().into();
 
-        let vp = ProdPredicates::<HostFunctionsManager>::default();
+        let vp = ProdPredicates::<CryptoManager>::default();
         let voting_power_calculator = ProdVotingPowerCalculator::default();
 
         // Test scenarios -->

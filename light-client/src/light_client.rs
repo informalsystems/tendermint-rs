@@ -5,7 +5,7 @@
 use sp_std::fmt;
 
 use sp_std::marker::PhantomData;
-use tendermint_light_client_verifier::host_functions::HostFunctionsProvider;
+use tendermint_light_client_verifier::host_functions::CryptoProvider;
 
 // Re-export for backward compatibility
 pub use crate::verifier::options::Options;
@@ -54,7 +54,7 @@ impl<HostFunctions> fmt::Debug for LightClient<HostFunctions> {
 
 impl<HostFunctions> LightClient<HostFunctions>
     where
-        HostFunctions: HostFunctionsProvider,
+        HostFunctions: CryptoProvider,
 {
     /// Constructs a new light client
     pub fn new(

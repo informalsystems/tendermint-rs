@@ -6,7 +6,7 @@ use tendermint::block::CommitSig;
 
 use crate::{
     errors::VerificationError,
-    host_functions::HostFunctionsProvider,
+    host_functions::CryptoProvider,
     merkle::simple_hash_from_byte_vectors,
     types::{SignedHeader, ValidatorSet},
 };
@@ -30,15 +30,15 @@ pub trait CommitValidator: Send + Sync {
 
 /// Production-ready implementation of a commit validator
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ProdCommitValidator<H: HostFunctionsProvider>(PhantomData<H>);
+pub struct ProdCommitValidator<H: CryptoProvider>(PhantomData<H>);
 
-impl<H: HostFunctionsProvider> Default for ProdCommitValidator<H> {
+impl<H: CryptoProvider> Default for ProdCommitValidator<H> {
     fn default() -> Self {
         Self(PhantomData)
     }
 }
 
-impl<H: HostFunctionsProvider> CommitValidator for ProdCommitValidator<H> {
+impl<H: CryptoProvider> CommitValidator for ProdCommitValidator<H> {
     fn validate(
         &self,
         signed_header: &SignedHeader,

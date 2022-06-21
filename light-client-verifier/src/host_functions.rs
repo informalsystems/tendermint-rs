@@ -3,7 +3,7 @@
 use sp_std::fmt::Debug;
 
 /// Host functions that the light client needs for crypto operations.
-pub trait HostFunctionsProvider: Send + Sync + Default + Debug + 'static {
+pub trait CryptoProvider: Send + Sync + Default + Debug + 'static {
     /// sha256 hash function
     fn sha2_256(preimage: &[u8]) -> [u8; 32];
 
@@ -16,12 +16,12 @@ pub trait HostFunctionsProvider: Send + Sync + Default + Debug + 'static {
 
 #[cfg(any(feature = "test-helpers", test))]
 pub mod helper {
-    use crate::host_functions::HostFunctionsProvider;
+    use crate::host_functions::CryptoProvider;
 
     #[derive(Default, Debug)]
-    pub struct HostFunctionsManager;
+    pub struct CryptoManager;
 
-    impl HostFunctionsProvider for HostFunctionsManager {
+    impl CryptoProvider for CryptoManager {
         fn sha2_256(preimage: &[u8]) -> [u8; 32] {
             sp_core::hashing::sha2_256(preimage)
         }
@@ -56,7 +56,7 @@ pub mod helper {
 mod tests {
     use hex_literal::hex;
 
-    use crate::host_functions::{helper::HostFunctionsManager, HostFunctionsProvider};
+    use crate::host_functions::{helper::CryptoManager, CryptoProvider};
 
     #[test]
     // not super sure what the problem is here but secpk256 is optional so 🤷🏾‍
@@ -65,6 +65,6 @@ mod tests {
         let msg = hex!("313233343030");
         let sig = hex!("304402207fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a002207fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0");
 
-        assert!(HostFunctionsManager::secp256k1_verify(&sig, &msg, &public).is_ok())
+        assert!(CryptoManager::secp256k1_verify(&sig, &msg, &public).is_ok())
     }
 }

@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{ErrorExt, VerificationError, VerificationErrorDetail},
-    host_functions::HostFunctionsProvider,
+    host_functions::CryptoProvider,
     operations::{
         voting_power::VotingPowerTally, CommitValidator, ProdCommitValidator,
         ProdVotingPowerCalculator, VotingPowerCalculator,
@@ -103,7 +103,7 @@ where
     P: VerificationPredicates<H>,
     C: VotingPowerCalculator<H>,
     V: CommitValidator,
-    H: HostFunctionsProvider,
+    H: CryptoProvider,
 {
     /// Constructor.
     pub fn new(predicates: P, voting_power_calculator: C, commit_validator: V) -> Self {
@@ -121,7 +121,7 @@ where
     P: VerificationPredicates<H>,
     C: VotingPowerCalculator<H>,
     V: CommitValidator,
-    H: HostFunctionsProvider,
+    H: CryptoProvider,
 {
     /// Validate the given light block state.
     ///

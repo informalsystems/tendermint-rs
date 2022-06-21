@@ -1,6 +1,6 @@
 use core::time::Duration;
 
-use tendermint_light_client_verifier::host_functions::HostFunctionsProvider;
+use tendermint_light_client_verifier::host_functions::CryptoProvider;
 #[cfg(feature = "rpc-client")]
 use {
     crate::evidence::ProdEvidenceReporter, crate::fork_detector::ProdForkDetector,
@@ -112,7 +112,7 @@ impl<HostFunctions> SupervisorBuilder<HasPrimary, HostFunctions> {
 
 impl<HostFunctions> SupervisorBuilder<Done, HostFunctions>
 where
-    HostFunctions: HostFunctionsProvider,
+    HostFunctions: CryptoProvider,
 {
     /// Build a production (non-mock) [`Supervisor`].
     #[must_use]
