@@ -47,8 +47,8 @@ impl TryFrom<RawEvidence> for Evidence {
 
     fn try_from(value: RawEvidence) -> Result<Self, Self::Error> {
         match value.sum.ok_or_else(Error::invalid_evidence)? {
-            Sum::DuplicateVoteEvidence(ev) => Ok(Evidence::DuplicateVote(Box::new(ev.try_into()?))),
-            Sum::LightClientAttackEvidence(_ev) => Ok(Evidence::LightClientAttackEvidence),
+            RawSum::DuplicateVoteEvidence(ev) => Ok(Evidence::DuplicateVote(Box::new(ev.try_into()?))),
+            RawSum::LightClientAttackEvidence(_ev) => Ok(Evidence::LightClientAttackEvidence),
         }
     }
 }

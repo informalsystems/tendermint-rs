@@ -28,8 +28,9 @@ std = [
   "serde/std",
   "time/std",
   "flex-error/std",
+  "flex-error/eyre_tracer"
 ]
-default = ["flex-error/std", "flex-error/eyre_tracer"]
+default = ["std"]
 secp256k1 = ["tendermint/secp256k1"]
 test-helpers = [ "sp-core"]
 
