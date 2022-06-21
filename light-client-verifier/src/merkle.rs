@@ -132,8 +132,7 @@ mod tests {
         let right_string = "N456";
 
         let node_hash = &hex::decode(node_hash_hex).unwrap();
-        let hash =
-            inner_hash::<CryptoManager>(left_string.as_bytes(), right_string.as_bytes());
+        let hash = inner_hash::<CryptoManager>(left_string.as_bytes(), right_string.as_bytes());
         assert_eq!(node_hash, &hash);
     }
 }

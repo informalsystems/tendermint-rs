@@ -526,8 +526,7 @@ mod tests {
         let clock = MockClock { now };
         let scheduler = scheduler::basic_bisecting_schedule;
 
-        let light_client =
-            LightClient::new(peer_id, options, clock, scheduler, verifier, io);
+        let light_client = LightClient::new(peer_id, options, clock, scheduler, verifier, io);
 
         Instance::new(light_client, state)
     }

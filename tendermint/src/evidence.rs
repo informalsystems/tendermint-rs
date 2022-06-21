@@ -9,9 +9,9 @@ use serde::{Deserialize, Serialize};
 use tendermint_proto::{
     google::protobuf::Duration as RawDuration,
     types::{
-        evidence::{Sum as RawSum, Sum},
-        DuplicateVoteEvidence as RawDuplicateVoteEvidence, Evidence as RawEvidence,
-        EvidenceList as RawEvidenceList, EvidenceParams as RawEvidenceParams,
+        evidence::Sum as RawSum, DuplicateVoteEvidence as RawDuplicateVoteEvidence,
+        Evidence as RawEvidence, EvidenceList as RawEvidenceList,
+        EvidenceParams as RawEvidenceParams,
     },
     Protobuf,
 };

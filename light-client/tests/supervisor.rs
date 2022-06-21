@@ -24,7 +24,12 @@ use tendermint_testgen::Tester;
 
 const TEST_FILES_PATH: &str = "./tests/support/";
 
-fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: Time) -> Instance<CryptoManager> {
+fn make_instance(
+    peer_id: PeerId,
+    trust_options: TrustOptions,
+    io: MockIo,
+    now: Time,
+) -> Instance<CryptoManager> {
     let trusted_height = trust_options.height;
     let trusted_state = block_on(io.fetch_light_block(AtHeight::At(trusted_height)))
         .expect("could not 'request' light block");
@@ -47,7 +52,7 @@ fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: 
     let verifier = ProdVerifier::<CryptoManager>::default();
     let scheduler = scheduler::basic_bisecting_schedule;
 
-    let light_client = LightClient::new(peer_id, options, clock, scheduler, verifier,  io);
+    let light_client = LightClient::new(peer_id, options, clock, scheduler, verifier, io);
 
     Instance::new(light_client, state)
 }

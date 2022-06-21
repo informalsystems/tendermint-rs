@@ -2,9 +2,7 @@
 //!
 //! [1]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification/verification.md
 
-use sp_std::fmt;
-
-use sp_std::marker::PhantomData;
+use sp_std::{fmt, marker::PhantomData};
 use tendermint_light_client_verifier::host_functions::CryptoProvider;
 
 // Re-export for backward compatibility
@@ -53,8 +51,8 @@ impl<HostFunctions> fmt::Debug for LightClient<HostFunctions> {
 }
 
 impl<HostFunctions> LightClient<HostFunctions>
-    where
-        HostFunctions: CryptoProvider,
+where
+    HostFunctions: CryptoProvider,
 {
     /// Constructs a new light client
     pub fn new(
@@ -232,14 +230,14 @@ impl<HostFunctions> LightClient<HostFunctions>
                     // the `Verified` status or higher if already trusted.
                     let new_status = Status::most_trusted(Status::Verified, status);
                     state.light_store.update(&current_block, new_status);
-                }
+                },
                 Verdict::Invalid(e) => {
                     // Verification failed, add the block to the light store with `Failed` status,
                     // and abort.
                     state.light_store.update(&current_block, Status::Failed);
 
                     return Err(Error::invalid_light_block(e));
-                }
+                },
                 Verdict::NotEnoughTrust(_) => {
                     // The current block cannot be trusted because of a missing overlap in the
                     // validator sets. Add the block to the light store with
@@ -247,7 +245,7 @@ impl<HostFunctions> LightClient<HostFunctions>
                     // attempt to raise the height of the highest trusted state
                     // until there is enough overlap.
                     state.light_store.update(&current_block, Status::Unverified);
-                }
+                },
             }
 
             // Compute the next height to fetch and verify
@@ -302,7 +300,6 @@ impl<HostFunctions> LightClient<HostFunctions>
     ) -> Result<LightBlock, Error> {
         use sp_std::convert::TryFrom;
         use tendermint::Hash;
-
         use tendermint_light_client_verifier::merkle::simple_hash_from_byte_vectors;
 
         let root = state
