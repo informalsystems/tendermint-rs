@@ -182,7 +182,7 @@ impl Version {
 
     #[allow(clippy::unused_self)]
     #[cfg(not(feature = "amino"))]
-    fn encode_auth_signature_amino(
+    const fn encode_auth_signature_amino(
         self,
         _: &ed25519::PublicKey,
         _: &ed25519::Signature,
@@ -205,7 +205,10 @@ impl Version {
 
     #[allow(clippy::unused_self)]
     #[cfg(not(feature = "amino"))]
-    fn decode_auth_signature_amino(self, _: &[u8]) -> Result<proto::p2p::AuthSigMessage, Error> {
+    const fn decode_auth_signature_amino(
+        self,
+        _: &[u8],
+    ) -> Result<proto::p2p::AuthSigMessage, Error> {
         panic!("attempted to decode auth signature using amino, but 'amino' feature is not present")
     }
 }
