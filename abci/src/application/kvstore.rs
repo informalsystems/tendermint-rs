@@ -172,6 +172,7 @@ impl Application for KeyValueStoreApp {
             gas_used: 0,
             events: vec![],
             codespace: "".to_string(),
+            ..Default::default()
         }
     }
 
