@@ -3,8 +3,8 @@ set -euo pipefail
 
 if [ ! -d "${TMHOME}/config" ]; then
 
-	echo "Running tendermint init to create configuration."
-	/usr/bin/tendermint init
+  echo "Running tendermint init to create configuration."
+  /usr/bin/tendermint init
 
   sconfig -s ${TMHOME}/config/config.toml \
     proxy_app=${PROXY_APP:-kvstore} \
