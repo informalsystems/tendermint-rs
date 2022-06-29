@@ -1,5 +1,5 @@
 {
-  "id": "c32535b9-bec5-4549-9f90-7aa25d6d6a12",
+  "id": "e78e5f42-ea87-4076-9c74-e3c201e12ebe",
   "jsonrpc": "2.0",
   "result": {
     "check_tx": {
@@ -10,7 +10,10 @@
       "gas_used": "0",
       "gas_wanted": "1",
       "info": "",
-      "log": ""
+      "log": "",
+      "mempoolError": "",
+      "priority": "0",
+      "sender": ""
     },
     "deliver_tx": {
       "code": 0,
@@ -49,6 +52,6 @@
       "log": ""
     },
     "hash": "D63F9C23791E610410B576D8C27BB5AEAC93CC1A58522428A7B32A1276085860",
-    "height": "34"
+    "height": "35"
   }
 }

@@ -1,12 +1,12 @@
 {
-  "id": "48e82c4a-4018-433e-9557-c40ac927676f",
+  "id": "2a46bb1d-0f07-45e5-91d6-71cf71c7e7e1",
   "jsonrpc": "2.0",
   "result": {
     "response": {
       "app_version": "1",
       "data": "{\"size\":0}",
       "last_block_app_hash": "AAAAAAAAAAA=",
-      "last_block_height": "32",
+      "last_block_height": "8",
       "version": "0.17.0"
     }
   }
