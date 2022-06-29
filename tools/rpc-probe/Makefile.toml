@@ -1,6 +1,6 @@
 [env]
 CONTAINER_NAME = "kvstore-rpc-probe"
-DOCKER_IMAGE = "informaldev/tendermint:0.34.13"
+DOCKER_IMAGE = "informaldev/tendermint:0.34.20-rc0"
 HOST_RPC_PORT = 26657
 CARGO_MAKE_WAIT_MILLISECONDS = 3500
 
@@ -10,7 +10,7 @@ dependencies = [ "docker-up", "wait", "run", "docker-down" ]
 
 [tasks.run]
 command = "cargo"
-args = ["run"]
+args = ["run", "kvstore"]
 
 [tasks.docker-down]
 dependencies = [ "docker-stop", "docker-rm" ]
