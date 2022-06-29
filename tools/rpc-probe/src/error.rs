@@ -7,10 +7,10 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug, Clone, Error)]
 pub enum Error {
     #[error("an internal error occurred: {0}")]
-    InternalError(String),
+    Internal(String),
 
     #[error("WebSocket connection error: {0}")]
-    WebSocketError(String),
+    WebSocket(String),
 
     #[error("timed out: {0}")]
     Timeout(String),
@@ -36,7 +36,7 @@ pub enum Error {
 
 impl From<async_tungstenite::tungstenite::Error> for Error {
     fn from(e: async_tungstenite::tungstenite::Error) -> Self {
-        Self::WebSocketError(e.to_string())
+        Self::WebSocket(e.to_string())
     }
 }
 
@@ -54,13 +54,13 @@ impl From<serde_json::Error> for Error {
 
 impl<T> From<tokio::sync::mpsc::error::SendError<T>> for Error {
     fn from(e: tokio::sync::mpsc::error::SendError<T>) -> Self {
-        Self::InternalError(format!("failed to send to channel: {}", e))
+        Self::Internal(format!("failed to send to channel: {}", e))
     }
 }
 
 impl From<tokio::task::JoinError> for Error {
     fn from(e: tokio::task::JoinError) -> Self {
-        Self::InternalError(format!(
+        Self::Internal(format!(
             "failed while waiting for async task to join: {}",
             e
         ))
