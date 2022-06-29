@@ -59,7 +59,13 @@ pub struct Response {
 impl crate::Response for Response {}
 
 /// Results from either `CheckTx` or `DeliverTx`.
+///
+/// Prioritized mempool-related fields are only relevant for `CheckTx` results.
+/// The results for `CheckTx` and `DeliverTx` are not separated in tendermint-rs
+/// v0.23.x to avoid breaking the API, as Tendermint v0.34.0-v0.34.19 returned
+/// the exact same result structure, and this changed in v0.34.20.
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
+#[serde(default)]
 pub struct TxResult {
     /// Code
     pub code: Code,
@@ -69,26 +75,33 @@ pub struct TxResult {
     pub data: Option<Data>,
 
     /// Log
-    #[serde(default)]
     pub log: Log,
 
     /// ABCI info (nondeterministic)
-    #[serde(default)]
     pub info: Info,
 
     /// Amount of gas wanted
-    #[serde(default)]
     pub gas_wanted: Gas,
 
     /// Amount of gas used
-    #[serde(default)]
     pub gas_used: Gas,
 
     /// Events
-    #[serde(default)]
     pub events: Vec<Event>,
 
     /// Codespace
-    #[serde(default)]
     pub codespace: Codespace,
+
+    /// Only relevant for `CheckTx`.
+    pub sender: String,
+
+    /// If the prioritized mempool is enabled, this will give an indication as
+    /// to the priority assigned to the transaction.
+    ///
+    /// Only relevant for `CheckTx`.
+    #[serde(with = "tendermint_proto::serializers::from_str")]
+    pub priority: i64,
+
+    /// Only relevant for `CheckTx`.
+    pub mempool_error: String,
 }
