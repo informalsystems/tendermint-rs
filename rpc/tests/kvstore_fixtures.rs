@@ -105,7 +105,7 @@ fn outgoing_fixtures() {
                     .unwrap();
                 assert_eq!(wrapped.params().query, "block.height > 1");
                 assert_eq!(wrapped.params().page, 1);
-                assert_eq!(wrapped.params().per_page, 10);
+                assert_eq!(wrapped.params().per_page, 100);
                 assert_eq!(wrapped.params().order_by, Order::Ascending);
             }
             "blockchain_from_1_to_10" => {
@@ -469,12 +469,12 @@ fn incoming_fixtures() {
                     assert_eq!(block.block.header.app_hash.value(), [0u8; 8]);
                     assert_eq!(block.block.header.chain_id.as_str(), CHAIN_ID);
                     assert!(!block.block.header.consensus_hash.is_empty());
-                    assert!(block.block.header.data_hash.is_none());
-                    assert!(block.block.header.evidence_hash.is_none());
-                    assert_eq!(block.block.header.height.value(), 10);
+                    assert_eq!(block.block.header.data_hash, empty_merkle_root_hash);
+                    assert_eq!(block.block.header.evidence_hash, empty_merkle_root_hash);
+                    assert!(block.block.header.height.value() > 1);
                     assert!(block.block.header.last_block_id.is_some());
-                    assert_eq!(block.block.header.last_commit_hash, empty_merkle_root_hash);
-                    assert_eq!(block.block.header.last_results_hash, empty_merkle_root_hash);
+                    assert!(block.block.header.last_commit_hash.is_some());
+                    assert!(block.block.header.last_results_hash.is_some());
                     assert!(!block.block.header.next_validators_hash.is_empty());
                     assert_ne!(
                         block.block.header.proposer_address.as_bytes(),
@@ -493,7 +493,7 @@ fn incoming_fixtures() {
                     assert!(!block.block.header.validators_hash.is_empty());
                     assert_eq!(
                         block.block.header.version,
-                        tendermint::block::header::Version { block: 10, app: 1 }
+                        tendermint::block::header::Version { block: 11, app: 1 }
                     );
                     assert!(block.block.last_commit.is_some());
                     assert!(!block.block_id.hash.is_empty());
@@ -780,10 +780,7 @@ fn incoming_fixtures() {
                 assert_eq!(result.genesis.validators[0].power(), 10);
                 assert!(result.genesis.validators[0].pub_key.ed25519().is_some());
                 assert_eq!(result.genesis.validators[0].proposer_priority.value(), 0);
-                assert_eq!(
-                    result.genesis.consensus_params.block.time_iota_ms,
-                    tendermint::block::Size::default_time_iota_ms(),
-                );
+                assert_eq!(result.genesis.consensus_params.block.time_iota_ms, 500);
             }
             "net_info" => {
                 let result = endpoint::net_info::Response::from_string(content).unwrap();
@@ -817,9 +814,12 @@ fn incoming_fixtures() {
                         app: 1
                     }
                 );
-                assert_eq!(result.node_info.version.to_string(), "v0.34.9");
+                assert_eq!(result.node_info.version.to_string(), "v0.34.20-rc0");
                 assert!(!result.sync_info.catching_up);
-                assert_eq!(result.sync_info.latest_app_hash.value(), [0; 8]);
+                assert_eq!(
+                    result.sync_info.latest_app_hash.value(),
+                    [6, 0, 0, 0, 0, 0, 0, 0]
+                );
                 assert!(!result.sync_info.latest_block_hash.is_empty());
                 assert!(
                     result
