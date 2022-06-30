@@ -1,0 +1,35 @@
+[package]
+name        = "tendermint-validator"
+version     = "0.24.0-pre.2"
+authors     = ["Informal Systems <hello@informal.systems>"]
+edition     = "2021"
+license     = "Apache-2.0"
+readme      = "README.md"
+categories  = ["cryptography::cryptocurrencies", "network-programming"]
+keywords    = ["privval", "validator", "blockchain", "bft", "consensus", "tendermint"]
+repository  = "https://github.com/informalsystems/tendermint-rs"
+description = """
+    tendermint-validator provides a simple framework with which to build key management
+    for Tendermint validators.
+    """
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = ["flex-error/std", "flex-error/eyre_tracer"]
+
+[dependencies]
+ed25519-consensus = { version = "1.2", default-features = false }
+flex-error = { version = "0.4.4", default-features = false }
+rand_core = { version = "0.6", default-features = false, features = ["std"] }
+serde_json = "1"
+tempfile = { version = "3.2.0" }
+tendermint = { version = "0.24.0-pre.2", default-features = false, path = "../tendermint" }
+tendermint-proto = { version = "0.24.0-pre.2", default-features = false, path = "../proto", features = ["grpc"] }
+tokio = { version = "1", features = ["full"] }
+tokio-stream = { version = "0.1", features = ["net"] }
+tonic = { version = "0.7", features = ["tls", "transport"] }
+tracing = { version = "0.1", default-features = false }
+
+[dev-dependencies]
+tracing-subscriber = "0.2"
