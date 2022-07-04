@@ -1,5 +1,5 @@
 [package]
-name        = "tendermint-validator"
+name        = "tendermint-privval"
 version     = "0.24.0-pre.2"
 authors     = ["Informal Systems <hello@informal.systems>"]
 edition     = "2021"
@@ -9,7 +9,7 @@ categories  = ["cryptography::cryptocurrencies", "network-programming"]
 keywords    = ["privval", "validator", "blockchain", "bft", "consensus", "tendermint"]
 repository  = "https://github.com/informalsystems/tendermint-rs"
 description = """
-    tendermint-validator provides a simple framework with which to build key management
+    tendermint-privval provides a simple framework with which to build key management
     for Tendermint validators.
     """
 

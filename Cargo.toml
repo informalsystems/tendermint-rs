@@ -8,13 +8,13 @@ members = [
     "light-client-verifier",
     "p2p",
     "pbt-gen",
+    "privval",
     "proto",
     "rpc",
     "std-ext",
     "tendermint",
     "test",
-    "testgen",
-    "validator"
+    "testgen"
 ]
 
 exclude = [

@@ -3,6 +3,7 @@
 ## Changelog
 
 * 2022-06-10: Created the ADR.
+* 2022-07-04: Renamed the crate to `tendermint-privval`.
 
 ## Context
 
@@ -44,7 +45,7 @@ so each implementor would need to duplicate the same common validation code.
 
 ## Decision
 
-The `tendermint-validator` crate can be added to the tendermint-rs repository
+The `tendermint-privval` crate can be added to the tendermint-rs repository
 that will help the developers with implementing Tendermint validator signing backends.
 It will provide basic [tonic's Server](https://docs.rs/tonic/0.7.2/tonic/transport/struct.Server.html)
 options (e.g. TLS) and the implementation of `PrivValidatorApi`. This implementation

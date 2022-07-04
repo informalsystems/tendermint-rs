@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use tendermint::chain;
-use tendermint_validator::{
+use tendermint_privval::{
     BasicServerConfig, FileStateProvider, GrpcSocket, PrivvalService, SoftwareSigner,
 };
 use tracing::Level;
