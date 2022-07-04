@@ -1,6 +1,6 @@
 //! Validator gRPC high-level server implementation
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use tendermint::{
     block, chain, consensus,
@@ -29,16 +29,16 @@ use crate::{
 
 /// Validator gRPC high-level server implementation
 #[derive(Debug)]
-pub struct KMSServer<S: SignerProvider, VS: ValidatorStateProvider> {
+pub struct PrivvalService<S: SignerProvider, VS: ValidatorStateProvider> {
     /// Signer and state providers for individual chains.
     /// Given the traits require mutable access to the state provider
     /// across awaits, we use tokio's mutex here.
-    providers: Mutex<HashMap<chain::Id, (S, VS)>>,
+    providers: Mutex<BTreeMap<chain::Id, (S, VS)>>,
     /// A cache of public keys loaded during the initialization.
-    pubkeys: HashMap<chain::Id, PublicKey>,
+    pubkeys: BTreeMap<chain::Id, PublicKey>,
     /// Optional setting for the maximum height,
     /// after which the server will stop signing for a particular network.
-    max_heights: HashMap<chain::Id, block::Height>,
+    max_heights: BTreeMap<chain::Id, block::Height>,
     /// The network configuration for the gRPC server.
     config: BasicServerConfig,
 }
@@ -62,14 +62,14 @@ fn check_state(
     }
 }
 
-impl<S: SignerProvider, VS: ValidatorStateProvider> KMSServer<S, VS> {
+impl<S: SignerProvider, VS: ValidatorStateProvider> PrivvalService<S, VS> {
     /// Creates a new server instance by loading all providers.
     pub async fn new(
-        providers: HashMap<chain::Id, (S, VS)>,
+        providers: BTreeMap<chain::Id, (S, VS)>,
         config: BasicServerConfig,
     ) -> Result<Self, S::E> {
         info!("creating a new KMS server");
-        let mut pubkeys = HashMap::new();
+        let mut pubkeys = BTreeMap::new();
         for (chain_id, (signer, _)) in providers.iter() {
             let pubkey = signer.load_pubkey().await?;
             let (address, pubkeyb64) = display_validator_info(&pubkey);
@@ -81,7 +81,7 @@ impl<S: SignerProvider, VS: ValidatorStateProvider> KMSServer<S, VS> {
         Ok(Self {
             providers: Mutex::new(providers),
             pubkeys,
-            max_heights: HashMap::new(),
+            max_heights: BTreeMap::new(),
             config,
         })
     }
@@ -94,10 +94,10 @@ impl<S: SignerProvider, VS: ValidatorStateProvider> KMSServer<S, VS> {
     }
 }
 
-impl<
-        S: SignerProvider + Sync + Send + 'static,
-        VS: ValidatorStateProvider + Sync + Send + 'static,
-    > KMSServer<S, VS>
+impl<S, VS> PrivvalService<S, VS>
+where
+    S: SignerProvider + Sync + Send + 'static,
+    VS: ValidatorStateProvider + Sync + Send + 'static,
 {
     /// Based on the connection configuration, starts the gRPC server.
     pub async fn serve(self) -> Result<(), Box<dyn std::error::Error>> {
@@ -130,16 +130,17 @@ impl<
     }
 }
 
-async fn sign_and_persist_state<
-    S: SignerProvider + Sync + Send + 'static,
-    VS: ValidatorStateProvider + Sync + Send + 'static,
->(
+async fn sign_and_persist_state<S, VS>(
     chain_id: &chain::Id,
     signer: &S,
     state_provider: &mut VS,
     new_state: consensus::State,
     signable_bytes: Vec<u8>,
-) -> Result<Signature, RemoteSignerError> {
+) -> Result<Signature, RemoteSignerError>
+where
+    S: SignerProvider + Sync + Send + 'static,
+    VS: ValidatorStateProvider + Sync + Send + 'static,
+{
     let state = state_provider.load_state().await.map_err(|e| {
         error!("[{}] failed to load the existing state: {}", chain_id, e);
         get_state_not_found_error()
@@ -196,10 +197,10 @@ fn get_failed_to_sign_error() -> RemoteSignerError {
 }
 
 #[tonic::async_trait]
-impl<
-        S: SignerProvider + Sync + Send + 'static,
-        VS: ValidatorStateProvider + Sync + Send + 'static,
-    > PrivValidatorApi for KMSServer<S, VS>
+impl<S, VS> PrivValidatorApi for PrivvalService<S, VS>
+where
+    S: SignerProvider + Sync + Send + 'static,
+    VS: ValidatorStateProvider + Sync + Send + 'static,
 {
     async fn get_pub_key(
         &self,
@@ -327,14 +328,16 @@ impl<
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
 
     use tendermint::{block::Height, chain, consensus, proposal::Type, Proposal, Vote};
     use tendermint_proto::privval::priv_validator_api_server::PrivValidatorApi;
     use tracing::Level;
     use tracing_subscriber::FmtSubscriber;
 
-    use crate::{BasicServerConfig, GrpcSocket, KMSServer, SoftwareSigner, ValidatorStateProvider};
+    use crate::{
+        BasicServerConfig, GrpcSocket, PrivvalService, SoftwareSigner, ValidatorStateProvider,
+    };
 
     const CHAIN_ID: &str = "test";
     const CHAIN_ID2: &str = "test2";
@@ -358,12 +361,12 @@ mod tests {
         }
     }
 
-    async fn test_setup() -> KMSServer<SoftwareSigner, MockStateProvider> {
+    async fn test_setup() -> PrivvalService<SoftwareSigner, MockStateProvider> {
         let subscriber = FmtSubscriber::builder()
             .with_max_level(Level::TRACE)
             .finish();
         let _ = tracing::subscriber::set_global_default(subscriber);
-        let mut providers = HashMap::new();
+        let mut providers = BTreeMap::new();
         let signer = SoftwareSigner::generate_ed25519(rand_core::OsRng);
         let state_provider = MockStateProvider::default();
         providers.insert(
@@ -371,7 +374,7 @@ mod tests {
             (signer, state_provider),
         );
         let config = BasicServerConfig::new(None, GrpcSocket::Unix("/tmp/test.socket".into()));
-        KMSServer::new(providers, config).await.unwrap()
+        PrivvalService::new(providers, config).await.unwrap()
     }
 
     #[tokio::test]

@@ -1,16 +1,8 @@
-// use std::collections::HashMap;
-
-// use ed25519_consensus::SigningKey;
-// use tendermint::account::Id;
-// use tendermint_validator::{
-//     BasicServerConfig, FileStateProvider, GrpcSocket, SoftwareSigner, SoftwareSignerServer,
-// };
-
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use tendermint::chain;
 use tendermint_validator::{
-    BasicServerConfig, FileStateProvider, GrpcSocket, KMSServer, SoftwareSigner,
+    BasicServerConfig, FileStateProvider, GrpcSocket, PrivvalService, SoftwareSigner,
 };
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
@@ -21,7 +13,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_max_level(Level::INFO)
         .finish();
     let _ = tracing::subscriber::set_global_default(subscriber);
-    let mut providers = HashMap::new();
+    let mut providers = BTreeMap::new();
     let signer = SoftwareSigner::generate_ed25519(rand_core::OsRng);
     let state_provider = FileStateProvider::new("/tmp/validator.json".into())
         .await
@@ -31,6 +23,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         (signer, state_provider),
     );
     let config = BasicServerConfig::new(None, GrpcSocket::Unix("/tmp/validator.test".into()));
-    let server = KMSServer::new(providers, config).await.unwrap();
+    let server = PrivvalService::new(providers, config).await.unwrap();
     server.serve().await
 }

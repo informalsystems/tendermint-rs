@@ -8,6 +8,6 @@ pub mod signer;
 pub mod state;
 
 pub use config::{BasicServerConfig, GrpcSocket};
-pub use server::KMSServer;
+pub use server::PrivvalService;
 pub use signer::{SignerProvider, SoftwareSigner};
 pub use state::{FileStateProvider, ValidatorStateProvider};
