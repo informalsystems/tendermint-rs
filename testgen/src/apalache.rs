@@ -1,7 +1,7 @@
 use crate::{command::*, tester::TestEnv};
 use serde::{Deserialize, Serialize};
-use std::io;
 use std::fmt::Write;
+use std::io;
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct ApalacheTestBatch {
