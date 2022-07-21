@@ -86,17 +86,22 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         ".tendermint.types.EvidenceParams.max_bytes",
         QUOTED_WITH_DEFAULT,
     ),
-    (".tendermint.abci.ResponseInfo.last_block_height", QUOTED),
-    (".tendermint.abci.ResponseInfo.version", DEFAULT),
     (".tendermint.version.Consensus.block", QUOTED),
     (".tendermint.version.Consensus.app", QUOTED_WITH_DEFAULT),
-    (
-        ".tendermint.abci.ResponseInfo.last_block_app_hash",
-        VEC_SKIP_IF_EMPTY,
-    ),
+    (".tendermint.abci.ResponseInfo.data", DEFAULT),
+    (".tendermint.abci.ResponseInfo.version", DEFAULT),
     (
         ".tendermint.abci.ResponseInfo.app_version",
         QUOTED_WITH_DEFAULT,
+    ),
+    (
+        ".tendermint.abci.ResponseInfo.last_block_height",
+        QUOTED_WITH_DEFAULT,
+    ),
+    (".tendermint.abci.ResponseInfo.last_block_app_hash", DEFAULT),
+    (
+        ".tendermint.abci.ResponseInfo.last_block_app_hash",
+        VEC_SKIP_IF_EMPTY,
     ),
     (".tendermint.types.BlockID.hash", HEXSTRING),
     (".tendermint.types.BlockID.part_set_header", ALIAS_PARTS),
