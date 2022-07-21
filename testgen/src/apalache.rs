@@ -68,7 +68,7 @@ pub fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> io::Result<Apalac
             break;
         }
         if line.starts_with("======") {
-            let _ = write!(&mut new_model, "{} == ~{}\n", inv, test.test);
+            let _ = writeln!(&mut new_model, "{} == ~{}", inv, test.test);
         }
         new_model += line;
         new_model += "\n";
