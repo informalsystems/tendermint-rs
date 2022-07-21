@@ -396,7 +396,7 @@ mod sealed {
                 response_tx,
             }))?;
             // Make sure our subscription request went through successfully.
-            let _ = response_rx.recv().await.ok_or_else(|| {
+            response_rx.recv().await.ok_or_else(|| {
                 Error::client_internal("failed to hear back from WebSocket driver".to_string())
             })??;
             Ok(Subscription::new(id, query, subscription_rx))
@@ -408,7 +408,7 @@ mod sealed {
                 query: query.to_string(),
                 response_tx,
             }))?;
-            let _ = response_rx.recv().await.ok_or_else(|| {
+            response_rx.recv().await.ok_or_else(|| {
                 Error::client_internal("failed to hear back from WebSocket driver".to_string())
             })??;
             Ok(())
@@ -993,7 +993,7 @@ mod test {
                 Some(id) => id.clone(),
                 None => return,
             };
-            let _ = self.send(Id::Str(subs_id), ev).await;
+            self.send(Id::Str(subs_id), ev).await;
         }
 
         async fn handle_incoming_msg(&mut self, msg: Message) -> Option<Result<(), Error>> {
