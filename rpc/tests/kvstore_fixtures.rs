@@ -814,7 +814,7 @@ fn incoming_fixtures() {
                         app: 1
                     }
                 );
-                assert_eq!(result.node_info.version.to_string(), "v0.34.20-rc0");
+                assert_eq!(result.node_info.version.to_string(), "v0.34.20");
                 assert!(!result.sync_info.catching_up);
                 assert_eq!(
                     result.sync_info.latest_app_hash.value(),

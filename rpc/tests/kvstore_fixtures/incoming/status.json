@@ -1,10 +1,10 @@
 {
-  "id": "4c796cab-e6c3-4d66-8cda-5c08388099ae",
+  "id": "deefab4d-1175-4816-9544-af0d25727677",
   "jsonrpc": "2.0",
   "result": {
     "node_info": {
       "channels": "40202122233038606100",
-      "id": "2544e8bb3e6fd6a4da8f36fac969c3634cad5028",
+      "id": "79fdd516b5477fd637b019cc6a129912a7f13bd6",
       "listen_addr": "tcp://0.0.0.0:26656",
       "moniker": "dockernode",
       "network": "dockerchain",
@@ -17,24 +17,24 @@
         "block": "11",
         "p2p": "8"
       },
-      "version": "v0.34.20-rc0"
+      "version": "v0.34.20"
     },
     "sync_info": {
       "catching_up": false,
       "earliest_app_hash": "",
-      "earliest_block_hash": "AC050B6C74B7900922D8E94B71E08672942A926D67464B2E3861DB7E59A6CD1A",
+      "earliest_block_hash": "F4FA302B25AF6113B997EB3870189A29177A593184F0AE0AC08DB4D1BE1BE568",
       "earliest_block_height": "1",
-      "earliest_block_time": "2022-06-29T14:49:53.645520655Z",
+      "earliest_block_time": "2022-07-21T22:06:01.373424724Z",
       "latest_app_hash": "0600000000000000",
-      "latest_block_hash": "604851C568CE481947B74CE38BD50DDB445E16319B38533CE18CDEC95B475507",
-      "latest_block_height": "40",
-      "latest_block_time": "2022-06-29T14:50:13.822791403Z"
+      "latest_block_hash": "A48DA0925AA7EDD5C1E07AE9D7CDC4A30F5541B2F555048B50EECB818164B297",
+      "latest_block_height": "47",
+      "latest_block_time": "2022-07-21T22:06:25.282998322Z"
     },
     "validator_info": {
-      "address": "B64E55251756967A20EF849FE28E2154B34287B7",
+      "address": "CCD08E1A253A3A53929EA9FB71C3C9018E9D2678",
       "pub_key": {
         "type": "tendermint/PubKeyEd25519",
-        "value": "VTiz3uqOr8/B79/82lmacbeB1HiXf8EKFwICGYZDa5s="
+        "value": "BJh7fTq/5bLf0XXKGixr3icDBQtkvaJRnkfsJgVLsnI="
       },
       "voting_power": "10"
     }
