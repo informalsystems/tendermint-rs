@@ -1,5 +1,6 @@
 use crate::{command::*, tester::TestEnv};
 use serde::{Deserialize, Serialize};
+use std::fmt::Write as _;
 use std::io;
 
 #[derive(Deserialize, Clone, Debug)]
@@ -67,7 +68,7 @@ pub fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> io::Result<Apalac
             break;
         }
         if line.starts_with("======") {
-            new_model += &format!("{} == ~{}\n", inv, test.test);
+            let _ = writeln!(new_model, "{} == ~{}", inv, test.test);
         }
         new_model += line;
         new_model += "\n";
