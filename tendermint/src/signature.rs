@@ -20,9 +20,12 @@ pub const SIGNATURE_LENGTH: usize = 64;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Signature(Vec<u8>);
 
-impl async_signature::Signature for Signature {
-    fn from_bytes(bytes: &[u8]) -> Result<Self, async_signature::Error> {
-        Self::try_from(bytes).map_err(async_signature::Error::from_source)
+impl signature::Signature for Signature {
+    fn from_bytes(bytes: &[u8]) -> Result<Self, signature::Error> {
+        #[cfg(feature = "std")]
+        return Self::try_from(bytes).map_err(signature::Error::from_source);
+        #[cfg(not(feature = "std"))]
+        return Self::try_from(bytes).map_err(|_| signature::Error::default());
     }
 }
 

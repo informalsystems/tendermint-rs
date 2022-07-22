@@ -9,5 +9,5 @@ pub mod state;
 
 pub use config::{BasicServerConfig, GrpcSocket};
 pub use server::PrivvalService;
-pub use signer::{SignerProvider, SoftwareSigner};
+pub use signer::{generate_ed25519, SignerProvider, SoftwareSigner};
 pub use state::{FileStateProvider, ValidatorStateProvider};

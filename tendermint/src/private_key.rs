@@ -3,6 +3,7 @@
 pub use ed25519_consensus::SigningKey as Ed25519;
 use ed25519_consensus::VerificationKey;
 use serde::{de, ser, Deserialize, Serialize};
+use signature::Signer;
 use subtle_encoding::{Base64, Encoding};
 use zeroize::Zeroizing;
 
@@ -44,6 +45,12 @@ impl PrivateKey {
         match self {
             PrivateKey::Ed25519(signing_key) => signing_key.sign(signable_msg_bytes).into(),
         }
+    }
+}
+
+impl Signer<Signature> for PrivateKey {
+    fn try_sign(&self, msg: &[u8]) -> Result<Signature, signature::Error> {
+        Ok(self.sign(msg))
     }
 }
 

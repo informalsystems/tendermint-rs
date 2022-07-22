@@ -29,36 +29,18 @@ pub fn display_validator_info(pubkey: &PublicKey) -> (String, String) {
 /// The default software-only implementation of [`SignerProvider`].
 /// (Not recommended for production use, but it is useful for testing
 /// or in combination with additional isolation from the host system, e.g. TEE.)
-pub struct SoftwareSigner {
-    secret_key: PrivateKey,
-}
+pub type SoftwareSigner = PrivateKey;
 
-impl SoftwareSigner {
-    /// The default constructor
-    pub fn new(secret_key: PrivateKey) -> Self {
-        Self { secret_key }
-    }
-
-    /// Generate a new random private key.
-    pub fn generate_ed25519<R: RngCore + CryptoRng>(rng: R) -> Self {
-        let key = SigningKey::new(rng);
-        let sk = PrivateKey::Ed25519(key);
-        Self::new(sk)
-    }
-}
-
-#[tonic::async_trait]
-impl AsyncSigner<Signature> for SoftwareSigner {
-    async fn sign_async(&self, msg: &[u8]) -> Result<Signature, async_signature::Error> {
-        let sig = self.secret_key.sign(msg);
-        Ok(sig)
-    }
+/// A helper to generate a new random private key.
+pub fn generate_ed25519<R: RngCore + CryptoRng>(rng: R) -> SoftwareSigner {
+    let key = SigningKey::new(rng);
+    PrivateKey::Ed25519(key)
 }
 
 #[tonic::async_trait]
 impl SignerProvider for SoftwareSigner {
     async fn load_pubkey(&self) -> Result<PublicKey, async_signature::Error> {
-        Ok(self.secret_key.public_key())
+        Ok(self.public_key())
     }
 }
 
@@ -68,7 +50,7 @@ mod test {
     use ed25519_consensus::SigningKey;
     use tendermint::PublicKey;
 
-    use crate::{SignerProvider, SoftwareSigner};
+    use crate::{generate_ed25519, SignerProvider};
 
     #[test]
     pub fn test_display_validator_info() {
@@ -83,7 +65,7 @@ mod test {
     #[tokio::test]
     pub async fn test_generate_sign() {
         let rng = rand_core::OsRng;
-        let signer = SoftwareSigner::generate_ed25519(rng);
+        let signer = generate_ed25519(rng);
         let signable_bytes = b"test message";
         let signature = signer.sign_async(signable_bytes).await.expect("sign");
         let pubkey = signer.load_pubkey().await.expect("pubkey");

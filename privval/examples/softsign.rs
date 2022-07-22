@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use tendermint::chain;
 use tendermint_privval::{
-    BasicServerConfig, FileStateProvider, GrpcSocket, PrivvalService, SoftwareSigner,
+    generate_ed25519, BasicServerConfig, FileStateProvider, GrpcSocket, PrivvalService,
 };
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
@@ -14,7 +14,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .finish();
     let _ = tracing::subscriber::set_global_default(subscriber);
     let mut providers = BTreeMap::new();
-    let signer = SoftwareSigner::generate_ed25519(rand_core::OsRng);
+    let signer = generate_ed25519(rand_core::OsRng);
     let state_provider = FileStateProvider::new("/tmp/validator.json".into())
         .await
         .unwrap();

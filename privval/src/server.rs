@@ -96,7 +96,7 @@ impl<S: SignerProvider, VS: ValidatorStateProvider> PrivvalService<S, VS> {
 
 impl<S, VS> PrivvalService<S, VS>
 where
-    S: SignerProvider + Sync + Send + 'static,
+    S: SignerProvider + 'static,
     VS: ValidatorStateProvider + Sync + Send + 'static,
 {
     /// Based on the connection configuration, starts the gRPC server.
@@ -138,7 +138,7 @@ async fn sign_and_persist_state<S, VS>(
     signable_bytes: Vec<u8>,
 ) -> Result<Signature, RemoteSignerError>
 where
-    S: SignerProvider + Sync + Send + 'static,
+    S: SignerProvider + 'static,
     VS: ValidatorStateProvider + Sync + Send + 'static,
 {
     let state = state_provider.load_state().await.map_err(|e| {
@@ -199,7 +199,7 @@ fn get_failed_to_sign_error() -> RemoteSignerError {
 #[tonic::async_trait]
 impl<S, VS> PrivValidatorApi for PrivvalService<S, VS>
 where
-    S: SignerProvider + Sync + Send + 'static,
+    S: SignerProvider + 'static,
     VS: ValidatorStateProvider + Sync + Send + 'static,
 {
     async fn get_pub_key(
@@ -336,7 +336,8 @@ mod tests {
     use tracing_subscriber::FmtSubscriber;
 
     use crate::{
-        BasicServerConfig, GrpcSocket, PrivvalService, SoftwareSigner, ValidatorStateProvider,
+        generate_ed25519, BasicServerConfig, GrpcSocket, PrivvalService, SoftwareSigner,
+        ValidatorStateProvider,
     };
 
     const CHAIN_ID: &str = "test";
@@ -367,7 +368,7 @@ mod tests {
             .finish();
         let _ = tracing::subscriber::set_global_default(subscriber);
         let mut providers = BTreeMap::new();
-        let signer = SoftwareSigner::generate_ed25519(rand_core::OsRng);
+        let signer = generate_ed25519(rand_core::OsRng);
         let state_provider = MockStateProvider::default();
         providers.insert(
             chain::Id::try_from(CHAIN_ID).unwrap(),
