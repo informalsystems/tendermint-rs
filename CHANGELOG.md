@@ -1,5 +1,35 @@
 # CHANGELOG
 
+## v0.23.8
+
+*Jul 22, 2022*
+
+This release focuses on ensuring compatibility with Tendermint v0.34.20, which
+introduces a [prioritized
+mempool](https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-067-mempool-refactor.md).
+As per the release notes for `v0.23.8-pre.1`, this has a minor additive impact
+on the ABCI and RPC interfaces in the fields that the `CheckTx` response
+contains.
+
+This release also contains some important dependency updates and minor bug
+fixes.
+
+### BUG FIXES
+
+- `[tools/proto-compiler]` Annotate serde to fall back to `Default` for the
+  omitted fields when deserializing `tendermint_proto::abci::ResponseInfo` struct,
+  also providing deserialization for the response at the `/abci_info` RPC endpoint.
+  ([#1132](https://github.com/informalsystems/tendermint-rs/issues/1132))
+
+### DEPENDENCIES
+
+- Update `k256` to v0.11 ([#1153](https://github.com/informalsystems/tendermint-rs/issues/1153))
+
+### ENHANCEMENTS
+
+- `[tendermint-proto,tendermint-rpc,tools]` Update to ensure compatibility with
+  Tendermint v0.34.20 ([#1159](https://github.com/informalsystems/tendermint-rs/issues/1159))
+
 ## v0.23.8-pre.1
 
 *Jun 29, 2022*
