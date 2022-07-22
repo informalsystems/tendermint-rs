@@ -20,6 +20,12 @@ pub const SIGNATURE_LENGTH: usize = 64;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Signature(Vec<u8>);
 
+impl async_signature::Signature for Signature {
+    fn from_bytes(bytes: &[u8]) -> Result<Self, async_signature::Error> {
+        Self::try_from(bytes).map_err(async_signature::Error::from_source)
+    }
+}
+
 impl Protobuf<Vec<u8>> for Signature {}
 
 impl TryFrom<Vec<u8>> for Signature {

@@ -1,18 +1,15 @@
 //! Signing-related interface and the sample software-only implementation.
 
+use async_signature::AsyncSigner;
 use ed25519_consensus::SigningKey;
 use rand_core::{CryptoRng, RngCore};
 use tendermint::{account, PrivateKey, PublicKey, Signature};
 
-use crate::error::Error;
-
 /// The trait for different signing backends
 /// (HSMs, TEEs, software-only, remote services etc.)
 #[tonic::async_trait]
-pub trait SignerProvider {
-    type E: std::error::Error;
-    async fn sign(&self, signable_bytes: &[u8]) -> Result<Signature, Self::E>;
-    async fn load_pubkey(&self) -> Result<PublicKey, Self::E>;
+pub trait SignerProvider: AsyncSigner<Signature> {
+    async fn load_pubkey(&self) -> Result<PublicKey, async_signature::Error>;
 }
 
 /// A helper function that will convert the validator public key
@@ -51,19 +48,23 @@ impl SoftwareSigner {
 }
 
 #[tonic::async_trait]
-impl SignerProvider for SoftwareSigner {
-    type E = Error;
-    async fn sign(&self, signable_bytes: &[u8]) -> Result<Signature, Error> {
-        Ok(self.secret_key.sign(signable_bytes))
+impl AsyncSigner<Signature> for SoftwareSigner {
+    async fn sign_async(&self, msg: &[u8]) -> Result<Signature, async_signature::Error> {
+        let sig = self.secret_key.sign(msg);
+        Ok(sig)
     }
+}
 
-    async fn load_pubkey(&self) -> Result<PublicKey, Error> {
+#[tonic::async_trait]
+impl SignerProvider for SoftwareSigner {
+    async fn load_pubkey(&self) -> Result<PublicKey, async_signature::Error> {
         Ok(self.secret_key.public_key())
     }
 }
 
 #[cfg(test)]
 mod test {
+    use async_signature::AsyncSigner;
     use ed25519_consensus::SigningKey;
     use tendermint::PublicKey;
 
@@ -84,7 +85,7 @@ mod test {
         let rng = rand_core::OsRng;
         let signer = SoftwareSigner::generate_ed25519(rng);
         let signable_bytes = b"test message";
-        let signature = signer.sign(signable_bytes).await.expect("sign");
+        let signature = signer.sign_async(signable_bytes).await.expect("sign");
         let pubkey = signer.load_pubkey().await.expect("pubkey");
         assert!(pubkey.verify(signable_bytes, &signature).is_ok());
     }

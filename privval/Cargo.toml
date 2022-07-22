@@ -19,6 +19,7 @@ description = """
 default = ["flex-error/std", "flex-error/eyre_tracer"]
 
 [dependencies]
+async-signature = "0.1"
 ed25519-consensus = { version = "1.2", default-features = false }
 flex-error = { version = "0.4.4", default-features = false }
 rand_core = { version = "0.6", default-features = false, features = ["std"] }

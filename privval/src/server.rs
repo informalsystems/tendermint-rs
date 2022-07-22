@@ -67,7 +67,7 @@ impl<S: SignerProvider, VS: ValidatorStateProvider> PrivvalService<S, VS> {
     pub async fn new(
         providers: BTreeMap<chain::Id, (S, VS)>,
         config: BasicServerConfig,
-    ) -> Result<Self, S::E> {
+    ) -> Result<Self, async_signature::Error> {
         info!("creating a new KMS server");
         let mut pubkeys = BTreeMap::new();
         for (chain_id, (signer, _)) in providers.iter() {
@@ -147,7 +147,7 @@ where
     })?;
     check_state(chain_id, &state, &new_state)?;
     let started_at = Instant::now();
-    let signature = signer.sign(&signable_bytes).await.map_err(|e| {
+    let signature = signer.sign_async(&signable_bytes).await.map_err(|e| {
         error!("[{}] failed to sign: {}", chain_id, e);
         get_failed_to_sign_error()
     })?;
