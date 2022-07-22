@@ -295,7 +295,7 @@ impl ClientDriver {
         response_tx: JsonResultTx,
     ) -> Result<()> {
         if wrapper.get("error").is_some() {
-            let _ = response_tx.send(Err(Error::Failed("subscribe".to_string(), wrapper)))?;
+            response_tx.send(Err(Error::Failed("subscribe".to_string(), wrapper)))?;
             return Ok(());
         }
         if wrapper.get("result").is_some() {
@@ -321,7 +321,7 @@ impl ClientDriver {
             }
         };
         subs_for_query.insert(id, subscription_tx);
-        let _ = response_tx.send(Ok(response))?;
+        response_tx.send(Ok(response))?;
         Ok(())
     }
 
@@ -332,10 +332,10 @@ impl ClientDriver {
         response_tx: JsonResultTx,
     ) -> Result<()> {
         if wrapper.get("error").is_some() {
-            let _ = response_tx.send(Err(Error::Failed(method, wrapper)))?;
+            response_tx.send(Err(Error::Failed(method, wrapper)))?;
             return Ok(());
         }
-        let _ = response_tx.send(Ok(wrapper))?;
+        response_tx.send(Ok(wrapper))?;
         Ok(())
     }
 

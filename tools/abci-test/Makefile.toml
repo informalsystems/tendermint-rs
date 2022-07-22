@@ -1,6 +1,6 @@
 [env]
 CONTAINER_NAME = "abci-test"
-DOCKER_IMAGE = "informaldev/abci-harness:0.34.0"
+DOCKER_IMAGE = "informaldev/abci-harness:0.34.20"
 HOST_RPC_PORT = 26657
 CARGO_MAKE_WAIT_MILLISECONDS = 3500
 
@@ -31,7 +31,7 @@ args = ["run", "--name", "${CONTAINER_NAME}", "--rm", "--publish", "26657:${HOST
 dependencies = ["docker-up-stop-old", "docker-up-rm-old"]
 
 [tasks.test]
-args = ["run", "--all-features"]
+args = ["run", "--all-features", "--", "-v"]
 
 [tasks.docker-stop]
 command = "docker"

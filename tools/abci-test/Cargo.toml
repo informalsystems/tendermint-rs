@@ -19,4 +19,4 @@ tendermint-config = { version = "0.23.8-pre.1", path = "../../config" }
 tendermint-rpc = { version = "0.23.8-pre.1", path = "../../rpc", features = [ "websocket-client" ] }
 tracing = "0.1"
 tracing-subscriber = "0.2"
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1.20", features = ["full"] }

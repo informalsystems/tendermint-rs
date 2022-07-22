@@ -1,5 +1,5 @@
 {
-  "id": "a0f4ece4-de98-4c51-9f18-9c80d25c09af",
+  "id": "c304e6e6-fd76-4cc4-817d-c323e8c86644",
   "jsonrpc": "2.0",
   "result": {
     "data": {
@@ -18,20 +18,20 @@
             "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
             "data_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
             "evidence_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
-            "height": "47",
+            "height": "54",
             "last_block_id": {
-              "hash": "4F17513B76D5EC284CB0295C558B975A7372C6DF43C08E0F4D80254DA9419625",
+              "hash": "E1237FA8C967379905C4F4AB015A6A6F8A1A6E0B4C6D18DE12CDFFD585156392",
               "parts": {
-                "hash": "6D5C2AEEAC20CB020933775A5A86F3FDBE00D85EFD729187F2DFA5F460966A95",
+                "hash": "46BD7BE7ADCBFAA85D1FE023BA6202E327E79EAC2E0BA1353B75037BE4A4370E",
                 "total": 1
               }
             },
-            "last_commit_hash": "2FA645C31095CA933A853179EAFD60C2FED04084F16043410E96F8DE3680B6E7",
+            "last_commit_hash": "BDAB0982D0B9AFD8F82F2531D9BFDF077A2B13C27D137BB76FA223E0B8712BA4",
             "last_results_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
-            "next_validators_hash": "934A6E20E22E397B763C930C364AA549DC09F281623FFB973BB5A9DBF74954C1",
-            "proposer_address": "B64E55251756967A20EF849FE28E2154B34287B7",
-            "time": "2022-06-29T14:50:17.433989014Z",
-            "validators_hash": "934A6E20E22E397B763C930C364AA549DC09F281623FFB973BB5A9DBF74954C1",
+            "next_validators_hash": "9D1A9A1EC41D301004C5766EF94FD941B5ADBE90205C1586DFEA76BC9DF4FE77",
+            "proposer_address": "CCD08E1A253A3A53929EA9FB71C3C9018E9D2678",
+            "time": "2022-07-21T22:06:28.914486923Z",
+            "validators_hash": "9D1A9A1EC41D301004C5766EF94FD941B5ADBE90205C1586DFEA76BC9DF4FE77",
             "version": {
               "app": "1",
               "block": "11"
@@ -39,20 +39,20 @@
           },
           "last_commit": {
             "block_id": {
-              "hash": "4F17513B76D5EC284CB0295C558B975A7372C6DF43C08E0F4D80254DA9419625",
+              "hash": "E1237FA8C967379905C4F4AB015A6A6F8A1A6E0B4C6D18DE12CDFFD585156392",
               "parts": {
-                "hash": "6D5C2AEEAC20CB020933775A5A86F3FDBE00D85EFD729187F2DFA5F460966A95",
+                "hash": "46BD7BE7ADCBFAA85D1FE023BA6202E327E79EAC2E0BA1353B75037BE4A4370E",
                 "total": 1
               }
             },
-            "height": "46",
+            "height": "53",
             "round": 0,
             "signatures": [
               {
                 "block_id_flag": 2,
-                "signature": "O8NaiiX/sdDFVDhoGOhxk0GxKrfOydREJFv1EUsXpVCO32AK+RDMP/xAs2tV3u6lt+lLLyCsbL0/nB851pBqAw==",
-                "timestamp": "2022-06-29T14:50:17.433989014Z",
-                "validator_address": "B64E55251756967A20EF849FE28E2154B34287B7"
+                "signature": "g0L4lZfXmy3d82UsJvrSX2Ulpi547I+BEeh1ElV6jtKm6+3Mi/WhDLTeOuemD0yAZlGU4bcFslC4Q0JR3mOnBg==",
+                "timestamp": "2022-07-21T22:06:28.914486923Z",
+                "validator_address": "CCD08E1A253A3A53929EA9FB71C3C9018E9D2678"
               }
             ]
           }
