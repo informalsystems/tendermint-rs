@@ -12,6 +12,17 @@ pub trait SignerProvider: AsyncSigner<Signature> {
     async fn load_pubkey(&self) -> Result<PublicKey, async_signature::Error>;
 }
 
+#[tonic::async_trait]
+impl<T> SignerProvider for T
+where
+    T: AsyncSigner<Signature>,
+    PublicKey: for<'a> From<&'a T>,
+{
+    async fn load_pubkey(&self) -> Result<PublicKey, async_signature::Error> {
+        Ok(self.into())
+    }
+}
+
 /// A helper function that will convert the validator public key
 /// into textual forms that are needed in different operational contexts
 /// (genesis, sending a validator creation transaction, etc.).
@@ -35,13 +46,6 @@ pub type SoftwareSigner = PrivateKey;
 pub fn generate_ed25519<R: RngCore + CryptoRng>(rng: R) -> SoftwareSigner {
     let key = SigningKey::new(rng);
     PrivateKey::Ed25519(key)
-}
-
-#[tonic::async_trait]
-impl SignerProvider for SoftwareSigner {
-    async fn load_pubkey(&self) -> Result<PublicKey, async_signature::Error> {
-        Ok(self.public_key())
-    }
 }
 
 #[cfg(test)]

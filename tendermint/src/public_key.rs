@@ -20,7 +20,7 @@ use tendermint_proto::{
     Protobuf,
 };
 
-use crate::{error::Error, prelude::*, signature::Signature};
+use crate::{error::Error, prelude::*, signature::Signature, PrivateKey};
 
 // Note:On the golang side this is generic in the sense that it could everything that implements
 // github.com/tendermint/tendermint/crypto.PubKey
@@ -268,6 +268,12 @@ impl From<Ed25519> for PublicKey {
 impl From<Secp256k1> for PublicKey {
     fn from(pk: Secp256k1) -> PublicKey {
         PublicKey::Secp256k1(pk)
+    }
+}
+
+impl From<&PrivateKey> for PublicKey {
+    fn from(pk: &PrivateKey) -> PublicKey {
+        pk.public_key()
     }
 }
 

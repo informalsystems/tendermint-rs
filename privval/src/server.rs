@@ -237,7 +237,8 @@ where
         self.check_max_height(&req.chain_id, req.vote.height)
             .map_err(|_| Status::failed_precondition("max height exceeded"))?;
         let mut providers = self.providers.lock().await;
-        let resp = if let Some((signer, state_provider)) = providers.get_mut(&req.chain_id) {
+        let resp: SignedVoteResponse;
+        if let Some((signer, state_provider)) = providers.get_mut(&req.chain_id) {
             let new_state = (&req).into();
             let signable_bytes = req
                 .vote
@@ -255,22 +256,24 @@ where
                 Ok(signature) => {
                     let mut vote = req.vote.clone();
                     vote.signature = Some(signature);
-                    SignedVoteResponse {
+                    resp = SignedVoteResponse {
                         vote: Some(vote),
                         error: None,
-                    }
+                    };
                 },
-                Err(err) => SignedVoteResponse {
-                    vote: None,
-                    error: Some(err),
+                Err(err) => {
+                    resp = SignedVoteResponse {
+                        vote: None,
+                        error: Some(err),
+                    };
                 },
             }
         } else {
             error!("[{}] no signer found", req.chain_id);
-            SignedVoteResponse {
+            resp = SignedVoteResponse {
                 vote: None,
                 error: Some(get_invalid_chain_id_error(&req.chain_id)),
-            }
+            };
         };
         Ok(Response::new(resp.into()))
     }
@@ -287,7 +290,8 @@ where
         self.check_max_height(&req.chain_id, req.proposal.height)
             .map_err(|_| Status::failed_precondition("max height exceeded"))?;
         let mut providers = self.providers.lock().await;
-        let resp = if let Some((signer, state_provider)) = providers.get_mut(&req.chain_id) {
+        let resp: SignedProposalResponse;
+        if let Some((signer, state_provider)) = providers.get_mut(&req.chain_id) {
             let new_state = (&req).into();
             let signable_bytes = req
                 .proposal
@@ -305,22 +309,24 @@ where
                 Ok(signature) => {
                     let mut proposal = req.proposal.clone();
                     proposal.signature = Some(signature);
-                    SignedProposalResponse {
+                    resp = SignedProposalResponse {
                         proposal: Some(proposal),
                         error: None,
-                    }
+                    };
                 },
-                Err(err) => SignedProposalResponse {
-                    proposal: None,
-                    error: Some(err),
+                Err(err) => {
+                    resp = SignedProposalResponse {
+                        proposal: None,
+                        error: Some(err),
+                    };
                 },
             }
         } else {
             error!("[{}] no signer found", req.chain_id);
-            SignedProposalResponse {
+            resp = SignedProposalResponse {
                 proposal: None,
                 error: Some(get_invalid_chain_id_error(&req.chain_id)),
-            }
+            };
         };
         Ok(Response::new(resp.into()))
     }
