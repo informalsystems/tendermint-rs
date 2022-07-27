@@ -17,7 +17,7 @@ description = """
 all-features = true
 
 [dependencies]
-async-tungstenite = { version = "0.16", features = [ "tokio-runtime", "tokio-rustls-native-certs" ] }
+async-tungstenite = { version = "0.17", features = [ "tokio-runtime", "tokio-rustls-native-certs" ] }
 futures = "0.3"
 getrandom = "0.2"
 log = "0.4"
