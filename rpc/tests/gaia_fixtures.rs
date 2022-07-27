@@ -34,7 +34,7 @@ fn incoming_fixtures() {
             .unwrap();
         let content = fs::read_to_string(&json_file).unwrap();
         match file_name {
-            "abci_info" => {
+            "abci_info_0" | "abci_info_1" | "abci_info_2" => {
                 let r = endpoint::abci_info::Response::from_string(content);
                 assert!(r.is_ok(), "{:?}", r)
             }
