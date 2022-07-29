@@ -192,6 +192,28 @@ mod test {
                 }
             ),
             (
+                "tcp://foo@127.0.0.1:26657".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::Http,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "".to_string(),
+                    username: Some("foo".to_string()),
+                    password: None,
+                }
+            ),
+            (
+                "tcp://foo:bar@127.0.0.1:26657".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::Http,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "".to_string(),
+                    username: Some("foo".to_string()),
+                    password: Some("bar".to_string()),
+                }
+            ),
+            (
                 "http://127.0.0.1:26657".to_owned(),
                 ExpectedUrl {
                     scheme: Scheme::Http,
@@ -200,6 +222,28 @@ mod test {
                     path: "/".to_string(),
                     username: None,
                     password: None,
+                }
+            ),
+            (
+                "http://foo@127.0.0.1:26657".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::Http,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "/".to_string(),
+                    username: Some("foo".to_string()),
+                    password: None,
+                }
+            ),
+            (
+                "http://foo:bar@127.0.0.1:26657".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::Http,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "/".to_string(),
+                    username: Some("foo".to_string()),
+                    password: Some("bar".to_string()),
                 }
             ),
             (
@@ -214,6 +258,28 @@ mod test {
                 }
             ),
             (
+                "https://foo@127.0.0.1:26657".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::Https,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "/".to_string(),
+                    username: Some("foo".to_string()),
+                    password: None,
+                }
+            ),
+            (
+                "https://foo:bar@127.0.0.1:26657".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::Https,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "/".to_string(),
+                    username: Some("foo".to_string()),
+                    password: Some("bar".to_string()),
+                }
+            ),
+            (
                 "ws://127.0.0.1:26657/websocket".to_owned(),
                 ExpectedUrl {
                     scheme: Scheme::WebSocket,
@@ -225,6 +291,28 @@ mod test {
                 }
             ),
             (
+                "ws://foo@127.0.0.1:26657/websocket".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::WebSocket,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "/websocket".to_string(),
+                    username: Some("foo".to_string()),
+                    password: None,
+                }
+            ),
+            (
+                "ws://foo:bar@127.0.0.1:26657/websocket".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::WebSocket,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "/websocket".to_string(),
+                    username: Some("foo".to_string()),
+                    password: Some("bar".to_string()),
+                }
+            ),
+            (
                 "wss://127.0.0.1:26657/websocket".to_owned(),
                 ExpectedUrl {
                     scheme: Scheme::SecureWebSocket,
@@ -233,6 +321,28 @@ mod test {
                     path: "/websocket".to_string(),
                     username: None,
                     password: None,
+                }
+            ),
+            (
+                "wss://foo@127.0.0.1:26657/websocket".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::SecureWebSocket,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "/websocket".to_string(),
+                    username: Some("foo".to_string()),
+                    password: None,
+                }
+            ),
+            (
+                "wss://foo:bar@127.0.0.1:26657/websocket".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::SecureWebSocket,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "/websocket".to_string(),
+                    username: Some("foo".to_string()),
+                    password: Some("bar".to_string()),
                 }
             )
         ];
