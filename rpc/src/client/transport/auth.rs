@@ -11,7 +11,7 @@ use subtle_encoding::base64;
 /// An HTTP authorization.
 ///
 /// Currenlty only HTTP Basic authentication is supported.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Authorization {
     Basic(String),
 }
@@ -37,5 +37,34 @@ pub fn authorize(uri: &Uri) -> Option<Authorization> {
         Some(Authorization::Basic(credentials.to_string()))
     } else {
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use core::str::FromStr;
+
+    use http::Uri;
+
+    use super::*;
+
+    #[test]
+    fn extract_auth_absent() {
+        let uri = Uri::from_str("http://example.com").unwrap();
+        assert_eq!(authorize(&uri), None);
+    }
+
+    #[test]
+    fn extract_auth_username_only() {
+        let uri = Uri::from_str("http://toto@example.com").unwrap();
+        let base64 = "dG90bw==".to_string();
+        assert_eq!(authorize(&uri), Some(Authorization::Basic(base64)));
+    }
+
+    #[test]
+    fn extract_auth_username_password() {
+        let uri = Uri::from_str("http://toto:tata@example.com").unwrap();
+        let base64 = "dG90bzp0YXRh".to_string();
+        assert_eq!(authorize(&uri), Some(Authorization::Basic(base64)));
     }
 }

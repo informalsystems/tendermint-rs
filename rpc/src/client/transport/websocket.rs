@@ -836,8 +836,11 @@ mod test {
     use crate::{request, Id, Method};
     use alloc::collections::BTreeMap as HashMap;
     use async_tungstenite::tokio::{accept_async, TokioAdapter};
+    use async_tungstenite::tungstenite::client::IntoClientRequest;
     use core::str::FromStr;
     use futures::StreamExt;
+    use http::header::AUTHORIZATION;
+    use http::Uri;
     use std::path::PathBuf;
     use std::println;
     use tendermint_config::net;
@@ -1187,5 +1190,27 @@ mod test {
                 collected_results[i].as_ref().unwrap().clone()
             );
         }
+    }
+
+    fn authorization(req: &http::Request<()>) -> Option<&str> {
+        req.headers()
+            .get(AUTHORIZATION)
+            .map(|h| h.to_str().unwrap())
+    }
+
+    #[test]
+    fn without_basic_auth() {
+        let uri = Uri::from_str("http://example.com").unwrap();
+        let req = uri.into_client_request().unwrap();
+
+        assert_eq!(authorization(&req), None);
+    }
+
+    #[test]
+    fn with_basic_auth() {
+        let uri = Uri::from_str("http://toto:tata@example.com").unwrap();
+        let req = uri.into_client_request().unwrap();
+
+        assert_eq!(authorization(&req), None);
     }
 }
