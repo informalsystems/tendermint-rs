@@ -1,5 +1,6 @@
 //! Tendermint RPC client implementations for different transports.
 
+mod auth;
 pub mod mock;
 mod router;
 

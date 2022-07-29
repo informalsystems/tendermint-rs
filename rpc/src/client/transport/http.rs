@@ -154,8 +154,10 @@ impl TryFrom<HttpClientUrl> for hyper::Uri {
 }
 
 mod sealed {
+    use crate::client::transport::auth::authorize;
     use crate::prelude::*;
     use crate::{Error, Response, SimpleRequest};
+    use http::header::AUTHORIZATION;
     use hyper::body::Buf;
     use hyper::client::connect::Connect;
     use hyper::client::HttpConnector;
@@ -216,6 +218,10 @@ mod sealed {
                         .parse()
                         .unwrap(),
                 );
+
+                if let Some(auth) = authorize(&self.uri) {
+                    headers.insert(AUTHORIZATION, auth.to_string().parse().unwrap());
+                }
             }
 
             Ok(request)
