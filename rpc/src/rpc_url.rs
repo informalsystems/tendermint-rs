@@ -51,8 +51,6 @@ impl FromStr for Scheme {
 pub struct Url {
     inner: url::Url,
     scheme: Scheme,
-    username: Option<String>,
-    password: Option<String>,
     host: String,
     port: u16,
 }
@@ -64,12 +62,6 @@ impl FromStr for Url {
         let inner: url::Url = s.parse().map_err(Error::parse_url)?;
 
         let scheme: Scheme = inner.scheme().parse()?;
-
-        let username = Some(inner.username())
-            .filter(|s| !s.is_empty())
-            .map(|s| s.to_owned());
-
-        let password = inner.password().map(|s| s.to_owned());
 
         let host = inner
             .host_str()
@@ -83,8 +75,6 @@ impl FromStr for Url {
         Ok(Self {
             inner,
             scheme,
-            username,
-            password,
             host,
             port,
         })
@@ -110,12 +100,12 @@ impl Url {
 
     /// Get the username associated with this URL, if any.
     pub fn username(&self) -> Option<&str> {
-        self.username.as_deref()
+        Some(self.inner.username()).filter(|s| !s.is_empty())
     }
 
     /// Get the password associated with this URL, if any.
     pub fn password(&self) -> Option<&str> {
-        self.password.as_deref()
+        self.inner.password()
     }
 
     /// Get the authority associated with this URL, if any.
