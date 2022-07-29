@@ -112,7 +112,7 @@ impl Url {
     /// The authority is the username and password separated by a colon.
     pub fn authority(&self) -> Option<String> {
         self.username()
-            .map(|user| format!("{user}:{}", self.password().unwrap_or_default()))
+            .map(|user| format!("{}:{}", user, self.password().unwrap_or_default()))
     }
 
     /// Get the host associated with this URL.

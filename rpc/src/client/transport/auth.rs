@@ -10,7 +10,7 @@ use subtle_encoding::base64;
 
 /// An HTTP authorization.
 ///
-/// Currenlty only HTTP Basic authentication is supported.
+/// Currently only HTTP Basic authentication is supported.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Authorization {
     Basic(String),
