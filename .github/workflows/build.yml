@@ -70,8 +70,9 @@ jobs:
       - name: Install protoc
         run: |
           curl -Lo /tmp/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v21.4/protoc-21.4-linux-x86_64.zip
-          unzip /tmp/protoc.zip -d /usr/local/
-          echo "PROTOC=/usr/local/bin/protoc" >> $GITHUB_ENV
+          unzip /tmp/protoc.zip -d ${HOME}/.local
+          echo "PROTOC=${HOME}/.local/bin/protoc" >> $GITHUB_ENV
+          export PATH="${PATH}:${HOME}/.local/bin"
       - name: Regenerate proto definitions
         working-directory: ./tools/proto-compiler/
         run: cargo run
