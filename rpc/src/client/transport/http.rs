@@ -154,8 +154,10 @@ impl TryFrom<HttpClientUrl> for hyper::Uri {
 }
 
 mod sealed {
+    use crate::client::transport::auth::authorize;
     use crate::prelude::*;
     use crate::{Error, Response, SimpleRequest};
+    use http::header::AUTHORIZATION;
     use hyper::body::Buf;
     use hyper::client::connect::Connect;
     use hyper::client::HttpConnector;
@@ -216,6 +218,10 @@ mod sealed {
                         .parse()
                         .unwrap(),
                 );
+
+                if let Some(auth) = authorize(&self.uri) {
+                    headers.insert(AUTHORIZATION, auth.to_string().parse().unwrap());
+                }
             }
 
             Ok(request)
@@ -292,5 +298,43 @@ mod sealed {
             .map_err(Error::io)?;
 
         Ok(response_body)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use core::str::FromStr;
+
+    use http::{header::AUTHORIZATION, Request, Uri};
+    use hyper::Body;
+
+    use crate::endpoint::abci_info;
+
+    use super::sealed::HyperClient;
+
+    fn authorization(req: &Request<Body>) -> Option<&str> {
+        req.headers()
+            .get(AUTHORIZATION)
+            .map(|h| h.to_str().unwrap())
+    }
+
+    #[test]
+    fn without_basic_auth() {
+        let uri = Uri::from_str("http://example.com").unwrap();
+        let inner = hyper::Client::new();
+        let client = HyperClient::new(uri, inner);
+        let req = client.build_request(abci_info::Request).unwrap();
+
+        assert_eq!(authorization(&req), None);
+    }
+
+    #[test]
+    fn with_basic_auth() {
+        let uri = Uri::from_str("http://toto:tata@example.com").unwrap();
+        let inner = hyper::Client::new();
+        let client = HyperClient::new(uri, inner);
+        let req = client.build_request(abci_info::Request).unwrap();
+
+        assert_eq!(authorization(&req), Some("Basic dG90bzp0YXRh"));
     }
 }

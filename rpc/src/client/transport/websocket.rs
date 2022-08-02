@@ -258,6 +258,7 @@ mod sealed {
     };
 
     use crate::client::sync::{unbounded, ChannelTx};
+    use crate::client::transport::auth::authorize;
     use crate::prelude::*;
     use crate::query::Query;
     use crate::request::Wrapper;
@@ -266,7 +267,7 @@ mod sealed {
 
     use async_tungstenite::{
         tokio::{connect_async_with_config, connect_async_with_tls_connector_and_config},
-        tungstenite::protocol::WebSocketConfig,
+        tungstenite::{client::IntoClientRequest, protocol::WebSocketConfig},
     };
 
     use tracing::debug;
@@ -306,7 +307,6 @@ mod sealed {
             url: Url,
             config: Option<WebSocketConfig>,
         ) -> Result<(Self, WebSocketClientDriver), Error> {
-            let url = url.to_string();
             debug!("Connecting to unsecure WebSocket endpoint: {}", url);
 
             let (stream, _response) = connect_async_with_config(url, config)
@@ -338,7 +338,6 @@ mod sealed {
             url: Url,
             config: Option<WebSocketConfig>,
         ) -> Result<(Self, WebSocketClientDriver), Error> {
-            let url = url.to_string();
             debug!("Connecting to secure WebSocket endpoint: {}", url);
 
             // Not supplying a connector means async_tungstenite will create the
@@ -474,6 +473,38 @@ mod sealed {
                 WebSocketClient::Unsecure(c) => c.close(),
                 WebSocketClient::Secure(c) => c.close(),
             }
+        }
+    }
+
+    use async_tungstenite::tungstenite;
+
+    impl IntoClientRequest for Url {
+        fn into_client_request(
+            self,
+        ) -> tungstenite::Result<tungstenite::handshake::client::Request> {
+            let uri = self.to_string().parse::<http::Uri>().unwrap();
+
+            let builder = tungstenite::handshake::client::Request::builder()
+                .method("GET")
+                .header("Host", self.host())
+                .header("Connection", "Upgrade")
+                .header("Upgrade", "websocket")
+                .header("Sec-WebSocket-Version", "13")
+                .header(
+                    "Sec-WebSocket-Key",
+                    tungstenite::handshake::client::generate_key(),
+                );
+
+            let builder = if let Some(auth) = authorize(&uri) {
+                builder.header("Authorization", auth.to_string())
+            } else {
+                builder
+            };
+
+            builder
+                .uri(uri)
+                .body(())
+                .map_err(tungstenite::error::Error::HttpFormat)
         }
     }
 }
@@ -805,8 +836,11 @@ mod test {
     use crate::{request, Id, Method};
     use alloc::collections::BTreeMap as HashMap;
     use async_tungstenite::tokio::{accept_async, TokioAdapter};
+    use async_tungstenite::tungstenite::client::IntoClientRequest;
     use core::str::FromStr;
     use futures::StreamExt;
+    use http::header::AUTHORIZATION;
+    use http::Uri;
     use std::path::PathBuf;
     use std::println;
     use tendermint_config::net;
@@ -1156,5 +1190,27 @@ mod test {
                 collected_results[i].as_ref().unwrap().clone()
             );
         }
+    }
+
+    fn authorization(req: &http::Request<()>) -> Option<&str> {
+        req.headers()
+            .get(AUTHORIZATION)
+            .map(|h| h.to_str().unwrap())
+    }
+
+    #[test]
+    fn without_basic_auth() {
+        let uri = Uri::from_str("http://example.com").unwrap();
+        let req = uri.into_client_request().unwrap();
+
+        assert_eq!(authorization(&req), None);
+    }
+
+    #[test]
+    fn with_basic_auth() {
+        let uri = Uri::from_str("http://toto:tata@example.com").unwrap();
+        let req = uri.into_client_request().unwrap();
+
+        assert_eq!(authorization(&req), None);
     }
 }

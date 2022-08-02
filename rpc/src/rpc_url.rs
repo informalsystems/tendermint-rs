@@ -71,6 +71,7 @@ impl FromStr for Url {
         let port = inner.port_or_known_default().ok_or_else(|| {
             Error::invalid_params(format!("cannot determine appropriate port for URL: {}", s))
         })?;
+
         Ok(Self {
             inner,
             scheme,
@@ -98,13 +99,20 @@ impl Url {
     }
 
     /// Get the username associated with this URL, if any.
-    pub fn username(&self) -> &str {
-        self.inner.username()
+    pub fn username(&self) -> Option<&str> {
+        Some(self.inner.username()).filter(|s| !s.is_empty())
     }
 
     /// Get the password associated with this URL, if any.
     pub fn password(&self) -> Option<&str> {
         self.inner.password()
+    }
+
+    /// Get the authority associated with this URL, if any.
+    /// The authority is the username and password separated by a colon.
+    pub fn authority(&self) -> Option<String> {
+        self.username()
+            .map(|user| format!("{}:{}", user, self.password().unwrap_or_default()))
     }
 
     /// Get the host associated with this URL.
@@ -166,7 +174,7 @@ mod test {
         host: String,
         port: u16,
         path: String,
-        username: String,
+        username: Option<String>,
         password: Option<String>,
     }
 
@@ -179,8 +187,30 @@ mod test {
                     host: "127.0.0.1".to_string(),
                     port: 26657,
                     path: "".to_string(),
-                    username: "".to_string(),
+                    username: None,
                     password: None,
+                }
+            ),
+            (
+                "tcp://foo@127.0.0.1:26657".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::Http,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "".to_string(),
+                    username: Some("foo".to_string()),
+                    password: None,
+                }
+            ),
+            (
+                "tcp://foo:bar@127.0.0.1:26657".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::Http,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "".to_string(),
+                    username: Some("foo".to_string()),
+                    password: Some("bar".to_string()),
                 }
             ),
             (
@@ -190,8 +220,30 @@ mod test {
                     host: "127.0.0.1".to_string(),
                     port: 26657,
                     path: "/".to_string(),
-                    username: "".to_string(),
+                    username: None,
                     password: None,
+                }
+            ),
+            (
+                "http://foo@127.0.0.1:26657".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::Http,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "/".to_string(),
+                    username: Some("foo".to_string()),
+                    password: None,
+                }
+            ),
+            (
+                "http://foo:bar@127.0.0.1:26657".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::Http,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "/".to_string(),
+                    username: Some("foo".to_string()),
+                    password: Some("bar".to_string()),
                 }
             ),
             (
@@ -201,8 +253,30 @@ mod test {
                     host: "127.0.0.1".to_string(),
                     port: 26657,
                     path: "/".to_string(),
-                    username: "".to_string(),
+                    username: None,
                     password: None,
+                }
+            ),
+            (
+                "https://foo@127.0.0.1:26657".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::Https,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "/".to_string(),
+                    username: Some("foo".to_string()),
+                    password: None,
+                }
+            ),
+            (
+                "https://foo:bar@127.0.0.1:26657".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::Https,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "/".to_string(),
+                    username: Some("foo".to_string()),
+                    password: Some("bar".to_string()),
                 }
             ),
             (
@@ -212,8 +286,30 @@ mod test {
                     host: "127.0.0.1".to_string(),
                     port: 26657,
                     path: "/websocket".to_string(),
-                    username: "".to_string(),
+                    username: None,
                     password: None,
+                }
+            ),
+            (
+                "ws://foo@127.0.0.1:26657/websocket".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::WebSocket,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "/websocket".to_string(),
+                    username: Some("foo".to_string()),
+                    password: None,
+                }
+            ),
+            (
+                "ws://foo:bar@127.0.0.1:26657/websocket".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::WebSocket,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "/websocket".to_string(),
+                    username: Some("foo".to_string()),
+                    password: Some("bar".to_string()),
                 }
             ),
             (
@@ -223,8 +319,30 @@ mod test {
                     host: "127.0.0.1".to_string(),
                     port: 26657,
                     path: "/websocket".to_string(),
-                    username: "".to_string(),
+                    username: None,
                     password: None,
+                }
+            ),
+            (
+                "wss://foo@127.0.0.1:26657/websocket".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::SecureWebSocket,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "/websocket".to_string(),
+                    username: Some("foo".to_string()),
+                    password: None,
+                }
+            ),
+            (
+                "wss://foo:bar@127.0.0.1:26657/websocket".to_owned(),
+                ExpectedUrl {
+                    scheme: Scheme::SecureWebSocket,
+                    host: "127.0.0.1".to_string(),
+                    port: 26657,
+                    path: "/websocket".to_string(),
+                    username: Some("foo".to_string()),
+                    password: Some("bar".to_string()),
                 }
             )
         ];
@@ -238,7 +356,11 @@ mod test {
             assert_eq!(expected.host, u.host(), "{}", url_str);
             assert_eq!(expected.port, u.port(), "{}", url_str);
             assert_eq!(expected.path, u.path(), "{}", url_str);
-            assert_eq!(expected.username, u.username());
+            if let Some(n) = u.username() {
+                assert_eq!(expected.username.as_ref().unwrap(), n, "{}", url_str);
+            } else {
+                assert!(expected.username.is_none(), "{}", url_str);
+            }
             if let Some(pw) = u.password() {
                 assert_eq!(expected.password.as_ref().unwrap(), pw, "{}", url_str);
             } else {
