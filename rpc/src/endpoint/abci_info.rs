@@ -1,10 +1,9 @@
 //! `/abci_info` endpoint JSON-RPC wrapper
 
-use serde::{Deserialize, Serialize};
-
 use core::convert::{TryFrom, TryInto};
-use tendermint::block;
-use tendermint::Error;
+
+use serde::{Deserialize, Serialize};
+use tendermint::{block, Error};
 use tendermint_proto::abci::ResponseInfo;
 
 use crate::prelude::*;

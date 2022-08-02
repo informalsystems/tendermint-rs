@@ -1,6 +1,8 @@
-use crate::command::*;
-use serde::Deserialize;
 use std::io;
+
+use serde::Deserialize;
+
+use crate::command::*;
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct JsonatrTransform {
@@ -30,7 +32,7 @@ pub fn run_jsonatr_transform(dir: &str, transform: JsonatrTransform) -> io::Resu
             } else {
                 Err(io::Error::new(io::ErrorKind::Interrupted, run.stderr))
             }
-        }
+        },
         Err(e) => Err(e),
     }
 }

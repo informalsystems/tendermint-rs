@@ -1,5 +1,6 @@
-use crate::prelude::*;
 use serde::{Deserialize, Serialize};
+
+use crate::prelude::*;
 
 /// ABCI transaction data.
 ///
@@ -30,8 +31,7 @@ impl Data {
 
 #[cfg(test)]
 mod tests {
-    use crate::abci::Data;
-    use crate::prelude::*;
+    use crate::{abci::Data, prelude::*};
 
     #[test]
     fn test_deserialization() {

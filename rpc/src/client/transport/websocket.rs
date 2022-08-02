@@ -1,28 +1,21 @@
 //! WebSocket-based clients for accessing Tendermint RPC functionality.
 
-use crate::client::subscription::SubscriptionTx;
-use crate::client::sync::{ChannelRx, ChannelTx};
-use crate::client::transport::router::{PublishResult, SubscriptionRouter};
-use crate::endpoint::{subscribe, unsubscribe};
-use crate::event::Event;
-use crate::prelude::*;
-use crate::query::Query;
-use crate::request::Wrapper;
-use crate::{
-    error::Error, response, Client, Id, Request, Response, Scheme, SimpleRequest, Subscription,
-    SubscriptionClient, Url,
+use alloc::{borrow::Cow, collections::BTreeMap as HashMap};
+use core::{
+    convert::{TryFrom, TryInto},
+    ops::Add,
+    str::FromStr,
 };
-use alloc::borrow::Cow;
-use alloc::collections::BTreeMap as HashMap;
+
 use async_trait::async_trait;
-use async_tungstenite::tokio::ConnectStream;
-use async_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
-use async_tungstenite::tungstenite::protocol::CloseFrame;
-use async_tungstenite::tungstenite::Message;
-use async_tungstenite::WebSocketStream;
-use core::convert::{TryFrom, TryInto};
-use core::ops::Add;
-use core::str::FromStr;
+use async_tungstenite::{
+    tokio::ConnectStream,
+    tungstenite::{
+        protocol::{frame::coding::CloseCode, CloseFrame},
+        Message,
+    },
+    WebSocketStream,
+};
 use futures::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use tendermint_config::net;
@@ -30,6 +23,21 @@ use tokio::time::{Duration, Instant};
 use tracing::{debug, error};
 
 use super::router::{SubscriptionId, SubscriptionIdRef};
+use crate::{
+    client::{
+        subscription::SubscriptionTx,
+        sync::{ChannelRx, ChannelTx},
+        transport::router::{PublishResult, SubscriptionRouter},
+    },
+    endpoint::{subscribe, unsubscribe},
+    error::Error,
+    event::Event,
+    prelude::*,
+    query::Query,
+    request::Wrapper,
+    response, Client, Id, Request, Response, Scheme, SimpleRequest, Subscription,
+    SubscriptionClient, Url,
+};
 
 // WebSocket connection times out if we haven't heard anything at all from the
 // server in this long.
@@ -252,25 +260,27 @@ impl From<WebSocketClientUrl> for Url {
 }
 
 mod sealed {
-    use super::{
-        DriverCommand, SimpleRequestCommand, SubscribeCommand, UnsubscribeCommand,
-        WebSocketClientDriver,
-    };
-
-    use crate::client::sync::{unbounded, ChannelTx};
-    use crate::client::transport::auth::authorize;
-    use crate::prelude::*;
-    use crate::query::Query;
-    use crate::request::Wrapper;
-    use crate::utils::uuid_str;
-    use crate::{Error, Response, SimpleRequest, Subscription, Url};
-
     use async_tungstenite::{
         tokio::{connect_async_with_config, connect_async_with_tls_connector_and_config},
         tungstenite::{client::IntoClientRequest, protocol::WebSocketConfig},
     };
-
     use tracing::debug;
+
+    use super::{
+        DriverCommand, SimpleRequestCommand, SubscribeCommand, UnsubscribeCommand,
+        WebSocketClientDriver,
+    };
+    use crate::{
+        client::{
+            sync::{unbounded, ChannelTx},
+            transport::auth::authorize,
+        },
+        prelude::*,
+        query::Query,
+        request::Wrapper,
+        utils::uuid_str,
+        Error, Response, SimpleRequest, Subscription, Url,
+    };
 
     /// Marker for the [`AsyncTungsteniteClient`] for clients operating over
     /// unsecure connections.
@@ -727,7 +737,7 @@ impl WebSocketClientDriver {
                 debug!("JSON-RPC message: {}", msg);
 
                 return Ok(());
-            }
+            },
         };
 
         debug!("Generic JSON-RPC message: {:?}", wrapper);
@@ -797,7 +807,7 @@ impl WebSocketClientDriver {
                     (cmd.id, cmd.query, cmd.subscription_tx, cmd.response_tx);
                 self.router.add(id, query, subscription_tx);
                 response_tx.send(Ok(()))
-            }
+            },
             DriverCommand::Unsubscribe(cmd) => cmd.response_tx.send(Ok(())),
             DriverCommand::SimpleRequest(cmd) => cmd.response_tx.send(Ok(response)),
             _ => Ok(()),
@@ -830,23 +840,25 @@ impl WebSocketClientDriver {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use crate::client::sync::unbounded;
-    use crate::query::EventType;
-    use crate::{request, Id, Method};
     use alloc::collections::BTreeMap as HashMap;
-    use async_tungstenite::tokio::{accept_async, TokioAdapter};
-    use async_tungstenite::tungstenite::client::IntoClientRequest;
     use core::str::FromStr;
+    use std::{path::PathBuf, println};
+
+    use async_tungstenite::{
+        tokio::{accept_async, TokioAdapter},
+        tungstenite::client::IntoClientRequest,
+    };
     use futures::StreamExt;
-    use http::header::AUTHORIZATION;
-    use http::Uri;
-    use std::path::PathBuf;
-    use std::println;
+    use http::{header::AUTHORIZATION, Uri};
     use tendermint_config::net;
-    use tokio::fs;
-    use tokio::net::{TcpListener, TcpStream};
-    use tokio::task::JoinHandle;
+    use tokio::{
+        fs,
+        net::{TcpListener, TcpStream},
+        task::JoinHandle,
+    };
+
+    use super::*;
+    use crate::{client::sync::unbounded, query::EventType, request, Id, Method};
 
     // Interface to a driver that manages all incoming WebSocket connections.
     struct TestServer {
@@ -1036,11 +1048,11 @@ mod test {
                 Message::Ping(v) => {
                     let _ = self.conn.send(Message::Pong(v)).await;
                     None
-                }
+                },
                 Message::Close(_) => {
                     self.terminate().await;
                     Some(Ok(()))
-                }
+                },
                 _ => None,
             }
         }
@@ -1062,7 +1074,7 @@ mod test {
                                         req.id().to_string(),
                                     );
                                     self.send(req.id().clone(), subscribe::Response {}).await;
-                                }
+                                },
                                 Method::Unsubscribe => {
                                     let req = serde_json::from_str::<
                                         request::Wrapper<unsubscribe::Request>,
@@ -1071,23 +1083,23 @@ mod test {
 
                                     self.remove_subscription(req.params().query.clone());
                                     self.send(req.id().clone(), unsubscribe::Response {}).await;
-                                }
+                                },
                                 _ => {
                                     println!("Unsupported method in incoming request: {}", &method);
-                                }
+                                },
                             },
                             Err(e) => {
                                 println!(
                                     "Unexpected method in incoming request: {} ({})",
                                     json_method, e
                                 );
-                            }
+                            },
                         }
                     }
-                }
+                },
                 Err(e) => {
                     println!("Failed to parse incoming request: {} ({})", &msg, e);
-                }
+                },
             }
             None
         }

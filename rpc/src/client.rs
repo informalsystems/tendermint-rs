@@ -5,31 +5,32 @@ pub use subscription::{Subscription, SubscriptionClient};
 pub mod sync;
 
 mod transport;
-pub use transport::mock::{MockClient, MockRequestMatcher, MockRequestMethodMatcher};
+use core::{fmt, time::Duration};
 
+use async_trait::async_trait;
+use serde::{de::DeserializeOwned, Serialize};
+use tendermint::{
+    abci::{self, Transaction},
+    block::Height,
+    evidence::Evidence,
+    Genesis,
+};
+use tokio::time;
 #[cfg(feature = "http-client")]
 pub use transport::http::{HttpClient, HttpClientUrl};
+pub use transport::mock::{MockClient, MockRequestMatcher, MockRequestMethodMatcher};
 #[cfg(feature = "websocket-client")]
 pub use transport::websocket::{
     WebSocketClient, WebSocketClientDriver, WebSocketClientUrl, WebSocketConfig,
 };
 
-use crate::endpoint::validators::DEFAULT_VALIDATORS_PER_PAGE;
-use crate::endpoint::*;
-use crate::paging::Paging;
-use crate::prelude::*;
-use crate::query::Query;
-use crate::{Error, Order, SimpleRequest};
-use async_trait::async_trait;
-use core::fmt;
-use core::time::Duration;
-use serde::de::DeserializeOwned;
-use serde::Serialize;
-use tendermint::abci::{self, Transaction};
-use tendermint::block::Height;
-use tendermint::evidence::Evidence;
-use tendermint::Genesis;
-use tokio::time;
+use crate::{
+    endpoint::{validators::DEFAULT_VALIDATORS_PER_PAGE, *},
+    paging::Paging,
+    prelude::*,
+    query::Query,
+    Error, Order, SimpleRequest,
+};
 
 /// Provides lightweight access to the Tendermint RPC. It gives access to all
 /// endpoints with the exception of the event subscription-related ones.
@@ -175,7 +176,7 @@ pub trait Client {
             Paging::Default => {
                 self.perform(validators::Request::new(Some(height), None, None))
                     .await
-            }
+            },
             Paging::Specific {
                 page_number,
                 per_page,
@@ -186,7 +187,7 @@ pub trait Client {
                     Some(per_page),
                 ))
                 .await
-            }
+            },
             Paging::All => {
                 let mut page_num = 1_usize;
                 let mut validators = Vec::new();
@@ -209,7 +210,7 @@ pub trait Client {
                     }
                     page_num += 1;
                 }
-            }
+            },
         }
     }
 

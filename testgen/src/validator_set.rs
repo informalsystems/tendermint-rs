@@ -1,12 +1,13 @@
+use gumdrop::Options;
+use serde::{Deserialize, Serialize};
+use simple_error::*;
+use tendermint::validator;
+
 use crate::{
     helpers::*,
     validator::{generate_validators, Validator},
     Generator,
 };
-use gumdrop::Options;
-use serde::{Deserialize, Serialize};
-use simple_error::*;
-use tendermint::validator;
 
 #[derive(Debug, Options, Serialize, Deserialize, Clone)]
 pub struct ValidatorSet {

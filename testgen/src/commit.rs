@@ -1,13 +1,11 @@
+use std::{collections::BTreeSet, convert::TryFrom, iter::FromIterator};
+
 use gumdrop::Options;
 use serde::{Deserialize, Serialize};
 use simple_error::*;
-use std::collections::BTreeSet;
-use std::iter::FromIterator;
 use tendermint::block::{self, parts::Header as PartSetHeader, Round};
 
-use crate::validator::sort_validators;
-use crate::{helpers::*, Generator, Header, Validator, Vote};
-use std::convert::TryFrom;
+use crate::{helpers::*, validator::sort_validators, Generator, Header, Validator, Vote};
 
 #[derive(Debug, Options, Serialize, Deserialize, Clone)]
 pub struct Commit {
@@ -168,8 +166,9 @@ impl Generator<block::Commit> for Commit {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use tendermint::Time;
+
+    use super::*;
 
     #[test]
     fn test_commit() {
@@ -223,7 +222,7 @@ mod tests {
                         &sign_bytes,
                         signature.as_ref().unwrap()
                     ));
-                }
+                },
                 _ => panic!("signature was not a commit"),
             };
         }

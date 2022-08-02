@@ -1,3 +1,5 @@
+use std::{collections::HashMap, time::Duration};
+
 use tendermint_light_client::{
     components::{
         io::{AtHeight, Io},
@@ -7,8 +9,9 @@ use tendermint_light_client::{
     light_client::LightClient,
     peer_list::PeerList,
     state::State,
-    store::LightStore,
+    store::{memory::MemoryStore, LightStore},
     supervisor::{Handle, Instance, Supervisor},
+    tests::{LightClientTest, MockClock, MockEvidenceReporter, MockIo, TrustOptions},
     verifier::{
         operations::ProdHasher,
         options::Options,
@@ -16,15 +19,6 @@ use tendermint_light_client::{
         ProdVerifier,
     },
 };
-
-use std::collections::HashMap;
-use std::time::Duration;
-
-use tendermint_light_client::store::memory::MemoryStore;
-use tendermint_light_client::tests::{
-    LightClientTest, MockClock, MockEvidenceReporter, MockIo, TrustOptions,
-};
-
 use tendermint_testgen::Tester;
 
 const TEST_FILES_PATH: &str = "./tests/support/";
@@ -112,11 +106,11 @@ fn run_multipeer_test(tc: LightClientTest<LightBlock>) {
 
             // Check the verdict
             assert!(!expects_err);
-        }
+        },
         Err(e) => {
             dbg!(e);
             assert!(expects_err);
-        }
+        },
     }
 
     // TODO: Check the peer list

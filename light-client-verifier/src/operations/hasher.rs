@@ -1,8 +1,8 @@
 //! Provides an interface and default implementation for the `Hasher` operation
 
-use crate::types::{Header, ValidatorSet};
-
 use tendermint::Hash;
+
+use crate::types::{Header, ValidatorSet};
 
 /// Hashing for headers and validator sets
 pub trait Hasher: Send + Sync {

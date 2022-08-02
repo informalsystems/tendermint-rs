@@ -1,15 +1,21 @@
 //! In-memory key/value store ABCI application.
 
-use crate::codec::{encode_varint, MAX_VARINT_LENGTH};
-use crate::{Application, Error};
+use std::{
+    collections::HashMap,
+    sync::mpsc::{channel, Receiver, Sender},
+};
+
 use bytes::BytesMut;
-use std::collections::HashMap;
-use std::sync::mpsc::{channel, Receiver, Sender};
 use tendermint_proto::abci::{
     Event, EventAttribute, RequestCheckTx, RequestDeliverTx, RequestInfo, RequestQuery,
     ResponseCheckTx, ResponseCommit, ResponseDeliverTx, ResponseInfo, ResponseQuery,
 };
 use tracing::{debug, info};
+
+use crate::{
+    codec::{encode_varint, MAX_VARINT_LENGTH},
+    Application, Error,
+};
 
 /// In-memory, hashmap-backed key/value store ABCI application.
 ///
@@ -254,14 +260,14 @@ impl KeyValueStoreDriver {
             match cmd {
                 Command::GetInfo { result_tx } => {
                     channel_send(&result_tx, (self.height, self.app_hash.clone()))?
-                }
+                },
                 Command::Get { key, result_tx } => {
                     debug!("Getting value for \"{}\"", key);
                     channel_send(
                         &result_tx,
                         (self.height, self.store.get(&key).map(Clone::clone)),
                     )?;
-                }
+                },
                 Command::Set {
                     key,
                     value,
@@ -269,7 +275,7 @@ impl KeyValueStoreDriver {
                 } => {
                     debug!("Setting \"{}\" = \"{}\"", key, value);
                     channel_send(&result_tx, self.store.insert(key, value))?;
-                }
+                },
                 Command::Commit { result_tx } => self.commit(result_tx)?,
             }
         }

@@ -1,11 +1,10 @@
 //! JSON-RPC error types
 
 use core::time::Duration;
+
 use flex_error::{define_error, DefaultTracer, DisplayError, DisplayOnly, ErrorMessageTracer};
 
-use crate::prelude::*;
-use crate::response_error::ResponseError;
-use crate::rpc_url::Url;
+use crate::{prelude::*, response_error::ResponseError, rpc_url::Url};
 
 #[cfg(feature = "http")]
 type HttpError = flex_error::DisplayOnly<http::Error>;

@@ -1,9 +1,9 @@
 //! `/broadcast_evidence`: broadcast an evidence.
 
-use crate::Method;
-
 use serde::{Deserialize, Serialize};
 use tendermint::{abci::transaction, evidence::Evidence};
+
+use crate::Method;
 
 /// `/broadcast_evidence`: broadcast an evidence.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]

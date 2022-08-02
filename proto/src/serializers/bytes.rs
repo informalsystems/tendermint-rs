@@ -2,9 +2,10 @@
 
 /// Serialize into hexstring, deserialize from hexstring
 pub mod hexstring {
-    use crate::prelude::*;
     use serde::{Deserialize, Deserializer, Serializer};
     use subtle_encoding::hex;
+
+    use crate::prelude::*;
 
     /// Deserialize hexstring into Vec<u8>
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
@@ -31,9 +32,10 @@ pub mod hexstring {
 
 /// Serialize into base64string, deserialize from base64string
 pub mod base64string {
-    use crate::prelude::*;
     use serde::{Deserialize, Deserializer, Serializer};
     use subtle_encoding::base64;
+
+    use crate::prelude::*;
 
     /// Deserialize base64string into Vec<u8>
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
@@ -68,9 +70,10 @@ pub mod base64string {
 
 /// Serialize into Vec<base64string>, deserialize from Vec<base64string>
 pub mod vec_base64string {
-    use crate::prelude::*;
     use serde::{Deserialize, Deserializer, Serializer};
     use subtle_encoding::base64;
+
+    use crate::prelude::*;
 
     /// Deserialize array into Vec<Vec<u8>>
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<Vec<u8>>, D::Error>
@@ -102,9 +105,10 @@ pub mod vec_base64string {
 
 /// Serialize into Option<base64string>, deserialize from Option<base64string>
 pub mod option_base64string {
-    use crate::prelude::*;
     use serde::{Deserialize, Deserializer, Serializer};
     use subtle_encoding::base64;
+
+    use crate::prelude::*;
 
     /// Deserialize Option<base64string> into Vec<u8> or null
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
@@ -129,8 +133,9 @@ pub mod option_base64string {
 
 /// Serialize into string, deserialize from string
 pub mod string {
-    use crate::prelude::*;
     use serde::{Deserialize, Deserializer, Serializer};
+
+    use crate::prelude::*;
 
     /// Deserialize string into Vec<u8>
     #[allow(dead_code)]

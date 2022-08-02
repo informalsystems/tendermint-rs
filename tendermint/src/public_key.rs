@@ -6,20 +6,20 @@ pub use k256::ecdsa::VerifyingKey as Secp256k1;
 
 mod pub_key_request;
 mod pub_key_response;
+use core::{cmp::Ordering, convert::TryFrom, fmt, ops::Deref, str::FromStr};
+
 pub use pub_key_request::PubKeyRequest;
 pub use pub_key_response::PubKeyResponse;
-use serde_json::Value;
-
-use crate::prelude::*;
-use crate::{error::Error, signature::Signature};
-use core::convert::TryFrom;
-use core::{cmp::Ordering, fmt, ops::Deref, str::FromStr};
 use serde::{de, ser, Deserialize, Deserializer, Serialize};
+use serde_json::Value;
 use signature::Verifier as _;
 use subtle_encoding::{base64, bech32, hex};
-use tendermint_proto::crypto::public_key::Sum;
-use tendermint_proto::crypto::PublicKey as RawPublicKey;
-use tendermint_proto::Protobuf;
+use tendermint_proto::{
+    crypto::{public_key::Sum, PublicKey as RawPublicKey},
+    Protobuf,
+};
+
+use crate::{error::Error, prelude::*, signature::Signature};
 
 // Note:On the golang side this is generic in the sense that it could everything that implements
 // github.com/tendermint/tendermint/crypto.PubKey
@@ -207,7 +207,7 @@ impl PublicKey {
                         e
                     ))),
                 }
-            }
+            },
             #[cfg(feature = "secp256k1")]
             PublicKey::Secp256k1(pk) => {
                 match k256::ecdsa::Signature::try_from(signature.as_bytes()) {
@@ -221,7 +221,7 @@ impl PublicKey {
                         e
                     ))),
                 }
-            }
+            },
         }
     }
 
@@ -241,13 +241,13 @@ impl PublicKey {
                 let mut key_bytes = vec![0x16, 0x24, 0xDE, 0x64, 0x20];
                 key_bytes.extend(pk.as_bytes());
                 key_bytes
-            }
+            },
             #[cfg(feature = "secp256k1")]
             PublicKey::Secp256k1(ref pk) => {
                 let mut key_bytes = vec![0xEB, 0x5A, 0xE9, 0x87, 0x21];
                 key_bytes.extend(pk.to_bytes());
                 key_bytes
-            }
+            },
         };
         bech32::encode(hrp, backward_compatible_amino_prefixed_pubkey)
     }
@@ -442,11 +442,11 @@ where
 mod tests {
     use core::convert::TryFrom;
 
-    use super::{PublicKey, Signature, TendermintKey};
-    use crate::prelude::*;
-    use crate::public_key::PubKeyResponse;
     use subtle_encoding::hex;
     use tendermint_proto::Protobuf;
+
+    use super::{PublicKey, Signature, TendermintKey};
+    use crate::{prelude::*, public_key::PubKeyResponse};
 
     const EXAMPLE_CONSENSUS_KEY: &str =
         "4A25C6640A1F72B9C975338294EF51B6D1C33158BB6ECBA69FBC3FB5A33C9DCE";
@@ -457,21 +457,21 @@ mod tests {
             PublicKey::from_raw_ed25519(&hex::decode_upper(EXAMPLE_CONSENSUS_KEY).unwrap())
                 .unwrap(),
         );
-        /* Key created from:
-        import (
-            "encoding/hex"
-            "fmt"
-            "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-            "github.com/cosmos/cosmos-sdk/types"
-        )
-
-        func bech32conspub() {
-            pubBz, _ := hex.DecodeString("4A25C6640A1F72B9C975338294EF51B6D1C33158BB6ECBA69FBC3FB5A33C9DCE")
-            pub := &ed25519.PubKey{Key: pubBz}
-            mustBech32ConsPub := types.MustBech32ifyPubKey(types.Bech32PubKeyTypeConsPub, pub)
-            fmt.Println(mustBech32ConsPub)
-        }
-         */
+        // Key created from:
+        // import (
+        // "encoding/hex"
+        // "fmt"
+        // "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+        // "github.com/cosmos/cosmos-sdk/types"
+        // )
+        //
+        // func bech32conspub() {
+        // pubBz, _ :=
+        // hex.DecodeString("4A25C6640A1F72B9C975338294EF51B6D1C33158BB6ECBA69FBC3FB5A33C9DCE")
+        // pub := &ed25519.PubKey{Key: pubBz}
+        // mustBech32ConsPub := types.MustBech32ifyPubKey(types.Bech32PubKeyTypeConsPub, pub)
+        // fmt.Println(mustBech32ConsPub)
+        // }
         assert_eq!(
             example_key.to_bech32("cosmosvalconspub"),
             "cosmosvalconspub1zcjduepqfgjuveq2raetnjt4xwpffm63kmguxv2chdhvhf5lhslmtgeunh8qmf7exk"
@@ -513,29 +513,27 @@ mod tests {
     #[test]
     fn test_ed25519_pubkey_msg() {
         // test-vector generated from Go
-        /*
-           import (
-               "fmt"
-               "github.com/tendermint/tendermint/proto/tendermint/crypto"
-               "github.com/tendermint/tendermint/proto/tendermint/privval"
-           )
-
-            func ed25519_key() {
-                pkr := &privval.PubKeyResponse{
-                    PubKey: &crypto.PublicKey{
-                        Sum: &crypto.PublicKey_Ed25519{Ed25519: []byte{
-                            215, 90, 152, 1, 130, 177, 10, 183, 213, 75, 254, 211, 201, 100, 7, 58,
-                            14, 225, 114, 243, 218, 166, 35, 37, 175, 2, 26, 104, 247, 7, 81, 26,
-                        },
-                        },
-                    },
-                    Error: nil,
-                }
-                pbpk, _ := pkr.Marshal()
-                fmt.Printf("%#v\n", pbpk)
-
-            }
-        */
+        // import (
+        // "fmt"
+        // "github.com/tendermint/tendermint/proto/tendermint/crypto"
+        // "github.com/tendermint/tendermint/proto/tendermint/privval"
+        // )
+        //
+        // func ed25519_key() {
+        // pkr := &privval.PubKeyResponse{
+        // PubKey: &crypto.PublicKey{
+        // Sum: &crypto.PublicKey_Ed25519{Ed25519: []byte{
+        // 215, 90, 152, 1, 130, 177, 10, 183, 213, 75, 254, 211, 201, 100, 7, 58,
+        // 14, 225, 114, 243, 218, 166, 35, 37, 175, 2, 26, 104, 247, 7, 81, 26,
+        // },
+        // },
+        // },
+        // Error: nil,
+        // }
+        // pbpk, _ := pkr.Marshal()
+        // fmt.Printf("%#v\n", pbpk)
+        //
+        // }
         let encoded = vec![
             0xa, 0x22, 0xa, 0x20, 0xd7, 0x5a, 0x98, 0x1, 0x82, 0xb1, 0xa, 0xb7, 0xd5, 0x4b, 0xfe,
             0xd3, 0xc9, 0x64, 0x7, 0x3a, 0xe, 0xe1, 0x72, 0xf3, 0xda, 0xa6, 0x23, 0x25, 0xaf, 0x2,
@@ -711,7 +709,7 @@ mod tests {
 
             let public_key = PublicKey::from_raw_ed25519(public_key).unwrap();
             match public_key {
-                PublicKey::Ed25519(_) => {}
+                PublicKey::Ed25519(_) => {},
                 #[cfg(feature = "secp256k1")]
                 _ => panic!("expected public key to be Ed25519: {:?}", public_key),
             }
@@ -800,7 +798,7 @@ mod tests {
 
             let public_key = PublicKey::from_raw_secp256k1(public_key).unwrap();
             match public_key {
-                PublicKey::Secp256k1(_) => {}
+                PublicKey::Secp256k1(_) => {},
                 _ => panic!("expected public key to be secp256k1: {:?}", public_key),
             }
             let der_sig = k256::ecdsa::Signature::from_der(sig).unwrap();

@@ -1,6 +1,8 @@
-use crate::prelude::*;
 use core::fmt::Display;
+
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+use crate::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct ResponseError {

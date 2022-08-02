@@ -1,5 +1,6 @@
-use flex_error::{define_error, DisplayOnly};
 use std::io::Error as IoError;
+
+use flex_error::{define_error, DisplayOnly};
 use tendermint::Error as TendermintError;
 
 define_error! {

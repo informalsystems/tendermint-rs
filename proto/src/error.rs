@@ -1,11 +1,11 @@
 //! This module defines the various errors that be raised during Protobuf conversions.
 
-use crate::prelude::*;
-use core::convert::TryFrom;
-use core::fmt::Display;
-use core::num::TryFromIntError;
+use core::{convert::TryFrom, fmt::Display, num::TryFromIntError};
+
 use flex_error::{define_error, DisplayOnly};
 use prost::{DecodeError, EncodeError};
+
+use crate::prelude::*;
 
 define_error! {
     Error {

@@ -5,28 +5,23 @@ mod power;
 mod sign_vote;
 mod validator_index;
 
-pub use self::canonical_vote::CanonicalVote;
-pub use self::power::Power;
-pub use self::sign_vote::*;
-pub use self::validator_index::ValidatorIndex;
-
-use core::convert::{TryFrom, TryInto};
-use core::fmt;
-use core::str::FromStr;
+use core::{
+    convert::{TryFrom, TryInto},
+    fmt,
+    str::FromStr,
+};
 
 use bytes::BufMut;
 use serde::{Deserialize, Serialize};
+use tendermint_proto::{types::Vote as RawVote, Error as ProtobufError, Protobuf};
 
-use tendermint_proto::types::Vote as RawVote;
-use tendermint_proto::{Error as ProtobufError, Protobuf};
-
-use crate::chain::Id as ChainId;
-use crate::consensus::State;
-use crate::error::Error;
-use crate::hash;
-use crate::prelude::*;
-use crate::signature::Ed25519Signature;
-use crate::{account, block, Signature, Time};
+pub use self::{
+    canonical_vote::CanonicalVote, power::Power, sign_vote::*, validator_index::ValidatorIndex,
+};
+use crate::{
+    account, block, chain::Id as ChainId, consensus::State, error::Error, hash, prelude::*,
+    signature::Ed25519Signature, Signature, Time,
+};
 
 /// Votes are signed messages from validators for a particular block which
 /// include information about the validator signing it.

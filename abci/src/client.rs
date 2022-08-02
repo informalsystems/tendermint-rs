@@ -1,18 +1,18 @@
 //! Blocking ABCI client.
 
-use crate::codec::ClientCodec;
-use crate::Error;
 use std::net::{TcpStream, ToSocketAddrs};
+
 use tendermint_proto::abci::{
-    request, response, RequestApplySnapshotChunk, RequestBeginBlock, RequestCheckTx, RequestCommit,
-    RequestDeliverTx, RequestEndBlock, RequestFlush, RequestInfo, RequestInitChain,
-    RequestListSnapshots, RequestLoadSnapshotChunk, RequestOfferSnapshot, RequestQuery,
-    RequestSetOption, ResponseApplySnapshotChunk, ResponseBeginBlock, ResponseCheckTx,
-    ResponseCommit, ResponseDeliverTx, ResponseEndBlock, ResponseFlush, ResponseInfo,
-    ResponseInitChain, ResponseListSnapshots, ResponseLoadSnapshotChunk, ResponseOfferSnapshot,
-    ResponseQuery, ResponseSetOption,
+    request, response, Request, RequestApplySnapshotChunk, RequestBeginBlock, RequestCheckTx,
+    RequestCommit, RequestDeliverTx, RequestEcho, RequestEndBlock, RequestFlush, RequestInfo,
+    RequestInitChain, RequestListSnapshots, RequestLoadSnapshotChunk, RequestOfferSnapshot,
+    RequestQuery, RequestSetOption, ResponseApplySnapshotChunk, ResponseBeginBlock,
+    ResponseCheckTx, ResponseCommit, ResponseDeliverTx, ResponseEcho, ResponseEndBlock,
+    ResponseFlush, ResponseInfo, ResponseInitChain, ResponseListSnapshots,
+    ResponseLoadSnapshotChunk, ResponseOfferSnapshot, ResponseQuery, ResponseSetOption,
 };
-use tendermint_proto::abci::{Request, RequestEcho, ResponseEcho};
+
+use crate::{codec::ClientCodec, Error};
 
 /// The size of the read buffer for the client in its receiving of responses
 /// from the server.
@@ -58,7 +58,7 @@ macro_rules! perform {
             response::Value::$type(r) => Ok(r),
             r => {
                 Err(Error::unexpected_server_response_type(stringify!($type).to_string(), r).into())
-            }
+            },
         }
     };
 }

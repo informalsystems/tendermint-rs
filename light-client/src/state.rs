@@ -1,10 +1,13 @@
 //! State maintained by the light client.
 
-use crate::store::LightStore;
-use crate::verifier::types::{Height, LightBlock, Status};
+use std::collections::{HashMap, HashSet};
 
 use contracts::*;
-use std::collections::{HashMap, HashSet};
+
+use crate::{
+    store::LightStore,
+    verifier::types::{Height, LightBlock, Status},
+};
 
 /// Records which blocks were needed to verify a target block, eg. during bisection.
 pub type VerificationTrace = HashMap<Height, HashSet<Height>>;

@@ -1,9 +1,10 @@
 //! JSON-RPC IDs
 
-use crate::prelude::*;
-use crate::utils::uuid_str;
 use core::fmt;
+
 use serde::{Deserialize, Serialize};
+
+use crate::{prelude::*, utils::uuid_str};
 
 /// JSON-RPC ID: request-specific identifier
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd)]
@@ -37,6 +38,7 @@ impl fmt::Display for Id {
 #[cfg(test)]
 mod tests {
     use core::fmt::Debug;
+
     use serde::{de::DeserializeOwned, Serialize};
 
     use super::*;

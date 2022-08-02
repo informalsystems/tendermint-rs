@@ -1,5 +1,7 @@
-use std::io::{self, Read};
-use std::process;
+use std::{
+    io::{self, Read},
+    process,
+};
 
 /// A thin wrapper around process::Command to facilitate running external commands.
 pub struct Command {
@@ -79,7 +81,7 @@ impl Command {
                     stdout,
                     stderr,
                 })
-            }
+            },
         }
     }
 }

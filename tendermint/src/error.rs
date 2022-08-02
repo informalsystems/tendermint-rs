@@ -1,11 +1,12 @@
 //! Error types
 
-use crate::account;
-use crate::vote;
 use alloc::string::String;
 use core::num::TryFromIntError;
+
 use flex_error::{define_error, DisplayOnly};
 use serde::{Deserialize, Serialize};
+
+use crate::{account, vote};
 
 define_error! {
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

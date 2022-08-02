@@ -4,10 +4,13 @@
 //!
 //! [tsp]: https://docs.tendermint.com/master/spec/abci/client-server.html#tsp
 
+use std::{
+    io::{Read, Write},
+    marker::PhantomData,
+};
+
 use bytes::{Buf, BufMut, BytesMut};
 use prost::Message;
-use std::io::{Read, Write};
-use std::marker::PhantomData;
 use tendermint_proto::abci::{Request, Response};
 
 use crate::error::Error;

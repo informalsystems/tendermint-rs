@@ -1,7 +1,6 @@
 //! `/status` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
-
 use tendermint::{block, node, validator, AppHash, Hash, Time};
 
 /// Node status request

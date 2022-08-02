@@ -4,21 +4,22 @@ mod canonical_proposal;
 mod msg_type;
 mod sign_proposal;
 
-pub use self::canonical_proposal::CanonicalProposal;
+use core::convert::{TryFrom, TryInto};
+
+use bytes::BufMut;
 pub use msg_type::Type;
 pub use sign_proposal::{SignProposalRequest, SignedProposalResponse};
+use tendermint_proto::{types::Proposal as RawProposal, Error as ProtobufError, Protobuf};
 
-use crate::block::{Height, Id as BlockId, Round};
-use crate::chain::Id as ChainId;
-use crate::consensus::State;
-use crate::error::Error;
-use crate::prelude::*;
-use crate::Signature;
-use crate::Time;
-use bytes::BufMut;
-use core::convert::{TryFrom, TryInto};
-use tendermint_proto::types::Proposal as RawProposal;
-use tendermint_proto::{Error as ProtobufError, Protobuf};
+pub use self::canonical_proposal::CanonicalProposal;
+use crate::{
+    block::{Height, Id as BlockId, Round},
+    chain::Id as ChainId,
+    consensus::State,
+    error::Error,
+    prelude::*,
+    Signature, Time,
+};
 
 /// Proposal
 #[derive(Clone, PartialEq, Debug)]
@@ -114,19 +115,20 @@ impl Proposal {
 
 #[cfg(test)]
 mod tests {
-    use crate::block::parts::Header;
-    use crate::block::Id as BlockId;
-    use crate::block::{Height, Round};
-    use crate::chain::Id as ChainId;
-    use crate::hash::{Algorithm, Hash};
-    use crate::prelude::*;
-    use crate::proposal::SignProposalRequest;
-    use crate::test::dummy_signature;
-    use crate::{proposal::Type, Proposal};
-    use core::convert::TryInto;
-    use core::str::FromStr;
+    use core::{convert::TryInto, str::FromStr};
+
     use tendermint_proto::Protobuf;
     use time::macros::datetime;
+
+    use crate::{
+        block::{parts::Header, Height, Id as BlockId, Round},
+        chain::Id as ChainId,
+        hash::{Algorithm, Hash},
+        prelude::*,
+        proposal::{SignProposalRequest, Type},
+        test::dummy_signature,
+        Proposal,
+    };
 
     #[test]
     fn test_serialization() {
@@ -166,38 +168,38 @@ mod tests {
         let _have = request.to_signable_bytes(&mut got);
 
         // the following vector is generated via:
-        /*
-            import (
-                "encoding/hex"
-                "fmt"
-                prototypes "github.com/tendermint/tendermint/proto/tendermint/types"
-                "github.com/tendermint/tendermint/types"
-                "strings"
-                "time"
-            )
-
-            func proposalSerialize() {
-                stamp, _ := time.Parse(time.RFC3339Nano, "2018-02-11T07:09:22.765Z")
-                block_hash, _ := hex.DecodeString("DEADBEEFDEADBEEFBAFBAFBAFBAFBAFADEADBEEFDEADBEEFBAFBAFBAFBAFBAFA")
-                part_hash, _ := hex.DecodeString("0022446688AACCEE1133557799BBDDFF0022446688AACCEE1133557799BBDDFF")
-                proposal := &types.Proposal{
-                    Type:     prototypes.SignedMsgType(prototypes.ProposalType),
-                    Height:   12345,
-                    Round:    23456,
-                    POLRound: -1,
-                    BlockID: types.BlockID{
-                        Hash: block_hash,
-                        PartSetHeader: types.PartSetHeader{
-                            Hash:  part_hash,
-                            Total: 65535,
-                        },
-                    },
-                    Timestamp: stamp,
-                }
-                signBytes := types.ProposalSignBytes("test_chain_id", proposal.ToProto())
-                fmt.Println(strings.Join(strings.Split(fmt.Sprintf("%v", signBytes), " "), ", "))
-            }
-        */
+        // import (
+        // "encoding/hex"
+        // "fmt"
+        // prototypes "github.com/tendermint/tendermint/proto/tendermint/types"
+        // "github.com/tendermint/tendermint/types"
+        // "strings"
+        // "time"
+        // )
+        //
+        // func proposalSerialize() {
+        // stamp, _ := time.Parse(time.RFC3339Nano, "2018-02-11T07:09:22.765Z")
+        // block_hash, _ :=
+        // hex.DecodeString("DEADBEEFDEADBEEFBAFBAFBAFBAFBAFADEADBEEFDEADBEEFBAFBAFBAFBAFBAFA")
+        // part_hash, _ :=
+        // hex.DecodeString("0022446688AACCEE1133557799BBDDFF0022446688AACCEE1133557799BBDDFF")
+        // proposal := &types.Proposal{
+        // Type:     prototypes.SignedMsgType(prototypes.ProposalType),
+        // Height:   12345,
+        // Round:    23456,
+        // POLRound: -1,
+        // BlockID: types.BlockID{
+        // Hash: block_hash,
+        // PartSetHeader: types.PartSetHeader{
+        // Hash:  part_hash,
+        // Total: 65535,
+        // },
+        // },
+        // Timestamp: stamp,
+        // }
+        // signBytes := types.ProposalSignBytes("test_chain_id", proposal.ToProto())
+        // fmt.Println(strings.Join(strings.Split(fmt.Sprintf("%v", signBytes), " "), ", "))
+        // }
 
         let want = vec![
             136, 1, 8, 32, 17, 57, 48, 0, 0, 0, 0, 0, 0, 25, 160, 91, 0, 0, 0, 0, 0, 0, 32, 255,
@@ -248,38 +250,37 @@ mod tests {
         let _have = request.to_signable_bytes(&mut got);
 
         // the following vector is generated via:
-        /*
-            import (
-                "encoding/hex"
-                "fmt"
-                prototypes "github.com/tendermint/tendermint/proto/tendermint/types"
-                "github.com/tendermint/tendermint/types"
-                "strings"
-                "time"
-            )
-
-            func proposalSerialize() {
-                stamp, _ := time.Parse(time.RFC3339Nano, "2018-02-11T07:09:22.765Z")
-                block_hash, _ := hex.DecodeString("")
-                part_hash, _ := hex.DecodeString("0022446688AACCEE1133557799BBDDFF0022446688AACCEE1133557799BBDDFF")
-                proposal := &types.Proposal{
-                    Type:     prototypes.SignedMsgType(prototypes.ProposalType),
-                    Height:   12345,
-                    Round:    23456,
-                    POLRound: -1,
-                    BlockID: types.BlockID{
-                        Hash: block_hash,
-                        PartSetHeader: types.PartSetHeader{
-                            Hash:  part_hash,
-                            Total: 65535,
-                        },
-                    },
-                    Timestamp: stamp,
-                }
-                signBytes := types.ProposalSignBytes("test_chain_id", proposal.ToProto())
-                fmt.Println(strings.Join(strings.Split(fmt.Sprintf("%v", signBytes), " "), ", "))
-            }
-        */
+        // import (
+        // "encoding/hex"
+        // "fmt"
+        // prototypes "github.com/tendermint/tendermint/proto/tendermint/types"
+        // "github.com/tendermint/tendermint/types"
+        // "strings"
+        // "time"
+        // )
+        //
+        // func proposalSerialize() {
+        // stamp, _ := time.Parse(time.RFC3339Nano, "2018-02-11T07:09:22.765Z")
+        // block_hash, _ := hex.DecodeString("")
+        // part_hash, _ :=
+        // hex.DecodeString("0022446688AACCEE1133557799BBDDFF0022446688AACCEE1133557799BBDDFF")
+        // proposal := &types.Proposal{
+        // Type:     prototypes.SignedMsgType(prototypes.ProposalType),
+        // Height:   12345,
+        // Round:    23456,
+        // POLRound: -1,
+        // BlockID: types.BlockID{
+        // Hash: block_hash,
+        // PartSetHeader: types.PartSetHeader{
+        // Hash:  part_hash,
+        // Total: 65535,
+        // },
+        // },
+        // Timestamp: stamp,
+        // }
+        // signBytes := types.ProposalSignBytes("test_chain_id", proposal.ToProto())
+        // fmt.Println(strings.Join(strings.Split(fmt.Sprintf("%v", signBytes), " "), ", "))
+        // }
 
         let want = vec![
             102, 8, 32, 17, 57, 48, 0, 0, 0, 0, 0, 0, 25, 160, 91, 0, 0, 0, 0, 0, 0, 32, 255, 255,

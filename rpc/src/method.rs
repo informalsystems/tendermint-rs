@@ -1,12 +1,13 @@
 //! JSON-RPC request methods
 
-use crate::prelude::*;
-use crate::Error;
 use core::{
     fmt::{self, Display},
     str::FromStr,
 };
+
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+
+use crate::{prelude::*, Error};
 
 /// JSON-RPC request methods.
 ///

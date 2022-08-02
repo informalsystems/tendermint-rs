@@ -20,7 +20,6 @@ pub mod validator;
 pub mod validator_set;
 pub mod vote;
 
-pub use crate::time::Time;
 pub use commit::Commit;
 pub use generator::Generator;
 pub use header::Header;
@@ -30,6 +29,8 @@ pub use validator::Validator;
 pub use validator_set::ValidatorSet;
 pub use vote::Vote;
 
+pub use crate::time::Time;
+
 /// Helpers for organizing and running the tests
 pub mod apalache;
 pub mod command;
@@ -37,5 +38,4 @@ pub mod jsonatr;
 pub mod tester;
 
 pub use command::Command;
-pub use tester::TestEnv;
-pub use tester::Tester;
+pub use tester::{TestEnv, Tester};

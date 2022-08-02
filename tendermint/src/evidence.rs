@@ -1,20 +1,25 @@
 //! Evidence of malfeasance by validators (i.e. signing conflicting votes).
 
-use crate::prelude::*;
-use crate::{
-    block::signed_header::SignedHeader, error::Error, serializers, vote::Power, Time, Vote,
+use core::{
+    convert::{TryFrom, TryInto},
+    slice,
 };
-use core::convert::{TryFrom, TryInto};
-use core::slice;
+
 use serde::{Deserialize, Serialize};
-use tendermint_proto::google::protobuf::Duration as RawDuration;
-use tendermint_proto::types::evidence::Sum as RawSum;
-use tendermint_proto::types::evidence::Sum;
-use tendermint_proto::types::DuplicateVoteEvidence as RawDuplicateVoteEvidence;
-use tendermint_proto::types::Evidence as RawEvidence;
-use tendermint_proto::types::EvidenceList as RawEvidenceList;
-use tendermint_proto::types::EvidenceParams as RawEvidenceParams;
-use tendermint_proto::Protobuf;
+use tendermint_proto::{
+    google::protobuf::Duration as RawDuration,
+    types::{
+        evidence::{Sum as RawSum, Sum},
+        DuplicateVoteEvidence as RawDuplicateVoteEvidence, Evidence as RawEvidence,
+        EvidenceList as RawEvidenceList, EvidenceParams as RawEvidenceParams,
+    },
+    Protobuf,
+};
+
+use crate::{
+    block::signed_header::SignedHeader, error::Error, prelude::*, serializers, vote::Power, Time,
+    Vote,
+};
 
 /// Evidence of malfeasance by validators (i.e. signing conflicting votes).
 /// encoded using an Amino prefix. There is currently only a single type of

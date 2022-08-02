@@ -1,7 +1,6 @@
 //! `/block_results` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
-
 use tendermint::{abci, block, consensus, validator};
 
 use crate::prelude::*;

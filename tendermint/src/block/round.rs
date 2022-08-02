@@ -1,12 +1,12 @@
-use crate::error::Error;
-use crate::prelude::*;
-use core::convert::TryInto;
 use core::{
-    convert::TryFrom,
+    convert::{TryFrom, TryInto},
     fmt::{self, Debug, Display},
     str::FromStr,
 };
+
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+
+use crate::{error::Error, prelude::*};
 
 /// Block round for a particular chain
 #[derive(Copy, Clone, Default, Eq, Hash, PartialEq, PartialOrd, Ord)]

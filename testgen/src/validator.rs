@@ -1,11 +1,15 @@
-use crate::{helpers::*, Generator};
+use std::convert::TryFrom;
+
 use ed25519_dalek::SecretKey as Ed25519SecretKey;
 use gumdrop::Options;
 use serde::{Deserialize, Serialize};
 use simple_error::*;
-use std::convert::TryFrom;
-use tendermint::consensus::state::Ordering;
-use tendermint::{account, private_key, public_key, public_key::PublicKey, validator, vote};
+use tendermint::{
+    account, consensus::state::Ordering, private_key, public_key, public_key::PublicKey, validator,
+    vote,
+};
+
+use crate::{helpers::*, Generator};
 
 #[derive(Debug, Options, Serialize, Deserialize, Clone)]
 pub struct Validator {

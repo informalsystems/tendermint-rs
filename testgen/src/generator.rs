@@ -1,6 +1,7 @@
+use std::str::FromStr;
+
 use serde::Serialize;
 use simple_error::*;
-use std::str::FromStr;
 
 /// A trait that allows to generate complex objects from simple companion objects.
 /// A companion type should have a simple API, leaving most fields optional.

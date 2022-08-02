@@ -1,14 +1,15 @@
 //! Predicates for light block validation and verification.
 
-use crate::errors::VerificationError;
-use crate::prelude::*;
+use core::time::Duration;
+
+use tendermint::{block::Height, hash::Hash};
+
 use crate::{
+    errors::VerificationError,
     operations::{CommitValidator, Hasher, VotingPowerCalculator},
+    prelude::*,
     types::{Header, SignedHeader, Time, TrustThreshold, ValidatorSet},
 };
-
-use core::time::Duration;
-use tendermint::{block::Height, hash::Hash};
 
 /// Production predicates, using the default implementation
 /// of the `VerificationPredicates` trait.
@@ -204,27 +205,24 @@ pub trait VerificationPredicates: Send + Sync {
 
 #[cfg(test)]
 mod tests {
-    use core::convert::TryInto;
-    use core::time::Duration;
-    use tendermint::block::CommitSig;
-    use tendermint::validator::Set;
-    use time::OffsetDateTime;
+    use core::{convert::TryInto, time::Duration};
 
+    use tendermint::{block::CommitSig, validator::Set};
     use tendermint_testgen::{
         light_block::{LightBlock as TestgenLightBlock, TmLightBlock},
         Commit, Generator, Header, Validator, ValidatorSet,
     };
+    use time::OffsetDateTime;
 
-    use crate::prelude::*;
     use crate::{
         errors::{VerificationError, VerificationErrorDetail},
+        operations::{
+            Hasher, ProdCommitValidator, ProdHasher, ProdVotingPowerCalculator, VotingPowerTally,
+        },
         predicates::{ProdPredicates, VerificationPredicates},
+        prelude::*,
+        types::{LightBlock, TrustThreshold},
     };
-
-    use crate::operations::{
-        Hasher, ProdCommitValidator, ProdHasher, ProdVotingPowerCalculator, VotingPowerTally,
-    };
-    use crate::types::{LightBlock, TrustThreshold};
 
     impl From<TmLightBlock> for LightBlock {
         fn from(lb: TmLightBlock) -> Self {
@@ -255,7 +253,7 @@ mod tests {
             Err(VerificationError(VerificationErrorDetail::NonMonotonicBftTime(e), _)) => {
                 assert_eq!(e.header_bft_time, header_one.time);
                 assert_eq!(e.trusted_header_bft_time, header_two.time);
-            }
+            },
             _ => panic!("expected NonMonotonicBftTime error"),
         }
     }
@@ -279,7 +277,7 @@ mod tests {
             Err(VerificationError(VerificationErrorDetail::NonIncreasingHeight(e), _)) => {
                 assert_eq!(e.got, header_one.height);
                 assert_eq!(e.expected, header_two.height.increment());
-            }
+            },
             _ => panic!("expected NonIncreasingHeight error"),
         }
     }
@@ -308,7 +306,7 @@ mod tests {
             Err(VerificationError(VerificationErrorDetail::NotWithinTrustPeriod(e), _)) => {
                 assert_eq!(e.expires_at, expires_at);
                 assert_eq!(e.now, now);
-            }
+            },
             _ => panic!("expected NotWithinTrustPeriod error"),
         }
     }
@@ -336,7 +334,7 @@ mod tests {
             Err(VerificationError(VerificationErrorDetail::HeaderFromTheFuture(e), _)) => {
                 assert_eq!(e.header_time, header.time);
                 assert_eq!(e.now, now);
-            }
+            },
             _ => panic!("expected HeaderFromTheFuture error"),
         }
     }
@@ -391,7 +389,7 @@ mod tests {
                     e.validators_hash,
                     hasher.hash_validator_set(&light_block.validators)
                 );
-            }
+            },
             _ => panic!("expected InvalidValidatorSet error"),
         }
 
@@ -413,7 +411,7 @@ mod tests {
                     e.next_validators_hash,
                     hasher.hash_validator_set(&light_block.next_validators)
                 );
-            }
+            },
             _ => panic!("expected InvalidNextValidatorSet error"),
         }
     }
@@ -455,7 +453,7 @@ mod tests {
             Err(VerificationError(VerificationErrorDetail::InvalidCommitValue(e), _)) => {
                 assert_eq!(e.header_hash, header_hash);
                 assert_eq!(e.commit_hash, signed_header.commit.block_id.hash);
-            }
+            },
             _ => panic!("expected InvalidCommitValue error"),
         }
     }
@@ -484,7 +482,7 @@ mod tests {
         let mut result_err = vp.valid_commit(&signed_header, &val_set, &commit_validator);
 
         match result_err {
-            Err(VerificationError(VerificationErrorDetail::NoSignatureForCommit(_), _)) => {}
+            Err(VerificationError(VerificationErrorDetail::NoSignatureForCommit(_), _)) => {},
             _ => panic!("expected ImplementationSpecific error"),
         }
 
@@ -499,7 +497,7 @@ mod tests {
             Err(VerificationError(VerificationErrorDetail::MismatchPreCommitLength(e), _)) => {
                 assert_eq!(e.pre_commit_length, signed_header.commit.signatures.len());
                 assert_eq!(e.validator_length, val_set.validators().len());
-            }
+            },
             _ => panic!("expected MismatchPreCommitLength error"),
         }
 
@@ -546,7 +544,7 @@ mod tests {
                     e.validator_set,
                     hasher.hash_validator_set(&val_set_with_faulty_signer)
                 );
-            }
+            },
             _ => panic!("expected FaultySigner error"),
         }
     }
@@ -594,7 +592,7 @@ mod tests {
                     e.next_validators_hash,
                     light_block2.signed_header.header.next_validators_hash
                 );
-            }
+            },
             _ => panic!("expected InvalidNextValidatorSet error"),
         }
     }
@@ -649,7 +647,7 @@ mod tests {
                         trust_threshold,
                     }
                 );
-            }
+            },
             _ => panic!("expected NotEnoughTrust error"),
         }
     }
@@ -693,7 +691,7 @@ mod tests {
                         trust_threshold,
                     }
                 );
-            }
+            },
             _ => panic!("expected InsufficientSignersOverlap error"),
         }
     }

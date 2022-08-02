@@ -1,10 +1,7 @@
 //! Defines or just re-exports the main datatypes used by the light client.
 
-use crate::prelude::*;
-
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
-
 use tendermint::{
     account::Id as TMAccountId,
     block::{
@@ -12,11 +9,11 @@ use tendermint::{
         Commit as TMCommit,
     },
     trust_threshold::TrustThresholdFraction,
-    validator::Info as TMValidatorInfo,
-    validator::Set as TMValidatorSet,
+    validator::{Info as TMValidatorInfo, Set as TMValidatorSet},
 };
-
 pub use tendermint::{block::Height, hash::Hash, time::Time};
+
+use crate::prelude::*;
 
 /// Peer ID (public key) of a full node
 pub type PeerId = tendermint::node::Id;
@@ -203,9 +200,9 @@ impl LatestStatus {
 mod tests {
 
     mod status {
-        use crate::prelude::*;
-        use crate::types::Status;
         use Status::*;
+
+        use crate::{prelude::*, types::Status};
 
         #[test]
         fn ord_impl() {

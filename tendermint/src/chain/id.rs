@@ -1,16 +1,17 @@
 //! Tendermint blockchain identifiers
 
-use crate::error::Error;
-use crate::prelude::*;
-use core::convert::TryFrom;
 use core::{
     cmp::Ordering,
+    convert::TryFrom,
     fmt::{self, Debug, Display},
     hash::{Hash, Hasher},
     str::{self, FromStr},
 };
+
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use tendermint_proto::Protobuf;
+
+use crate::{error::Error, prelude::*};
 
 /// Maximum length of a `chain::Id` name. Matches `MaxChainIDLen` from:
 /// <https://github.com/tendermint/tendermint/blob/develop/types/genesis.go>
@@ -154,7 +155,7 @@ mod tests {
     #[test]
     fn rejects_empty_chain_ids() {
         match "".parse::<Id>().unwrap_err().detail() {
-            ErrorDetail::Length(_) => {}
+            ErrorDetail::Length(_) => {},
             _ => panic!("expected length error"),
         }
     }
@@ -163,7 +164,7 @@ mod tests {
     fn rejects_overlength_chain_ids() {
         let overlong_id = String::from_utf8(vec![b'x'; MAX_LENGTH + 1]).unwrap();
         match overlong_id.parse::<Id>().unwrap_err().detail() {
-            ErrorDetail::Length(_) => {}
+            ErrorDetail::Length(_) => {},
             _ => panic!("expected length error"),
         }
     }

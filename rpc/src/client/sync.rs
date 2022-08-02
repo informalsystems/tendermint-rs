@@ -6,8 +6,10 @@
 
 use core::pin::Pin;
 
-use futures::task::{Context, Poll};
-use futures::Stream;
+use futures::{
+    task::{Context, Poll},
+    Stream,
+};
 use pin_project::pin_project;
 use tokio::sync::mpsc;
 

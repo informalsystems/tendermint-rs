@@ -11,9 +11,9 @@ use sha2::{Digest, Sha256};
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
 
-use crate::prelude::*;
 use crate::{
     error::Error,
+    prelude::*,
     public_key::{Ed25519, PublicKey},
 };
 
