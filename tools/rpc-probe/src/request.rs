@@ -1,8 +1,10 @@
 //! Messages for interacting with the Tendermint RPC.
 
-use crate::utils::uuid_v4;
-use serde_json::json;
 use std::fmt;
+
+use serde_json::json;
+
+use crate::utils::uuid_v4;
 
 #[derive(Debug, Clone)]
 pub struct Request {

@@ -1,14 +1,20 @@
 //! Coordination of JSON-RPC requests.
 
-use crate::client::Client;
-use crate::error::{Error, Result};
-use crate::request::Request;
-use crate::subscription::Subscription;
-use crate::utils::{sanitize, uuid_v4, write_json};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
+
 use log::{debug, error, info};
-use std::fs;
-use std::path::{Path, PathBuf};
 use tokio::time::Duration;
+
+use crate::{
+    client::Client,
+    error::{Error, Result},
+    request::Request,
+    subscription::Subscription,
+    utils::{sanitize, uuid_v4, write_json},
+};
 
 /// If not specified, the maximum time limit for a subscription interaction
 /// (in seconds).
@@ -272,7 +278,7 @@ async fn execute_interactions(
         CoordinatedInteractions::Series(v) => execute_series_interactions(client, config, v).await,
         CoordinatedInteractions::Parallel(v) => {
             execute_parallel_interactions(client, config, v).await
-        }
+        },
     }
 }
 
@@ -336,7 +342,7 @@ async fn execute_interaction(
                     request,
                 )
                 .await
-            }
+            },
             Interaction::Subscription(subs) => {
                 execute_subscription(
                     client,
@@ -346,7 +352,7 @@ async fn execute_interaction(
                     subs,
                 )
                 .await
-            }
+            },
         }
     };
     match interaction.timeout {
@@ -370,7 +376,7 @@ async fn execute_request(
                 return Err(Error::UnexpectedSuccess);
             }
             r
-        }
+        },
         Err(e) => match e {
             Error::Failed(_, r) => {
                 if !expect_error {
@@ -379,7 +385,7 @@ async fn execute_request(
                     ));
                 }
                 r
-            }
+            },
             _ => return Err(e),
         },
     };
@@ -403,7 +409,7 @@ async fn execute_subscription(
                     return Err(Error::UnexpectedSuccess);
                 }
                 r
-            }
+            },
             Err(e) => match e {
                 // We want to capture subscription failures (e.g. malformed
                 // queries).
@@ -414,7 +420,7 @@ async fn execute_subscription(
                         ));
                     }
                     return write_json(&config.in_path, name, &r).await;
-                }
+                },
                 _ => return Err(e),
             },
         };

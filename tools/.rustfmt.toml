@@ -1,0 +1,19 @@
+unstable_features = true
+
+# comments
+comment_width = 110
+normalize_comments = true
+wrap_comments = true
+
+# imports
+group_imports = "StdExternalCrate"
+imports_granularity = "Crate"
+reorder_imports = true
+
+# strings
+format_strings = false
+max_width = 100
+match_block_trailing_comma = true
+
+trailing_comma = "Vertical"
+trailing_semicolon = true

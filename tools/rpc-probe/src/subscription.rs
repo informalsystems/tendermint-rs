@@ -1,10 +1,11 @@
 //! Subscription-related functionality for the WebSocket-based client.
 
-use crate::error::Result;
-use crate::utils::uuid_v4;
-use serde_json::json;
 use std::fmt;
+
+use serde_json::json;
 use tokio::sync::mpsc;
+
+use crate::{error::Result, utils::uuid_v4};
 
 /// We receive events (serialized JSON-RPC responses) via a subscription.
 pub type SubscriptionRx = mpsc::UnboundedReceiver<Result<serde_json::Value>>;

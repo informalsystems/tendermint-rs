@@ -1,10 +1,13 @@
 //! Common interactions that can be used by plans interacting with any ABCI
 //! application.
 
-use crate::plan::{PlannedInteraction, PlannedSubscription};
-use crate::request::Request;
-use crate::utils::{encode_kvpair, hex_string};
 use serde_json::json;
+
+use crate::{
+    plan::{PlannedInteraction, PlannedSubscription},
+    request::Request,
+    utils::{encode_kvpair, hex_string},
+};
 
 pub fn abci_info() -> PlannedInteraction {
     Request::new("abci_info", json!(null)).into()

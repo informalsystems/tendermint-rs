@@ -8,10 +8,10 @@ mod request;
 mod subscription;
 mod utils;
 
+use std::{path::PathBuf, str::FromStr};
+
 use log::LevelFilter;
 use simple_logger::SimpleLogger;
-use std::path::PathBuf;
-use std::str::FromStr;
 use structopt::StructOpt;
 use tokio::time::Duration;
 

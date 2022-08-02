@@ -1,11 +1,15 @@
 //! RPC quick probe-related functionality specifically targeting a Tendermint
 //! node running the `kvstore` ABCI application.
 
-use crate::common::*;
-use crate::error::Result;
-use crate::plan::{in_parallel, in_series, Plan};
 use std::path::Path;
+
 use tokio::time::Duration;
+
+use crate::{
+    common::*,
+    error::Result,
+    plan::{in_parallel, in_series, Plan},
+};
 
 pub fn quick_probe_plan(output_path: &Path, request_wait: Duration) -> Result<Plan> {
     Plan::new(

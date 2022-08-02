@@ -4,12 +4,11 @@ use futures::StreamExt;
 use structopt::StructOpt;
 use tendermint::abci::Transaction;
 use tendermint_config::net::Address;
-use tendermint_rpc::event::EventData;
-use tendermint_rpc::query::EventType;
-use tendermint_rpc::{Client, SubscriptionClient, WebSocketClient};
+use tendermint_rpc::{
+    event::EventData, query::EventType, Client, SubscriptionClient, WebSocketClient,
+};
 use tokio::time::Duration;
-use tracing::level_filters::LevelFilter;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, level_filters::LevelFilter};
 
 #[derive(Debug, StructOpt)]
 /// A harness for testing tendermint-abci through a full Tendermint node
@@ -54,11 +53,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(_) => {
             info!("Success!");
             Ok(())
-        }
+        },
         Err(e) => {
             error!("Test failed: {:?}", e);
             Err(e)
-        }
+        },
     }
 }
 
@@ -102,7 +101,7 @@ async fn run_tests(client: &mut WebSocketClient) -> Result<(), Box<dyn std::erro
             if tx_result.tx != raw_tx {
                 fail("transaction subscription", "tx", raw_tx, tx_result.tx)?;
             }
-        }
+        },
         _ => fail(
             "transaction subscription",
             "event data",
