@@ -378,18 +378,25 @@ mod sealed {
             R: SimpleRequest,
         {
             let wrapper = Wrapper::new(request);
-            let id = wrapper.id().clone().to_string();
+            let id = wrapper.id().to_string();
             let wrapped_request = wrapper.into_json();
+
+            tracing::debug!("Outgoing request: {}", wrapped_request);
+
             let (response_tx, mut response_rx) = unbounded();
+
             self.send_cmd(DriverCommand::SimpleRequest(SimpleRequestCommand {
                 id,
                 wrapped_request,
                 response_tx,
             }))?;
+
             let response = response_rx.recv().await.ok_or_else(|| {
                 Error::client_internal("failed to hear back from WebSocket driver".to_string())
             })??;
+
             tracing::debug!("Incoming response: {}", response);
+
             R::Response::from_string(response)
         }
 
