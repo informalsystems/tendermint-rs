@@ -6,7 +6,7 @@ use serde::{de, ser, Deserialize, Serialize};
 use subtle_encoding::{Base64, Encoding};
 use zeroize::Zeroizing;
 
-use crate::{prelude::*, public_key::PublicKey};
+use crate::{prelude::*, public_key::PublicKey, Signature};
 
 pub const ED25519_KEYPAIR_SIZE: usize = 64;
 
@@ -36,6 +36,13 @@ impl PrivateKey {
     pub fn ed25519_signing_key(&self) -> Option<&Ed25519> {
         match self {
             PrivateKey::Ed25519(signing_key) => Some(signing_key),
+        }
+    }
+
+    /// Sign a message with this private key
+    pub fn sign(&self, signable_msg_bytes: &[u8]) -> Signature {
+        match self {
+            PrivateKey::Ed25519(signing_key) => signing_key.sign(signable_msg_bytes).into(),
         }
     }
 }

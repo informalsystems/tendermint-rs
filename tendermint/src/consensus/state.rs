@@ -5,7 +5,7 @@ pub use core::{cmp::Ordering, fmt};
 use serde::{Deserialize, Serialize};
 
 pub use crate::block;
-use crate::prelude::*;
+use crate::{prelude::*, proposal::SignProposalRequest, vote::SignVoteRequest};
 
 /// Placeholder string to show when block ID is absent. Syntax from:
 /// <https://tendermint.com/docs/spec/consensus/consensus.html>
@@ -66,12 +66,88 @@ impl PartialOrd for State {
     }
 }
 
+impl From<&SignProposalRequest> for State {
+    fn from(req: &SignProposalRequest) -> Self {
+        Self {
+            height: req.proposal.height,
+            round: req.proposal.round,
+            step: 0,
+            block_id: req.proposal.block_id,
+        }
+    }
+}
+
+impl From<&SignVoteRequest> for State {
+    fn from(req: &SignVoteRequest) -> Self {
+        Self {
+            height: req.vote.height,
+            round: req.vote.round,
+            step: if req.vote.is_precommit() { 2 } else { 1 },
+            block_id: req.vote.block_id,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use core::str::FromStr;
+    use core::{convert::TryFrom, str::FromStr};
 
     use super::State;
-    use crate::{block, Hash};
+    use crate::{
+        account::Id,
+        block,
+        proposal::{self, SignProposalRequest},
+        vote::{self, SignVoteRequest, ValidatorIndex},
+        Hash, Proposal, Vote,
+    };
+
+    #[test]
+    fn sign_request_test() {
+        let proposal = SignProposalRequest {
+            proposal: Proposal {
+                height: block::Height::from(9001_u32),
+                round: block::Round::default(),
+                block_id: None,
+                msg_type: proposal::Type::Proposal,
+                pol_round: None,
+                timestamp: None,
+                signature: None,
+            },
+            chain_id: "chain_id".parse().unwrap(),
+        };
+        let vote1 = SignVoteRequest {
+            vote: Vote {
+                height: block::Height::from(9001_u32),
+                round: block::Round::default(),
+                block_id: None,
+                vote_type: vote::Type::Prevote,
+                timestamp: None,
+                validator_address: Id::new(Default::default()),
+                validator_index: ValidatorIndex::try_from(1).unwrap(),
+                signature: None,
+            },
+            chain_id: "chain_id".parse().unwrap(),
+        };
+        let vote2 = SignVoteRequest {
+            vote: Vote {
+                height: block::Height::from(9001_u32),
+                round: block::Round::default(),
+                block_id: None,
+                vote_type: vote::Type::Precommit,
+                timestamp: None,
+                validator_address: Id::new(Default::default()),
+                validator_index: ValidatorIndex::try_from(1).unwrap(),
+                signature: None,
+            },
+            chain_id: "chain_id".parse().unwrap(),
+        };
+        let state1 = State::from(&proposal);
+        let state2 = State::from(&vote1);
+        let state3 = State::from(&vote2);
+
+        assert!(state1 < state2);
+        assert!(state2 < state3);
+    }
 
     #[test]
     fn state_ord_test() {
