@@ -23,6 +23,7 @@ ed25519-dalek = { version = "1", default-features = false }
 gumdrop = { version = "0.8.0", default-features = false }
 simple-error = { version = "0.2.1", default-features = false }
 tempfile = { version = "3.1.0", default-features = false }
+# TODO(thane): Remove restrictions once js-sys issue is resolved (causes the Substrate no_std check to fail)
 time = { package = "time", version = ">=0.3, <0.3.12", default-features = false, features = ["std"] }
 
 [[bin]]
