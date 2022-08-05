@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint"
-version    = "0.23.8" # Also update `html_root_url` in lib.rs and
+version    = "0.23.9" # Also update `html_root_url` in lib.rs and
                                # depending crates (rpc, light-node, ..) when bumping this
 license    = "Apache-2.0"
 homepage   = "https://www.tendermint.com/"
@@ -47,7 +47,7 @@ sha2 = { version = "0.9", default-features = false }
 signature = { version = "1", default-features = false }
 subtle = { version = "2", default-features = false }
 subtle-encoding = { version = "0.5", default-features = false, features = ["bech32-preview"] }
-tendermint-proto = { version = "0.23.8", default-features = false, path = "../proto" }
+tendermint-proto = { version = "0.23.9", default-features = false, path = "../proto" }
 # TODO(thane): Remove restrictions once js-sys issue is resolved (causes the Substrate no_std check to fail)
 time = { version = ">=0.3, <0.3.12", default-features = false, features = ["macros", "parsing"] }
 zeroize = { version = "1.1", default-features = false, features = ["zeroize_derive", "alloc"] }
