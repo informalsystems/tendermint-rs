@@ -8,6 +8,12 @@ use crate::prelude::*;
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Info(String);
 
+impl Info {
+    pub fn new(info: String) -> Self {
+        Self(info)
+    }
+}
+
 impl AsRef<str> for Info {
     fn as_ref(&self) -> &str {
         self.0.as_ref()

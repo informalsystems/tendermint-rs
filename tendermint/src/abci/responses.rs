@@ -134,6 +134,12 @@ where
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Codespace(String);
 
+impl Codespace {
+    pub fn new(codespace: String) -> Self {
+        Self(codespace)
+    }
+}
+
 impl AsRef<str> for Codespace {
     fn as_ref(&self) -> &str {
         self.0.as_ref()

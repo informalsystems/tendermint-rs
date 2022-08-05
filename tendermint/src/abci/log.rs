@@ -10,9 +10,8 @@ use crate::prelude::*;
 pub struct Log(String);
 
 impl Log {
-    /// Convenience function: get value
-    pub fn value(&self) -> &String {
-        &self.0
+    pub fn new(log: String) -> Self {
+        Self(log)
     }
 }
 
