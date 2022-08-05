@@ -2,7 +2,7 @@
 // NOTE: When using custom types, mind the warnings.
 // <https://github.com/gogo/protobuf/blob/master/custom_types.md#warnings-and-issues>
 
-//----------------------------------------
+// ----------------------------------------
 // Request types
 
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -162,7 +162,7 @@ pub struct RequestApplySnapshotChunk {
     #[prost(string, tag="3")]
     pub sender: ::prost::alloc::string::String,
 }
-//----------------------------------------
+// ----------------------------------------
 // Response types
 
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -388,6 +388,22 @@ pub mod response_offer_snapshot {
         /// Reject all snapshots from the sender(s), try others
         RejectSender = 5,
     }
+    impl Result {
+        /// String value of the enum field names used in the ProtoBuf definition.
+        ///
+        /// The values are not transformed in any way and thus are considered stable
+        /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+        pub fn as_str_name(&self) -> &'static str {
+            match self {
+                Result::Unknown => "UNKNOWN",
+                Result::Accept => "ACCEPT",
+                Result::Abort => "ABORT",
+                Result::Reject => "REJECT",
+                Result::RejectFormat => "REJECT_FORMAT",
+                Result::RejectSender => "REJECT_SENDER",
+            }
+        }
+    }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseLoadSnapshotChunk {
@@ -423,8 +439,24 @@ pub mod response_apply_snapshot_chunk {
         /// Reject this snapshot, try others
         RejectSnapshot = 5,
     }
+    impl Result {
+        /// String value of the enum field names used in the ProtoBuf definition.
+        ///
+        /// The values are not transformed in any way and thus are considered stable
+        /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+        pub fn as_str_name(&self) -> &'static str {
+            match self {
+                Result::Unknown => "UNKNOWN",
+                Result::Accept => "ACCEPT",
+                Result::Abort => "ABORT",
+                Result::Retry => "RETRY",
+                Result::RetrySnapshot => "RETRY_SNAPSHOT",
+                Result::RejectSnapshot => "REJECT_SNAPSHOT",
+            }
+        }
+    }
 }
-//----------------------------------------
+// ----------------------------------------
 // Misc.
 
 /// ConsensusParams contains all consensus-relevant parameters
@@ -492,7 +524,7 @@ pub struct TxResult {
     #[prost(message, optional, tag="4")]
     pub result: ::core::option::Option<ResponseDeliverTx>,
 }
-//----------------------------------------
+// ----------------------------------------
 // Blockchain Types
 
 /// Validator
@@ -542,7 +574,7 @@ pub struct Evidence {
     #[prost(int64, tag="5")]
     pub total_voting_power: i64,
 }
-//----------------------------------------
+// ----------------------------------------
 // State Sync Types
 
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -569,10 +601,35 @@ pub enum CheckTxType {
     New = 0,
     Recheck = 1,
 }
+impl CheckTxType {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            CheckTxType::New => "NEW",
+            CheckTxType::Recheck => "RECHECK",
+        }
+    }
+}
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum EvidenceType {
     Unknown = 0,
     DuplicateVote = 1,
     LightClientAttack = 2,
+}
+impl EvidenceType {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            EvidenceType::Unknown => "UNKNOWN",
+            EvidenceType::DuplicateVote => "DUPLICATE_VOTE",
+            EvidenceType::LightClientAttack => "LIGHT_CLIENT_ATTACK",
+        }
+    }
 }

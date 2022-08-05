@@ -32,7 +32,7 @@ binary = [
 
 [dependencies]
 bytes = { version = "1.0", default-features = false }
-prost = { version = "0.10", default-features = false }
+prost = { version = "0.11", default-features = false }
 tendermint-proto = { version = "0.23.8", default-features = false, path = "../proto" }
 tracing = { version = "0.1", default-features = false }
 flex-error = { version = "0.4.4", default-features = false }

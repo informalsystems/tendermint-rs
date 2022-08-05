@@ -1,4 +1,4 @@
-//----------------------------------------
+// ----------------------------------------
 // Request types
 
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -9,7 +9,7 @@ pub struct RequestBroadcastTx {
     #[prost(bytes="vec", tag="1")]
     pub tx: ::prost::alloc::vec::Vec<u8>,
 }
-//----------------------------------------
+// ----------------------------------------
 // Response types
 
 #[derive(Clone, PartialEq, ::prost::Message)]
