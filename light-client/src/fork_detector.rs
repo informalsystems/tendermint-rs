@@ -1,14 +1,15 @@
 //! Fork detection data structures and implementation.
 
-use crate::verifier::errors::ErrorExt;
-use crate::verifier::operations::{Hasher, ProdHasher};
-use crate::verifier::types::{LightBlock, PeerId, Status};
-
 use crate::{
     errors::{Error, ErrorDetail},
     state::State,
     store::memory::MemoryStore,
     supervisor::Instance,
+    verifier::{
+        errors::ErrorExt,
+        operations::{Hasher, ProdHasher},
+        types::{LightBlock, PeerId, Status},
+    },
 };
 
 /// Result of fork detection
@@ -129,14 +130,14 @@ impl ForkDetector for ProdForkDetector {
                         primary: verified_block.clone(),
                         witness: witness_block,
                     });
-                }
+                },
                 Err(Error(e, _)) => {
                     if e.is_timeout().is_some() {
                         forks.push(Fork::Timeout(witness_block.provider, e))
                     } else {
                         forks.push(Fork::Faulty(witness_block, e))
                     }
-                }
+                },
             }
         }
 

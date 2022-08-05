@@ -1,8 +1,13 @@
-use git2::build::{CheckoutBuilder, RepoBuilder};
-use git2::{AutotagOption, Commit, FetchOptions, Oid, Reference, Repository};
-use std::fs::{copy, create_dir_all, remove_dir_all, File};
-use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::{
+    fs::{copy, create_dir_all, remove_dir_all, File},
+    io::Write,
+    path::{Path, PathBuf},
+};
+
+use git2::{
+    build::{CheckoutBuilder, RepoBuilder},
+    AutotagOption, Commit, FetchOptions, Oid, Reference, Repository,
+};
 use subtle_encoding::hex;
 use walkdir::WalkDir;
 
@@ -97,7 +102,7 @@ fn checkout_commitish(repo: &Repository, commitish: &str) {
         Some(reference) => {
             println!("    [info] => name: {}", reference.shorthand().unwrap());
             repo.set_head(reference.name().unwrap()).unwrap();
-        }
+        },
     }
 
     let mut checkout_options = CheckoutBuilder::new();

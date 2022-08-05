@@ -4,9 +4,7 @@
 use std::net::{SocketAddr, ToSocketAddrs};
 
 use eyre::Result;
-
-use tendermint::node;
-use tendermint::public_key::PublicKey;
+use tendermint::{node, public_key::PublicKey};
 
 /// Information which resources to bind to and how to identify on the network.
 pub struct BindInfo<A>

@@ -1,11 +1,12 @@
 //! Block metadata
 
-use super::{Header, Id};
-use crate::error::Error;
-use crate::prelude::*;
 use core::convert::{TryFrom, TryInto};
+
 use serde::{Deserialize, Serialize};
 use tendermint_proto::types::BlockMeta as RawMeta;
+
+use super::{Header, Id};
+use crate::{error::Error, prelude::*};
 
 /// Block metadata - Todo: implement constructor and getters
 #[derive(Serialize, Deserialize, Clone, Debug)]

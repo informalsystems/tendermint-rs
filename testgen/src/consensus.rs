@@ -1,5 +1,6 @@
-use tendermint::consensus::params::VersionParams;
-use tendermint::{block, consensus, evidence, public_key::Algorithm};
+use tendermint::{
+    block, consensus, consensus::params::VersionParams, evidence, public_key::Algorithm,
+};
 
 /// Default consensus params modeled after Go code; but it's not clear how to go to a valid hash
 /// from here

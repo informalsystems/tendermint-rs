@@ -1,9 +1,10 @@
 //! Pagination-related data structures for the Tendermint RPC.
 
-use crate::Error;
-use core::convert::TryInto;
-use core::str::FromStr;
+use core::{convert::TryInto, str::FromStr};
+
 use serde::{Deserialize, Serialize};
+
+use crate::Error;
 
 /// Pagination control for those RPC client methods supporting pagination.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]

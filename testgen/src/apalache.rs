@@ -1,7 +1,8 @@
-use crate::{command::*, tester::TestEnv};
+use std::{fmt::Write as _, io};
+
 use serde::{Deserialize, Serialize};
-use std::fmt::Write as _;
-use std::io;
+
+use crate::{command::*, tester::TestEnv};
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct ApalacheTestBatch {
@@ -119,7 +120,7 @@ pub fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> io::Result<Apalac
             } else {
                 Ok(ApalacheRun::Timeout(run))
             }
-        }
+        },
         Err(e) => Err(e),
     }
 }

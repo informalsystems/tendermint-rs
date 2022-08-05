@@ -1,10 +1,12 @@
 //! `/net_info` endpoint JSON-RPC wrapper
 
-use core::fmt::{self, Display};
-use core::time::Duration;
-use serde::{Deserialize, Serialize};
+use core::{
+    fmt::{self, Display},
+    time::Duration,
+};
 use std::net::IpAddr;
 
+use serde::{Deserialize, Serialize};
 use tendermint::{channel::Channel, node, serializers, Time};
 
 use crate::prelude::*;

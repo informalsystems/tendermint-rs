@@ -1,15 +1,14 @@
 use gumdrop::Options;
 use serde::{Deserialize, Serialize};
 use simple_error::*;
+use tendermint::{
+    block::signed_header::SignedHeader, node::Id as PeerId, validator,
+    validator::Set as ValidatorSet, Hash, Time,
+};
 
-use crate::helpers::parse_as;
-use crate::validator::generate_validators;
-use crate::{Commit, Generator, Header, Validator};
-use tendermint::node::Id as PeerId;
-use tendermint::validator;
-use tendermint::validator::Set as ValidatorSet;
-use tendermint::Time;
-use tendermint::{block::signed_header::SignedHeader, Hash};
+use crate::{
+    helpers::parse_as, validator::generate_validators, Commit, Generator, Header, Validator,
+};
 
 /// A light block is the core data structure used by the light client.
 /// It records everything the light client needs to know about a block.

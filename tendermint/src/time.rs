@@ -1,21 +1,22 @@
 //! Timestamps used by Tendermint blockchains
 
+use core::{
+    convert::{TryFrom, TryInto},
+    fmt,
+    ops::{Add, Sub},
+    str::FromStr,
+    time::Duration,
+};
+
 use serde::{Deserialize, Serialize};
+use tendermint_proto::{google::protobuf::Timestamp, serializers::timestamp, Protobuf};
+use time::{
+    format_description::well_known::Rfc3339,
+    macros::{datetime, offset},
+    OffsetDateTime, PrimitiveDateTime,
+};
 
-use crate::prelude::*;
-use core::convert::{TryFrom, TryInto};
-use core::fmt;
-use core::ops::{Add, Sub};
-use core::str::FromStr;
-use core::time::Duration;
-use tendermint_proto::google::protobuf::Timestamp;
-use tendermint_proto::serializers::timestamp;
-use tendermint_proto::Protobuf;
-use time::format_description::well_known::Rfc3339;
-use time::macros::{datetime, offset};
-use time::{OffsetDateTime, PrimitiveDateTime};
-
-use crate::error::Error;
+use crate::{error::Error, prelude::*};
 
 /// Tendermint timestamps
 ///
@@ -194,11 +195,12 @@ pub trait ParseTimestamp {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::error::ErrorDetail;
     use proptest::{prelude::*, sample::select};
     use tendermint_pbt_gen as pbt;
     use time::{Date, Month::*};
+
+    use super::*;
+    use crate::error::ErrorDetail;
 
     // We want to make sure that these timestamps specifically get tested.
     fn particular_rfc3339_timestamps() -> impl Strategy<Value = String> {

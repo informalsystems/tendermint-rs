@@ -5,20 +5,26 @@
 //! from the remote endpoint. The `tendermint-rpc` client does not expose these
 //! raw responses.
 
-use crate::error::{Error, Result};
-use crate::subscription::{SubscriptionRx, SubscriptionTx};
-use crate::utils::uuid_v4;
-use async_tungstenite::tokio::{connect_async, ConnectStream};
-use async_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
-use async_tungstenite::tungstenite::protocol::CloseFrame;
-use async_tungstenite::tungstenite::Message;
-use async_tungstenite::WebSocketStream;
+use std::{borrow::Cow, collections::HashMap};
+
+use async_tungstenite::{
+    tokio::{connect_async, ConnectStream},
+    tungstenite::{
+        protocol::{frame::coding::CloseCode, CloseFrame},
+        Message,
+    },
+    WebSocketStream,
+};
 use futures::{SinkExt, StreamExt};
 use log::{debug, error, warn};
 use serde_json::json;
-use std::borrow::Cow;
-use std::collections::HashMap;
 use tokio::sync::mpsc;
+
+use crate::{
+    error::{Error, Result},
+    subscription::{SubscriptionRx, SubscriptionTx},
+    utils::uuid_v4,
+};
 
 #[derive(Debug, Clone)]
 pub struct Client {
@@ -225,14 +231,14 @@ impl ClientDriver {
             None => {
                 error!("Failed to parse incoming message as an event: no \"result\" field");
                 return Ok(());
-            }
+            },
         };
         let query = match result.get("query").unwrap().as_str() {
             Some(q) => q.to_string(),
             None => {
                 error!("Failed to parse incoming message as an event: cannot interpret \"query\" field as a string");
                 return Ok(());
-            }
+            },
         };
         self.publish_event(query, ev)
     }
@@ -269,7 +275,7 @@ impl ClientDriver {
                 response_tx,
             } => {
                 self.confirm_pending_subscription(id, wrapper, query, subscription_tx, response_tx)
-            }
+            },
             DriverCommand::Request {
                 wrapper: outgoing_wrapper,
                 response_tx,
@@ -281,7 +287,7 @@ impl ClientDriver {
                     .unwrap()
                     .to_string();
                 self.confirm_pending_request(method, wrapper, response_tx)
-            }
+            },
             _ => panic!("Unexpected pending command type: {:?}", pending_command),
         }
     }
@@ -318,7 +324,7 @@ impl ClientDriver {
             None => {
                 self.subscribers.insert(query.clone(), HashMap::new());
                 self.subscribers.get_mut(&query).unwrap()
-            }
+            },
         };
         subs_for_query.insert(id, subscription_tx);
         response_tx.send(Ok(response))?;

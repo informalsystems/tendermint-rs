@@ -2,9 +2,12 @@
 //!
 //! [1]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification/verification.md
 
-use contracts::*;
 use core::fmt;
 
+use contracts::*;
+
+// Re-export for backward compatibility
+pub use crate::verifier::options::Options;
 use crate::{
     components::{clock::Clock, io::*, scheduler::*},
     contracts::*,
@@ -16,9 +19,6 @@ use crate::{
         Verdict, Verifier,
     },
 };
-
-// Re-export for backward compatibility
-pub use crate::verifier::options::Options;
 
 /// The light client implements a read operation of a header from the blockchain,
 /// by communicating with full nodes. As full nodes may be faulty, it cannot trust
@@ -232,14 +232,14 @@ impl LightClient {
                     // the `Verified` status or higher if already trusted.
                     let new_status = Status::most_trusted(Status::Verified, status);
                     state.light_store.update(&current_block, new_status);
-                }
+                },
                 Verdict::Invalid(e) => {
                     // Verification failed, add the block to the light store with `Failed` status,
                     // and abort.
                     state.light_store.update(&current_block, Status::Failed);
 
                     return Err(Error::invalid_light_block(e));
-                }
+                },
                 Verdict::NotEnoughTrust(_) => {
                     // The current block cannot be trusted because of a missing overlap in the
                     // validator sets. Add the block to the light store with
@@ -247,7 +247,7 @@ impl LightClient {
                     // attempt to raise the height of the highest trusted state
                     // until there is enough overlap.
                     state.light_store.update(&current_block, Status::Unverified);
-                }
+                },
             }
 
             // Compute the next height to fetch and verify

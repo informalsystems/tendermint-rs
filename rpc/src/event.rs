@@ -1,13 +1,14 @@
 //! RPC subscription event-related data structures.
 
 use alloc::collections::BTreeMap as HashMap;
-use serde::{Deserialize, Serialize};
-use tendermint::abci::responses::{BeginBlock, EndBlock};
-use tendermint::Block;
 
-use crate::prelude::*;
-use crate::query::EventType;
-use crate::{response::Wrapper, Response};
+use serde::{Deserialize, Serialize};
+use tendermint::{
+    abci::responses::{BeginBlock, EndBlock},
+    Block,
+};
+
+use crate::{prelude::*, query::EventType, response::Wrapper, Response};
 
 /// An incoming event produced by a [`Subscription`].
 ///

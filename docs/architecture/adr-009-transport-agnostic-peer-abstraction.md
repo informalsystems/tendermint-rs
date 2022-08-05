@@ -2,6 +2,7 @@
 
 ## Changelog
 * 2021-02-05: drafted
+* 2022-04-08: revised
 
 ## Context
 
@@ -32,9 +33,9 @@ resources on the system.
 pub trait Transport {
     type Connection: Connection;
     type Endpoint: Endpoint<Connection = <Self as Transport>::Connection>;
-    type Incoming: Iterator<Item = Result<<Self as Transport>::Connection>> + Send;
+    type Incoming: Stream<Item = Result<<Self as Transport>::Connection>> + Send + Sync;
 
-    fn bind(self, bind_info: BindInfo) -> Result<(Self::Endpoint, Self::Incoming)>;
+    async fn bind(self, bind_info: BindInfo) -> Result<(Self::Endpoint, Self::Incoming)>;
 }
 ```
 
@@ -43,10 +44,10 @@ incoming `Connection`s. Which is a standardised way to connect to new peers and
 react to newly connected ones respectively.
 
 ``` rust
-pub trait Endpoint: Send {
+pub trait Endpoint: Send + Sync {
     type Connection;
 
-    fn connect(&self, info: ConnectInfo) -> Result<Self::Connection>;
+    async fn connect(&self, info: ConnectInfo) -> Result<Self::Connection>;
     fn listen_addrs(&self) -> Vec<SocketAddr>;
 }
 ```
@@ -58,19 +59,19 @@ While being open to enable feature parity with current production installations
 based on tendermint-go's `MConn`.
 
 ``` rust
-pub trait StreamSend {
-    fn send<B: AsRef<[u8]>>(msg: B) -> Result<()>;
+pub trait StreamSend: Send + Sync {
+    async fn send<B: AsRef<[u8]>>(msg: B) -> Result<()>;
 }
 
-pub trait Connection: Send {
+pub trait Connection: Send + Sync {
     type Error: std::error::Error + Send + Sync + 'static;
-    type StreamRead: Iterator<Item = Result<Vec<u8>>> + Send;
+    type StreamRead: Stream<Item = Result<Vec<u8>>> + Send;
     type StreamSend: StreamSend;
 
     fn advertised_addrs(&self) -> Vec<SocketAddr>;
-    fn close(&self) -> Result<()>;
+    async fn close(&self) -> Result<()>;
     fn local_addr(&self) -> SocketAddr;
-    fn open_bidirectional(
+    async fn open_bidirectional(
         &self,
         stream_id: StreamId,
     ) -> Result<(Self::StreamRead, Self::StreamSend), Self::Error>;
@@ -96,11 +97,11 @@ impl<Conn> Peer<Connected<Conn>>
 where
     Conn: Connection,
 {
-    pub fn run(self, stream_ids: Vec<StreamId>) -> Result<Peer<Running<Conn>>> {
+    pub async fn run(self, stream_ids: Vec<StreamId>) -> Result<Peer<Running<Conn>>> {
         // ...
     }
 
-    fn stop(self) -> Result<Peer<Stopped>> {
+    async fn stop(self) -> Result<Peer<Stopped>> {
         // ...
     }
 }
@@ -109,11 +110,11 @@ impl<Conn> Peer<Running<Conn>>
 where
     Conn: Connection,
 {
-    pub fn send(&self, message: message::Send) -> Result<()> {
+    pub async fn send(&self, message: message::Send) -> Result<()> {
         // ...
     }
 
-    pub fn stop(self) -> Result<Peer<Stopped>> {
+    pub async fn stop(self) -> Result<Peer<Stopped>> {
         // ...
     }
 }
@@ -122,7 +123,6 @@ where
 While sending messages is done through a method on a running peer, getting hold
 of incoming messages can be achieved by draining the `Receiver` part of the
 running state.
-
 
 ### Supervisor
 
@@ -146,19 +146,31 @@ pub enum Event {
     UpgradeFailed(node::Id, Report),
 }
 
+struct CommandHandle;
+
+impl CommandHandle {
+  fn instruct(command: Command) -> Result<()> {
+    // ..
+  }
+}
+
 impl Supervisor {
-    pub fn run<T>(transport: T) -> Result<Self>
+    pub fn new<T>(transport: T) -> Self
     where
         T: transport::Transport + Send + 'static,
     {
-        // ...
+      // ..
     }
 
-    pub fn recv(&self) -> Result<Event> {
-        // ...
+    pub handle(&self) -> CommandHandle {
+      // ..
     }
 
-    pub fn command(&self, cmd: Command) -> Result<()> {
+    pub subscribe(&self) -> Receiver<Event> {
+      // ..
+    }
+
+    pub async fn run<T>(self) -> Result<()> {
         // ...
     }
 }
@@ -166,7 +178,7 @@ impl Supervisor {
 
 ## Status
 
-Proposed
+Accepted
 
 ## Consequences
 

@@ -265,6 +265,20 @@ pub enum BlockIdFlag {
     Commit = 2,
     Nil = 3,
 }
+impl BlockIdFlag {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            BlockIdFlag::Unknown => "BLOCK_ID_FLAG_UNKNOWN",
+            BlockIdFlag::Absent => "BLOCK_ID_FLAG_ABSENT",
+            BlockIdFlag::Commit => "BLOCK_ID_FLAG_COMMIT",
+            BlockIdFlag::Nil => "BLOCK_ID_FLAG_NIL",
+        }
+    }
+}
 /// SignedMsgType is a type of signed message in the consensus.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
@@ -275,6 +289,20 @@ pub enum SignedMsgType {
     Precommit = 2,
     /// Proposals
     Proposal = 32,
+}
+impl SignedMsgType {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            SignedMsgType::Unknown => "SIGNED_MSG_TYPE_UNKNOWN",
+            SignedMsgType::Prevote => "SIGNED_MSG_TYPE_PREVOTE",
+            SignedMsgType::Precommit => "SIGNED_MSG_TYPE_PRECOMMIT",
+            SignedMsgType::Proposal => "SIGNED_MSG_TYPE_PROPOSAL",
+        }
+    }
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]

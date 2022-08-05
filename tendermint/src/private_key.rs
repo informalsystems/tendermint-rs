@@ -1,12 +1,11 @@
 //! Cryptographic private keys
 
 pub use ed25519_dalek::{Keypair as Ed25519, EXPANDED_SECRET_KEY_LENGTH as ED25519_KEYPAIR_SIZE};
-
-use crate::prelude::*;
-use crate::public_key::PublicKey;
 use serde::{de, ser, Deserialize, Serialize};
 use subtle_encoding::{Base64, Encoding};
 use zeroize::Zeroizing;
+
+use crate::{prelude::*, public_key::PublicKey};
 
 /// Private keys as parsed from configuration files
 #[derive(Serialize, Deserialize)]

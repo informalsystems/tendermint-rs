@@ -1,12 +1,13 @@
 //! Define traits and instances for dealing with trust thresholds.
 
-use core::fmt::{self, Debug, Display};
+use core::{
+    convert::TryFrom,
+    fmt::{self, Debug, Display},
+};
 
-use crate::error::Error;
-use crate::prelude::*;
-use crate::serializers;
-use core::convert::TryFrom;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+
+use crate::{error::Error, prelude::*, serializers};
 
 /// TrustThreshold defines how much of the total voting power of a known
 /// and trusted validator set is sufficient for a commit to be
@@ -126,8 +127,9 @@ pub struct RawTrustThresholdFraction {
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use proptest::prelude::*;
+
+    use super::*;
 
     fn to_json(num: u64, denom: u64) -> String {
         format!(

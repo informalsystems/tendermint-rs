@@ -1,6 +1,6 @@
 [package]
 name = "tendermint-proto"
-version = "0.23.8"
+version = "0.23.9"
 authors = ["Informal Systems <hello@informal.systems>"]
 edition = "2018"
 license = "Apache-2.0"
@@ -17,15 +17,16 @@ description = """
 all-features = true
 
 [dependencies]
-prost = { version = "0.10", default-features = false }
-prost-types = { version = "0.10", default-features = false }
+prost = { version = "0.11", default-features = false }
+prost-types = { version = "0.11", default-features = false }
 bytes = { version = "1.0", default-features = false }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde_bytes = { version = "0.11", default-features = false, features = ["alloc"] }
 subtle-encoding = { version = "0.5", default-features = false, features = ["hex", "base64", "alloc"] }
 num-traits = { version = "0.2", default-features = false }
 num-derive = { version = "0.3", default-features = false }
-time = { version = "0.3", default-features = false, features = ["macros", "parsing"] }
+# TODO(thane): Remove restrictions once js-sys issue is resolved (causes the Substrate no_std check to fail)
+time = { version = ">=0.3, <0.3.12", default-features = false, features = ["macros", "parsing"] }
 flex-error = { version = "0.4.4", default-features = false }
 
 [dev-dependencies]

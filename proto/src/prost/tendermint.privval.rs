@@ -96,3 +96,19 @@ pub enum Errors {
     ReadTimeout = 4,
     WriteTimeout = 5,
 }
+impl Errors {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Errors::Unknown => "ERRORS_UNKNOWN",
+            Errors::UnexpectedResponse => "ERRORS_UNEXPECTED_RESPONSE",
+            Errors::NoConnection => "ERRORS_NO_CONNECTION",
+            Errors::ConnectionTimeout => "ERRORS_CONNECTION_TIMEOUT",
+            Errors::ReadTimeout => "ERRORS_READ_TIMEOUT",
+            Errors::WriteTimeout => "ERRORS_WRITE_TIMEOUT",
+        }
+    }
+}

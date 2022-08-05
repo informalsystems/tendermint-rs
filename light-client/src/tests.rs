@@ -1,25 +1,31 @@
 //! Utilities and datatypes for use in tests.
 
+use std::{collections::HashMap, time::Duration};
+
+use contracts::contract_trait;
 use serde::{Deserialize, Serialize};
-use tendermint::abci::transaction::Hash;
+use tendermint::{
+    abci::transaction::Hash,
+    block::Height as HeightStr,
+    evidence::{Duration as DurationStr, Evidence},
+};
 use tendermint_rpc as rpc;
 
-use crate::components::clock::Clock;
-use crate::components::io::{AtHeight, Io, IoError};
-use crate::errors::Error;
-use crate::evidence::EvidenceReporter;
-use crate::light_client::LightClient;
-use crate::state::State;
-use crate::verifier::options::Options;
-use crate::verifier::types::{
-    Height, LightBlock, PeerId, SignedHeader, Time, TrustThreshold, ValidatorSet,
+use crate::{
+    components::{
+        clock::Clock,
+        io::{AtHeight, Io, IoError},
+    },
+    errors::Error,
+    evidence::EvidenceReporter,
+    light_client::LightClient,
+    state::State,
+    verifier::{
+        options::Options,
+        types::{Height, LightBlock, PeerId, SignedHeader, Time, TrustThreshold, ValidatorSet},
+        ProdVerifier, Verdict, Verifier,
+    },
 };
-use crate::verifier::{ProdVerifier, Verdict, Verifier};
-use contracts::contract_trait;
-use std::collections::HashMap;
-use std::time::Duration;
-use tendermint::block::Height as HeightStr;
-use tendermint::evidence::{Duration as DurationStr, Evidence};
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct TestCases<LB> {

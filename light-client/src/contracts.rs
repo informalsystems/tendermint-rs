@@ -1,9 +1,11 @@
 //! Predicates used in components contracts.
 
-use crate::store::LightStore;
-use crate::verifier::types::{Height, LightBlock, Status, Time};
-
 use std::time::Duration;
+
+use crate::{
+    store::LightStore,
+    verifier::types::{Height, LightBlock, Status, Time},
+};
 
 /// Whether or not the given light store contains a verified or
 /// trusted block at the given target height.

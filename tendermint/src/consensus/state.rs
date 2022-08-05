@@ -1,9 +1,11 @@
 //! Tendermint consensus state
 
+pub use core::{cmp::Ordering, fmt};
+
+use serde::{Deserialize, Serialize};
+
 pub use crate::block;
 use crate::prelude::*;
-pub use core::{cmp::Ordering, fmt};
-use serde::{Deserialize, Serialize};
 
 /// Placeholder string to show when block ID is absent. Syntax from:
 /// <https://tendermint.com/docs/spec/consensus/consensus.html>
@@ -66,10 +68,10 @@ impl PartialOrd for State {
 
 #[cfg(test)]
 mod tests {
-    use super::State;
-    use crate::block;
-    use crate::Hash;
     use core::str::FromStr;
+
+    use super::State;
+    use crate::{block, Hash};
 
     #[test]
     fn state_ord_test() {

@@ -1,6 +1,8 @@
-use crate::prelude::*;
 use core::fmt::{self, Debug, Display};
+
 use serde::{Deserialize, Serialize};
+
+use crate::prelude::*;
 
 /// Tendermint version
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]

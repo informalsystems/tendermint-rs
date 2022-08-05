@@ -1,10 +1,11 @@
 //! Tags
 
-use crate::error::Error;
-use crate::prelude::*;
 use core::{fmt, str::FromStr};
+
 use serde::{Deserialize, Serialize};
 use tendermint_proto::serializers::bytes::base64string;
+
+use crate::{error::Error, prelude::*};
 
 /// Tags
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]

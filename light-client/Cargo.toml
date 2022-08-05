@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint-light-client"
-version    = "0.23.8"
+version    = "0.23.9"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -34,9 +34,9 @@ unstable = []
 mbt = []
 
 [dependencies]
-tendermint = { version = "0.23.8", path = "../tendermint", default-features = false }
-tendermint-rpc = { version = "0.23.8", path = "../rpc", default-features = false }
-tendermint-light-client-verifier = { version = "0.23.8", path = "../light-client-verifier", default-features = false }
+tendermint = { version = "0.23.9", path = "../tendermint", default-features = false }
+tendermint-rpc = { version = "0.23.9", path = "../rpc", default-features = false }
+tendermint-light-client-verifier = { version = "0.23.9", path = "../light-client-verifier", default-features = false }
 
 contracts = { version = "0.6.2", default-features = false }
 crossbeam-channel = { version = "0.4.2", default-features = false }
@@ -47,7 +47,8 @@ serde_cbor = { version = "0.11.1", default-features = false, features = ["alloc"
 serde_derive = { version = "1.0.106", default-features = false }
 sled = { version = "0.34.3", optional = true, default-features = false }
 static_assertions = { version = "1.1.0", default-features = false }
-time = { version = "0.3", default-features = false, features = ["std"] }
+# TODO(thane): Remove restrictions once js-sys issue is resolved (causes the Substrate no_std check to fail)
+time = { version = ">=0.3, <0.3.12", default-features = false, features = ["std"] }
 tokio = { version = "1.0", default-features = false, features = ["rt"], optional = true }
 flex-error = { version = "0.4.4", default-features = false }
 

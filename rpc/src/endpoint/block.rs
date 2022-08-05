@@ -1,7 +1,6 @@
 //! `/block` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
-
 use tendermint::block::{self, Block};
 
 /// Get information about a specific block

@@ -4,14 +4,16 @@
 //!
 //! [`Query`]: struct.Query.html
 
-use crate::prelude::*;
-use crate::Error;
-use core::fmt;
-use core::str::FromStr;
+use core::{fmt, str::FromStr};
+
 use tendermint_proto::serializers::timestamp;
-use time::format_description::well_known::Rfc3339;
-use time::macros::{format_description, offset};
-use time::{Date, OffsetDateTime};
+use time::{
+    format_description::well_known::Rfc3339,
+    macros::{format_description, offset},
+    Date, OffsetDateTime,
+};
+
+use crate::{prelude::*, Error};
 
 /// A structured query for use in interacting with the Tendermint RPC event
 /// subscription system.
@@ -483,12 +485,12 @@ impl fmt::Display for Operand {
                 write!(f, "DATE ")?;
                 fmt_date(*d, f)?;
                 Ok(())
-            }
+            },
             Operand::DateTime(dt) => {
                 write!(f, "TIME ")?;
                 timestamp::fmt_as_rfc3339_nanos(*dt, f)?;
                 Ok(())
-            }
+            },
         }
     }
 }
@@ -607,8 +609,9 @@ fn escape(s: &str) -> String {
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use time::macros::{date, datetime};
+
+    use super::*;
 
     #[test]
     fn empty_query() {
@@ -827,10 +830,10 @@ mod test {
                 match op {
                     Operand::Float(f) => {
                         assert!(floats_eq(*f, core::f64::consts::PI, 5));
-                    }
+                    },
                     _ => panic!("unexpected operand: {:?}", op),
                 }
-            }
+            },
             c => panic!("unexpected condition: {:?}", c),
         }
 
@@ -843,10 +846,10 @@ mod test {
                 match op {
                     Operand::Float(f) => {
                         assert!(floats_eq(*f, -core::f64::consts::PI, 5));
-                    }
+                    },
                     _ => panic!("unexpected operand: {:?}", op),
                 }
-            }
+            },
             c => panic!("unexpected condition: {:?}", c),
         }
     }

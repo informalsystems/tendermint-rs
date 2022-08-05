@@ -5,10 +5,9 @@ pub mod echo;
 #[cfg(feature = "kvstore-app")]
 pub mod kvstore;
 
-use tendermint_proto::abci::request::Value;
 use tendermint_proto::abci::{
-    response, Request, RequestApplySnapshotChunk, RequestBeginBlock, RequestCheckTx,
-    RequestDeliverTx, RequestEcho, RequestEndBlock, RequestInfo, RequestInitChain,
+    request::Value, response, Request, RequestApplySnapshotChunk, RequestBeginBlock,
+    RequestCheckTx, RequestDeliverTx, RequestEcho, RequestEndBlock, RequestInfo, RequestInitChain,
     RequestLoadSnapshotChunk, RequestOfferSnapshot, RequestQuery, RequestSetOption, Response,
     ResponseApplySnapshotChunk, ResponseBeginBlock, ResponseCheckTx, ResponseCommit,
     ResponseDeliverTx, ResponseEcho, ResponseEndBlock, ResponseFlush, ResponseInfo,
@@ -135,13 +134,13 @@ impl<A: Application> RequestDispatcher for A {
                 Value::ListSnapshots(_) => response::Value::ListSnapshots(self.list_snapshots()),
                 Value::OfferSnapshot(req) => {
                     response::Value::OfferSnapshot(self.offer_snapshot(req))
-                }
+                },
                 Value::LoadSnapshotChunk(req) => {
                     response::Value::LoadSnapshotChunk(self.load_snapshot_chunk(req))
-                }
+                },
                 Value::ApplySnapshotChunk(req) => {
                     response::Value::ApplySnapshotChunk(self.apply_snapshot_chunk(req))
-                }
+                },
             }),
         }
     }

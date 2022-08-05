@@ -1,9 +1,10 @@
 //! JSON-RPC response types
 
-use crate::response_error::ResponseError;
-use crate::{Error, Id, Version};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::io::Read;
+
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+
+use crate::{response_error::ResponseError, Error, Id, Version};
 
 /// JSON-RPC responses
 pub trait Response: Serialize + DeserializeOwned + Sized {

@@ -12,6 +12,9 @@
 //!
 //! (Make sure you install cargo-make using `cargo install cargo-make` first.)
 
+use std::{convert::TryFrom, time::Duration};
+
+use tendermint::abci::transaction::Hash as TxHash;
 use tendermint_light_client::{
     builder::{LightClientBuilder, SupervisorBuilder},
     components::io::{AtHeight, Io, IoError, ProdIo},
@@ -24,12 +27,7 @@ use tendermint_light_client::{
         types::{Height, PeerId, Status, TrustThreshold},
     },
 };
-
-use tendermint::abci::transaction::Hash as TxHash;
 use tendermint_rpc as rpc;
-
-use std::convert::TryFrom;
-use std::time::Duration;
 
 struct TestEvidenceReporter;
 
@@ -104,11 +102,11 @@ fn forward() {
         match handle.verify_to_highest() {
             Ok(light_block) => {
                 println!("[info ] synced to block {}", light_block.height());
-            }
+            },
             Err(err) => {
                 println!("[error] sync failed: {}", err);
                 panic!("failed to sync to highest: {}", err);
-            }
+            },
         }
 
         std::thread::sleep(Duration::from_millis(800));

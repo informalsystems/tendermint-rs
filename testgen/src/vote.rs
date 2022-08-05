@@ -1,14 +1,16 @@
-use crate::{helpers::*, Generator, Header, Validator};
+use std::convert::TryFrom;
+
 use gumdrop::Options;
 use serde::{Deserialize, Serialize};
 use simple_error::*;
-use std::convert::TryFrom;
 use tendermint::{
     block::{self, parts::Header as PartSetHeader},
     signature::{Ed25519Signature, Signature, Signer},
     vote,
     vote::ValidatorIndex,
 };
+
+use crate::{helpers::*, Generator, Header, Validator};
 
 #[derive(Debug, Options, Serialize, Deserialize, Clone)]
 pub struct Vote {
@@ -111,7 +113,7 @@ impl Generator<vote::Vote> for Vote {
                     Some(i) => i as u16, // Todo: possible overflow
                     None => 0,           // we allow non-present validators for testing purposes
                 }
-            }
+            },
         };
         let timestamp = if let Some(t) = self.time {
             get_time(t)?

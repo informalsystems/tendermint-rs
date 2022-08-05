@@ -14,22 +14,24 @@
 ///
 /// (Make sure you install cargo-make using `cargo install cargo-make` first.)
 mod rpc {
-    use std::cmp::min;
-
-    use tendermint_rpc::{
-        Client, HttpClient, Id, Order, SubscriptionClient, WebSocketClient, WebSocketClientDriver,
+    use std::{
+        cmp::min,
+        convert::TryFrom,
+        sync::atomic::{AtomicU8, Ordering},
     };
 
     use futures::StreamExt;
-    use std::convert::TryFrom;
-    use std::sync::atomic::{AtomicU8, Ordering};
-    use tendermint::abci::Log;
-    use tendermint::abci::{Code, Transaction};
-    use tendermint::block::Height;
-    use tendermint::merkle::simple_hash_from_byte_vectors;
-    use tendermint_rpc::endpoint::tx::Response as ResultTx;
-    use tendermint_rpc::event::{Event, EventData, TxInfo};
-    use tendermint_rpc::query::{EventType, Query};
+    use tendermint::{
+        abci::{Code, Log, Transaction},
+        block::Height,
+        merkle::simple_hash_from_byte_vectors,
+    };
+    use tendermint_rpc::{
+        endpoint::tx::Response as ResultTx,
+        event::{Event, EventData, TxInfo},
+        query::{EventType, Query},
+        Client, HttpClient, Id, Order, SubscriptionClient, WebSocketClient, WebSocketClientDriver,
+    };
     use tokio::time::Duration;
 
     static LOGGING_INIT: AtomicU8 = AtomicU8::new(0);
@@ -200,7 +202,10 @@ mod rpc {
     /// `/genesis` endpoint
     #[tokio::test]
     async fn genesis() {
-        let genesis = localhost_http_client().genesis::<Option<serde_json::Value>>().await.unwrap(); // https://github.com/tendermint/tendermint/issues/5549
+        let genesis = localhost_http_client()
+            .genesis::<Option<serde_json::Value>>()
+            .await
+            .unwrap(); // https://github.com/tendermint/tendermint/issues/5549
 
         assert_eq!(
             genesis.consensus_params.validator.pub_key_types[0].to_string(),

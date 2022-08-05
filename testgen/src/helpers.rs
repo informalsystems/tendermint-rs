@@ -1,8 +1,9 @@
 //! Helper functions
 
+use std::io::{self, Read};
+
 use serde::de::DeserializeOwned;
 use simple_error::*;
-use std::io::{self, Read};
 use tendermint::{
     chain, public_key,
     signature::{Signature, Verifier},

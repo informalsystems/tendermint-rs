@@ -2,11 +2,8 @@
 //! if we timeout waiting for tx to commit.
 
 use serde::{Deserialize, Serialize};
-
-use tendermint::abci::responses::Codespace;
-use tendermint::abci::{Event, Gas, Info};
 use tendermint::{
-    abci::{transaction, Code, Data, Log, Transaction},
+    abci::{responses::Codespace, transaction, Code, Data, Event, Gas, Info, Log, Transaction},
     block,
 };
 

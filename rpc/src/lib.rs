@@ -39,7 +39,6 @@ pub use client::{
     Client, MockClient, MockRequestMatcher, MockRequestMethodMatcher, Subscription,
     SubscriptionClient,
 };
-
 #[cfg(feature = "http-client")]
 pub use client::{HttpClient, HttpClientUrl};
 #[cfg(feature = "websocket-client")]

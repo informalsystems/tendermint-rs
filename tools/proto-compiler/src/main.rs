@@ -1,5 +1,5 @@
-use std::env::var;
-use std::path::PathBuf;
+use std::{env::var, path::PathBuf};
+
 use tempfile::tempdir;
 
 mod functions;

@@ -1,6 +1,6 @@
 [package]
 name = "tendermint-pbt-gen"
-version = "0.23.8"
+version = "0.23.9"
 authors = ["Informal Systems <hello@informal.systems>"]
 edition = "2018"
 license     = "Apache-2.0"
@@ -19,8 +19,10 @@ description = """
 default = ["time"]
 
 [dependencies]
-time = { version = "0.3", default-features = false, optional = true }
+# TODO(thane): Remove restrictions once js-sys issue is resolved (causes the Substrate no_std check to fail)
+time = { version = ">=0.3, <0.3.12", default-features = false, optional = true }
 proptest = { version = "0.10.1", default-features = false, features = ["std"] }
 
 [dev-dependencies]
-time = { version = "0.3", features = ["macros"] }
+# TODO(thane): Remove restrictions once js-sys issue is resolved (causes the Substrate no_std check to fail)
+time = { version = ">=0.3, <0.3.12", features = ["macros"] }

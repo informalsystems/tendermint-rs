@@ -1,5 +1,4 @@
 use subtle_encoding::hex;
-
 use tendermint_p2p::secret_connection::PublicKey;
 
 const EXAMPLE_SECRET_CONN_KEY: &str =

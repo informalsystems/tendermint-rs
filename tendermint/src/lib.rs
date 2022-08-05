@@ -15,7 +15,7 @@
 )]
 #![forbid(unsafe_code)]
 #![doc(
-    html_root_url = "https://docs.rs/tendermint/0.23.8",
+    html_root_url = "https://docs.rs/tendermint/0.23.9",
     html_logo_url = "https://raw.githubusercontent.com/informalsystems/tendermint-rs/master/img/logo-tendermint-rs_3961x4001.png"
 )]
 
@@ -59,8 +59,7 @@ pub use crate::{
     block::Block,
     error::Error,
     genesis::Genesis,
-    hash::AppHash,
-    hash::Hash,
+    hash::{AppHash, Hash},
     moniker::Moniker,
     private_key::PrivateKey,
     proposal::Proposal,

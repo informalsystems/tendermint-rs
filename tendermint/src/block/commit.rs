@@ -1,12 +1,15 @@
 //! Commits to a Tendermint blockchain
 
-use crate::block::commit_sig::CommitSig;
-use crate::block::{Height, Id, Round};
-use crate::error::Error;
-use crate::prelude::*;
 use core::convert::{TryFrom, TryInto};
+
 use serde::{Deserialize, Serialize};
 use tendermint_proto::types::Commit as RawCommit;
+
+use crate::{
+    block::{commit_sig::CommitSig, Height, Id, Round},
+    error::Error,
+    prelude::*,
+};
 
 /// Commit contains the justification (ie. a set of signatures) that a block was committed by a set
 /// of validators.
@@ -44,7 +47,7 @@ impl TryFrom<RawCommit> for Commit {
             block_id: value
                 .block_id
                 .ok_or_else(|| Error::invalid_block("missing block id".to_string()))?
-                .try_into()?, /* gogoproto.nullable = false */
+                .try_into()?, // gogoproto.nullable = false
             signatures: signatures?,
         })
     }

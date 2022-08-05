@@ -1,10 +1,9 @@
 //! `/tx_search` endpoint JSON-RPC wrapper
 
-pub use super::tx;
-
-use crate::prelude::*;
-use crate::{Method, Order};
 use serde::{Deserialize, Serialize};
+
+pub use super::tx;
+use crate::{prelude::*, Method, Order};
 
 /// Request for searching for transactions with their results.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

@@ -2,11 +2,14 @@
 //! [Gaia](https://github.com/cosmos/gaia).
 
 use std::path::Path;
+
 use tokio::time::Duration;
 
-use crate::common::*;
-use crate::plan::in_series;
-use crate::{error::Result, plan::Plan};
+use crate::{
+    common::*,
+    error::Result,
+    plan::{in_series, Plan},
+};
 
 /// A simple plan that just queries a Gaia node, without attempting to make any
 /// modifications (i.e. without attempting to submit transactions).

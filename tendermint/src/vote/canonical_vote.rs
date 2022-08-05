@@ -1,11 +1,9 @@
-use crate::chain::Id as ChainId;
-use crate::error::Error;
-use crate::prelude::*;
-use crate::{block, Time};
 use core::convert::{TryFrom, TryInto};
+
 use serde::{Deserialize, Serialize};
-use tendermint_proto::types::CanonicalVote as RawCanonicalVote;
-use tendermint_proto::Protobuf;
+use tendermint_proto::{types::CanonicalVote as RawCanonicalVote, Protobuf};
+
+use crate::{block, chain::Id as ChainId, error::Error, prelude::*, Time};
 
 /// CanonicalVote is used for protobuf encoding a Vote
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -88,14 +86,20 @@ impl CanonicalVote {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
-    use crate::vote::canonical_vote::CanonicalVote;
-    use crate::vote::Type;
     use core::convert::TryFrom;
-    use tendermint_proto::google::protobuf::Timestamp;
-    use tendermint_proto::types::CanonicalBlockId as RawCanonicalBlockId;
-    use tendermint_proto::types::CanonicalPartSetHeader as RawCanonicalPartSetHeader;
-    use tendermint_proto::types::CanonicalVote as RawCanonicalVote;
+
+    use tendermint_proto::{
+        google::protobuf::Timestamp,
+        types::{
+            CanonicalBlockId as RawCanonicalBlockId,
+            CanonicalPartSetHeader as RawCanonicalPartSetHeader, CanonicalVote as RawCanonicalVote,
+        },
+    };
+
+    use crate::{
+        prelude::*,
+        vote::{canonical_vote::CanonicalVote, Type},
+    };
 
     #[test]
     fn canonical_vote_domain_checks() {

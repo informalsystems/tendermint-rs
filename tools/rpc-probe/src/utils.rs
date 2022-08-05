@@ -1,9 +1,11 @@
 //! Utility methods.
 
-use crate::error::Result;
-use getrandom::getrandom;
 use std::path::Path;
+
+use getrandom::getrandom;
 use subtle_encoding::{base64, hex};
+
+use crate::error::Result;
 
 pub fn uuid_v4() -> String {
     let mut bytes = [0; 16];

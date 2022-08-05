@@ -6,8 +6,7 @@ use std::marker::PhantomData;
 
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::errors::Error;
-use crate::verifier::types::Height;
+use crate::{errors::Error, verifier::types::Height};
 
 /// Provides a view over the database for storing key/value pairs at the given prefix.
 #[derive(Clone, Debug)]
@@ -46,7 +45,7 @@ where
             Some(bytes) => {
                 let value = serde_cbor::from_slice(&bytes).map_err(Error::serde_cbor)?;
                 Ok(value)
-            }
+            },
             None => Ok(None),
         }
     }
@@ -90,8 +89,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use tempfile::tempdir;
+
+    use super::*;
 
     #[test]
     fn iter_next_returns_lowest_height() {

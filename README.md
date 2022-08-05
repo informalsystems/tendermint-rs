@@ -16,20 +16,6 @@ tolerant applications written in any programming language.
 
 Tested against the latest stable version of Rust. May work with older versions.
 
-## Versioning
-
-Each of the following branches targets a specific version of [Tendermint
-Core][Tendermint]:
-
-| tendermint-rs branch | tendermint-rs version | Tendermint version |
-| -------------------- | --------------------- | ------------------ |
-| `master`             | v0.24.x               | v0.35.x            |
-| `v0.23.x`            | v0.23.x               | v0.34.x            |
-
-We will do our best to support one version behind the latest official release of
-Tendermint Core (e.g. if v0.35.x is the latest release, we will aim to support
-v0.34.x as well).
-
 ### Semantic Versioning
 
 We do our best to follow [Semantic Versioning](https://semver.org/). However, as
@@ -37,11 +23,6 @@ we are pre-v1.0.0, we use the MINOR version to refer to breaking changes and the
 PATCH version for features, improvements, and fixes.
 
 We use the same version for all crates and release them collectively.
-
-If you are using the v0.23.x series of tendermint-rs, however, **please pin your
-dependencies to a specific patch version**. We may need to introduce breaking
-changes to this series in patches (e.g. if critical security updates require
-it), but we will do our best to avoid doing so.
 
 ## Documentation
 
@@ -73,9 +54,9 @@ Crates are released on [crates.io](https://crates.io).
 
 ## Contributing
 
-The Tendermint protocols are specified in English in the [tendermint/spec
-repo](https://github.com/tendermint/spec).  Any protocol changes or
-clarifications should be contributed there.
+The Tendermint protocols are specified in English in the [tendermint/tendermint
+repo](https://github.com/tendermint/tendermint/tree/master/spec). Any protocol
+changes or clarifications should be contributed there.
 
 This repo contains the TLA+ specifications and Rust implementations for various
 components of Tendermint. See the [CONTRIBUTING.md][contributing] to start
@@ -97,7 +78,7 @@ Papers
 
 ## License
 
-Copyright © 2020 Informal Systems
+Copyright © 2020-2022 Informal Systems
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use the files in this repository except in compliance with the License.

@@ -1,9 +1,11 @@
 //! JSON-RPC requests
 
+use core::fmt::Debug;
+
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+
 use super::{Id, Method, Version};
 use crate::{prelude::*, Error};
-use core::fmt::Debug;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 /// JSON-RPC requests
 pub trait Request: Debug + DeserializeOwned + Serialize + Sized + Send {
