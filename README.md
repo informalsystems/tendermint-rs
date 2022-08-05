@@ -12,6 +12,10 @@
 Tendermint is a high-performance blockchain consensus engine for Byzantine fault
 tolerant applications written in any programming language.
 
+## Tendermint Core Compatibility
+
+tendermint-rs has been tested for compatibility with Tendermint Core v0.34.20.
+
 ## Requirements
 
 Tested against the latest stable version of Rust. May work with older versions.
