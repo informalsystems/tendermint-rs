@@ -14,7 +14,7 @@ pub struct NewRoundStep {
     pub last_commit_round: i32,
 }
 /// NewValidBlock is sent when a validator observes a valid block B in some round r,
-///i.e., there is a Proposal for block B and 2/3+ prevotes for the block B in the round r.
+/// i.e., there is a Proposal for block B and 2/3+ prevotes for the block B in the round r.
 /// In case the block is also committed, then IsCommit flag is set to true.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NewValidBlock {
