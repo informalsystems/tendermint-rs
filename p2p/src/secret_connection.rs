@@ -13,7 +13,7 @@ use std::{
 };
 
 use chacha20poly1305::{
-    aead::{generic_array::GenericArray, AeadInPlace, NewAead},
+    aead::{generic_array::GenericArray, AeadInPlace, KeyInit},
     ChaCha20Poly1305,
 };
 use ed25519_dalek::{self as ed25519, Signer, Verifier};
