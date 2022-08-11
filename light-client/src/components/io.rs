@@ -155,7 +155,8 @@ mod prod {
         fn fetch_signed_header(&self, height: AtHeight) -> Result<TMSignedHeader, IoError> {
             let client = match height {
                 AtHeight::At(fetch_height) => {
-                    if fetch_height <= Height::from(4136531_u32) {
+                    // The /commit data is available up to height 4136530 on the archive node
+                    if fetch_height <= Height::from(4136530_u32) {
                         rpc::HttpClient::new("https://rpc-v3-archive.junonetwork.io:443")
                             .expect("unable to initialize new http client to use archive juno node")
                     } else {
@@ -190,6 +191,7 @@ mod prod {
                 AtHeight::At(height) => height,
             };
 
+            // The /validator data is available up to height 4136531 on the archive node
             let client = if height <= Height::from(4136531_u32) {
                 rpc::HttpClient::new("https://rpc-v3-archive.junonetwork.io:443")
                     .expect("unable to initialize new http client to use archive juno node")
