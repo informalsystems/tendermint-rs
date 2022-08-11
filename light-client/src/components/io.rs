@@ -153,7 +153,18 @@ mod prod {
         }
 
         fn fetch_signed_header(&self, height: AtHeight) -> Result<TMSignedHeader, IoError> {
-            let client = self.rpc_client.clone();
+            let client = match height {
+                AtHeight::At(fetch_height) => {
+                    if fetch_height <= Height::from(4136531_u32) {
+                        rpc::HttpClient::new("https://rpc-v3-archive.junonetwork.io:443")
+                        .expect("unable to initialize new http client to use archive juno node")
+                    } else {
+                        self.rpc_client.clone()
+                    }
+                },
+                AtHeight::Highest => self.rpc_client.clone()
+            };
+
             let res = block_on(self.timeout, async move {
                 match height {
                     AtHeight::Highest => client.latest_commit().await,
@@ -179,7 +190,13 @@ mod prod {
                 AtHeight::At(height) => height,
             };
 
-            let client = self.rpc_client.clone();
+            let client = if height <= Height::from(4136531_u32) {
+                rpc::HttpClient::new("https://rpc-v3-archive.junonetwork.io:443")
+                .expect("unable to initialize new http client to use archive juno node")
+            } else {
+                self.rpc_client.clone()
+            };
+
             let response = block_on(self.timeout, async move {
                 client.validators(height, Paging::All).await
             })?
