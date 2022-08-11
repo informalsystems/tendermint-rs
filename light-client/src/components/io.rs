@@ -157,9 +157,11 @@ mod prod {
                 AtHeight::At(fetch_height) => {
                     // The /commit data is available up to height 4136530 on the archive node
                     if fetch_height <= Height::from(4136530_u32) {
+                        println!("using the archive node for /commit {}", fetch_height);
                         rpc::HttpClient::new("https://rpc-v3-archive.junonetwork.io:443")
                             .expect("unable to initialize new http client to use archive juno node")
                     } else {
+                        println!("using the default node for /commit {}", fetch_height);
                         self.rpc_client.clone()
                     }
                 }
@@ -193,9 +195,11 @@ mod prod {
 
             // The /validator data is available up to height 4136531 on the archive node
             let client = if height <= Height::from(4136531_u32) {
+                println!("using the archive node for /validators @ {}", height);
                 rpc::HttpClient::new("https://rpc-v3-archive.junonetwork.io:443")
                     .expect("unable to initialize new http client to use archive juno node")
             } else {
+                println!("using the default node for /validators @ {}", height);
                 self.rpc_client.clone()
             };
 
