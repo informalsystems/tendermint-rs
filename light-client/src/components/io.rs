@@ -157,12 +157,12 @@ mod prod {
                 AtHeight::At(fetch_height) => {
                     if fetch_height <= Height::from(4136531_u32) {
                         rpc::HttpClient::new("https://rpc-v3-archive.junonetwork.io:443")
-                        .expect("unable to initialize new http client to use archive juno node")
+                            .expect("unable to initialize new http client to use archive juno node")
                     } else {
                         self.rpc_client.clone()
                     }
-                },
-                AtHeight::Highest => self.rpc_client.clone()
+                }
+                AtHeight::Highest => self.rpc_client.clone(),
             };
 
             let res = block_on(self.timeout, async move {
@@ -192,7 +192,7 @@ mod prod {
 
             let client = if height <= Height::from(4136531_u32) {
                 rpc::HttpClient::new("https://rpc-v3-archive.junonetwork.io:443")
-                .expect("unable to initialize new http client to use archive juno node")
+                    .expect("unable to initialize new http client to use archive juno node")
             } else {
                 self.rpc_client.clone()
             };
