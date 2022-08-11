@@ -16,6 +16,7 @@ type TimeoutError = flex_error::DisplayOnly<tokio::time::error::Elapsed>;
 type TimeoutError = flex_error::NoSource;
 
 /// Type for selecting either a specific height or the latest one
+#[derive(Clone)]
 pub enum AtHeight {
     /// A specific height
     At(Height),
@@ -117,12 +118,22 @@ mod prod {
     }
 
     impl Io for ProdIo {
-        fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
-            let signed_header = self.fetch_signed_header(height)?;
+        fn fetch_light_block(&self, at_height: AtHeight) -> Result<LightBlock, IoError> {
+            let signed_header = self.fetch_signed_header(at_height.clone())?;
             let height = signed_header.header.height;
-            let proposer_address = signed_header.header.proposer_address;
+            let proposer_address = match at_height {
+                AtHeight::At(fetch_height) => {
+                    let halt_height = 4136531_u32;
+                    if fetch_height == Height::from(halt_height) {
+                        None
+                    } else {
+                        Some(signed_header.header.proposer_address)
+                    }
+                }
+                AtHeight::Highest => Some(signed_header.header.proposer_address),
+            };
 
-            let validator_set = self.fetch_validator_set(height.into(), Some(proposer_address))?;
+            let validator_set = self.fetch_validator_set(height.into(), proposer_address)?;
             let next_validator_set = self.fetch_validator_set(height.increment().into(), None)?;
 
             let light_block = LightBlock::new(
@@ -153,7 +164,6 @@ mod prod {
             }
         }
 
-
         // The /commit data is available up to height 4136530 on the archive node.
         // The /commit data is available starting from height 4136532 on any public RPC node.
         // There is no /commit?height=4136531 data available (the state machine halted).
@@ -165,8 +175,14 @@ mod prod {
                 AtHeight::At(fetch_height) => {
                     let halt_height = 4136531_u32;
                     if fetch_height == Height::from(halt_height) {
-                        println!("generating a dummy signed header for /commit {}", fetch_height);
-                        let dummy_light_block = tendermint_testgen::LightBlock::new_default(halt_height as u64).generate().expect("could not get a dummy signed header");
+                        println!(
+                            "generating a dummy signed header for /commit {}",
+                            fetch_height
+                        );
+                        let dummy_light_block =
+                            tendermint_testgen::LightBlock::new_default(halt_height as u64)
+                                .generate()
+                                .expect("could not get a dummy signed header");
                         let dummy_header = dummy_light_block.signed_header;
                         return Ok(dummy_header);
                     } else {
