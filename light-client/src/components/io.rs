@@ -105,6 +105,7 @@ mod prod {
     use tendermint::block::signed_header::SignedHeader as TMSignedHeader;
     use tendermint::validator::Set as TMValidatorSet;
     use tendermint_rpc::Paging;
+    use tendermint_testgen::Generator;
 
     /// Production implementation of the Io component, which fetches
     /// light blocks from full nodes via RPC.
@@ -152,14 +153,22 @@ mod prod {
             }
         }
 
+
+        // The /commit data is available up to height 4136530 on the archive node.
+        // The /commit data is available starting from height 4136532 on any public RPC node.
+        // There is no /commit?height=4136531 data available (the state machine halted).
+        // Luckily, we don't need the SignedHeader for the LightBlock at height 4136531, we just need the validators inside that light block:
+        // https://github.com/informalsystems/ibc-rs/blob/7f5106b7426eda8c8e73ba331ac57def31d01023/relayer/src/light_client/tendermint.rs#L250
+        // So we'll return a dummy header
         fn fetch_signed_header(&self, height: AtHeight) -> Result<TMSignedHeader, IoError> {
             let client = match height {
                 AtHeight::At(fetch_height) => {
-                    // The /commit data is available up to height 4136530 on the archive node
-                    if fetch_height <= Height::from(4136530_u32) {
-                        println!("using the archive node for /commit {}", fetch_height);
-                        rpc::HttpClient::new("https://rpc-v3-archive.junonetwork.io:443")
-                            .expect("unable to initialize new http client to use archive juno node")
+                    let halt_height = 4136531_u32;
+                    if fetch_height == Height::from(halt_height) {
+                        println!("generating a dummy signed header for /commit {}", fetch_height);
+                        let dummy_light_block = tendermint_testgen::LightBlock::new_default(halt_height as u64).generate().expect("could not get a dummy signed header");
+                        let dummy_header = dummy_light_block.signed_header;
+                        return Ok(dummy_header);
                     } else {
                         println!("using the default node for /commit {}", fetch_height);
                         self.rpc_client.clone()

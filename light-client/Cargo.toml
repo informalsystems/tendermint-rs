@@ -37,6 +37,7 @@ mbt = []
 tendermint = { version = "0.23.9", path = "../tendermint", default-features = false }
 tendermint-rpc = { version = "0.23.9", path = "../rpc", default-features = false }
 tendermint-light-client-verifier = { version = "0.23.9", path = "../light-client-verifier", default-features = false }
+tendermint-testgen = { path = "../testgen", default-features = false }
 
 contracts = { version = "0.6.2", default-features = false }
 crossbeam-channel = { version = "0.4.2", default-features = false }
