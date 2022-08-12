@@ -16,7 +16,7 @@ type TimeoutError = flex_error::DisplayOnly<tokio::time::error::Elapsed>;
 type TimeoutError = flex_error::NoSource;
 
 /// Type for selecting either a specific height or the latest one
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum AtHeight {
     /// A specific height
     At(Height),
@@ -185,20 +185,25 @@ mod prod {
                                 .expect("could not get a dummy signed header");
                         let dummy_header = dummy_light_block.signed_header;
                         return Ok(dummy_header);
+                    } else if fetch_height < Height::from(halt_height) {
+                        println!("using the archive node for /commit {}", fetch_height);
+                        rpc::HttpClient::new("https://rpc-v3-archive.junonetwork.io:443")
+                            .expect("unable to initialize new http client to use archive juno node")
                     } else {
-                        println!("using the default node for /commit {}", fetch_height);
                         self.rpc_client.clone()
                     }
                 }
                 AtHeight::Highest => self.rpc_client.clone(),
             };
 
+            let fetch_height = height.clone();
             let res = block_on(self.timeout, async move {
                 match height {
                     AtHeight::Highest => client.latest_commit().await,
                     AtHeight::At(height) => client.commit(height).await,
                 }
             })?;
+            println!("got this result for /commit?height={:?}: {:?}", fetch_height, res);
 
             match res {
                 Ok(response) => Ok(response.signed_header),
