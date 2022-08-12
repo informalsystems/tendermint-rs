@@ -186,7 +186,7 @@ mod prod {
             let client = match height {
                 AtHeight::At(fetch_height) => {
                     let halt_height = 4136531_u32;
-                    if fetch_height <= Height::from(halt_height) {
+                    if fetch_height == Height::from(halt_height) {
                         println!(
                             "generating a dummy signed header for /commit at height {}",
                             fetch_height
