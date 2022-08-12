@@ -59,6 +59,7 @@ impl core::fmt::Debug for PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Ed25519(_) => f.debug_tuple("Ed25519").finish(),
+            #[cfg(feature = "secp256k1")]
             Self::Secp256k1(_) => f.debug_tuple("Secp256k1").finish(),
         }
     }
