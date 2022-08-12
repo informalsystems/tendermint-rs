@@ -182,7 +182,8 @@ mod prod {
         // Luckily, we don't need the SignedHeader for the LightBlock at height 4136531, we just need the validators inside that light block:
         // https://github.com/informalsystems/ibc-rs/blob/7f5106b7426eda8c8e73ba331ac57def31d01023/relayer/src/light_client/tendermint.rs#L250
         // So we'll return a dummy header
-        fn fetch_signed_header(&self, height: AtHeight) -> Result<TMSignedHeader, IoError> {
+        #[allow(warnings)]
+        pub fn fetch_signed_header(&self, height: AtHeight) -> Result<TMSignedHeader, IoError> {
             let client = match height {
                 AtHeight::At(fetch_height) => {
                     let halt_height = 4136531_u32;
@@ -228,7 +229,7 @@ mod prod {
             }
         }
 
-        fn fetch_validator_set(
+        pub fn fetch_validator_set(
             &self,
             height: AtHeight,
             proposer_address: Option<TMAccountId>,
