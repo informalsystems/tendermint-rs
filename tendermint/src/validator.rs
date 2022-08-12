@@ -92,12 +92,11 @@ impl Set {
         let proposer = validators
             .iter()
             .find(|v| v.address == proposer_address)
-            .cloned()
-            .ok_or_else(|| Error::proposer_not_found(proposer_address))?;
+            .cloned();
 
         // Create the validator set with the given proposer.
         // This is required by IBC on-chain validation.
-        Ok(Self::new(validators, Some(proposer)))
+        Ok(Self::new(validators, proposer))
     }
 
     /// Get Info of the underlying validators.
