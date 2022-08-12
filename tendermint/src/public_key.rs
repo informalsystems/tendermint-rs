@@ -32,7 +32,7 @@ use tendermint_proto::Protobuf;
 //          All changes to the serialization should check both the JSON and protobuf conversions.
 // Todo: Merge JSON serialization with #[serde(try_from = "RawPublicKey", into = "RawPublicKey)]
 /// Public keys allowed in Tendermint protocols
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
 #[serde(tag = "type", content = "value")] // JSON custom serialization for priv_validator_key.json
 pub enum PublicKey {
@@ -53,6 +53,15 @@ pub enum PublicKey {
         deserialize_with = "deserialize_secp256k1_base64"
     )]
     Secp256k1(Secp256k1),
+}
+
+impl core::fmt::Debug for PublicKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Ed25519(_) => f.debug_tuple("Ed25519").finish(),
+            Self::Secp256k1(_) => f.debug_tuple("Secp256k1").finish(),
+        }
+    }
 }
 
 // Internal thunk type to facilitate deserialization from the raw Protobuf data
