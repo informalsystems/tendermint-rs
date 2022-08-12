@@ -16,7 +16,7 @@ type TimeoutError = flex_error::DisplayOnly<tokio::time::error::Elapsed>;
 type TimeoutError = flex_error::NoSource;
 
 /// Type for selecting either a specific height or the latest one
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum AtHeight {
     /// A specific height
     At(Height),
@@ -119,7 +119,14 @@ mod prod {
 
     impl Io for ProdIo {
         fn fetch_light_block(&self, at_height: AtHeight) -> Result<LightBlock, IoError> {
-            let signed_header = self.fetch_signed_header(at_height.clone())?;
+            println!("fetch_light_block(at_height = {:?})", at_height);
+
+            let signed_header = self.fetch_signed_header(at_height)?;
+            println!(
+                "got signed header at height {:?}: {:?}",
+                at_height, signed_header
+            );
+
             let height = signed_header.header.height;
             let proposer_address = match at_height {
                 AtHeight::At(fetch_height) => {
@@ -133,8 +140,13 @@ mod prod {
                 AtHeight::Highest => Some(signed_header.header.proposer_address),
             };
 
+            println!("proposer_address: {:?}", proposer_address);
+
             let validator_set = self.fetch_validator_set(height.into(), proposer_address)?;
+            println!("validator_set: {:?}", validator_set);
+
             let next_validator_set = self.fetch_validator_set(height.increment().into(), None)?;
+            println!("next_validator_set: {:?}", next_validator_set);
 
             let light_block = LightBlock::new(
                 signed_header,
@@ -174,9 +186,9 @@ mod prod {
             let client = match height {
                 AtHeight::At(fetch_height) => {
                     let halt_height = 4136531_u32;
-                    if fetch_height == Height::from(halt_height) {
+                    if fetch_height <= Height::from(halt_height) {
                         println!(
-                            "generating a dummy signed header for /commit {}",
+                            "generating a dummy signed header for /commit at height {}",
                             fetch_height
                         );
                         let dummy_light_block =
@@ -190,20 +202,25 @@ mod prod {
                         rpc::HttpClient::new("https://rpc-v3-archive.junonetwork.io:443")
                             .expect("unable to initialize new http client to use archive juno node")
                     } else {
+                        println!(
+                            "using the default node for /commit at height {}",
+                            fetch_height
+                        );
+
                         self.rpc_client.clone()
                     }
                 }
                 AtHeight::Highest => self.rpc_client.clone(),
             };
 
-            let fetch_height = height.clone();
             let res = block_on(self.timeout, async move {
                 match height {
                     AtHeight::Highest => client.latest_commit().await,
                     AtHeight::At(height) => client.commit(height).await,
                 }
             })?;
-            println!("got this result for /commit?height={:?}: {:?}", fetch_height, res);
+
+            println!("got this result for /commit?height={:?}: {:?}", height, res);
 
             match res {
                 Ok(response) => Ok(response.signed_header),
@@ -216,6 +233,11 @@ mod prod {
             height: AtHeight,
             proposer_address: Option<TMAccountId>,
         ) -> Result<TMValidatorSet, IoError> {
+            println!(
+                "fetch_validator_set(height = {:?}, proposer_address = {:?})",
+                height, proposer_address
+            );
+
             let height = match height {
                 AtHeight::Highest => {
                     return Err(IoError::invalid_height());
@@ -238,6 +260,11 @@ mod prod {
             })?
             .map_err(IoError::rpc)?;
 
+            println!(
+                "got response for fetch_validator_set at height {:?}: {:?}",
+                height, response
+            );
+
             let validator_set = match proposer_address {
                 Some(proposer_address) => {
                     TMValidatorSet::with_proposer(response.validators, proposer_address)
@@ -245,6 +272,8 @@ mod prod {
                 }
                 None => TMValidatorSet::without_proposer(response.validators),
             };
+
+            println!("final validator set: {:?}", validator_set);
 
             Ok(validator_set)
         }
