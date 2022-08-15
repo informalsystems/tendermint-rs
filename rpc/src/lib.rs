@@ -26,6 +26,7 @@
 //! [`/subscribe` endpoint]: https://docs.tendermint.com/master/rpc/#/Websocket/subscribe
 
 #![no_std]
+#![allow(clippy::derive_partial_eq_without_eq, clippy::let_unit_value)] // FIXME: Eq derivations
 
 extern crate alloc;
 extern crate std;

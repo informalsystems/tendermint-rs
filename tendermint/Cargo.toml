@@ -56,7 +56,7 @@ ripemd = { version = "0.1", default-features = false, optional = true }
 
 [features]
 default = ["std"]
-std = ["flex-error/std", "flex-error/eyre_tracer", "clock"]
+std = ["flex-error/std", "flex-error/eyre_tracer", "clock", "signature/std"]
 clock = ["time/std"]
 secp256k1 = ["k256", "ripemd"]
 

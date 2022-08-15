@@ -3,6 +3,9 @@
 ## Changelog
 
 * 2022-06-10: Created the ADR.
+* 2022-07-04: Renamed the crate to `tendermint-privval`.
+* 2022-07-22: Using async-signature traits.
+* 2022-08-15: Using async-signature's new Keypair trait.
 
 ## Context
 
@@ -44,7 +47,7 @@ so each implementor would need to duplicate the same common validation code.
 
 ## Decision
 
-The `tendermint-validator` crate can be added to the tendermint-rs repository
+The `tendermint-privval` crate can be added to the tendermint-rs repository
 that will help the developers with implementing Tendermint validator signing backends.
 It will provide basic [tonic's Server](https://docs.rs/tonic/0.7.2/tonic/transport/struct.Server.html)
 options (e.g. TLS) and the implementation of `PrivValidatorApi`. This implementation
@@ -52,13 +55,12 @@ can accept different signing backends that are implemented via two traits:
 
 1. the signing one (that e.g. communicates with HSM):
 ```rust
-#[tonic::async_trait]
-pub trait SignerProvider {
-    type E: std::error::Error;
-    async fn sign(&self, signable_bytes: &[u8]) -> Result<Signature, Self::E>;
-    async fn load_pubkey(&self) -> Result<PublicKey, Self::E>;
-}
+pub trait SignerProvider: async_signature::AsyncKeypair<Signature, VerifyingKey = PublicKey> {}
 ```
+The tendermint-rs's `Signature` will have the `async_signature::Signature` trait
+implementation and the tendermint-rs's `PublicKey` will have the `Verifier<Signature>` trait implementation,
+such that `SignerProvider` can extend the `async_signature::AsyncKeypair` trait 
+which will provide the `sign_async` and `verifying_key` methods.
 
 2. the state storage one that persists the validator state (in a file or whatever
 makes sense in the signing context, e.g. write to CPU monotonic counters):
