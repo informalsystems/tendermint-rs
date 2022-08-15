@@ -1,3 +1,5 @@
+#![allow(clippy::derive_partial_eq_without_eq)] // FIXME: Eq derivations
+
 #[cfg(feature = "mbt")]
 mod mbt {
     use std::{

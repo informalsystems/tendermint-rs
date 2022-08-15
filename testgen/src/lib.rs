@@ -4,6 +4,7 @@
 //! See the [repository] for details.
 //!
 //! [repository]: https://github.com/informalsystems/tendermint-rs/tree/master/testgen
+#![allow(clippy::derive_partial_eq_without_eq, clippy::format_push_string)] // FIXME: Eq derivations
 
 #[macro_use]
 pub mod helpers;

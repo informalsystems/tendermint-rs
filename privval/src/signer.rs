@@ -1,27 +1,13 @@
 //! Signing-related interface and the sample software-only implementation.
 
-use async_signature::AsyncSigner;
+use async_signature::{AsyncKeypair, AsyncSigner};
 use ed25519_consensus::SigningKey;
 use rand_core::{CryptoRng, RngCore};
 use tendermint::{account, PrivateKey, PublicKey, Signature};
 
 /// The trait for different signing backends
 /// (HSMs, TEEs, software-only, remote services etc.)
-#[tonic::async_trait]
-pub trait SignerProvider: AsyncSigner<Signature> {
-    async fn load_pubkey(&self) -> Result<PublicKey, async_signature::Error>;
-}
-
-#[tonic::async_trait]
-impl<T> SignerProvider for T
-where
-    T: AsyncSigner<Signature>,
-    PublicKey: for<'a> From<&'a T>,
-{
-    async fn load_pubkey(&self) -> Result<PublicKey, async_signature::Error> {
-        Ok(self.into())
-    }
-}
+pub trait SignerProvider: AsyncKeypair<Signature, VerifyingKey = PublicKey> {}
 
 /// A helper function that will convert the validator public key
 /// into textual forms that are needed in different operational contexts
@@ -40,21 +26,42 @@ pub fn display_validator_info(pubkey: &PublicKey) -> (String, String) {
 /// The default software-only implementation of [`SignerProvider`].
 /// (Not recommended for production use, but it is useful for testing
 /// or in combination with additional isolation from the host system, e.g. TEE.)
-pub type SoftwareSigner = PrivateKey;
+pub struct SoftwareSigner(PrivateKey, PublicKey);
+
+impl AsRef<PublicKey> for SoftwareSigner {
+    fn as_ref(&self) -> &PublicKey {
+        &self.1
+    }
+}
+
+#[tonic::async_trait]
+impl AsyncSigner<Signature> for SoftwareSigner {
+    async fn sign_async(&self, msg: &[u8]) -> Result<Signature, async_signature::Error> {
+        self.0.sign_async(msg).await
+    }
+}
+
+impl AsyncKeypair<Signature> for SoftwareSigner {
+    type VerifyingKey = PublicKey;
+}
+
+impl SignerProvider for SoftwareSigner {}
 
 /// A helper to generate a new random private key.
 pub fn generate_ed25519<R: RngCore + CryptoRng>(rng: R) -> SoftwareSigner {
     let key = SigningKey::new(rng);
-    PrivateKey::Ed25519(key)
+    let secret = PrivateKey::Ed25519(key);
+    let public = secret.public_key();
+    SoftwareSigner(secret, public)
 }
 
 #[cfg(test)]
 mod test {
-    use async_signature::AsyncSigner;
+    use async_signature::{AsyncKeypair, AsyncSigner};
     use ed25519_consensus::SigningKey;
     use tendermint::PublicKey;
 
-    use crate::{generate_ed25519, SignerProvider};
+    use crate::generate_ed25519;
 
     #[test]
     pub fn test_display_validator_info() {
@@ -72,7 +79,7 @@ mod test {
         let signer = generate_ed25519(rng);
         let signable_bytes = b"test message";
         let signature = signer.sign_async(signable_bytes).await.expect("sign");
-        let pubkey = signer.load_pubkey().await.expect("pubkey");
+        let pubkey = signer.verifying_key();
         assert!(pubkey.verify(signable_bytes, &signature).is_ok());
     }
 }

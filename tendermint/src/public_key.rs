@@ -2,6 +2,8 @@
 
 pub use ed25519_consensus::VerificationKey as Ed25519;
 #[cfg(feature = "secp256k1")]
+pub use k256::ecdsa::Signature as Secp256k1Signature;
+#[cfg(feature = "secp256k1")]
 pub use k256::ecdsa::VerifyingKey as Secp256k1;
 
 mod pub_key_request;
@@ -12,8 +14,7 @@ pub use pub_key_request::PubKeyRequest;
 pub use pub_key_response::PubKeyResponse;
 use serde::{de, ser, Deserialize, Deserializer, Serialize};
 use serde_json::Value;
-#[cfg(feature = "secp256k1")]
-use signature::Verifier as _;
+use signature::Verifier;
 use subtle_encoding::{base64, bech32, hex};
 use tendermint_proto::{
     crypto::{public_key::Sum, PublicKey as RawPublicKey},
@@ -54,6 +55,26 @@ pub enum PublicKey {
         deserialize_with = "deserialize_secp256k1_base64"
     )]
     Secp256k1(Secp256k1),
+}
+
+impl Verifier<Signature> for PublicKey {
+    fn verify(&self, msg: &[u8], signature: &Signature) -> Result<(), ed25519::Error> {
+        match self {
+            PublicKey::Ed25519(public_key) => {
+                let sig: ed25519_consensus::Signature =
+                    ed25519_consensus::Signature::try_from(signature.as_bytes())
+                        .map_err(|_| ed25519::Error::new())?;
+                public_key
+                    .verify(&sig, msg)
+                    .map_err(|_| ed25519::Error::new())
+            },
+            #[cfg(feature = "secp256k1")]
+            PublicKey::Secp256k1(public_key) => {
+                let sig = Secp256k1Signature::try_from(signature.as_bytes())?;
+                public_key.verify(msg, &sig)
+            },
+        }
+    }
 }
 
 // Internal thunk type to facilitate deserialization from the raw Protobuf data

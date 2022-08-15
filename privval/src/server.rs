@@ -64,26 +64,23 @@ fn check_state(
 
 impl<S: SignerProvider, VS: ValidatorStateProvider> PrivvalService<S, VS> {
     /// Creates a new server instance by loading all providers.
-    pub async fn new(
-        providers: BTreeMap<chain::Id, (S, VS)>,
-        config: BasicServerConfig,
-    ) -> Result<Self, async_signature::Error> {
+    pub async fn new(providers: BTreeMap<chain::Id, (S, VS)>, config: BasicServerConfig) -> Self {
         info!("creating a new KMS server");
         let mut pubkeys = BTreeMap::new();
         for (chain_id, (signer, _)) in providers.iter() {
-            let pubkey = signer.load_pubkey().await?;
-            let (address, pubkeyb64) = display_validator_info(&pubkey);
+            let pubkey = signer.verifying_key();
+            let (address, pubkeyb64) = display_validator_info(pubkey);
             info!("[{}] loaded a validator ID: {}", chain_id, address);
             info!("[{}] public key: {}", chain_id, pubkeyb64);
-            pubkeys.insert(chain_id.clone(), pubkey);
+            pubkeys.insert(chain_id.clone(), *pubkey);
         }
 
-        Ok(Self {
+        Self {
             providers: Mutex::new(providers),
             pubkeys,
             max_heights: BTreeMap::new(),
             config,
-        })
+        }
     }
 
     fn check_max_height(&self, chain_id: &chain::Id, new_height: block::Height) -> Result<(), ()> {
@@ -381,7 +378,7 @@ mod tests {
             (signer, state_provider),
         );
         let config = BasicServerConfig::new(None, GrpcSocket::Unix("/tmp/test.socket".into()));
-        PrivvalService::new(providers, config).await.unwrap()
+        PrivvalService::new(providers, config).await
     }
 
     #[tokio::test]

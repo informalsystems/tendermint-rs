@@ -23,6 +23,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         (signer, state_provider),
     );
     let config = BasicServerConfig::new(None, GrpcSocket::Unix("/tmp/validator.test".into()));
-    let server = PrivvalService::new(providers, config).await.unwrap();
+    let server = PrivvalService::new(providers, config).await;
     server.serve().await
 }

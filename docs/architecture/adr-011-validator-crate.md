@@ -5,6 +5,7 @@
 * 2022-06-10: Created the ADR.
 * 2022-07-04: Renamed the crate to `tendermint-privval`.
 * 2022-07-22: Using async-signature traits.
+* 2022-08-15: Using async-signature's new Keypair trait.
 
 ## Context
 
@@ -54,13 +55,12 @@ can accept different signing backends that are implemented via two traits:
 
 1. the signing one (that e.g. communicates with HSM):
 ```rust
-#[tonic::async_trait]
-pub trait SignerProvider: async_signature::AsyncSigner<Signature> {
-    async fn load_pubkey(&self) -> Result<PublicKey, async_signature::Error>;
-}
+pub trait SignerProvider: async_signature::AsyncKeypair<Signature, VerifyingKey = PublicKey> {}
 ```
 The tendermint-rs's `Signature` will have the `async_signature::Signature` trait
-implementation, such that `SignerProvider` can extend the `async_signature::AsyncSigner` trait which will provide the `sign_async` method.
+implementation and the tendermint-rs's `PublicKey` will have the `Verifier<Signature>` trait implementation,
+such that `SignerProvider` can extend the `async_signature::AsyncKeypair` trait 
+which will provide the `sign_async` and `verifying_key` methods.
 
 2. the state storage one that persists the validator state (in a file or whatever
 makes sense in the signing context, e.g. write to CPU monotonic counters):

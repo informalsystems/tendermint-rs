@@ -18,6 +18,7 @@
     html_root_url = "https://docs.rs/tendermint/0.24.0-pre.2",
     html_logo_url = "https://raw.githubusercontent.com/informalsystems/tendermint-rs/master/img/logo-tendermint-rs_3961x4001.png"
 )]
+#![allow(clippy::derive_partial_eq_without_eq)] // FIXME: Eq derivations
 
 extern crate alloc;
 

@@ -1,4 +1,5 @@
 #![no_std]
+#![allow(clippy::derive_partial_eq_without_eq)] // FIXME: Eq derivations
 
 extern crate alloc;
 
