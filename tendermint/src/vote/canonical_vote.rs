@@ -6,7 +6,7 @@ use tendermint_proto::{types::CanonicalVote as RawCanonicalVote, Protobuf};
 use crate::{block, chain::Id as ChainId, error::Error, prelude::*, Time};
 
 /// CanonicalVote is used for protobuf encoding a Vote
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(try_from = "RawCanonicalVote", into = "RawCanonicalVote")]
 pub struct CanonicalVote {
     /// Type of vote (prevote or precommit)

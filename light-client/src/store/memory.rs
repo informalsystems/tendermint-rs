@@ -8,7 +8,7 @@ use crate::{
 };
 
 /// Internal entry for the memory store
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct StoreEntry {
     light_block: LightBlock,
     status: Status,
