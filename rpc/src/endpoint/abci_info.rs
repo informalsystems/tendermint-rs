@@ -2,6 +2,7 @@
 
 use core::convert::{TryFrom, TryInto};
 
+use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use tendermint::{block, Error};
 use tendermint_proto::abci::ResponseInfo;
@@ -48,7 +49,7 @@ pub struct AbciInfo {
     pub last_block_height: block::Height,
 
     /// Last app hash for the block
-    pub last_block_app_hash: Vec<u8>,
+    pub last_block_app_hash: Bytes,
 }
 
 impl TryFrom<ResponseInfo> for AbciInfo {
