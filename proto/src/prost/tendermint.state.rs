@@ -27,6 +27,13 @@ pub struct ConsensusParamsInfo {
     pub last_height_changed: i64,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AbciResponsesInfo {
+    #[prost(message, optional, tag="1")]
+    pub abci_responses: ::core::option::Option<AbciResponses>,
+    #[prost(int64, tag="2")]
+    pub height: i64,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Version {
     #[prost(message, optional, tag="1")]
     pub consensus: ::core::option::Option<super::version::Consensus>,
