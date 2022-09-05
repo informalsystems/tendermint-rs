@@ -155,7 +155,7 @@ impl From<ValidatorParams> for RawValidatorParams {
 pub struct VersionParams {
     /// The ABCI application version.
     #[serde(with = "crate::serializers::from_str")]
-    pub app_version: u64,
+    pub app: u64,
 }
 
 impl Protobuf<RawVersionParams> for VersionParams {}
@@ -164,16 +164,12 @@ impl TryFrom<RawVersionParams> for VersionParams {
     type Error = Error;
 
     fn try_from(value: RawVersionParams) -> Result<Self, Self::Error> {
-        Ok(Self {
-            app_version: value.app_version,
-        })
+        Ok(Self { app: value.app })
     }
 }
 
 impl From<VersionParams> for RawVersionParams {
     fn from(value: VersionParams) -> Self {
-        RawVersionParams {
-            app_version: value.app_version,
-        }
+        RawVersionParams { app: value.app }
     }
 }

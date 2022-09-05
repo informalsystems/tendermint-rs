@@ -98,6 +98,14 @@ pub trait Application: Send + Clone + 'static {
     ) -> ResponseApplySnapshotChunk {
         Default::default()
     }
+
+    fn prepare_proposal(&self, _request: RequestPrepareProposal) -> ResponsePrepareProposal {
+        Default::default()
+    }
+
+    fn process_proposal(&self, _request: RequestProcessProposal) -> ResponseProcessProposal {
+        Default::default()
+    }
 }
 
 /// Provides a mechanism for the [`Server`] to execute incoming requests while
@@ -133,6 +141,12 @@ impl<A: Application> RequestDispatcher for A {
                 },
                 Value::ApplySnapshotChunk(req) => {
                     response::Value::ApplySnapshotChunk(self.apply_snapshot_chunk(req))
+                },
+                Value::PrepareProposal(req) => {
+                    response::Value::PrepareProposal(self.prepare_proposal(req))
+                },
+                Value::ProcessProposal(req) => {
+                    response::Value::ProcessProposal(self.process_proposal(req))
                 },
                 Value::SetOption(_) => response::Value::SetOption(Default::default()),
             }),
