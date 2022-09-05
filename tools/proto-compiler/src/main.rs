@@ -1,4 +1,4 @@
-use std::{env::var, path::PathBuf};
+use std::{env::var, path::PathBuf, process};
 
 use tempfile::tempdir;
 
@@ -80,7 +80,13 @@ fn main() {
         "super::super::google::protobuf::Timestamp",
     );
     println!("[info] => Creating structs.");
-    pb.compile_protos(&protos, &proto_includes_paths).unwrap();
+    match pb.compile_protos(&protos, &proto_includes_paths) {
+        Ok(()) => {},
+        Err(e) => {
+            eprintln!("{}", e);
+            process::exit(1);
+        },
+    }
 
     println!("[info] => Removing old structs and copying new structs.");
     copy_files(&out_dir, &target_dir); // This panics if it fails.
