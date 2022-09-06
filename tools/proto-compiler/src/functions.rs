@@ -1,4 +1,5 @@
 use std::{
+    collections::BTreeSet,
     fs::{copy, create_dir_all, remove_dir_all, File},
     io::Write,
     path::{Path, PathBuf},
@@ -217,8 +218,9 @@ pub fn generate_tendermint_lib(prost_dir: &Path, tendermint_lib_target: &Path) {
                 && e.file_name().to_str().unwrap().starts_with("tendermint.")
                 && e.file_name().to_str().unwrap().ends_with(".rs")
         })
-        .map(|d| d.file_name().to_str().unwrap().to_string())
-        .collect::<Vec<_>>();
+        .map(|d| d.file_name().to_str().unwrap().to_owned())
+        .collect::<BTreeSet<_>>();
+    let file_names = Vec::from_iter(file_names);
 
     let mut content =
         String::from("//! Tendermint-proto auto-generated sub-modules for Tendermint\n");
