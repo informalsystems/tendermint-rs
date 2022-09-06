@@ -100,7 +100,7 @@ traits.
 - RPC [core types] in golang
   
 - RPC endpoints REST interface documentation:
-https://docs.tendermint.com/v0.34/rpc/ 
+  <https://docs.tendermint.com/v0.34/rpc/>
 
 ## Testing
 
