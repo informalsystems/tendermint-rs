@@ -22,7 +22,7 @@ use crate::{
 };
 
 /// Proposal
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Proposal {
     /// Proposal message type
     pub msg_type: Type,

@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::types::TrustThreshold;
 
 /// Verification parameters
-#[derive(Copy, Clone, Debug, PartialEq, Display, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Display, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct Options {
     /// Defines what fraction of the total voting power of a known

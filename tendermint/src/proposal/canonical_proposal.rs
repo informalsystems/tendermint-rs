@@ -14,7 +14,7 @@ use crate::{
 };
 
 /// CanonicalProposal for signing
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct CanonicalProposal {
     /// type alias for byte
     pub msg_type: Type,

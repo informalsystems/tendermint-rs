@@ -12,7 +12,7 @@ use crate::error::Error;
 const PUB_KEY_ED25519_AMINO_PREFIX: [u8; 5] = [0x16, 0x24, 0xde, 0x64, 0x20];
 
 /// Authentication signature message
-#[derive(Clone, PartialEq, Message)]
+#[derive(Clone, PartialEq, Eq, Message)]
 pub struct AuthSigMessage {
     /// Public key
     #[prost(bytes, tag = "1")]

@@ -27,7 +27,7 @@ use crate::{
 /// include information about the validator signing it.
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#vote>
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(try_from = "RawVote", into = "RawVote")]
 pub struct Vote {
     /// Type of vote (prevote or precommit)

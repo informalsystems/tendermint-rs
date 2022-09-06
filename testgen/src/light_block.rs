@@ -32,7 +32,7 @@ use crate::{
 ///     }
 /// }
 /// ```
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TmLightBlock {
     /// Header and commit of this block
     pub signed_header: SignedHeader,

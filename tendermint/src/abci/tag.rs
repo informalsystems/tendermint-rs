@@ -8,7 +8,7 @@ use tendermint_proto::serializers::bytes::base64string;
 use crate::{error::Error, prelude::*};
 
 /// Tags
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Tag {
     /// Key
     pub key: Key,
