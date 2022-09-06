@@ -394,7 +394,7 @@ where
 }
 
 /// The types of Tendermint events for which we can query at present.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EventType {
     NewBlock,
     Tx,

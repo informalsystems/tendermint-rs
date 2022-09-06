@@ -12,7 +12,7 @@ use tendermint_proto::{
 use crate::{chain, error::Error, prelude::*, Vote};
 
 /// SignVoteRequest is a request to sign a vote
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct SignVoteRequest {
     /// Vote
     pub vote: Vote,

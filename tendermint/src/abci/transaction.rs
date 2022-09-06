@@ -72,7 +72,7 @@ impl Serialize for Transaction {
 /// transactions are arbitrary byte arrays.
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#data>
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "RawData", into = "RawData")]
 pub struct Data {
     txs: Option<Vec<Transaction>>,

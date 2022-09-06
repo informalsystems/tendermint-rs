@@ -132,7 +132,7 @@ pub struct RoundVotes {
 }
 
 /// Details of a single vote from a particular consensus round.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RoundVote {
     Nil,
     Vote(VoteSummary),
@@ -166,7 +166,7 @@ impl<'de> Deserialize<'de> for RoundVote {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VoteSummary {
     pub validator_index: i32,
     pub validator_address_fingerprint: Fingerprint,
@@ -307,7 +307,7 @@ impl fmt::Display for VoteSummary {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Fingerprint(Vec<u8>);
 
 impl FromStr for Fingerprint {

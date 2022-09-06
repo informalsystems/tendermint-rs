@@ -26,7 +26,7 @@ use crate::{
 /// evidence: `DuplicateVoteEvidence`.
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#evidence>
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 //#[serde(tag = "type", content = "value")]
 #[serde(try_from = "RawEvidence", into = "RawEvidence")] // Used by RPC /broadcast_evidence endpoint
 // To be fixed in 0.24
@@ -68,7 +68,7 @@ impl From<Evidence> for RawEvidence {
 }
 
 /// Duplicate vote evidence
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DuplicateVoteEvidence {
     vote_a: Vote,
     vote_b: Vote,
@@ -135,7 +135,7 @@ impl DuplicateVoteEvidence {
 
 /// Conflicting headers evidence.
 // Todo: This struct doesn't seem to have a protobuf definition.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ConflictingHeadersEvidence {
     //#[serde(rename = "H1")]
     h1: SignedHeader,
@@ -153,7 +153,7 @@ impl ConflictingHeadersEvidence {
 /// Evidence data is a wrapper for a list of `Evidence`.
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#evidencedata>
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "RawEvidenceList", into = "RawEvidenceList")]
 pub struct Data {
     evidence: Option<Vec<Evidence>>,

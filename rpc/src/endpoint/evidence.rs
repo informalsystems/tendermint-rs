@@ -6,7 +6,7 @@ use tendermint::{abci::transaction, evidence::Evidence};
 use crate::Method;
 
 /// `/broadcast_evidence`: broadcast an evidence.
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct Request {
     /// Evidence to broadcast
     pub ev: Evidence,
