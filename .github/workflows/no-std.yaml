@@ -2,7 +2,7 @@ name: no_std check
 on:
   pull_request: {}
   push:
-    branches: master
+    branches: main
 
 jobs:
   check-no-std-panic-conflict:
