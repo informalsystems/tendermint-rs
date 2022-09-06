@@ -244,7 +244,7 @@ not yet support `no_std`.
 ### FEATURES
 
 - `[tendermint-rpc]` Add support for the `/block_search` RPC endpoint. See
-  <https://docs.tendermint.com/master/rpc/\#/Info/block_search> for details
+  <https://docs.tendermint.com/v0.34.x/rpc/\#/Info/block_search> for details
   ([#832](https://github.com/informalsystems/tendermint-rs/issues/832))
 
 ## v0.22.0
@@ -299,7 +299,7 @@ See below for more specific detail as to what has changed in this release.
 ### FEATURES
 
 - `[tendermint-rpc]` Add support for the `/consensus_params` RPC endpoint. See
-  <https://docs.tendermint.com/master/rpc/\#/Info/consensus_params> for details
+  <https://docs.tendermint.com/v0.34.x/rpc/\#/Info/consensus_params> for details
   ([#832](https://github.com/informalsystems/tendermint-rs/issues/832))
 - `[tendermint-rpc]` Runtime query parsing (relevant to the `/subscribe` and
   `/tx_search` endpoints) has been reintroduced. This allows for client-side
@@ -529,7 +529,7 @@ below.
 [#836]: https://github.com/informalsystems/tendermint-rs/issues/836
 [#839]: https://github.com/informalsystems/tendermint-rs/pull/839
 [#855]: https://github.com/informalsystems/tendermint-rs/pull/855
-[ABCI]: https://docs.tendermint.com/master/spec/abci/
+[ABCI]: https://github.com/tendermint/tendermint/tree/main/spec/abci/
 [`ibc-rs`]: https://github.com/informalsystems/ibc-rs
 [`rustls`]: https://github.com/ctz/rustls
 
@@ -639,7 +639,7 @@ and this release, we have:
   Tendermint full node.
 * Started work towards offering a WASM-based Tendermint Light Client.
 * Introduced a WebSocket-based RPC client for interacting with the
-  [Tendermint RPC](https://docs.tendermint.com/master/rpc/), including event
+  [Tendermint RPC](https://docs.tendermint.com/v0.34.x/rpc/), including event
   subscription.
 
 Please see the following detailed release notes, as well as the crate
@@ -696,7 +696,7 @@ documentation, for further details.
 - `[light-client]` Only require Tokio when `rpc-client` feature is enabled ([#425])
 - `[rpc]` A `WebSocketClient` is now provided to facilitate event
   subscription for a limited range of RPC events over a WebSocket connection.
-  See the [Tendermint `/subscribe` endpoint's](https://docs.tendermint.com/master/rpc/#/Websocket/subscribe)
+  See the [Tendermint `/subscribe` endpoint's](https://docs.tendermint.com/v0.34.x/rpc/#/Websocket/subscribe)
   and the `tendermint-rpc` crate's docs for more details ([#516])
 - `[rpc]` The subscription client interface provides a structured `Query`
   mechanism to help ensure compile-time validity of subscription queries.
