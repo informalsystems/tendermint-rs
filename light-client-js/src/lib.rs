@@ -6,8 +6,8 @@
 //! For a detailed example, please see the [`verifier-web` example] in the
 //! repository.
 //!
-//! [`tendermint-light-client-verifier`]: https://github.com/informalsystems/tendermint-rs/tree/master/light-client-verifier
-//! [`verifier-web` example]: https://github.com/informalsystems/tendermint-rs/tree/master/light-client-js/examples/verifier-web
+//! [`tendermint-light-client-verifier`]: https://github.com/informalsystems/tendermint-rs/tree/main/light-client-verifier
+//! [`verifier-web` example]: https://github.com/informalsystems/tendermint-rs/tree/main/light-client-js/examples/verifier-web
 
 mod utils;
 

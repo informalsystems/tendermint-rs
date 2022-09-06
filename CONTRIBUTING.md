@@ -195,8 +195,8 @@ Our release process is as follows:
 7. Once all crates have been successfully released, merge the PR to `master` and
    tag the repo at the new version (e.g. `v0.17.0`).
 
-[CHANGELOG.md]: https://github.com/informalsystems/tendermint-rs/blob/master/CHANGELOG.md
-[`release.sh`]: https://github.com/informalsystems/tendermint-rs/blob/master/release.sh
+[CHANGELOG.md]: https://github.com/informalsystems/tendermint-rs/blob/main/CHANGELOG.md
+[`release.sh`]: https://github.com/informalsystems/tendermint-rs/blob/main/release.sh
 [crates.io]: https://crates.io
 [unclog]: https://github.com/informalsystems/unclog
 [Tendermint]: https://tendermint.com

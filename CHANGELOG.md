@@ -305,7 +305,7 @@ See below for more specific detail as to what has changed in this release.
   `/tx_search` endpoints) has been reintroduced. This allows for client-side
   validation of queries prior to submitting them to a remote Tendermint node. An
   example of how to use this is available in the `tendermint-rpc` CLI (see [the
-  README](https://github.com/informalsystems/tendermint-rs/tree/master/rpc#cli)
+  README](https://github.com/informalsystems/tendermint-rs/tree/main/rpc#cli)
   for details).
   ([#859](https://github.com/informalsystems/tendermint-rs/issues/859))
 - `[tendermint, tendermint-light-client]` Add support for Secp256k1 signatures
@@ -630,7 +630,7 @@ and this release, we have:
 * Provided Tendermint v0.34.0 compatibility.
 * Supported the development of [ibc-rs](https://github.com/informalsystems/ibc-rs/).
 * Improved our model-based testing to provide complex test cases for the
-  [Light Client](https://github.com/informalsystems/tendermint-rs/tree/master/light-client#testing).
+  [Light Client](https://github.com/informalsystems/tendermint-rs/tree/main/light-client#testing).
 * Refactored our serialization infrastructure to remove all Amino types and
   ensure Protobuf compatibility (see the [proto crate](./proto)). This includes
   a lot of work towards clearly separating our domain types from their
@@ -783,7 +783,7 @@ documentation, for further details.
 [#739]: https://github.com/informalsystems/tendermint-rs/issues/739
 [#745]: https://github.com/informalsystems/tendermint-rs/issues/745
 [#752]: https://github.com/informalsystems/tendermint-rs/pull/752
-[P2P layer]: https://github.com/informalsystems/tendermint-rs/tree/master/p2p
+[P2P layer]: https://github.com/informalsystems/tendermint-rs/tree/main/p2p
 
 
 ## v0.16.0
@@ -827,8 +827,8 @@ preparing for compatibility with Tendermint Core v0.34 ([#508])
 
 - [light-client] Fix to reject headers from the future ([#474])
 
-[light-client-dir]: https://github.com/informalsystems/tendermint-rs/tree/master/light-client
-[testgen-dir]: https://github.com/informalsystems/tendermint-rs/tree/master/testgen
+[light-client-dir]: https://github.com/informalsystems/tendermint-rs/tree/main/light-client
+[testgen-dir]: https://github.com/informalsystems/tendermint-rs/tree/main/testgen
 
 [#466]: https://github.com/informalsystems/tendermint-rs/pull/466
 [#468]: https://github.com/informalsystems/tendermint-rs/pull/468
@@ -890,8 +890,8 @@ and [ADR-007].
 [#441]: https://github.com/informalsystems/tendermint-rs/pull/441
 [#451]: https://github.com/informalsystems/tendermint-rs/pull/451
 
-[ADR-006]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/architecture/adr-006-light-client-refactor.md
-[ADR-007]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/architecture/adr-007-light-client-supervisor-ergonomics.md
+[ADR-006]: https://github.com/informalsystems/tendermint-rs/blob/main/docs/architecture/adr-006-light-client-refactor.md
+[ADR-007]: https://github.com/informalsystems/tendermint-rs/blob/main/docs/architecture/adr-007-light-client-supervisor-ergonomics.md
 
 [lite-dir]: ./tendermint/src/lite
 [light-client-dir]: ./light-client
@@ -956,9 +956,9 @@ CI:
 
 [0.14.0]: https://github.com/informalsystems/tendermint-rs/pull/347
 [v0.33.x]: https://github.com/tendermint/tendermint/blob/v0.33.5/CHANGELOG.md#v0335
-[tendermint-rpc]: https://github.com/informalsystems/tendermint-rs/tree/master/rpc#tendermint-rpc
-[lite]: https://github.com/informalsystems/tendermint-rs/tree/master/tendermint/src/lite
-[light-client-dir]: https://github.com/informalsystems/tendermint-rs/tree/master/light-client
+[tendermint-rpc]: https://github.com/informalsystems/tendermint-rs/tree/main/rpc#tendermint-rpc
+[lite]: https://github.com/informalsystems/tendermint-rs/tree/main/tendermint/src/lite
+[light-client-dir]: https://github.com/informalsystems/tendermint-rs/tree/main/light-client
 
 ## [0.13.0] (2020-04-20)
 

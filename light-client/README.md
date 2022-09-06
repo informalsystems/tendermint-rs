@@ -16,7 +16,7 @@ See documentation on [crates.io][docs-link].
 
 The code below demonstrates the main use case for the Tendermint Light Client: syncing to the latest block, verifying it, and performing fork detection.
 
-Please refer to the [`light_client` example](https://github.com/informalsystems/tendermint-rs/blob/master/light-client/examples/light_client.rs) for fully working code.
+Please refer to the [`light_client` example](https://github.com/informalsystems/tendermint-rs/blob/main/light-client/examples/light_client.rs) for fully working code.
 
 ```rust
 let primary_instance: Instance = make_instance(primary, primary_addr, primary_path);
@@ -181,5 +181,5 @@ $ cargo test -p tendermint-light-client --all-features
 [repo root]: https://github.com/informalsystems/tendermint-rs
 [quick start]: https://github.com/tendermint/tendermint/blob/master/docs/introduction/quick-start.md
 [Tendermint]: https://github.com/tendermint/tendermint
-[light-client-verification]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification/verification.md
-[light-client-detection]: https://github.com/informalsystems/tendermint-rs/tree/master/docs/spec/lightclient/detection
+[light-client-verification]: https://github.com/informalsystems/tendermint-rs/blob/main/docs/spec/lightclient/verification/verification.md
+[light-client-detection]: https://github.com/informalsystems/tendermint-rs/tree/main/docs/spec/lightclient/detection

@@ -25,4 +25,4 @@ See documentation on [crates.io][docs-link].
 [repo root]: https://github.com/informalsystems/tendermint-rs
 [quick start]: https://github.com/tendermint/tendermint/blob/master/docs/introduction/quick-start.md
 [Tendermint]: https://github.com/tendermint/tendermint
-[Light Client]: https://github.com/informalsystems/tendermint-rs/tree/master/light-client
+[Light Client]: https://github.com/informalsystems/tendermint-rs/tree/main/light-client
