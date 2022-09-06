@@ -111,6 +111,6 @@ limitations under the License.
 
 [//]: # (general links)
 
-[ABCI]: https://docs.tendermint.com/master/spec/abci/
+[ABCI]: https://github.com/tendermint/tendermint/tree/v0.34.x/spec/abci/
 [`Application`]: ./src/application.rs
 [tendermint-abci-spec]: https://github.com/tendermint/spec/blob/master/spec/abci/abci.md

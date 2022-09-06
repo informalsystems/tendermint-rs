@@ -116,5 +116,5 @@ limitations under the License.
 [tendermint-rpc-docs-link]: https://docs.rs/tendermint-rpc/
 [Tendermint]: https://github.com/tendermint/tendermint
 [tendermint-light-client-docs-link]: https://docs.rs/tendermint-light-client/
-[tendermint-secret-conn]: https://docs.tendermint.com/master/spec/p2p/peer.html#authenticated-encryption-handshake
+[tendermint-secret-conn]: https://github.com/tendermint/tendermint/blob/v0.34.x/spec/p2p/peer.md#authenticated-encryption-handshake
 [contributing]: ./CONTRIBUTING.md

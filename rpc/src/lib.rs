@@ -22,8 +22,8 @@
 //! [`MockClient`], which implements both [`Client`] and [`SubscriptionClient`]
 //! traits.
 //!
-//! [Tendermint RPC]: https://docs.tendermint.com/master/rpc/
-//! [`/subscribe` endpoint]: https://docs.tendermint.com/master/rpc/#/Websocket/subscribe
+//! [Tendermint RPC]: https://docs.tendermint.com/v0.34/rpc/
+//! [`/subscribe` endpoint]: https://docs.tendermint.com/v0.34/rpc/#/Websocket/subscribe
 
 #![no_std]
 

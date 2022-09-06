@@ -92,5 +92,5 @@ For example, the `rpc/tests/incoming/abci_info.json` file (returned by the
 The full JSON-RPC wrapper is saved to disk.
 
 [Tendermint]: https://github.com/tendermint/tendermint
-[Tendermint RPC]: https://docs.tendermint.com/master/rpc/
-[`abci_info`]: https://docs.tendermint.com/master/rpc/#/ABCI/abci_info
+[Tendermint RPC]: https://docs.tendermint.com/v0.34/rpc/
+[`abci_info`]: https://docs.tendermint.com/v0.34/rpc/#/ABCI/abci_info

@@ -2,7 +2,7 @@
 //!
 //! Implements the [Tendermint Socket Protocol][tsp].
 //!
-//! [tsp]: https://docs.tendermint.com/master/spec/abci/client-server.html#tsp
+//! [tsp]: https://github.com/tendermint/tendermint/blob/v0.34.x/spec/abci/client-server.md#tsp
 
 use std::{
     io::{Read, Write},
