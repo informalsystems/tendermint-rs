@@ -11,8 +11,8 @@ for the most recent version.
 
 This directory contains work-in-progress English and TLA+ specifications for the Light Client
 protocol. Implementations of the light client can be found in
-[Rust](https://github.com/informalsystems/tendermint-rs/tree/master/light-client) and
-[Go](https://github.com/tendermint/tendermint/tree/master/light).
+[Rust](https://github.com/informalsystems/tendermint-rs/tree/main/light-client) and
+[Go](https://github.com/tendermint/tendermint/tree/main/light).
 
 Light clients are assumed to be initialized once from a trusted source 
 with a trusted header and validator set. The light client
@@ -29,8 +29,8 @@ The light client is decomposed into three components:
 
 The [English specification](verification/verification.md) describes the light client
 commit verification problem in terms of the temporal properties
-[LCV-DIST-SAFE.1](https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification/verification.md#lcv-dist-safe1) and 
-[LCV-DIST-LIVE.1](https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification/verification.md#lcv-dist-live1). 
+[LCV-DIST-SAFE.1](https://github.com/informalsystems/tendermint-rs/blob/main/docs/spec/lightclient/verification/verification.md#lcv-dist-safe1) and 
+[LCV-DIST-LIVE.1](https://github.com/informalsystems/tendermint-rs/blob/main/docs/spec/lightclient/verification/verification.md#lcv-dist-live1). 
 Commit verification is assumed to operate within the Tendermint Failure Model, where +2/3 of validators are correct for some time period and
 validator sets can change arbitrarily at each height.
 

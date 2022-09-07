@@ -100,7 +100,7 @@ traits.
 - RPC [core types] in golang
   
 - RPC endpoints REST interface documentation:
-https://docs.tendermint.com/master/rpc/ 
+  <https://docs.tendermint.com/v0.34/rpc/>
 
 ## Testing
 
@@ -151,6 +151,6 @@ cargo test --all-features -- --ignored
 [tendermint]: https://github.com/tendermint/tendermint
 [core types]: https://github.com/tendermint/tendermint/blob/8b4a30fada85fccd8f0cb15009344f1cbd8de616/rpc/core/types/responses.go#L1
 [tendermint.rs]: https://crates.io/crates/tendermint
-[Tendermint RPC]: https://docs.tendermint.com/master/rpc/
-[`/subscribe` endpoint]: https://docs.tendermint.com/master/rpc/#/Websocket/subscribe
+[Tendermint RPC]: https://docs.tendermint.com/v0.34/rpc/
+[`/subscribe` endpoint]: https://docs.tendermint.com/v0.34/rpc/#/Websocket/subscribe
 [autogen-fixtures]: https://github.com/informalsystems/tendermint-rs/issues/612

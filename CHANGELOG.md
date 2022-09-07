@@ -30,7 +30,7 @@ resolved.
 
 This release focuses on ensuring compatibility with Tendermint v0.34.20, which
 introduces a [prioritized
-mempool](https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-067-mempool-refactor.md).
+mempool](https://github.com/tendermint/tendermint/blob/main/docs/architecture/adr-067-mempool-refactor.md).
 As per the release notes for `v0.23.8-pre.1`, this has a minor additive impact
 on the ABCI and RPC interfaces in the fields that the `CheckTx` response
 contains.
@@ -66,11 +66,11 @@ Pre-releases will continue along this line until v0.34.20 is released.
 
 ### FEATURES
 
-- `[tendermint-rpc]` Update `broadcast_tx_*` result to include
-  prioritized new mempool fields available from v0.34.20-rc0
-  ([#1148](https://github.com/informalsystems/tendermint-rs/issues/1148))
 - `[tendermint-proto]` Regenerate protos from Tendermint
   v0.34.20-rc0, including prioritized mempool fields in `ResponseCheckTx`
+  ([#1148](https://github.com/informalsystems/tendermint-rs/issues/1148))
+- `[tendermint-rpc]` Update `broadcast_tx_*` result to include
+  prioritized new mempool fields available from v0.34.20-rc0
   ([#1148](https://github.com/informalsystems/tendermint-rs/issues/1148))
 
 ## v0.23.7
@@ -228,23 +228,23 @@ not yet support `no_std`.
 - Upgraded Prost to the official v0.9 release to finally resolve the security
   issue introduced by v0.7
   ([#925](https://github.com/informalsystems/tendermint-rs/issues/925))
-- `[tendermint, tendermint-config]` The `tendermint::config`
-  module has now been broken out into its own crate (`tendermint-
-  config`) to help towards facilitating `no_std` compatibility
-  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
-- `[tendermint]` The `tendermint::node::info::OtherInfo::rpc_address`
-  field type has been changed from `tendermint::net::Address`
-  to `String` toward facilitating `no_std` compatibility
-  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
 - `[tendermint]` The `tendermint::node::info::ListenAddress::to_net_address`
   method was replaced with a simple `as_str` method toward facilitating
   `no_std` compatibility ([#983](https://github.com/informalsystems/tendermint-
   rs/issues/983))
+- `[tendermint]` The `tendermint::node::info::OtherInfo::rpc_address`
+  field type has been changed from `tendermint::net::Address`
+  to `String` toward facilitating `no_std` compatibility
+  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
+- `[tendermint, tendermint-config]` The `tendermint::config`
+  module has now been broken out into its own crate (`tendermint-
+  config`) to help towards facilitating `no_std` compatibility
+  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
 
 ### FEATURES
 
 - `[tendermint-rpc]` Add support for the `/block_search` RPC endpoint. See
-  <https://docs.tendermint.com/master/rpc/\#/Info/block_search> for details
+  <https://docs.tendermint.com/v0.34.x/rpc/\#/Info/block_search> for details
   ([#832](https://github.com/informalsystems/tendermint-rs/issues/832))
 
 ## v0.22.0
@@ -299,13 +299,13 @@ See below for more specific detail as to what has changed in this release.
 ### FEATURES
 
 - `[tendermint-rpc]` Add support for the `/consensus_params` RPC endpoint. See
-  <https://docs.tendermint.com/master/rpc/\#/Info/consensus_params> for details
+  <https://docs.tendermint.com/v0.34.x/rpc/\#/Info/consensus_params> for details
   ([#832](https://github.com/informalsystems/tendermint-rs/issues/832))
 - `[tendermint-rpc]` Runtime query parsing (relevant to the `/subscribe` and
   `/tx_search` endpoints) has been reintroduced. This allows for client-side
   validation of queries prior to submitting them to a remote Tendermint node. An
   example of how to use this is available in the `tendermint-rpc` CLI (see [the
-  README](https://github.com/informalsystems/tendermint-rs/tree/master/rpc#cli)
+  README](https://github.com/informalsystems/tendermint-rs/tree/main/rpc#cli)
   for details).
   ([#859](https://github.com/informalsystems/tendermint-rs/issues/859))
 - `[tendermint, tendermint-light-client]` Add support for Secp256k1 signatures
@@ -529,7 +529,7 @@ below.
 [#836]: https://github.com/informalsystems/tendermint-rs/issues/836
 [#839]: https://github.com/informalsystems/tendermint-rs/pull/839
 [#855]: https://github.com/informalsystems/tendermint-rs/pull/855
-[ABCI]: https://docs.tendermint.com/master/spec/abci/
+[ABCI]: https://github.com/tendermint/tendermint/tree/main/spec/abci/
 [`ibc-rs`]: https://github.com/informalsystems/ibc-rs
 [`rustls`]: https://github.com/ctz/rustls
 
@@ -621,7 +621,7 @@ Client's correct and reliable operation.
 
 This release is a significant breaking upgrade from v0.16.0 that primarily
 targets compatibility with
-[Tendermint v0.34](https://github.com/tendermint/tendermint/blob/master/UPGRADING.md#v0340)
+[Tendermint v0.34](https://github.com/tendermint/tendermint/blob/main/UPGRADING.md#v0340)
 and the [Cosmos Stargate release](https://stargate.cosmos.network/).
 
 To highlight some of the major changes over the course of 3 release candidates
@@ -630,7 +630,7 @@ and this release, we have:
 * Provided Tendermint v0.34.0 compatibility.
 * Supported the development of [ibc-rs](https://github.com/informalsystems/ibc-rs/).
 * Improved our model-based testing to provide complex test cases for the
-  [Light Client](https://github.com/informalsystems/tendermint-rs/tree/master/light-client#testing).
+  [Light Client](https://github.com/informalsystems/tendermint-rs/tree/main/light-client#testing).
 * Refactored our serialization infrastructure to remove all Amino types and
   ensure Protobuf compatibility (see the [proto crate](./proto)). This includes
   a lot of work towards clearly separating our domain types from their
@@ -639,7 +639,7 @@ and this release, we have:
   Tendermint full node.
 * Started work towards offering a WASM-based Tendermint Light Client.
 * Introduced a WebSocket-based RPC client for interacting with the
-  [Tendermint RPC](https://docs.tendermint.com/master/rpc/), including event
+  [Tendermint RPC](https://docs.tendermint.com/v0.34.x/rpc/), including event
   subscription.
 
 Please see the following detailed release notes, as well as the crate
@@ -696,7 +696,7 @@ documentation, for further details.
 - `[light-client]` Only require Tokio when `rpc-client` feature is enabled ([#425])
 - `[rpc]` A `WebSocketClient` is now provided to facilitate event
   subscription for a limited range of RPC events over a WebSocket connection.
-  See the [Tendermint `/subscribe` endpoint's](https://docs.tendermint.com/master/rpc/#/Websocket/subscribe)
+  See the [Tendermint `/subscribe` endpoint's](https://docs.tendermint.com/v0.34.x/rpc/#/Websocket/subscribe)
   and the `tendermint-rpc` crate's docs for more details ([#516])
 - `[rpc]` The subscription client interface provides a structured `Query`
   mechanism to help ensure compile-time validity of subscription queries.
@@ -783,7 +783,7 @@ documentation, for further details.
 [#739]: https://github.com/informalsystems/tendermint-rs/issues/739
 [#745]: https://github.com/informalsystems/tendermint-rs/issues/745
 [#752]: https://github.com/informalsystems/tendermint-rs/pull/752
-[P2P layer]: https://github.com/informalsystems/tendermint-rs/tree/master/p2p
+[P2P layer]: https://github.com/informalsystems/tendermint-rs/tree/main/p2p
 
 
 ## v0.16.0
@@ -827,8 +827,8 @@ preparing for compatibility with Tendermint Core v0.34 ([#508])
 
 - [light-client] Fix to reject headers from the future ([#474])
 
-[light-client-dir]: https://github.com/informalsystems/tendermint-rs/tree/master/light-client
-[testgen-dir]: https://github.com/informalsystems/tendermint-rs/tree/master/testgen
+[light-client-dir]: https://github.com/informalsystems/tendermint-rs/tree/main/light-client
+[testgen-dir]: https://github.com/informalsystems/tendermint-rs/tree/main/testgen
 
 [#466]: https://github.com/informalsystems/tendermint-rs/pull/466
 [#468]: https://github.com/informalsystems/tendermint-rs/pull/468
@@ -890,8 +890,8 @@ and [ADR-007].
 [#441]: https://github.com/informalsystems/tendermint-rs/pull/441
 [#451]: https://github.com/informalsystems/tendermint-rs/pull/451
 
-[ADR-006]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/architecture/adr-006-light-client-refactor.md
-[ADR-007]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/architecture/adr-007-light-client-supervisor-ergonomics.md
+[ADR-006]: https://github.com/informalsystems/tendermint-rs/blob/main/docs/architecture/adr-006-light-client-refactor.md
+[ADR-007]: https://github.com/informalsystems/tendermint-rs/blob/main/docs/architecture/adr-007-light-client-supervisor-ergonomics.md
 
 [lite-dir]: ./tendermint/src/lite
 [light-client-dir]: ./light-client
@@ -956,9 +956,9 @@ CI:
 
 [0.14.0]: https://github.com/informalsystems/tendermint-rs/pull/347
 [v0.33.x]: https://github.com/tendermint/tendermint/blob/v0.33.5/CHANGELOG.md#v0335
-[tendermint-rpc]: https://github.com/informalsystems/tendermint-rs/tree/master/rpc#tendermint-rpc
-[lite]: https://github.com/informalsystems/tendermint-rs/tree/master/tendermint/src/lite
-[light-client-dir]: https://github.com/informalsystems/tendermint-rs/tree/master/light-client
+[tendermint-rpc]: https://github.com/informalsystems/tendermint-rs/tree/main/rpc#tendermint-rpc
+[lite]: https://github.com/informalsystems/tendermint-rs/tree/main/tendermint/src/lite
+[light-client-dir]: https://github.com/informalsystems/tendermint-rs/tree/main/light-client
 
 ## [0.13.0] (2020-04-20)
 
@@ -1133,7 +1133,7 @@ This release is compatible with [tendermint v0.28]
 - Initial release
 
 [0.10.0]: https://github.com/tendermint/kms/pull/328
-[tendermint v0.32]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0320
+[tendermint v0.32]: https://github.com/tendermint/tendermint/blob/main/CHANGELOG.md#v0320
 [#326]: https://github.com/tendermint/kms/pull/326
 [#324]: https://github.com/tendermint/kms/pull/324
 [#315]: https://github.com/tendermint/kms/pull/315
@@ -1156,15 +1156,15 @@ This release is compatible with [tendermint v0.28]
 [#235]: https://github.com/tendermint/kms/pull/235
 [#234]: https://github.com/tendermint/kms/pull/234
 [0.6.0]: https://github.com/tendermint/kms/pull/229
-[tendermint v0.31]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0310
+[tendermint v0.31]: https://github.com/tendermint/tendermint/blob/main/CHANGELOG.md#v0310
 [#228]: https://github.com/tendermint/kms/pull/228
 [0.5.0]: https://github.com/tendermint/kms/pull/220
-[tendermint v0.30]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0300
+[tendermint v0.30]: https://github.com/tendermint/tendermint/blob/main/CHANGELOG.md#v0300
 [#219]: https://github.com/tendermint/kms/pull/219
 [#205]: https://github.com/tendermint/kms/pull/219
 [#181]: https://github.com/tendermint/kms/pull/181
-[tendermint v0.29]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0290
-[tendermint v0.28]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0280
+[tendermint v0.29]: https://github.com/tendermint/tendermint/blob/main/CHANGELOG.md#v0290
+[tendermint v0.28]: https://github.com/tendermint/tendermint/blob/main/CHANGELOG.md#v0280
 [#30]: https://github.com/interchainio/tendermint-rs/pull/30
 [#16]: https://github.com/interchainio/tendermint-rs/pull/16
 [#15]: https://github.com/interchainio/tendermint-rs/pull/15

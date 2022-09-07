@@ -29,7 +29,7 @@ impl Request {
     /// See the [Tendermint RPC] for the defaults for each option when set to
     /// `None`.
     ///
-    /// [Tendermint RPC]: https://docs.tendermint.com/master/rpc/#/Info/validators
+    /// [Tendermint RPC]: https://docs.tendermint.com/v0.34/rpc/#/Info/validators
     pub fn new(
         height: Option<block::Height>,
         page: Option<PageNumber>,

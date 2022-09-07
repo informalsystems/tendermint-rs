@@ -60,7 +60,7 @@ particulars of pubkey/signature/blockid/vote/etc. The lite client should be
 written generically, with its own traits, and the existing types made to
 implement them. 
 
-We should follow the [lite client spec closely](https://github.com/tendermint/tendermint/blob/master/docs/spec/consensus/light-client.md), and we should work in parallel on a TLA+ implementation.
+We should follow the [lite client spec closely](https://github.com/tendermint/tendermint/blob/main/docs/spec/consensus/light-client.md), and we should work in parallel on a TLA+ implementation.
 
 Note the spec assumes a function `signers(commit)`, which returns the validators
 for a given commit. In practice, the validator set itself is not in the commit,

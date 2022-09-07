@@ -44,7 +44,7 @@ where
 ///
 /// This type corresponds to the `ResponseDeliverTx` proto from:
 ///
-/// <https://github.com/tendermint/tendermint/blob/master/abci/types/types.proto>
+/// <https://github.com/tendermint/tendermint/blob/main/abci/types/types.proto>
 // TODO(tarcieri): generate this automatically from the proto
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DeliverTx {

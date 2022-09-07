@@ -3,7 +3,7 @@
 //!
 //! See the [repository] for details.
 //!
-//! [repository]: https://github.com/informalsystems/tendermint-rs/tree/master/testgen
+//! [repository]: https://github.com/informalsystems/tendermint-rs/tree/main/testgen
 
 #[macro_use]
 pub mod helpers;
