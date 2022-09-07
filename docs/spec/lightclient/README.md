@@ -12,7 +12,7 @@ for the most recent version.
 This directory contains work-in-progress English and TLA+ specifications for the Light Client
 protocol. Implementations of the light client can be found in
 [Rust](https://github.com/informalsystems/tendermint-rs/tree/main/light-client) and
-[Go](https://github.com/tendermint/tendermint/tree/master/light).
+[Go](https://github.com/tendermint/tendermint/tree/main/light).
 
 Light clients are assumed to be initialized once from a trusted source 
 with a trusted header and validator set. The light client

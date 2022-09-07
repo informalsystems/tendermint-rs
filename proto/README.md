@@ -47,4 +47,4 @@ limitations under the License.
 
 [//]: # (general links)
 
-[tendermint-go-proto-link]: https://github.com/tendermint/tendermint/tree/master/proto/tendermint
+[tendermint-go-proto-link]: https://github.com/tendermint/tendermint/tree/main/proto/tendermint

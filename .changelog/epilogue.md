@@ -188,7 +188,7 @@ Client's correct and reliable operation.
 
 This release is a significant breaking upgrade from v0.16.0 that primarily
 targets compatibility with
-[Tendermint v0.34](https://github.com/tendermint/tendermint/blob/master/UPGRADING.md#v0340)
+[Tendermint v0.34](https://github.com/tendermint/tendermint/blob/main/UPGRADING.md#v0340)
 and the [Cosmos Stargate release](https://stargate.cosmos.network/).
 
 To highlight some of the major changes over the course of 3 release candidates
@@ -700,7 +700,7 @@ This release is compatible with [tendermint v0.28]
 - Initial release
 
 [0.10.0]: https://github.com/tendermint/kms/pull/328
-[tendermint v0.32]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0320
+[tendermint v0.32]: https://github.com/tendermint/tendermint/blob/main/CHANGELOG.md#v0320
 [#326]: https://github.com/tendermint/kms/pull/326
 [#324]: https://github.com/tendermint/kms/pull/324
 [#315]: https://github.com/tendermint/kms/pull/315
@@ -723,15 +723,15 @@ This release is compatible with [tendermint v0.28]
 [#235]: https://github.com/tendermint/kms/pull/235
 [#234]: https://github.com/tendermint/kms/pull/234
 [0.6.0]: https://github.com/tendermint/kms/pull/229
-[tendermint v0.31]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0310
+[tendermint v0.31]: https://github.com/tendermint/tendermint/blob/main/CHANGELOG.md#v0310
 [#228]: https://github.com/tendermint/kms/pull/228
 [0.5.0]: https://github.com/tendermint/kms/pull/220
-[tendermint v0.30]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0300
+[tendermint v0.30]: https://github.com/tendermint/tendermint/blob/main/CHANGELOG.md#v0300
 [#219]: https://github.com/tendermint/kms/pull/219
 [#205]: https://github.com/tendermint/kms/pull/219
 [#181]: https://github.com/tendermint/kms/pull/181
-[tendermint v0.29]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0290
-[tendermint v0.28]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0280
+[tendermint v0.29]: https://github.com/tendermint/tendermint/blob/main/CHANGELOG.md#v0290
+[tendermint v0.28]: https://github.com/tendermint/tendermint/blob/main/CHANGELOG.md#v0280
 [#30]: https://github.com/interchainio/tendermint-rs/pull/30
 [#16]: https://github.com/interchainio/tendermint-rs/pull/16
 [#15]: https://github.com/interchainio/tendermint-rs/pull/15

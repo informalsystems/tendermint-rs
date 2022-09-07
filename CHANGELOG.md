@@ -30,7 +30,7 @@ resolved.
 
 This release focuses on ensuring compatibility with Tendermint v0.34.20, which
 introduces a [prioritized
-mempool](https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-067-mempool-refactor.md).
+mempool](https://github.com/tendermint/tendermint/blob/main/docs/architecture/adr-067-mempool-refactor.md).
 As per the release notes for `v0.23.8-pre.1`, this has a minor additive impact
 on the ABCI and RPC interfaces in the fields that the `CheckTx` response
 contains.
@@ -66,11 +66,11 @@ Pre-releases will continue along this line until v0.34.20 is released.
 
 ### FEATURES
 
-- `[tendermint-rpc]` Update `broadcast_tx_*` result to include
-  prioritized new mempool fields available from v0.34.20-rc0
-  ([#1148](https://github.com/informalsystems/tendermint-rs/issues/1148))
 - `[tendermint-proto]` Regenerate protos from Tendermint
   v0.34.20-rc0, including prioritized mempool fields in `ResponseCheckTx`
+  ([#1148](https://github.com/informalsystems/tendermint-rs/issues/1148))
+- `[tendermint-rpc]` Update `broadcast_tx_*` result to include
+  prioritized new mempool fields available from v0.34.20-rc0
   ([#1148](https://github.com/informalsystems/tendermint-rs/issues/1148))
 
 ## v0.23.7
@@ -228,18 +228,18 @@ not yet support `no_std`.
 - Upgraded Prost to the official v0.9 release to finally resolve the security
   issue introduced by v0.7
   ([#925](https://github.com/informalsystems/tendermint-rs/issues/925))
-- `[tendermint, tendermint-config]` The `tendermint::config`
-  module has now been broken out into its own crate (`tendermint-
-  config`) to help towards facilitating `no_std` compatibility
-  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
-- `[tendermint]` The `tendermint::node::info::OtherInfo::rpc_address`
-  field type has been changed from `tendermint::net::Address`
-  to `String` toward facilitating `no_std` compatibility
-  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
 - `[tendermint]` The `tendermint::node::info::ListenAddress::to_net_address`
   method was replaced with a simple `as_str` method toward facilitating
   `no_std` compatibility ([#983](https://github.com/informalsystems/tendermint-
   rs/issues/983))
+- `[tendermint]` The `tendermint::node::info::OtherInfo::rpc_address`
+  field type has been changed from `tendermint::net::Address`
+  to `String` toward facilitating `no_std` compatibility
+  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
+- `[tendermint, tendermint-config]` The `tendermint::config`
+  module has now been broken out into its own crate (`tendermint-
+  config`) to help towards facilitating `no_std` compatibility
+  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
 
 ### FEATURES
 
@@ -621,7 +621,7 @@ Client's correct and reliable operation.
 
 This release is a significant breaking upgrade from v0.16.0 that primarily
 targets compatibility with
-[Tendermint v0.34](https://github.com/tendermint/tendermint/blob/master/UPGRADING.md#v0340)
+[Tendermint v0.34](https://github.com/tendermint/tendermint/blob/main/UPGRADING.md#v0340)
 and the [Cosmos Stargate release](https://stargate.cosmos.network/).
 
 To highlight some of the major changes over the course of 3 release candidates
@@ -1133,7 +1133,7 @@ This release is compatible with [tendermint v0.28]
 - Initial release
 
 [0.10.0]: https://github.com/tendermint/kms/pull/328
-[tendermint v0.32]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0320
+[tendermint v0.32]: https://github.com/tendermint/tendermint/blob/main/CHANGELOG.md#v0320
 [#326]: https://github.com/tendermint/kms/pull/326
 [#324]: https://github.com/tendermint/kms/pull/324
 [#315]: https://github.com/tendermint/kms/pull/315
@@ -1156,15 +1156,15 @@ This release is compatible with [tendermint v0.28]
 [#235]: https://github.com/tendermint/kms/pull/235
 [#234]: https://github.com/tendermint/kms/pull/234
 [0.6.0]: https://github.com/tendermint/kms/pull/229
-[tendermint v0.31]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0310
+[tendermint v0.31]: https://github.com/tendermint/tendermint/blob/main/CHANGELOG.md#v0310
 [#228]: https://github.com/tendermint/kms/pull/228
 [0.5.0]: https://github.com/tendermint/kms/pull/220
-[tendermint v0.30]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0300
+[tendermint v0.30]: https://github.com/tendermint/tendermint/blob/main/CHANGELOG.md#v0300
 [#219]: https://github.com/tendermint/kms/pull/219
 [#205]: https://github.com/tendermint/kms/pull/219
 [#181]: https://github.com/tendermint/kms/pull/181
-[tendermint v0.29]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0290
-[tendermint v0.28]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0280
+[tendermint v0.29]: https://github.com/tendermint/tendermint/blob/main/CHANGELOG.md#v0290
+[tendermint v0.28]: https://github.com/tendermint/tendermint/blob/main/CHANGELOG.md#v0280
 [#30]: https://github.com/interchainio/tendermint-rs/pull/30
 [#16]: https://github.com/interchainio/tendermint-rs/pull/16
 [#15]: https://github.com/interchainio/tendermint-rs/pull/15

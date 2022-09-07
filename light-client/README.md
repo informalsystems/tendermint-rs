@@ -179,7 +179,7 @@ $ cargo test -p tendermint-light-client --all-features
 [//]: # (general links)
 
 [repo root]: https://github.com/informalsystems/tendermint-rs
-[quick start]: https://github.com/tendermint/tendermint/blob/master/docs/introduction/quick-start.md
+[quick start]: https://github.com/tendermint/tendermint/blob/main/docs/introduction/quick-start.md
 [Tendermint]: https://github.com/tendermint/tendermint
 [light-client-verification]: https://github.com/informalsystems/tendermint-rs/blob/main/docs/spec/lightclient/verification/verification.md
 [light-client-detection]: https://github.com/informalsystems/tendermint-rs/tree/main/docs/spec/lightclient/detection

@@ -59,7 +59,7 @@ Crates are released on [crates.io](https://crates.io).
 ## Contributing
 
 The Tendermint protocols are specified in English in the [tendermint/tendermint
-repo](https://github.com/tendermint/tendermint/tree/master/spec). Any protocol
+repo](https://github.com/tendermint/tendermint/tree/main/spec). Any protocol
 changes or clarifications should be contributed there.
 
 This repo contains the TLA+ specifications and Rust implementations for various

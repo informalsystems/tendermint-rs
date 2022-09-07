@@ -104,7 +104,7 @@ not fellow developers. Developers have much more context and care about more
 things than users do. Changelogs are for users.
 
 Changelog structure is modeled after [Tendermint
-Core](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md) and
+Core](https://github.com/tendermint/tendermint/blob/main/CHANGELOG.md) and
 [Hashicorp Consul](http://github.com/hashicorp/consul/tree/master/CHANGELOG.md).
 See those changelogs for examples.
 

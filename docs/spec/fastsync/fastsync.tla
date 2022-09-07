@@ -6,7 +6,7 @@
 
  In this document we give the high level specification of the fast sync
  protocol as implemented here:
- https://github.com/tendermint/tendermint/tree/master/blockchain/v2.
+ https://github.com/tendermint/tendermint/tree/main/blockchain/v2.
 
 We assume a system in which one node is trying to sync with the blockchain
 (replicated state machine) by downloading blocks from the set of full nodes

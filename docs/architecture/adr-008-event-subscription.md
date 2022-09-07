@@ -314,7 +314,7 @@ impl Query {
     // ...
 }
 
-// Derived from https://github.com/tendermint/tendermint/blob/master/types/events.go
+// Derived from https://github.com/tendermint/tendermint/blob/main/types/events.go
 pub enum EventType {
     NewBlock,
     NewBlockHeader,
