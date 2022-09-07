@@ -20,7 +20,7 @@ outlines the runtime and concurrency concerns.
 The basis for this work comes from the learnings of the [Reactor
 Experiments](https://github.com/informalsystems/reactor-experiments) as
 well as the [Blockchain Reactor
-Refactor](https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-043-blockchain-riri-org.md). The key take aways from that work are:
+Refactor](https://github.com/tendermint/tendermint/blob/main/docs/architecture/adr-043-blockchain-riri-org.md). The key take aways from that work are:
 
 1. Separate concerns into independently verifiable (by humans as well as
    computers) components.
@@ -210,5 +210,5 @@ Implemented:
 ## References
 
 * [Light Client Spec](https://github.com/tendermint/spec/tree/bucky/light-reorg/spec/consensus/light)
-* [Blockchain Reactor Refactor](https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-043-blockchain-riri-org.md)
+* [Blockchain Reactor Refactor](https://github.com/tendermint/tendermint/blob/main/docs/architecture/adr-043-blockchain-riri-org.md)
 * [Reactor Experiments](https://github.com/informalsystems/reactor-experiments)

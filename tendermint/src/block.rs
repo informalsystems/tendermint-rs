@@ -33,7 +33,7 @@ use crate::{abci::transaction, error::Error, evidence, prelude::*};
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#block>
 // Default serialization - all fields serialize; used by /block endpoint
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct Block {
     /// Block header

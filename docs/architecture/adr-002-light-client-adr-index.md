@@ -66,5 +66,5 @@ specification][english-spec], is provided below:
 
 [english-spec]: https://github.com/tendermint/spec/tree/bucky/light-reorg/spec/consensus/light
 [tla-spec]: https://github.com/interchainio/verification/tree/igor/lite/spec/light-client
-[go-impl]: https://github.com/tendermint/tendermint/tree/master/lite2
+[go-impl]: https://github.com/tendermint/tendermint/tree/main/lite2
 [rust-impl]: https://github.com/interchainio/tendermint-rs/tree/master/tendermint-lite

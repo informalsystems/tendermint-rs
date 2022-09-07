@@ -7,7 +7,7 @@ on:
     paths-ignore:
       - "docs/**"
     branches:
-      - master
+      - main
       - 'v*.*.*'
 jobs:
   cleanup-runs:
@@ -16,7 +16,7 @@ jobs:
       - uses: rokroskar/workflow-run-cleanup-action@master
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-    if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master'"
+    if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/main'"
 
   tendermint:
     runs-on: ubuntu-latest

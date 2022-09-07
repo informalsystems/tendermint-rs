@@ -13,7 +13,7 @@ use super::Proposal;
 use crate::{chain::Id as ChainId, error::Error, prelude::*};
 
 /// SignProposalRequest is a request to sign a proposal
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct SignProposalRequest {
     /// Proposal
     pub proposal: Proposal,

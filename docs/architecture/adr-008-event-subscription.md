@@ -314,7 +314,7 @@ impl Query {
     // ...
 }
 
-// Derived from https://github.com/tendermint/tendermint/blob/master/types/events.go
+// Derived from https://github.com/tendermint/tendermint/blob/main/types/events.go
 pub enum EventType {
     NewBlock,
     NewBlockHeader,
@@ -342,7 +342,7 @@ pub enum Condition {
     Exists(String),
 }
 
-// According to https://docs.tendermint.com/master/rpc/#/Websocket/subscribe,
+// According to https://docs.tendermint.com/v0.34/rpc/#/Websocket/subscribe,
 // an operand can be a string, number, date or time. We differentiate here
 // between integer and floating point numbers.
 //
@@ -463,7 +463,7 @@ None
 * [\#458][pr-458]
 * [Tendermint RPC subscription endpoint][tm-event-subs]
 
-[tm-event-subs]: https://docs.tendermint.com/master/rpc/#/Websocket/subscribe
+[tm-event-subs]: https://docs.tendermint.com/v0.34/rpc/#/Websocket/subscribe
 [client]: https://github.com/informalsystems/tendermint-rs/blob/06ed36eaf7a74c0357b86d1d7450a2fec52ed6a0/rpc/src/client.rs#L20
 [query-peg]: https://github.com/tendermint/tendermint/blob/98c595312af02037843b8fe74f0ee0625665448e/libs/pubsub/query/query.peg
 [tm-go-query]: https://github.com/tendermint/tendermint/blob/98c595312af02037843b8fe74f0ee0625665448e/libs/pubsub/pubsub.go#L64

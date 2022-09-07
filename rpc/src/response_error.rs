@@ -19,7 +19,7 @@ pub struct ResponseError {
 // /// Tendermint RPC error codes.
 // ///
 /// See `func RPC*Error()` definitions in:
-/// <https://github.com/tendermint/tendermint/blob/master/rpc/jsonrpc/types/types.go>
+/// <https://github.com/tendermint/tendermint/blob/main/rpc/jsonrpc/types/types.go>
 #[derive(Copy, Clone, Debug, Eq, thiserror::Error, Hash, PartialEq, PartialOrd, Ord)]
 pub enum Code {
     /// Low-level HTTP error
@@ -35,7 +35,7 @@ pub enum Code {
     /// This is an error unique to this client, and is not available in the
     /// [Go client].
     ///
-    /// [Go client]: https://github.com/tendermint/tendermint/tree/master/rpc/jsonrpc/client
+    /// [Go client]: https://github.com/tendermint/tendermint/tree/main/rpc/jsonrpc/client
     #[error("Client internal error")]
     ClientInternalError,
 

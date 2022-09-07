@@ -19,7 +19,7 @@ When you run `cargo test` some machinery will run under the hood, namely:
   For that translation two other components are necessary:
   * [Jsonatr (JSON Arrifact Translator)](https://github.com/informalsystems/jsonatr) 
     performs the translation by executing this [transformation spec](_jsonatr-lib/apalache_to_lite_test.json);
-  * [Tendermint Testgen](https://github.com/informalsystems/tendermint-rs/tree/master/testgen)
+  * [Tendermint Testgen](https://github.com/informalsystems/tendermint-rs/tree/main/testgen)
   takes care of translating abstract values from the model into the concrete implementation values.
 * `timeout` command is used to limit the test execution time.
 

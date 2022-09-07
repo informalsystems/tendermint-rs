@@ -54,7 +54,7 @@ use crate::{prelude::*, Error};
 /// assert_eq!(query, Query::from(EventType::Tx).and_gte("tx.height", 100_u64));
 /// ```
 ///
-/// [subscribe endpoint documentation]: https://docs.tendermint.com/master/rpc/#/Websocket/subscribe
+/// [subscribe endpoint documentation]: https://docs.tendermint.com/v0.34/rpc/#/Websocket/subscribe
 #[derive(Debug, Clone, PartialEq)]
 pub struct Query {
     // We can only have at most one event type at present in a query.
@@ -394,7 +394,7 @@ where
 }
 
 /// The types of Tendermint events for which we can query at present.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EventType {
     NewBlock,
     Tx,
@@ -463,7 +463,7 @@ impl fmt::Display for Condition {
 /// between integer and floating point numbers.
 ///
 /// [`Condition`]: enum.Condition.html
-/// [tm-subscribe]: https://docs.tendermint.com/master/rpc/#/Websocket/subscribe
+/// [tm-subscribe]: https://docs.tendermint.com/v0.34/rpc/#/Websocket/subscribe
 #[derive(Debug, Clone, PartialEq)]
 pub enum Operand {
     String(String),

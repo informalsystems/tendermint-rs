@@ -59,7 +59,7 @@ Crates are released on [crates.io](https://crates.io).
 ## Contributing
 
 The Tendermint protocols are specified in English in the [tendermint/tendermint
-repo](https://github.com/tendermint/tendermint/tree/master/spec). Any protocol
+repo](https://github.com/tendermint/tendermint/tree/main/spec). Any protocol
 changes or clarifications should be contributed there.
 
 This repo contains the TLA+ specifications and Rust implementations for various
@@ -116,5 +116,5 @@ limitations under the License.
 [tendermint-rpc-docs-link]: https://docs.rs/tendermint-rpc/
 [Tendermint]: https://github.com/tendermint/tendermint
 [tendermint-light-client-docs-link]: https://docs.rs/tendermint-light-client/
-[tendermint-secret-conn]: https://docs.tendermint.com/master/spec/p2p/peer.html#authenticated-encryption-handshake
+[tendermint-secret-conn]: https://github.com/tendermint/tendermint/blob/v0.34.x/spec/p2p/peer.md#authenticated-encryption-handshake
 [contributing]: ./CONTRIBUTING.md

@@ -154,8 +154,8 @@ set hash) from commits to the header itself (ie. the header hash), but that's
 left for the future.
 
 For more background on implementation of Tendermint commits and votes, see:
-- [ADR-025](https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-025-commit.md)
-- [Validator Signing Spec](https://github.com/tendermint/tendermint/blob/master/docs/spec/consensus/signing.md)
+- [ADR-025](https://github.com/tendermint/tendermint/blob/main/docs/architecture/adr-025-commit.md)
+- [Validator Signing Spec](https://github.com/tendermint/tendermint/blob/main/docs/spec/consensus/signing.md)
 - [Tendermint consensus specification](https://arxiv.org/abs/1807.04938)
 
 ### Validator Set

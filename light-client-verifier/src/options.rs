@@ -1,6 +1,6 @@
 //! Light client implementation as per the [Core Verification specification][1].
 //!
-//! [1]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification/verification.md
+//! [1]: https://github.com/informalsystems/tendermint-rs/blob/main/docs/spec/lightclient/verification/verification.md
 
 use core::time::Duration;
 
@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::types::TrustThreshold;
 
 /// Verification parameters
-#[derive(Copy, Clone, Debug, PartialEq, Display, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Display, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct Options {
     /// Defines what fraction of the total voting power of a known

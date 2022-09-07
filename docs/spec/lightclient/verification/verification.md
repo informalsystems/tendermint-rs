@@ -1180,7 +1180,7 @@ func Main (primary PeerID, lightStore LightStore, targetHeight Height)
 
 [[lightclient]] The light client ADR [77d2651 on Dec 27, 2019].
 
-[RPC]: https://docs.tendermint.com/master/rpc/
+[RPC]: https://docs.tendermint.com/v0.34/rpc/
 
 [block]: https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md
 
@@ -1195,7 +1195,7 @@ func Main (primary PeerID, lightStore LightStore, targetHeight Height)
 [TMBC-SOUND-DISTR-POSS-COMMIT-link]: #tmbc-sound-distr-poss-commit1
 
 [lightclient]: https://github.com/interchainio/tendermint-rs/blob/e2cb9aca0b95430fca2eac154edddc9588038982/docs/architecture/adr-002-lite-client.md
-[fork-detector]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/detection.md
+[fork-detector]: https://github.com/informalsystems/tendermint-rs/blob/main/docs/spec/lightclient/detection.md
 [fullnode]: https://github.com/tendermint/spec/blob/master/spec/blockchain/fullnode.md
 
 [ibc-rs]:https://github.com/informalsystems/ibc-rs

@@ -13,7 +13,7 @@ use crate::{prelude::*, query::EventType, response::Wrapper, Response};
 /// An incoming event produced by a [`Subscription`].
 ///
 /// [`Subscription`]: ../struct.Subscription.html
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Event {
     /// The query that produced the event.
     pub query: String,
@@ -40,7 +40,7 @@ impl Event {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(tag = "type", content = "value")]
 // To be fixed in 0.24
 #[allow(clippy::large_enum_variant)]
@@ -60,7 +60,7 @@ pub enum EventData {
 }
 
 /// Transaction result info.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct TxInfo {
     #[serde(with = "tendermint_proto::serializers::from_str")]
     pub height: i64,
@@ -71,7 +71,7 @@ pub struct TxInfo {
 }
 
 /// Transaction result.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct TxResult {
     pub log: Option<String>,
     pub gas_wanted: Option<String>,

@@ -406,7 +406,7 @@ Here we provide a specification of the FastSync V2 protocol as it is currently
 implemented. The V2 design is the result of significant refactoring to improve
 the testability and determinism in the implementation. The architecture is
 detailed in
-[ADR-43](https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-043-blockchain-riri-org.md).
+[ADR-43](https://github.com/tendermint/tendermint/blob/main/docs/architecture/adr-043-blockchain-riri-org.md).
 
 In the original design, a go-routine (thread of execution) was spawned for each block requested, and
 was responsible for both protocol logic and IO. In the V2 design, protocol logic

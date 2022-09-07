@@ -106,11 +106,11 @@ limitations under the License.
 [audit-image]: https://github.com/informalsystems/tendermint-rs/workflows/Audit-Check/badge.svg
 [audit-link]: https://github.com/informalsystems/tendermint-rs/actions?query=workflow%3AAudit-Check
 [license-image]: https://img.shields.io/badge/license-Apache2.0-blue.svg
-[license-link]: https://github.com/informalsystems/tendermint-rs/blob/master/LICENSE
+[license-link]: https://github.com/informalsystems/tendermint-rs/blob/main/LICENSE
 [rustc-image]: https://img.shields.io/badge/rustc-stable-blue.svg
 
 [//]: # (general links)
 
-[ABCI]: https://docs.tendermint.com/master/spec/abci/
+[ABCI]: https://github.com/tendermint/tendermint/tree/v0.34.x/spec/abci/
 [`Application`]: ./src/application.rs
 [tendermint-abci-spec]: https://github.com/tendermint/spec/blob/master/spec/abci/abci.md
