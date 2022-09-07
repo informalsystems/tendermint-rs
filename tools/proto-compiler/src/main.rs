@@ -64,9 +64,8 @@ fn main() {
     for field_attribute in CUSTOM_FIELD_ATTRIBUTES {
         pb.field_attribute(field_attribute.0, field_attribute.1);
     }
-    pb.compile_well_known_types();
-    // The below in-place path redirection removes the Duration and Timestamp structs from
-    // google.protobuf.rs. We replace them with our own versions that have valid doctest comments.
+    // The below in-place path redirection replaces references to the Duration
+    // and Timestamp WKTs with our own versions that have valid doctest comments.
     // See also https://github.com/danburkert/prost/issues/374 .
     pb.extern_path(
         ".google.protobuf.Duration",

@@ -14,7 +14,6 @@ mod prelude;
 #[allow(warnings)]
 pub mod google {
     pub mod protobuf {
-        include!("prost/google.protobuf.rs");
         // custom Timeout and Duration types that have valid doctest documentation texts
         include!("protobuf.rs");
     }
