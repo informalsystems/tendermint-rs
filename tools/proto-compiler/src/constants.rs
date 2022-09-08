@@ -2,11 +2,30 @@
 
 /// Tendermint repository URL.
 pub const TENDERMINT_REPO: &str = "https://github.com/tendermint/tendermint";
-// Commitish formats:
-// Tag: v0.34.0-rc4
-// Branch: master
-// Commit ID (full length): d7d0ffea13c60c98b812d243ba5a2c375f341c15
-pub const TENDERMINT_COMMITISH: &str = "v0.37.0-alpha.1";
+
+/// Information on a Tendermint snapshot to generate prost structures from.
+pub struct TendermintVersion {
+    /// Identifier to use in module names.
+    pub ident: &'static str,
+    /// A commitish reference in the tendermint git repository, for example:
+    ///
+    /// - Tag: `v0.34.0-rc4`
+    /// - Branch: `main`
+    /// - Commit ID (full length): `d7d0ffea13c60c98b812d243ba5a2c375f341c15`
+    pub commitish: &'static str,
+}
+
+/// All Tendermint versions to generate code for
+pub const TENDERMINT_VERSIONS: &[TendermintVersion] = &[
+    TendermintVersion {
+        ident: "v0_34",
+        commitish: "v0.34.21",
+    },
+    TendermintVersion {
+        ident: "v0_37",
+        commitish: "v0.37.0-alpha.1",
+    },
+];
 
 /// Predefined custom attributes for message annotations
 const PRIMITIVE_ENUM: &str = r#"#[derive(::num_derive::FromPrimitive, ::num_derive::ToPrimitive)]"#;

@@ -1,33 +1,24 @@
-use std::{env::var, path::PathBuf, process};
+use std::{
+    env::var,
+    path::{Path, PathBuf},
+    process,
+};
 
 use tempfile::tempdir;
 
 mod functions;
-use functions::{copy_files, find_proto_files, generate_tendermint_lib, get_commitish};
+use functions::{
+    copy_files, find_proto_files, generate_tendermint_lib, generate_tendermint_mod, get_commitish,
+};
 
 mod constants;
 use constants::{
-    CUSTOM_FIELD_ATTRIBUTES, CUSTOM_TYPE_ATTRIBUTES, TENDERMINT_COMMITISH, TENDERMINT_REPO,
+    CUSTOM_FIELD_ATTRIBUTES, CUSTOM_TYPE_ATTRIBUTES, TENDERMINT_REPO, TENDERMINT_VERSIONS,
 };
 
 fn main() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let tendermint_lib_target = root
-        .join("..")
-        .join("..")
-        .join("proto")
-        .join("src")
-        .join("tendermint.rs");
-    let target_dir = root
-        .join("..")
-        .join("..")
-        .join("proto")
-        .join("src")
-        .join("prost");
-    let out_dir = var("OUT_DIR")
-        .map(PathBuf::from)
-        .or_else(|_| tempdir().map(|d| d.into_path()))
-        .unwrap();
+    let target_dir = ["..", "..", "proto", "src"].iter().collect::<PathBuf>();
     let tendermint_dir = PathBuf::from(var("TENDERMINT_DIR").unwrap_or_else(|_| {
         root.join("..")
             .join("target")
@@ -37,60 +28,70 @@ fn main() {
             .to_string()
     }));
 
-    println!(
-        "[info] => Fetching {} at {} into {:?}",
-        TENDERMINT_REPO, TENDERMINT_COMMITISH, tendermint_dir
-    );
-    get_commitish(
-        &PathBuf::from(&tendermint_dir),
-        TENDERMINT_REPO,
-        TENDERMINT_COMMITISH,
-    ); // This panics if it fails.
+    for version in TENDERMINT_VERSIONS {
+        println!(
+            "[info] => Fetching {} at {} into {:?}",
+            TENDERMINT_REPO, &version.commitish, tendermint_dir
+        );
+        get_commitish(&tendermint_dir, TENDERMINT_REPO, &version.commitish); // This panics if it fails.
 
-    let proto_paths = vec![tendermint_dir.join("proto")];
-    let proto_includes_paths = vec![
-        tendermint_dir.join("proto"),
-        tendermint_dir.join("third_party").join("proto"),
-    ];
-    // List available proto files
-    let protos = find_proto_files(proto_paths);
+        let proto_paths = vec![tendermint_dir.join("proto")];
+        let proto_includes_paths = vec![
+            tendermint_dir.join("proto"),
+            tendermint_dir.join("third_party").join("proto"),
+        ];
+        // List available proto files
+        let protos = find_proto_files(proto_paths);
 
-    let mut pb = prost_build::Config::new();
+        let ver_target_dir = target_dir.join("prost").join(&version.ident);
+        let ver_module_dir = target_dir.join("tendermint");
 
-    // Use shared Bytes buffers for ABCI messages:
-    pb.bytes(&[".tendermint.abci"]);
+        let out_dir = var("OUT_DIR")
+            .map(|d| Path::new(&d).join(&version.ident))
+            .or_else(|_| tempdir().map(|d| d.into_path()))
+            .unwrap();
 
-    // Compile proto files with added annotations, exchange prost_types to our own
-    pb.out_dir(&out_dir);
-    for type_attribute in CUSTOM_TYPE_ATTRIBUTES {
-        pb.type_attribute(type_attribute.0, type_attribute.1);
+        let mut pb = prost_build::Config::new();
+
+        // Use shared Bytes buffers for ABCI messages:
+        pb.bytes(&[".tendermint.abci"]);
+
+        // Compile proto files with added annotations, exchange prost_types to our own
+        pb.out_dir(&out_dir);
+        for type_attribute in CUSTOM_TYPE_ATTRIBUTES {
+            pb.type_attribute(type_attribute.0, type_attribute.1);
+        }
+        for field_attribute in CUSTOM_FIELD_ATTRIBUTES {
+            pb.field_attribute(field_attribute.0, field_attribute.1);
+        }
+        // The below in-place path redirection replaces references to the Duration
+        // and Timestamp WKTs with our own versions that have valid doctest comments.
+        // See also https://github.com/danburkert/prost/issues/374 .
+        pb.extern_path(
+            ".google.protobuf.Duration",
+            "crate::google::protobuf::Duration",
+        );
+        pb.extern_path(
+            ".google.protobuf.Timestamp",
+            "crate::google::protobuf::Timestamp",
+        );
+        println!("[info] => Creating structs.");
+        match pb.compile_protos(&protos, &proto_includes_paths) {
+            Ok(()) => {},
+            Err(e) => {
+                eprintln!("{}", e);
+                process::exit(1);
+            },
+        }
+
+        println!(
+            "[info] => Removing old structs and copying new structs to {}",
+            ver_target_dir.to_string_lossy(),
+        );
+        copy_files(&out_dir, &ver_target_dir); // This panics if it fails.
+        generate_tendermint_mod(&out_dir, &version, &ver_module_dir);
     }
-    for field_attribute in CUSTOM_FIELD_ATTRIBUTES {
-        pb.field_attribute(field_attribute.0, field_attribute.1);
-    }
-    // The below in-place path redirection replaces references to the Duration
-    // and Timestamp WKTs with our own versions that have valid doctest comments.
-    // See also https://github.com/danburkert/prost/issues/374 .
-    pb.extern_path(
-        ".google.protobuf.Duration",
-        "super::super::google::protobuf::Duration",
-    );
-    pb.extern_path(
-        ".google.protobuf.Timestamp",
-        "super::super::google::protobuf::Timestamp",
-    );
-    println!("[info] => Creating structs.");
-    match pb.compile_protos(&protos, &proto_includes_paths) {
-        Ok(()) => {},
-        Err(e) => {
-            eprintln!("{}", e);
-            process::exit(1);
-        },
-    }
-
-    println!("[info] => Removing old structs and copying new structs.");
-    copy_files(&out_dir, &target_dir); // This panics if it fails.
-    generate_tendermint_lib(&out_dir, &tendermint_lib_target);
+    generate_tendermint_lib(TENDERMINT_VERSIONS, &target_dir.join("tendermint.rs"));
 
     println!("[info] => Done!");
 }

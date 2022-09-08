@@ -12,6 +12,8 @@ use git2::{
 use subtle_encoding::hex;
 use walkdir::WalkDir;
 
+use crate::constants::TendermintVersion;
+
 /// Clone or open+fetch a repository and check out a specific commitish
 /// In case of an existing repository, the origin remote will be set to `url`.
 pub fn get_commitish(dir: &Path, url: &str, commitish: &str) {
@@ -208,8 +210,10 @@ pub fn find_proto_files(proto_paths: Vec<PathBuf>) -> Vec<PathBuf> {
     protos
 }
 
-/// Create tendermint.rs with library information
-pub fn generate_tendermint_lib(prost_dir: &Path, tendermint_lib_target: &Path) {
+/// Create a module including generated content for the specified
+/// Tendermint source version.
+pub fn generate_tendermint_mod(prost_dir: &Path, version: &TendermintVersion, target_dir: &Path) {
+    create_dir_all(target_dir).unwrap();
     let file_names = WalkDir::new(prost_dir)
         .into_iter()
         .filter_map(|e| e.ok())
@@ -239,8 +243,9 @@ pub fn generate_tendermint_lib(prost_dir: &Path, tendermint_lib_target: &Path) {
         let mut tab_count = parts.len();
 
         let mut inner_content = format!(
-            "{}include!(\"prost/{}\");",
+            "{}include!(\"../prost/{}/{}\");",
             tab.repeat(tab_count),
+            &version.ident,
             file_name
         );
 
@@ -263,11 +268,22 @@ pub fn generate_tendermint_lib(prost_dir: &Path, tendermint_lib_target: &Path) {
         tab,
         crate::constants::TENDERMINT_REPO,
         tab,
-        crate::constants::TENDERMINT_COMMITISH,
+        &version.commitish,
     );
 
+    let tendermint_mod_target = target_dir.join(format!("{}.rs", version.ident));
+    let mut file =
+        File::create(tendermint_mod_target).expect("tendermint module file create failed");
+    file.write_all(content.as_bytes())
+        .expect("tendermint module file write failed");
+}
+
+pub fn generate_tendermint_lib(versions: &[TendermintVersion], tendermint_lib_target: &Path) {
     let mut file =
         File::create(tendermint_lib_target).expect("tendermint library file create failed");
-    file.write_all(content.as_bytes())
-        .expect("tendermint library file write failed");
+    for version in versions {
+        writeln!(&mut file, "pub mod {};", version.ident).unwrap();
+    }
+    let last_version = versions.last().unwrap();
+    writeln!(&mut file, "pub use {}::*;", last_version.ident).unwrap();
 }
