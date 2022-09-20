@@ -12,10 +12,7 @@ use tendermint_proto::abci::{
 };
 use tracing::{debug, info};
 
-use crate::{
-    codec::{encode_varint, MAX_VARINT_LENGTH},
-    Application, Error,
-};
+use crate::{codec::MAX_VARINT_LENGTH, Application, Error};
 
 /// In-memory, hashmap-backed key/value store ABCI application.
 ///
