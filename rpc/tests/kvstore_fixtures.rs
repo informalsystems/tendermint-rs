@@ -1162,19 +1162,7 @@ fn incoming_fixtures() {
                 } else {
                     panic!("not a tx");
                 }
-                for (k, v) in result.events.unwrap() {
-                    assert_eq!(v.len(), 1);
-                    match k.as_str() {
-                        "app.creator" => assert_eq!(v[0], "Cosmoshi Netowoko"),
-                        "app.index_key" => assert_eq!(v[0], "index is working"),
-                        "app.key" => assert_eq!(v[0], "tx0"),
-                        "app.noindex_key" => assert_eq!(v[0], "index is working"),
-                        "tm.event" => assert_eq!(v[0], "Tx"),
-                        "tx.hash" => assert_eq!(v[0].len(), 64),
-                        "tx.height" => assert_eq!(v[0], height.to_string()),
-                        _ => panic!("unknown event found {}", k),
-                    }
-                }
+                check_event_attrs(&result.events.unwrap(), "tx0", height);
                 assert_eq!(result.query, "tm.event = 'Tx'");
             },
             "subscribe_txs_1" => {
@@ -1206,19 +1194,8 @@ fn incoming_fixtures() {
                 } else {
                     panic!("not a tx");
                 }
-                for (k, v) in result.events.unwrap() {
-                    assert_eq!(v.len(), 1);
-                    match k.as_str() {
-                        "app.creator" => assert_eq!(v[0], "Cosmoshi Netowoko"),
-                        "app.index_key" => assert_eq!(v[0], "index is working"),
-                        "app.key" => assert_eq!(v[0], "tx1"),
-                        "app.noindex_key" => assert_eq!(v[0], "index is working"),
-                        "tm.event" => assert_eq!(v[0], "Tx"),
-                        "tx.hash" => assert_eq!(v[0].len(), 64),
-                        "tx.height" => assert_eq!(v[0], height.to_string()),
-                        _ => panic!("unknown event found {}", k),
-                    }
-                }
+
+                check_event_attrs(&result.events.unwrap(), "tx1", height);
                 assert_eq!(result.query, "tm.event = 'Tx'");
             },
             "subscribe_txs_2" => {
@@ -1250,19 +1227,7 @@ fn incoming_fixtures() {
                 } else {
                     panic!("not a tx");
                 }
-                for (k, v) in result.events.unwrap() {
-                    assert_eq!(v.len(), 1);
-                    match k.as_str() {
-                        "app.creator" => assert_eq!(v[0], "Cosmoshi Netowoko"),
-                        "app.index_key" => assert_eq!(v[0], "index is working"),
-                        "app.key" => assert_eq!(v[0], "tx2"),
-                        "app.noindex_key" => assert_eq!(v[0], "index is working"),
-                        "tm.event" => assert_eq!(v[0], "Tx"),
-                        "tx.hash" => assert_eq!(v[0].len(), 64),
-                        "tx.height" => assert_eq!(v[0], height.to_string()),
-                        _ => panic!("unknown event found {}", k),
-                    }
-                }
+                check_event_attrs(&result.events.unwrap(), "tx2", height);
                 assert_eq!(result.query, "tm.event = 'Tx'");
             },
             "subscribe_txs_3" => {
@@ -1294,19 +1259,7 @@ fn incoming_fixtures() {
                 } else {
                     panic!("not a tx");
                 }
-                for (k, v) in result.events.unwrap() {
-                    assert_eq!(v.len(), 1);
-                    match k.as_str() {
-                        "app.creator" => assert_eq!(v[0], "Cosmoshi Netowoko"),
-                        "app.index_key" => assert_eq!(v[0], "index is working"),
-                        "app.key" => assert_eq!(v[0], "tx3"),
-                        "app.noindex_key" => assert_eq!(v[0], "index is working"),
-                        "tm.event" => assert_eq!(v[0], "Tx"),
-                        "tx.hash" => assert_eq!(v[0].len(), 64),
-                        "tx.height" => assert_eq!(v[0], height.to_string()),
-                        _ => panic!("unknown event found {}", k),
-                    }
-                }
+                check_event_attrs(&result.events.unwrap(), "tx3", height);
                 assert_eq!(result.query, "tm.event = 'Tx'");
             },
             "subscribe_txs_4" => {
@@ -1338,19 +1291,7 @@ fn incoming_fixtures() {
                 } else {
                     panic!("not a tx");
                 }
-                for (k, v) in result.events.unwrap() {
-                    assert_eq!(v.len(), 1);
-                    match k.as_str() {
-                        "app.creator" => assert_eq!(v[0], "Cosmoshi Netowoko"),
-                        "app.index_key" => assert_eq!(v[0], "index is working"),
-                        "app.key" => assert_eq!(v[0], "tx4"),
-                        "app.noindex_key" => assert_eq!(v[0], "index is working"),
-                        "tm.event" => assert_eq!(v[0], "Tx"),
-                        "tx.hash" => assert_eq!(v[0].len(), 64),
-                        "tx.height" => assert_eq!(v[0], height.to_string()),
-                        _ => panic!("unknown event found {}", k),
-                    }
-                }
+                check_event_attrs(&result.events.unwrap(), "tx4", height);
                 assert_eq!(result.query, "tm.event = 'Tx'");
             },
             "subscribe_txs_broadcast_tx_0" => {
@@ -1462,6 +1403,32 @@ fn incoming_fixtures() {
             _ => {
                 panic!("cannot parse file name: {}", file_name);
             },
+        }
+    }
+}
+
+fn check_event_attrs(events: &[tendermint_rpc::abci::Event], app_key: &str, height: i64) {
+    for event in events {
+        for attr in &event.attributes {
+            match event.type_str.as_ref() {
+                "app" => match attr.key.as_ref() {
+                    "creator" => assert_eq!(attr.value.as_ref(), "Cosmoshi Netowoko"),
+                    "index_key" => assert_eq!(attr.value.as_ref(), "index is working"),
+                    "key" => assert_eq!(attr.value.as_ref(), app_key),
+                    "noindex_key" => assert_eq!(attr.value.as_ref(), "index is working"),
+                    _ => panic!("unrecognized app attribute found \"{}\"", attr.key),
+                },
+                "tx" => match attr.key.as_ref() {
+                    "hash" => assert_eq!(attr.value.as_ref().len(), 64),
+                    "height" => assert_eq!(attr.value.as_ref(), height.to_string()),
+                    _ => panic!("unrecognized tx attribute found \"{}\"", attr.key),
+                },
+                "tm" => match attr.key.as_ref() {
+                    "event" => assert_eq!(attr.value.as_ref(), "Tx"),
+                    _ => panic!("unrecognized tm attribute found \"{}\"", attr.key),
+                },
+                _ => panic!("unrecognized event type found \"{}\"", event.type_str),
+            }
         }
     }
 }
