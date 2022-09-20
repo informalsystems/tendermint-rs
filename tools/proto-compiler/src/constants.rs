@@ -21,8 +21,7 @@ const HEXSTRING: &str = r#"#[serde(with = "crate::serializers::bytes::hexstring"
 const BASE64STRING: &str = r#"#[serde(with = "crate::serializers::bytes::base64string")]"#;
 const VEC_BASE64STRING: &str = r#"#[serde(with = "crate::serializers::bytes::vec_base64string")]"#;
 const OPTIONAL: &str = r#"#[serde(with = "crate::serializers::optional")]"#;
-const VEC_SKIP_IF_EMPTY: &str =
-    r#"#[serde(skip_serializing_if = "::prost::alloc::vec::Vec::is_empty", with = "serde_bytes")]"#;
+const BYTES_SKIP_IF_EMPTY: &str = r#"#[serde(skip_serializing_if = "bytes::Bytes::is_empty")]"#;
 const NULLABLEVECARRAY: &str = r#"#[serde(with = "crate::serializers::txs")]"#;
 const NULLABLE: &str = r#"#[serde(with = "crate::serializers::nullable")]"#;
 const ALIAS_POWER_QUOTED: &str =
@@ -31,6 +30,7 @@ const PART_SET_HEADER_TOTAL: &str =
     r#"#[serde(with = "crate::serializers::part_set_header_total")]"#;
 const RENAME_EDPUBKEY: &str = r#"#[serde(rename = "tendermint/PubKeyEd25519", with = "crate::serializers::bytes::base64string")]"#;
 const RENAME_SECPPUBKEY: &str = r#"#[serde(rename = "tendermint/PubKeySecp256k1", with = "crate::serializers::bytes::base64string")]"#;
+const RENAME_SRPUBKEY: &str = r#"#[serde(rename = "tendermint/PubKeySr25519", with = "crate::serializers::bytes::base64string")]"#;
 const RENAME_DUPLICATEVOTE: &str = r#"#[serde(rename = "tendermint/DuplicateVoteEvidence")]"#;
 const RENAME_LIGHTCLIENTATTACK: &str =
     r#"#[serde(rename = "tendermint/LightClientAttackEvidence")]"#;
@@ -101,7 +101,7 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.abci.ResponseInfo.last_block_app_hash", DEFAULT),
     (
         ".tendermint.abci.ResponseInfo.last_block_app_hash",
-        VEC_SKIP_IF_EMPTY,
+        BYTES_SKIP_IF_EMPTY,
     ),
     (".tendermint.types.BlockID.hash", HEXSTRING),
     (".tendermint.types.BlockID.part_set_header", ALIAS_PARTS),
@@ -154,6 +154,7 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         ".tendermint.crypto.PublicKey.sum.secp256k1",
         RENAME_SECPPUBKEY,
     ),
+    (".tendermint.crypto.PublicKey.sum.sr25519", RENAME_SRPUBKEY),
     (
         ".tendermint.types.Evidence.sum.duplicate_vote_evidence",
         RENAME_DUPLICATEVOTE,
