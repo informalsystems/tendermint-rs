@@ -364,7 +364,7 @@ fn incoming_fixtures() {
             },
             "block_at_height_1" => {
                 let result = endpoint::block::Response::from_string(content).unwrap();
-                assert!(result.block.data.iter().next().is_none());
+                assert!(result.block.data.get(0).is_none());
                 assert!(result.block.evidence.iter().next().is_none());
                 assert!(result.block.header.app_hash.value().is_empty());
                 assert_eq!(result.block.header.chain_id.as_str(), CHAIN_ID);
@@ -405,7 +405,7 @@ fn incoming_fixtures() {
             },
             "block_at_height_10" => {
                 let result = endpoint::block::Response::from_string(content).unwrap();
-                assert!(result.block.data.iter().next().is_none());
+                assert!(result.block.data.get(0).is_none());
                 assert!(result.block.evidence.iter().next().is_none());
                 assert_eq!(result.block.header.app_hash.value(), [0u8; 8]);
                 assert_eq!(result.block.header.chain_id.as_str(), CHAIN_ID);
@@ -864,7 +864,7 @@ fn incoming_fixtures() {
                 } = result.data
                 {
                     let b = block.unwrap();
-                    assert!(b.data.iter().next().is_none());
+                    assert!(b.data.get(0).is_none());
                     assert!(b.evidence.iter().next().is_none());
                     assert!(!b.header.app_hash.value().is_empty());
                     assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
@@ -919,7 +919,7 @@ fn incoming_fixtures() {
                 } = result.data
                 {
                     let b = block.unwrap();
-                    assert!(b.data.iter().next().is_none());
+                    assert!(b.data.get(0).is_none());
                     assert!(b.evidence.iter().next().is_none());
                     assert!(!b.header.app_hash.value().is_empty());
                     assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
@@ -974,7 +974,7 @@ fn incoming_fixtures() {
                 } = result.data
                 {
                     let b = block.unwrap();
-                    assert!(b.data.iter().next().is_none());
+                    assert!(b.data.get(0).is_none());
                     assert!(b.evidence.iter().next().is_none());
                     assert!(!b.header.app_hash.value().is_empty());
                     assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
@@ -1029,7 +1029,7 @@ fn incoming_fixtures() {
                 } = result.data
                 {
                     let b = block.unwrap();
-                    assert!(b.data.iter().next().is_none());
+                    assert!(b.data.get(0).is_none());
                     assert!(b.evidence.iter().next().is_none());
                     assert!(!b.header.app_hash.value().is_empty());
                     assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
@@ -1084,7 +1084,7 @@ fn incoming_fixtures() {
                 } = result.data
                 {
                     let b = block.unwrap();
-                    assert!(b.data.iter().next().is_none());
+                    assert!(b.data.get(0).is_none());
                     assert!(b.evidence.iter().next().is_none());
                     assert!(!b.header.app_hash.value().is_empty());
                     assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
