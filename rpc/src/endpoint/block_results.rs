@@ -1,9 +1,9 @@
 //! `/block_results` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
-use tendermint::{abci, block, consensus, validator};
+use tendermint::{block, consensus, validator};
 
-use crate::prelude::*;
+use crate::{abci, prelude::*};
 
 /// Get ABCI results at a given height.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]

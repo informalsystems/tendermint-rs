@@ -39,7 +39,7 @@ pub struct Response {
     pub n_peers: u64,
 
     /// Peer information
-    pub peers: Vec<PeerInfo>,
+    pub peers: Option<Vec<PeerInfo>>,
 }
 
 impl crate::Response for Response {}

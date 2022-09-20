@@ -5,11 +5,11 @@ use std::{collections::HashMap, time::Duration};
 use contracts::contract_trait;
 use serde::{Deserialize, Serialize};
 use tendermint::{
-    abci::transaction::Hash,
     block::Height as HeightStr,
     evidence::{Duration as DurationStr, Evidence},
 };
 use tendermint_rpc as rpc;
+use tendermint_rpc::abci::transaction::Hash;
 
 use crate::{
     components::{

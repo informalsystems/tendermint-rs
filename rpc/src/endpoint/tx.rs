@@ -1,10 +1,10 @@
 //! `/tx` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
-use tendermint::{abci, block};
+use tendermint::block;
 use tendermint_proto::types::TxProof;
 
-use crate::Method;
+use crate::{abci, Method};
 
 /// Request for finding a transaction by its hash.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

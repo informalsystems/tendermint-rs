@@ -32,6 +32,17 @@ mod rpc {
         query::{EventType, Query},
         Client, HttpClient, Id, Order, SubscriptionClient, WebSocketClient, WebSocketClientDriver,
     };
+
+    use futures::StreamExt;
+    use std::convert::TryFrom;
+    use std::sync::atomic::{AtomicU8, Ordering};
+    use tendermint::block::Height;
+    use tendermint::merkle::simple_hash_from_byte_vectors;
+    use tendermint_rpc::abci::Log;
+    use tendermint_rpc::abci::{Code, Transaction};
+    use tendermint_rpc::endpoint::tx::Response as ResultTx;
+    use tendermint_rpc::event::{Event, EventData, TxInfo};
+    use tendermint_rpc::query::{EventType, Query};
     use tokio::time::Duration;
 
     static LOGGING_INIT: AtomicU8 = AtomicU8::new(0);
@@ -109,12 +120,7 @@ mod rpc {
         // Check for empty merkle root.
         // See: https://github.com/informalsystems/tendermint-rs/issues/562
         let computed_data_hash = simple_hash_from_byte_vectors(
-            block_info
-                .block
-                .data
-                .iter()
-                .map(|t| t.to_owned().into())
-                .collect(),
+            block_info.block.data.iter().map(|t| t.to_owned()).collect(),
         );
         assert_eq!(
             computed_data_hash,
@@ -480,7 +486,7 @@ mod rpc {
         http_client: &HttpClient,
         websocket_client: &mut WebSocketClient,
         tx: Transaction,
-    ) -> Result<(tendermint::abci::transaction::Hash, TxInfo), tendermint_rpc::Error> {
+    ) -> Result<(tendermint_rpc::abci::transaction::Hash, TxInfo), tendermint_rpc::Error> {
         let mut subs = websocket_client.subscribe(EventType::Tx.into()).await?;
         let r = http_client.broadcast_tx_async(tx.clone()).await?;
 

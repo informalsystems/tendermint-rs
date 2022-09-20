@@ -1,14 +1,15 @@
 //! RPC subscription event-related data structures.
 
-use alloc::collections::BTreeMap as HashMap;
-
 use serde::{Deserialize, Serialize};
-use tendermint::{
-    abci::responses::{BeginBlock, EndBlock},
-    Block,
-};
+use tendermint::Block;
 
-use crate::{prelude::*, query::EventType, response::Wrapper, Response};
+use crate::{
+    abci::responses::{BeginBlock, EndBlock},
+    prelude::*,
+    query::EventType,
+    response::Wrapper,
+    Response,
+};
 
 /// An incoming event produced by a [`Subscription`].
 ///
@@ -19,8 +20,8 @@ pub struct Event {
     pub query: String,
     /// The data associated with the event.
     pub data: EventData,
-    /// Event type and attributes map.
-    pub events: Option<HashMap<String, Vec<String>>>,
+    /// Event type and attributes list.
+    pub events: Option<Vec<crate::abci::Event>>,
 }
 impl Response for Event {}
 
@@ -76,5 +77,5 @@ pub struct TxResult {
     pub log: Option<String>,
     pub gas_wanted: Option<String>,
     pub gas_used: Option<String>,
-    pub events: Vec<tendermint::abci::Event>,
+    pub events: Vec<crate::abci::Event>,
 }
