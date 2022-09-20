@@ -3,7 +3,7 @@
 use core::convert::{TryFrom, TryInto};
 
 use serde::{Deserialize, Serialize};
-use tendermint_proto::{abci::BlockParams as RawSize, Protobuf};
+use tendermint_proto::{abci::BlockParams as RawAbciSize, types::BlockParams as RawSize, Protobuf};
 
 use crate::{error::Error, serializers};
 
@@ -42,7 +42,7 @@ impl TryFrom<RawSize> for Size {
                 .try_into()
                 .map_err(Error::integer_overflow)?,
             max_gas: value.max_gas,
-            time_iota_ms: Self::default_time_iota_ms(),
+            time_iota_ms: value.time_iota_ms,
         })
     }
 }
@@ -51,6 +51,34 @@ impl From<Size> for RawSize {
     fn from(value: Size) -> Self {
         // Todo: make the struct more robust so this can become infallible.
         RawSize {
+            max_bytes: value.max_bytes as i64,
+            max_gas: value.max_gas,
+            time_iota_ms: value.time_iota_ms,
+        }
+    }
+}
+
+impl Protobuf<RawAbciSize> for Size {}
+
+impl TryFrom<RawAbciSize> for Size {
+    type Error = Error;
+
+    fn try_from(value: RawAbciSize) -> Result<Self, Self::Error> {
+        Ok(Self {
+            max_bytes: value
+                .max_bytes
+                .try_into()
+                .map_err(Error::integer_overflow)?,
+            max_gas: value.max_gas,
+            time_iota_ms: Self::default_time_iota_ms(),
+        })
+    }
+}
+
+impl From<Size> for RawAbciSize {
+    fn from(value: Size) -> Self {
+        // Todo: make the struct more robust so this can become infallible.
+        RawAbciSize {
             max_bytes: value.max_bytes as i64,
             max_gas: value.max_gas,
         }

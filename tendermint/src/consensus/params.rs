@@ -4,25 +4,28 @@ use core::convert::{TryFrom, TryInto};
 
 use serde::{Deserialize, Serialize};
 use tendermint_proto::{
-    abci::ConsensusParams as RawParams,
-    types::{ValidatorParams as RawValidatorParams, VersionParams as RawVersionParams},
+    abci::ConsensusParams as RawAbciParams,
+    types::{
+        ConsensusParams as RawParams, ValidatorParams as RawValidatorParams,
+        VersionParams as RawVersionParams,
+    },
     Protobuf,
 };
 
 use crate::{block, error::Error, evidence, prelude::*, public_key};
 
-/// Tendermint consensus parameters
+/// All consensus-relevant parameters that can be adjusted by the ABCI app.
+///
+/// [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#consensusparams)
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 pub struct Params {
-    /// Block size parameters
+    /// Parameters limiting the size of a block and time between consecutive blocks.
     pub block: block::Size,
-
-    /// Evidence parameters
+    /// Parameters limiting the validity of evidence of byzantine behaviour.
     pub evidence: evidence::Params,
-
-    /// Validator parameters
+    /// Parameters limiting the types of public keys validators can use.
     pub validator: ValidatorParams,
-
+    /// The ABCI application version.
     /// Version parameters
     #[serde(skip)] // Todo: FIXME kvstore /genesis returns '{}' instead of '{app_version: "0"}'
     pub version: Option<VersionParams>,
@@ -63,10 +66,47 @@ impl From<Params> for RawParams {
     }
 }
 
-/// Validator consensus parameters
+impl Protobuf<RawAbciParams> for Params {}
+
+impl TryFrom<RawAbciParams> for Params {
+    type Error = Error;
+
+    fn try_from(value: RawAbciParams) -> Result<Self, Self::Error> {
+        Ok(Self {
+            block: value
+                .block
+                .ok_or_else(|| Error::invalid_block("missing block".to_string()))?
+                .try_into()?,
+            evidence: value
+                .evidence
+                .ok_or_else(Error::invalid_evidence)?
+                .try_into()?,
+            validator: value
+                .validator
+                .ok_or_else(Error::invalid_validator_params)?
+                .try_into()?,
+            version: value.version.map(TryFrom::try_from).transpose()?,
+        })
+    }
+}
+
+impl From<Params> for RawAbciParams {
+    fn from(value: Params) -> Self {
+        RawAbciParams {
+            block: Some(value.block.into()),
+            evidence: Some(value.evidence.into()),
+            validator: Some(value.validator.into()),
+            version: value.version.map(From::from),
+        }
+    }
+}
+
+/// ValidatorParams restrict the public key types validators can use.
+///
+/// [Tendermint documentation](https://docs.tendermint.com/master/spec/core/data_structures.html#validatorparams)
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 pub struct ValidatorParams {
-    /// Allowed algorithms for validator signing
+    /// List of accepted public key types.
     pub pub_key_types: Vec<public_key::Algorithm>,
 }
 
@@ -109,10 +149,13 @@ impl From<ValidatorParams> for RawValidatorParams {
 }
 
 /// Version Parameters
+///
+/// [Tendermint documentation](https://docs.tendermint.com/master/spec/core/data_structures.html#versionparams)
 #[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq, Default)]
 pub struct VersionParams {
+    /// The ABCI application version.
     #[serde(with = "crate::serializers::from_str")]
-    app_version: u64,
+    pub app_version: u64,
 }
 
 impl Protobuf<RawVersionParams> for VersionParams {}

@@ -113,11 +113,6 @@ impl Client {
         perform!(self, Commit, RequestCommit {})
     }
 
-    /// Request that the application set an option to a particular value.
-    pub fn set_option(&mut self, req: RequestSetOption) -> Result<ResponseSetOption, Error> {
-        perform!(self, SetOption, req)
-    }
-
     /// Used during state sync to discover available snapshots on peers.
     pub fn list_snapshots(&mut self) -> Result<ResponseListSnapshots, Error> {
         perform!(self, ListSnapshots, RequestListSnapshots {})
