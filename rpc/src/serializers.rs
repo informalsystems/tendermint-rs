@@ -7,7 +7,4 @@
 //! risk.
 pub use tendermint_proto::serializers::*;
 
-pub mod apphash;
-pub mod hash;
-pub mod option_hash;
-pub mod time;
+pub mod hash_base64;
