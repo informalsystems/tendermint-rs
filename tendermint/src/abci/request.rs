@@ -155,7 +155,7 @@ impl TryFrom<Request> for ConsensusRequest {
 }
 
 /// The mempool category of ABCI requests.
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum MempoolRequest {
     #[doc = include_str!("doc/request-checktx.md")]
     CheckTx(CheckTx),
