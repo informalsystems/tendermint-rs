@@ -14,7 +14,7 @@ tolerant applications written in any programming language.
 
 ## Tendermint Core Compatibility
 
-tendermint-rs has been tested for compatibility with Tendermint Core v0.34.20.
+tendermint-rs has been tested for compatibility with Tendermint Core v0.34.21.
 
 ## Requirements
 
