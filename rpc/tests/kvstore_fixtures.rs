@@ -729,7 +729,7 @@ fn incoming_fixtures() {
                 assert_eq!(result.listeners[0].to_string(), "Listener(@)");
                 assert!(result.listening);
                 assert_eq!(result.n_peers, 0);
-                assert!(result.peers.is_none());
+                assert!(result.peers.is_empty());
             },
             "status" => {
                 let result = endpoint::status::Response::from_string(content).unwrap();
