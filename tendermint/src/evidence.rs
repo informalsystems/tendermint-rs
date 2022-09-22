@@ -65,11 +65,11 @@ impl From<Evidence> for RawEvidence {
 /// Duplicate vote evidence
 #[derive(Clone, Debug, PartialEq)]
 pub struct DuplicateVoteEvidence {
-    vote_a: Vote,
-    vote_b: Vote,
-    total_voting_power: Power,
-    validator_power: Power,
-    timestamp: Time,
+    pub vote_a: Vote,
+    pub vote_b: Vote,
+    pub total_voting_power: Power,
+    pub validator_power: Power,
+    pub timestamp: Time,
 }
 
 impl TryFrom<RawDuplicateVoteEvidence> for DuplicateVoteEvidence {
@@ -133,9 +133,9 @@ impl DuplicateVoteEvidence {
 #[derive(Clone, Debug, PartialEq)]
 pub struct ConflictingHeadersEvidence {
     //#[serde(rename = "H1")]
-    h1: SignedHeader,
+    pub h1: SignedHeader,
     //#[serde(rename = "H2")]
-    h2: SignedHeader,
+    pub h2: SignedHeader,
 }
 
 impl ConflictingHeadersEvidence {
