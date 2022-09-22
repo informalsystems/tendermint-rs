@@ -15,6 +15,17 @@ image: a standalone image that can run on its own. It can create its own
 configuration if one was not provided. This ensures that the configuration file
 is always compatible with the Tendermint version built into it.
 
+There are two configurations in this folder:
+
+- [`tendermint`](./tendermint/) - Builds a Tendermint image based off of the
+  `TMVERSION` argument configured in the `Dockerfile`. The corresponding release
+  will automatically be downloaded from
+  [GitHub](https://github.com/tendermint/tendermint/releases) during image
+  build.
+- [`tendermint-custom-bin`](./tendermint-custom-bin/) - Builds a Tendermint
+  image from a custom-built Tendermint binary. Assumes the `tendermint` binary
+  is in the same directory as the `Dockerfile` and is built for Linux/AMD64.
+
 ## gaiad
 
 This image will be used for `rpc-probe`, to generate fixtures for CI testing
