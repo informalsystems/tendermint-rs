@@ -1,6 +1,6 @@
 FROM alpine:3.16
 LABEL maintainer="hello@informal.systems"
-ARG TMVERSION=0.34.21
+ARG TMVERSION
 
 ENV TMHOME=/tendermint
 RUN apk --no-cache add jq bash && \
