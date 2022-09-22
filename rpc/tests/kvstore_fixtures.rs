@@ -563,7 +563,7 @@ fn incoming_fixtures() {
                 assert!(result.check_tx.events.is_empty());
                 assert_eq!(result.check_tx.gas_used.value(), 0);
                 // Todo: https://github.com/informalsystems/tendermint-rs/issues/761
-                //assert_eq!(result.check_tx.gas_wanted.value(), 1);
+                // assert_eq!(result.check_tx.gas_wanted.value(), 1);
                 assert!(result.check_tx.info.to_string().is_empty());
                 assert!(result.check_tx.log.value().is_empty());
                 assert_eq!(result.deliver_tx.code, tendermint::abci::Code::Ok);
@@ -807,7 +807,7 @@ fn incoming_fixtures() {
                         app: 1
                     }
                 );
-                assert_eq!(result.node_info.version.to_string(), "v0.34.20");
+                assert_eq!(result.node_info.version.to_string(), "0.34.21");
                 assert!(!result.sync_info.catching_up);
                 assert_eq!(
                     result.sync_info.latest_app_hash.value(),
