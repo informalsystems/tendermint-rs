@@ -217,7 +217,7 @@ impl Version {
 /// Software Countermeasures (see "Rejecting Known Bad Points" subsection):
 ///
 /// <https://eprint.iacr.org/2017/806.pdf>
-#[allow(clippy::match_same_arms)]
+#[allow(clippy::match_same_arms, clippy::match_like_matches_macro)]
 fn is_low_order_point(point: &EphemeralPublic) -> bool {
     // Note: as these are public points and do not interact with secret-key
     // material in any way, this check does not need to be performed in
