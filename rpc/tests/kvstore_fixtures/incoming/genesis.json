@@ -1,5 +1,5 @@
 {
-  "id": "eaa01483-bd0f-487d-acd5-6e41366d9c36",
+  "id": "fa4b990d-7949-4ce0-a187-b2b63cd51957",
   "jsonrpc": "2.0",
   "result": {
     "genesis": {
@@ -23,16 +23,16 @@
         },
         "version": {}
       },
-      "genesis_time": "2022-07-21T22:06:01.373424724Z",
+      "genesis_time": "2022-09-22T18:57:22.193215438Z",
       "initial_height": "1",
       "validators": [
         {
-          "address": "CCD08E1A253A3A53929EA9FB71C3C9018E9D2678",
+          "address": "675F52E8FDA5F4047B8EAF498F946F551ED53DC2",
           "name": "",
           "power": "10",
           "pub_key": {
             "type": "tendermint/PubKeyEd25519",
-            "value": "BJh7fTq/5bLf0XXKGixr3icDBQtkvaJRnkfsJgVLsnI="
+            "value": "OKAnhjqSneoGRrC37lMmw13vpj3pge3Au8/5Q1YfGq0="
           }
         }
       ]
