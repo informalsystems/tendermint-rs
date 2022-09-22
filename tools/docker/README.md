@@ -44,7 +44,7 @@ the network before testing. These transactions will send uatom tokens from c0 ->
 c1 and vice versa. They are both signed as `sequence 0` in the wallet, so they
 can only be executed as the first transaction of the corresponding wallet.
 
-# abci-harness
+## abci-harness
 
 This image is used during CI testing in the abci-rs crate. It tests
 compatibility with the Tendermint Go implementation. It derives from the
