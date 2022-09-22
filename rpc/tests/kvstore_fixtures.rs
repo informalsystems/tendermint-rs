@@ -547,60 +547,36 @@ fn incoming_fixtures() {
                 assert_eq!(result.deliver_tx.events.len(), 1);
                 assert_eq!(result.deliver_tx.events[0].attributes.len(), 4);
                 assert_eq!(
-                    result.deliver_tx.events[0].attributes[0]
-                        .key
-                        .to_string()
-                        .as_bytes(),
-                    base64::decode("Y3JlYXRvcg==").unwrap()
+                    result.deliver_tx.events[0].attributes[0].key.as_ref(),
+                    "Y3JlYXRvcg=="
                 );
                 assert_eq!(
-                    result.deliver_tx.events[0].attributes[0]
-                        .value
-                        .to_string()
-                        .as_bytes(),
-                    base64::decode("Q29zbW9zaGkgTmV0b3dva28=").unwrap()
+                    result.deliver_tx.events[0].attributes[0].value.as_ref(),
+                    "Q29zbW9zaGkgTmV0b3dva28="
                 );
                 assert_eq!(
-                    result.deliver_tx.events[0].attributes[1]
-                        .key
-                        .to_string()
-                        .as_bytes(),
-                    base64::decode("a2V5").unwrap()
+                    result.deliver_tx.events[0].attributes[1].key.as_ref(),
+                    "a2V5"
                 );
                 assert_eq!(
-                    result.deliver_tx.events[0].attributes[1]
-                        .value
-                        .to_string()
-                        .as_bytes(),
-                    base64::decode("Y29tbWl0LWtleQ==").unwrap()
+                    result.deliver_tx.events[0].attributes[1].value.as_ref(),
+                    "Y29tbWl0LWtleQ=="
                 );
                 assert_eq!(
-                    result.deliver_tx.events[0].attributes[2]
-                        .key
-                        .to_string()
-                        .as_bytes(),
-                    base64::decode("aW5kZXhfa2V5").unwrap()
+                    result.deliver_tx.events[0].attributes[2].key.as_ref(),
+                    "aW5kZXhfa2V5"
                 );
                 assert_eq!(
-                    result.deliver_tx.events[0].attributes[2]
-                        .value
-                        .to_string()
-                        .as_bytes(),
-                    base64::decode("aW5kZXggaXMgd29ya2luZw==").unwrap()
+                    result.deliver_tx.events[0].attributes[2].value.as_ref(),
+                    "aW5kZXggaXMgd29ya2luZw=="
                 );
                 assert_eq!(
-                    result.deliver_tx.events[0].attributes[3]
-                        .key
-                        .to_string()
-                        .as_bytes(),
-                    base64::decode("bm9pbmRleF9rZXk=").unwrap()
+                    result.deliver_tx.events[0].attributes[3].key.as_ref(),
+                    "bm9pbmRleF9rZXk="
                 );
                 assert_eq!(
-                    result.deliver_tx.events[0].attributes[3]
-                        .value
-                        .to_string()
-                        .as_bytes(),
-                    base64::decode("aW5kZXggaXMgd29ya2luZw==").unwrap()
+                    result.deliver_tx.events[0].attributes[3].value.as_ref(),
+                    "aW5kZXggaXMgd29ya2luZw=="
                 );
                 assert_eq!(result.deliver_tx.events[0].type_str, "app");
                 assert_eq!(result.deliver_tx.gas_used.value(), 0);
