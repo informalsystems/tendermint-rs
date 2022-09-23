@@ -7,8 +7,8 @@ extern crate alloc;
 // Import the crates that we want to check if they are fully no-std compliance
 
 use tendermint;
-use tendermint_proto;
 use tendermint_light_client_verifier;
+use tendermint_proto;
 
 #[cfg(feature = "sp-core")]
 use sp_core;
@@ -42,7 +42,7 @@ error[E0152]: found duplicate lang item `panic_impl`
 ```
 
  */
-#[cfg(feature="panic-handler")]
+#[cfg(feature = "panic-handler")]
 #[panic_handler]
 #[no_mangle]
 fn panic(_info: &PanicInfo) -> ! {
