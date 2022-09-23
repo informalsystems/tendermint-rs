@@ -1,6 +1,7 @@
 //! Tendermint kvstore RPC endpoint testing.
 
 use core::str::FromStr;
+use std::collections::BTreeMap as HashMap;
 use std::{fs, path::PathBuf};
 
 use subtle_encoding::{base64, hex};
@@ -1085,16 +1086,16 @@ fn incoming_fixtures() {
                     assert_eq!(tx_result.result.events.len(), 1);
                     assert_eq!(tx_result.result.events[0].type_str, "app");
                     for attr in &tx_result.result.events[0].attributes {
-                        match attr.key.as_ref() {
-                            "creator" => {
-                                assert_eq!(attr.value.as_ref(), "Cosmoshi Netowoko")
+                        match &base64::decode(attr.key.as_ref()).unwrap()[..] {
+                            b"creator" => {
+                                check_base64_str(attr.value.as_ref(), "Cosmoshi Netowoko")
                             },
-                            "key" => assert_eq!(attr.value.as_ref(), "tx0"),
-                            "index_key" => {
-                                assert_eq!(attr.value.as_ref(), "index is working")
+                            b"key" => check_base64_str(attr.value.as_ref(), "tx0"),
+                            b"index_key" => {
+                                check_base64_str(attr.value.as_ref(), "index is working")
                             },
-                            "noindex_key" => {
-                                assert_eq!(attr.value.as_ref(), "index is working")
+                            b"noindex_key" => {
+                                check_base64_str(attr.value.as_ref(), "index is working")
                             },
                             _ => panic!("unknown attribute found {}", attr.key),
                         }
@@ -1117,16 +1118,16 @@ fn incoming_fixtures() {
                     assert_eq!(tx_result.result.events.len(), 1);
                     assert_eq!(tx_result.result.events[0].type_str, "app");
                     for attr in &tx_result.result.events[0].attributes {
-                        match attr.key.as_ref() {
-                            "creator" => {
-                                assert_eq!(attr.value.as_ref(), "Cosmoshi Netowoko")
+                        match &base64::decode(attr.key.as_ref()).unwrap()[..] {
+                            b"creator" => {
+                                check_base64_str(attr.value.as_ref(), "Cosmoshi Netowoko")
                             },
-                            "key" => assert_eq!(attr.value.as_ref(), "tx1"),
-                            "index_key" => {
-                                assert_eq!(attr.value.as_ref(), "index is working")
+                            b"key" => check_base64_str(attr.value.as_ref(), "tx1"),
+                            b"index_key" => {
+                                check_base64_str(attr.value.as_ref(), "index is working")
                             },
-                            "noindex_key" => {
-                                assert_eq!(attr.value.as_ref(), "index is working")
+                            b"noindex_key" => {
+                                check_base64_str(attr.value.as_ref(), "index is working")
                             },
                             _ => panic!("unknown attribute found {}", attr.key),
                         }
@@ -1150,16 +1151,16 @@ fn incoming_fixtures() {
                     assert_eq!(tx_result.result.events.len(), 1);
                     assert_eq!(tx_result.result.events[0].type_str, "app");
                     for attr in &tx_result.result.events[0].attributes {
-                        match attr.key.as_ref() {
-                            "creator" => {
-                                assert_eq!(attr.value.as_ref(), "Cosmoshi Netowoko")
+                        match &base64::decode(attr.key.as_ref()).unwrap()[..] {
+                            b"creator" => {
+                                check_base64_str(attr.value.as_ref(), "Cosmoshi Netowoko")
                             },
-                            "key" => assert_eq!(attr.value.as_ref(), "tx2"),
-                            "index_key" => {
-                                assert_eq!(attr.value.as_ref(), "index is working")
+                            b"key" => check_base64_str(attr.value.as_ref(), "tx2"),
+                            b"index_key" => {
+                                check_base64_str(attr.value.as_ref(), "index is working")
                             },
-                            "noindex_key" => {
-                                assert_eq!(attr.value.as_ref(), "index is working")
+                            b"noindex_key" => {
+                                check_base64_str(attr.value.as_ref(), "index is working")
                             },
                             _ => panic!("unknown attribute found {}", attr.key),
                         }
@@ -1182,16 +1183,16 @@ fn incoming_fixtures() {
                     assert_eq!(tx_result.result.events.len(), 1);
                     assert_eq!(tx_result.result.events[0].type_str, "app");
                     for attr in &tx_result.result.events[0].attributes {
-                        match attr.key.as_ref() {
-                            "creator" => {
-                                assert_eq!(attr.value.as_ref(), "Cosmoshi Netowoko")
+                        match &base64::decode(attr.key.as_ref()).unwrap()[..] {
+                            b"creator" => {
+                                check_base64_str(attr.value.as_ref(), "Cosmoshi Netowoko")
                             },
-                            "key" => assert_eq!(attr.value.as_ref(), "tx3"),
-                            "index_key" => {
-                                assert_eq!(attr.value.as_ref(), "index is working")
+                            b"key" => check_base64_str(attr.value.as_ref(), "tx3"),
+                            b"index_key" => {
+                                check_base64_str(attr.value.as_ref(), "index is working")
                             },
-                            "noindex_key" => {
-                                assert_eq!(attr.value.as_ref(), "index is working")
+                            b"noindex_key" => {
+                                check_base64_str(attr.value.as_ref(), "index is working")
                             },
                             _ => panic!("unknown attribute found {}", attr.key),
                         }
@@ -1214,16 +1215,16 @@ fn incoming_fixtures() {
                     assert_eq!(tx_result.result.events.len(), 1);
                     assert_eq!(tx_result.result.events[0].type_str, "app");
                     for attr in &tx_result.result.events[0].attributes {
-                        match attr.key.as_ref() {
-                            "creator" => {
-                                assert_eq!(attr.value.as_ref(), "Cosmoshi Netowoko")
+                        match &base64::decode(attr.key.as_ref()).unwrap()[..] {
+                            b"creator" => {
+                                check_base64_str(attr.value.as_ref(), "Cosmoshi Netowoko")
                             },
-                            "key" => assert_eq!(attr.value.as_ref(), "tx4"),
-                            "index_key" => {
-                                assert_eq!(attr.value.as_ref(), "index is working")
+                            b"key" => check_base64_str(attr.value.as_ref(), "tx4"),
+                            b"index_key" => {
+                                check_base64_str(attr.value.as_ref(), "index is working")
                             },
-                            "noindex_key" => {
-                                assert_eq!(attr.value.as_ref(), "index is working")
+                            b"noindex_key" => {
+                                check_base64_str(attr.value.as_ref(), "index is working")
                             },
                             _ => panic!("unknown attribute found {}", attr.key),
                         }
@@ -1348,28 +1349,23 @@ fn incoming_fixtures() {
     }
 }
 
-fn check_event_attrs(events: &[tendermint_rpc::abci::Event], app_key: &str, height: i64) {
-    for event in events {
-        for attr in &event.attributes {
-            match event.type_str.as_ref() {
-                "app" => match attr.key.as_ref() {
-                    "creator" => assert_eq!(attr.value.as_ref(), "Cosmoshi Netowoko"),
-                    "index_key" => assert_eq!(attr.value.as_ref(), "index is working"),
-                    "key" => assert_eq!(attr.value.as_ref(), app_key),
-                    "noindex_key" => assert_eq!(attr.value.as_ref(), "index is working"),
-                    _ => panic!("unrecognized app attribute found \"{}\"", attr.key),
-                },
-                "tx" => match attr.key.as_ref() {
-                    "hash" => assert_eq!(attr.value.as_ref().len(), 64),
-                    "height" => assert_eq!(attr.value.as_ref(), height.to_string()),
-                    _ => panic!("unrecognized tx attribute found \"{}\"", attr.key),
-                },
-                "tm" => match attr.key.as_ref() {
-                    "event" => assert_eq!(attr.value.as_ref(), "Tx"),
-                    _ => panic!("unrecognized tm attribute found \"{}\"", attr.key),
-                },
-                _ => panic!("unrecognized event type found \"{}\"", event.type_str),
-            }
+fn check_event_attrs(events: &HashMap<String, Vec<String>>, app_key: &str, height: i64) {
+    for (k, v) in events {
+        assert_eq!(v.len(), 1);
+        match k.as_str() {
+            "app.creator" => assert_eq!(v[0], "Cosmoshi Netowoko"),
+            "app.index_key" => assert_eq!(v[0], "index is working"),
+            "app.key" => assert_eq!(v[0], app_key),
+            "app.noindex_key" => assert_eq!(v[0], "index is working"),
+            "tm.event" => assert_eq!(v[0], "Tx"),
+            "tx.hash" => assert_eq!(v[0].len(), 64),
+            "tx.height" => assert_eq!(v[0], height.to_string()),
+            _ => panic!("unknown event found {}", k),
         }
     }
+}
+
+fn check_base64_str(encoded: &str, expected: &str) {
+    let decoded = base64::decode(encoded).unwrap();
+    assert_eq!(decoded, expected.as_bytes())
 }
