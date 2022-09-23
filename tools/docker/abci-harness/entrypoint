@@ -35,6 +35,6 @@ if [ ! -d "${TMHOME}/config" ]; then
 
 fi
 
-exec /usr/bin/tendermint node 2>&1 > "${ABCI_PATH}.tendermint" &
+exec /usr/bin/tendermint node 2>&1 > /dev/null &
 
-exec "${ABCI_PATH}" "$@" 2>&1 | tee "${ABCI_PATH}.log"
+exec "${ABCI_PATH}" "$@"

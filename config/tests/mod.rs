@@ -184,6 +184,10 @@ fn config_toml_parser() {
         Duration::from_secs(2)
     );
 
+    // storage configuration options
+    let storage = &config.storage;
+    assert!(storage.discard_abci_responses);
+
     // transactions indexer configuration options
 
     let tx_index = &config.tx_index;
