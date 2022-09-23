@@ -4,9 +4,9 @@ use core::{fmt, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 use tendermint::error::Error;
-use tendermint_proto::serializers::bytes::base64string;
 
 use crate::prelude::*;
+use crate::serializers::bytes::base64string;
 
 /// Tags
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
