@@ -4,6 +4,7 @@ use core::{fmt, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 use tendermint::error::Error;
+use tendermint_proto::serializers::bytes::base64string;
 
 use crate::prelude::*;
 
@@ -19,7 +20,13 @@ pub struct Tag {
 
 /// Tag keys
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize)]
-pub struct Key(String);
+pub struct Key(
+    #[serde(
+        serialize_with = "base64string::serialize",
+        deserialize_with = "base64string::deserialize_to_string"
+    )]
+    String,
+);
 
 impl AsRef<str> for Key {
     fn as_ref(&self) -> &str {
@@ -43,7 +50,13 @@ impl fmt::Display for Key {
 
 /// Tag values
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-pub struct Value(String);
+pub struct Value(
+    #[serde(
+        serialize_with = "base64string::serialize",
+        deserialize_with = "base64string::deserialize_to_string"
+    )]
+    String,
+);
 
 impl AsRef<str> for Value {
     fn as_ref(&self) -> &str {
