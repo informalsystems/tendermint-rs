@@ -5,7 +5,11 @@ use std::collections::BTreeMap as HashMap;
 use std::{fs, path::PathBuf};
 
 use subtle_encoding::{base64, hex};
-use tendermint::{evidence::Duration, public_key};
+use tendermint::{
+    evidence::{Duration, Evidence},
+    public_key,
+    vote::Vote,
+};
 use tendermint_config::net::Address;
 use tendermint_rpc::{
     abci::transaction::Hash,
@@ -538,35 +542,35 @@ fn incoming_fixtures() {
                 assert_eq!(result.deliver_tx.events[0].attributes.len(), 4);
                 assert_eq!(
                     result.deliver_tx.events[0].attributes[0].key.as_ref(),
-                    "Y3JlYXRvcg=="
+                    "creator"
                 );
                 assert_eq!(
                     result.deliver_tx.events[0].attributes[0].value.as_ref(),
-                    "Q29zbW9zaGkgTmV0b3dva28="
+                    "Cosmoshi Netowoko"
                 );
                 assert_eq!(
                     result.deliver_tx.events[0].attributes[1].key.as_ref(),
-                    "a2V5"
+                    "key"
                 );
                 assert_eq!(
                     result.deliver_tx.events[0].attributes[1].value.as_ref(),
-                    "Y29tbWl0LWtleQ=="
+                    "commit-key"
                 );
                 assert_eq!(
                     result.deliver_tx.events[0].attributes[2].key.as_ref(),
-                    "aW5kZXhfa2V5"
+                    "index_key"
                 );
                 assert_eq!(
                     result.deliver_tx.events[0].attributes[2].value.as_ref(),
-                    "aW5kZXggaXMgd29ya2luZw=="
+                    "index is working"
                 );
                 assert_eq!(
                     result.deliver_tx.events[0].attributes[3].key.as_ref(),
-                    "bm9pbmRleF9rZXk="
+                    "noindex_key"
                 );
                 assert_eq!(
                     result.deliver_tx.events[0].attributes[3].value.as_ref(),
-                    "aW5kZXggaXMgd29ya2luZw=="
+                    "index is working"
                 );
                 assert_eq!(result.deliver_tx.events[0].type_str, "app");
                 assert_eq!(result.deliver_tx.gas_used.value(), 0);
@@ -1397,11 +1401,6 @@ fn check_event_attrs(events: &HashMap<String, Vec<String>>, app_key: &str, heigh
             "tx.hash" => assert_eq!(v[0].len(), 64),
             "tx.height" => assert_eq!(v[0], height.to_string()),
             _ => panic!("unknown event found {}", k),
-            }
         }
     }
-
-fn check_base64_str(encoded: &str, expected: &str) {
-    let decoded = base64::decode(encoded).unwrap();
-    assert_eq!(decoded, expected.as_bytes())
 }
