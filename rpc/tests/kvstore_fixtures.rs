@@ -467,51 +467,40 @@ fn incoming_fixtures() {
                     assert!(response.block.header.height.value() > 1);
                 }
             },
-            "blockchain_from_1_to_10" => {
-                let result = endpoint::blockchain::Response::from_string(content).unwrap();
-                assert_eq!(result.block_metas.len(), 10);
-                for block_meta in result.block_metas {
-                    assert!(!block_meta.block_id.hash.is_empty());
-                    assert!(!block_meta.block_id.part_set_header.hash.is_empty());
-                    assert_eq!(block_meta.block_id.part_set_header.total, 1);
-                    assert!(block_meta.block_size > 0);
-                    if block_meta.header.height.value() == 1 {
-                        assert!(block_meta.header.app_hash.value().is_empty());
-                        assert_eq!(block_meta.header.data_hash, empty_merkle_root_hash);
-                        assert_eq!(block_meta.header.evidence_hash, empty_merkle_root_hash);
-                        assert!(block_meta.header.last_block_id.is_none());
-                        assert_eq!(block_meta.header.last_commit_hash, empty_merkle_root_hash);
-                        assert_eq!(block_meta.header.last_results_hash, empty_merkle_root_hash);
-                    } else {
-                        assert!(!block_meta.header.app_hash.value().is_empty());
-                        assert!(block_meta.header.data_hash.is_some());
-                        assert!(block_meta.header.evidence_hash.is_some());
-                        assert!(block_meta.header.last_block_id.is_some());
-                        assert!(block_meta.header.last_commit_hash.is_some());
-                        assert!(block_meta.header.last_results_hash.is_some());
+            "block_search_evidence" => {
+                let result = endpoint::block_search::Response::from_string(content).unwrap();
+                assert_eq!(result.total_count as usize, result.blocks.len());
+
+                // Test a few selected attributes of the results.
+                for block in result.blocks {
+                    let evidence = block.block.evidence.iter().next().unwrap();
+
+                    use tendermint::vote;
+
+                    fn check_vote(vote: &Vote) {
+                        assert_eq!(vote.vote_type, vote::Type::Precommit);
+                        assert_eq!(vote.height.value(), 8009);
+                        assert_eq!(vote.round.value(), 0);
+                        assert_eq!(
+                            vote.validator_address,
+                            "9319035301DA526CC78DCF174A47A74F81401291".parse().unwrap(),
+                        );
+                        assert_eq!(vote.validator_index.value(), 8);
                     }
-                    assert_eq!(block_meta.header.chain_id.as_str(), CHAIN_ID);
-                    assert!(!block_meta.header.consensus_hash.is_empty());
-                    assert!(!block_meta.header.next_validators_hash.is_empty());
-                    assert_ne!(
-                        block_meta.header.proposer_address.as_bytes(),
-                        [0u8; tendermint::account::LENGTH]
-                    );
-                    assert!(
-                        block_meta
-                            .header
-                            .time
-                            .duration_since(informal_epoch)
-                            .unwrap()
-                            .as_secs()
-                            > 0
-                    );
-                    assert!(!block_meta.header.validators_hash.is_empty());
-                    assert_eq!(
-                        block_meta.header.version,
-                        tendermint::block::header::Version { block: 11, app: 1 }
-                    );
-                    assert_eq!(block_meta.num_txs, 0);
+
+                    if let Evidence::DuplicateVote(dup) = evidence {
+                        assert_eq!(dup.total_voting_power.value(), 121);
+                        assert_eq!(dup.validator_power.value(), 1);
+                        assert_eq!(
+                            dup.timestamp,
+                            "2022-09-12T19:49:49.984608464Z".parse().unwrap()
+                        );
+
+                        check_vote(&dup.vote_a);
+                        check_vote(&dup.vote_b);
+                    } else {
+                        panic!("not a duplicate vote: {:?}", evidence);
+                    }
                 }
             },
             "broadcast_tx_async" => {
@@ -756,7 +745,7 @@ fn incoming_fixtures() {
                         app: 1
                     }
                 );
-                assert_eq!(result.node_info.version.to_string(), "v0.34.20");
+                assert_eq!(result.node_info.version.to_string(), "0.34.21");
                 assert!(!result.sync_info.catching_up);
                 assert_eq!(
                     result.sync_info.latest_app_hash.value(),
@@ -774,6 +763,53 @@ fn incoming_fixtures() {
                 );
                 assert!(result.validator_info.pub_key.ed25519().is_some());
                 assert_eq!(result.validator_info.power.value(), 10);
+            },
+            "blockchain_from_1_to_10" => {
+                let result = endpoint::blockchain::Response::from_string(content).unwrap();
+                assert_eq!(result.block_metas.len(), 10);
+                for block_meta in result.block_metas {
+                    assert!(!block_meta.block_id.hash.is_empty());
+                    assert!(!block_meta.block_id.part_set_header.hash.is_empty());
+                    assert_eq!(block_meta.block_id.part_set_header.total, 1);
+                    assert!(block_meta.block_size > 0);
+                    if block_meta.header.height.value() == 1 {
+                        assert!(block_meta.header.app_hash.value().is_empty());
+                        assert_eq!(block_meta.header.data_hash, empty_merkle_root_hash);
+                        assert_eq!(block_meta.header.evidence_hash, empty_merkle_root_hash);
+                        assert!(block_meta.header.last_block_id.is_none());
+                        assert_eq!(block_meta.header.last_commit_hash, empty_merkle_root_hash);
+                        assert_eq!(block_meta.header.last_results_hash, empty_merkle_root_hash);
+                    } else {
+                        assert!(!block_meta.header.app_hash.value().is_empty());
+                        assert!(block_meta.header.data_hash.is_some());
+                        assert!(block_meta.header.evidence_hash.is_some());
+                        assert!(block_meta.header.last_block_id.is_some());
+                        assert!(block_meta.header.last_commit_hash.is_some());
+                        assert!(block_meta.header.last_results_hash.is_some());
+                    }
+                    assert_eq!(block_meta.header.chain_id.as_str(), CHAIN_ID);
+                    assert!(!block_meta.header.consensus_hash.is_empty());
+                    assert!(!block_meta.header.next_validators_hash.is_empty());
+                    assert_ne!(
+                        block_meta.header.proposer_address.as_bytes(),
+                        [0u8; tendermint::account::LENGTH]
+                    );
+                    assert!(
+                        block_meta
+                            .header
+                            .time
+                            .duration_since(informal_epoch)
+                            .unwrap()
+                            .as_secs()
+                            > 0
+                    );
+                    assert!(!block_meta.header.validators_hash.is_empty());
+                    assert_eq!(
+                        block_meta.header.version,
+                        tendermint::block::header::Version { block: 11, app: 1 }
+                    );
+                    assert_eq!(block_meta.num_txs, 0);
+                }
             },
             "subscribe_malformed" => {
                 let result = endpoint::subscribe::Response::from_string(content);

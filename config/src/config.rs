@@ -86,6 +86,11 @@ pub struct TendermintConfig {
     /// consensus configuration options
     pub consensus: ConsensusConfig,
 
+    /// Storage configuration options. This section was only first made
+    /// available in Tendermint Core v0.34.21.
+    #[serde(default)]
+    pub storage: StorageConfig,
+
     /// transactions indexer configuration options
     pub tx_index: TxIndexConfig,
 
@@ -589,6 +594,13 @@ pub struct ConsensusConfig {
 
     /// Reactor query sleep duration
     pub peer_query_maj23_sleep_duration: Timeout,
+}
+
+/// Storage configuration options.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Default)]
+pub struct StorageConfig {
+    #[serde(default)]
+    pub discard_abci_responses: bool,
 }
 
 /// transactions indexer configuration options

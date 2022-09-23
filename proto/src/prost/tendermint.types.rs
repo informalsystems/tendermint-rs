@@ -146,7 +146,6 @@ pub struct Vote {
     #[serde(with = "crate::serializers::from_str")]
     pub height: i64,
     #[prost(int32, tag="3")]
-    #[serde(with = "crate::serializers::from_str")]
     pub round: i32,
     /// zero if vote is nil.
     #[prost(message, optional, tag="4")]
@@ -158,7 +157,6 @@ pub struct Vote {
     #[serde(with = "crate::serializers::bytes::hexstring")]
     pub validator_address: ::prost::alloc::vec::Vec<u8>,
     #[prost(int32, tag="7")]
-    #[serde(with = "crate::serializers::from_str")]
     pub validator_index: i32,
     #[prost(bytes="vec", tag="8")]
     #[serde(with = "crate::serializers::bytes::base64string")]
@@ -422,10 +420,13 @@ pub struct DuplicateVoteEvidence {
     #[prost(message, optional, tag="2")]
     pub vote_b: ::core::option::Option<Vote>,
     #[prost(int64, tag="3")]
+    #[serde(alias = "TotalVotingPower", with = "crate::serializers::from_str")]
     pub total_voting_power: i64,
     #[prost(int64, tag="4")]
+    #[serde(alias = "ValidatorPower", with = "crate::serializers::from_str")]
     pub validator_power: i64,
     #[prost(message, optional, tag="5")]
+    #[serde(alias = "Timestamp")]
     pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
 }
 /// LightClientAttackEvidence contains evidence of a set of validators attempting to mislead a light client.

@@ -235,7 +235,6 @@ mod tests {
         let dts = vec![
             datetime!(0000-12-31 23:59:59.999999999 UTC),
             datetime!(0001-01-01 00:00:00.999999999 +00:00:01),
-            datetime!(9999-12-31 23:59:59 -00:00:01),
             Date::from_calendar_date(-1, October, 9)
                 .unwrap()
                 .midnight()

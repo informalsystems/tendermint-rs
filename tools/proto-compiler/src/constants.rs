@@ -6,7 +6,7 @@ pub const TENDERMINT_REPO: &str = "https://github.com/tendermint/tendermint";
 // Tag: v0.34.0-rc4
 // Branch: master
 // Commit ID (full length): d7d0ffea13c60c98b812d243ba5a2c375f341c15
-pub const TENDERMINT_COMMITISH: &str = "v0.34.20";
+pub const TENDERMINT_COMMITISH: &str = "v0.34.21";
 
 /// Predefined custom attributes for message annotations
 const PRIMITIVE_ENUM: &str = r#"#[derive(::num_derive::FromPrimitive, ::num_derive::ToPrimitive)]"#;
@@ -35,6 +35,11 @@ const RENAME_DUPLICATEVOTE: &str = r#"#[serde(rename = "tendermint/DuplicateVote
 const RENAME_LIGHTCLIENTATTACK: &str =
     r#"#[serde(rename = "tendermint/LightClientAttackEvidence")]"#;
 const EVIDENCE_VARIANT: &str = r#"#[serde(from = "crate::serializers::evidence::EvidenceVariant", into = "crate::serializers::evidence::EvidenceVariant")]"#;
+const ALIAS_VALIDATOR_POWER_QUOTED: &str =
+    r#"#[serde(alias = "ValidatorPower", with = "crate::serializers::from_str")]"#;
+const ALIAS_TOTAL_VOTING_POWER_QUOTED: &str =
+    r#"#[serde(alias = "TotalVotingPower", with = "crate::serializers::from_str")]"#;
+const ALIAS_TIMESTAMP: &str = r#"#[serde(alias = "Timestamp")]"#;
 const ALIAS_PARTS: &str = r#"#[serde(alias = "parts")]"#;
 
 /// Custom type attributes applied on top of protobuf structs
@@ -132,9 +137,19 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.CommitSig.validator_address", HEXSTRING),
     (".tendermint.types.CommitSig.timestamp", OPTIONAL),
     (".tendermint.types.CommitSig.signature", BASE64STRING),
-    (".tendermint.types.Vote.round", QUOTED),
+    (
+        ".tendermint.types.DuplicateVoteEvidence.total_voting_power",
+        ALIAS_TOTAL_VOTING_POWER_QUOTED,
+    ),
+    (
+        ".tendermint.types.DuplicateVoteEvidence.validator_power",
+        ALIAS_VALIDATOR_POWER_QUOTED,
+    ),
+    (
+        ".tendermint.types.DuplicateVoteEvidence.timestamp",
+        ALIAS_TIMESTAMP,
+    ),
     (".tendermint.types.Vote.height", QUOTED),
-    (".tendermint.types.Vote.validator_index", QUOTED),
     (".tendermint.types.Vote.validator_address", HEXSTRING),
     (".tendermint.types.Vote.signature", BASE64STRING),
     (".tendermint.types.Vote.timestamp", OPTIONAL),
