@@ -19,10 +19,8 @@ description = """
 default = ["time"]
 
 [dependencies]
-# TODO(thane): Remove restrictions once js-sys issue is resolved (causes the Substrate no_std check to fail)
-time = { version = ">=0.3, <0.3.12", default-features = false, optional = true }
+time = { version = "0.3", default-features = false, optional = true }
 proptest = { version = "0.10.1", default-features = false, features = ["std"] }
 
 [dev-dependencies]
-# TODO(thane): Remove restrictions once js-sys issue is resolved (causes the Substrate no_std check to fail)
-time = { version = ">=0.3, <0.3.12", features = ["macros"] }
+time = { version = "0.3", features = ["macros"] }
