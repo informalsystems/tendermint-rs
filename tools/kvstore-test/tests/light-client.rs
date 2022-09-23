@@ -14,7 +14,6 @@
 
 use std::{convert::TryFrom, time::Duration};
 
-use tendermint::abci::transaction::Hash as TxHash;
 use tendermint_light_client::{
     builder::{LightClientBuilder, SupervisorBuilder},
     components::io::{AtHeight, Io, IoError, ProdIo},

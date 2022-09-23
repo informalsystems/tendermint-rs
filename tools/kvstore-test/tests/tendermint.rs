@@ -22,27 +22,16 @@ mod rpc {
 
     use futures::StreamExt;
     use tendermint::{
-        abci::{Code, Log, Transaction},
         block::Height,
         merkle::simple_hash_from_byte_vectors,
     };
     use tendermint_rpc::{
+        abci::{Code, Log, Transaction},
         endpoint::tx::Response as ResultTx,
         event::{Event, EventData, TxInfo},
         query::{EventType, Query},
         Client, HttpClient, Id, Order, SubscriptionClient, WebSocketClient, WebSocketClientDriver,
     };
-
-    use futures::StreamExt;
-    use std::convert::TryFrom;
-    use std::sync::atomic::{AtomicU8, Ordering};
-    use tendermint::block::Height;
-    use tendermint::merkle::simple_hash_from_byte_vectors;
-    use tendermint_rpc::abci::Log;
-    use tendermint_rpc::abci::{Code, Transaction};
-    use tendermint_rpc::endpoint::tx::Response as ResultTx;
-    use tendermint_rpc::event::{Event, EventData, TxInfo};
-    use tendermint_rpc::query::{EventType, Query};
     use tokio::time::Duration;
 
     static LOGGING_INIT: AtomicU8 = AtomicU8::new(0);
