@@ -61,6 +61,6 @@ clock = ["time/std"]
 secp256k1 = ["k256", "ripemd160"]
 
 [dev-dependencies]
-pretty_assertions = { version = "1.3.0", default-features = false }
+pretty_assertions = "1.3.0"
 proptest = { version = "0.10.1", default-features = false, features = ["std"] }
 tendermint-pbt-gen = { path = "../pbt-gen", default-features = false, features = ["time"] }
