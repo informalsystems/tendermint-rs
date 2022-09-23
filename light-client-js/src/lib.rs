@@ -22,12 +22,6 @@ use tendermint_light_client_verifier::{
 };
 use wasm_bindgen::{prelude::*, JsValue};
 
-// When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
-// allocator.
-#[cfg(feature = "wee_alloc")]
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc<'_> = wee_alloc::WeeAlloc::INIT;
-
 /// Check whether a given untrusted block can be trusted.
 #[wasm_bindgen]
 pub fn verify(untrusted: &JsValue, trusted: &JsValue, options: &JsValue, now: &JsValue) -> JsValue {
