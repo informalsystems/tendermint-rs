@@ -6,6 +6,7 @@ use core::{
     str::FromStr,
 };
 
+use bytes::Bytes;
 #[cfg(feature = "secp256k1")]
 use ripemd160::Ripemd160;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
@@ -43,6 +44,25 @@ impl TryFrom<Vec<u8>> for Id {
 impl From<Id> for Vec<u8> {
     fn from(value: Id) -> Self {
         value.as_bytes().to_vec()
+    }
+}
+
+impl TryFrom<Bytes> for Id {
+    type Error = Error;
+
+    fn try_from(value: Bytes) -> Result<Self, Self::Error> {
+        if value.len() != LENGTH {
+            return Err(Error::invalid_account_id_length());
+        }
+        let mut slice: [u8; LENGTH] = [0; LENGTH];
+        slice.copy_from_slice(&value[..]);
+        Ok(Id(slice))
+    }
+}
+
+impl From<Id> for Bytes {
+    fn from(value: Id) -> Self {
+        value.as_bytes().into()
     }
 }
 

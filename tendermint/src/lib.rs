@@ -25,6 +25,8 @@ extern crate alloc;
 extern crate std;
 
 #[macro_use]
+mod proto_macros;
+
 pub mod error;
 
 pub mod abci;

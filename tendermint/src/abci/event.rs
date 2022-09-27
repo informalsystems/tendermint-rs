@@ -139,59 +139,124 @@ impl<K: Into<String>, V: Into<String>> From<(K, V)> for EventAttribute {
 // Protobuf conversions
 // =============================================================================
 
-use core::convert::{TryFrom, TryInto};
+mod v0_34 {
+    use super::{Event, EventAttribute};
+    use crate::prelude::*;
+    use core::convert::{TryFrom, TryInto};
 
-use tendermint_proto::{abci as pb, Protobuf};
+    use tendermint_proto::v0_34::abci as pb;
+    use tendermint_proto::Protobuf;
 
-impl From<EventAttribute> for pb::EventAttribute {
-    fn from(event: EventAttribute) -> Self {
-        Self {
-            key: event.key.into(),
-            value: event.value.into(),
-            index: event.index,
+    impl From<EventAttribute> for pb::EventAttribute {
+        fn from(event: EventAttribute) -> Self {
+            Self {
+                key: event.key.into(),
+                value: event.value.into(),
+                index: event.index,
+            }
         }
     }
-}
 
-impl TryFrom<pb::EventAttribute> for EventAttribute {
-    type Error = crate::Error;
+    impl TryFrom<pb::EventAttribute> for EventAttribute {
+        type Error = crate::Error;
 
-    fn try_from(event: pb::EventAttribute) -> Result<Self, Self::Error> {
-        // We insist that keys and values are strings, like tm 0.35 did.
-        Ok(Self {
-            key: String::from_utf8(event.key.to_vec())
-                .map_err(|e| crate::Error::parse(e.to_string()))?,
-            value: String::from_utf8(event.value.to_vec())
-                .map_err(|e| crate::Error::parse(e.to_string()))?,
-            index: event.index,
-        })
-    }
-}
-
-impl Protobuf<pb::EventAttribute> for EventAttribute {}
-
-impl From<Event> for pb::Event {
-    fn from(event: Event) -> Self {
-        Self {
-            r#type: event.kind,
-            attributes: event.attributes.into_iter().map(Into::into).collect(),
+        fn try_from(event: pb::EventAttribute) -> Result<Self, Self::Error> {
+            // We insist that keys and values are strings, like tm 0.35 did.
+            Ok(Self {
+                key: String::from_utf8(event.key.to_vec())
+                    .map_err(|e| crate::Error::parse(e.to_string()))?,
+                value: String::from_utf8(event.value.to_vec())
+                    .map_err(|e| crate::Error::parse(e.to_string()))?,
+                index: event.index,
+            })
         }
     }
-}
 
-impl TryFrom<pb::Event> for Event {
-    type Error = crate::Error;
+    impl Protobuf<pb::EventAttribute> for EventAttribute {}
 
-    fn try_from(event: pb::Event) -> Result<Self, Self::Error> {
-        Ok(Self {
-            kind: event.r#type,
-            attributes: event
-                .attributes
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<_, _>>()?,
-        })
+    impl From<Event> for pb::Event {
+        fn from(event: Event) -> Self {
+            Self {
+                r#type: event.kind,
+                attributes: event.attributes.into_iter().map(Into::into).collect(),
+            }
+        }
     }
+
+    impl TryFrom<pb::Event> for Event {
+        type Error = crate::Error;
+
+        fn try_from(event: pb::Event) -> Result<Self, Self::Error> {
+            Ok(Self {
+                kind: event.r#type,
+                attributes: event
+                    .attributes
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<_, _>>()?,
+            })
+        }
+    }
+
+    impl Protobuf<pb::Event> for Event {}
 }
 
-impl Protobuf<pb::Event> for Event {}
+mod v0_37 {
+    use super::{Event, EventAttribute};
+    use crate::prelude::*;
+    use core::convert::{TryFrom, TryInto};
+
+    use tendermint_proto::v0_37::abci as pb;
+    use tendermint_proto::Protobuf;
+
+    impl From<EventAttribute> for pb::EventAttribute {
+        fn from(event: EventAttribute) -> Self {
+            Self {
+                key: event.key.into(),
+                value: event.value.into(),
+                index: event.index,
+            }
+        }
+    }
+
+    impl TryFrom<pb::EventAttribute> for EventAttribute {
+        type Error = crate::Error;
+
+        fn try_from(event: pb::EventAttribute) -> Result<Self, Self::Error> {
+            // We insist that keys and values are strings, like tm 0.35 did.
+            Ok(Self {
+                key: event.key,
+                value: event.value,
+                index: event.index,
+            })
+        }
+    }
+
+    impl Protobuf<pb::EventAttribute> for EventAttribute {}
+
+    impl From<Event> for pb::Event {
+        fn from(event: Event) -> Self {
+            Self {
+                r#type: event.kind,
+                attributes: event.attributes.into_iter().map(Into::into).collect(),
+            }
+        }
+    }
+
+    impl TryFrom<pb::Event> for Event {
+        type Error = crate::Error;
+
+        fn try_from(event: pb::Event) -> Result<Self, Self::Error> {
+            Ok(Self {
+                kind: event.r#type,
+                attributes: event
+                    .attributes
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<_, _>>()?,
+            })
+        }
+    }
+
+    impl Protobuf<pb::Event> for Event {}
+}

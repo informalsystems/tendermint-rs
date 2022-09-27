@@ -8,11 +8,11 @@ pub mod kvstore;
 use tendermint_proto::abci::{
     request::Value, response, Request, RequestApplySnapshotChunk, RequestBeginBlock,
     RequestCheckTx, RequestDeliverTx, RequestEcho, RequestEndBlock, RequestInfo, RequestInitChain,
-    RequestLoadSnapshotChunk, RequestOfferSnapshot, RequestQuery, Response,
-    ResponseApplySnapshotChunk, ResponseBeginBlock, ResponseCheckTx, ResponseCommit,
-    ResponseDeliverTx, ResponseEcho, ResponseEndBlock, ResponseFlush, ResponseInfo,
+    RequestLoadSnapshotChunk, RequestOfferSnapshot, RequestPrepareProposal, RequestProcessProposal,
+    RequestQuery, Response, ResponseApplySnapshotChunk, ResponseBeginBlock, ResponseCheckTx,
+    ResponseCommit, ResponseDeliverTx, ResponseEcho, ResponseEndBlock, ResponseFlush, ResponseInfo,
     ResponseInitChain, ResponseListSnapshots, ResponseLoadSnapshotChunk, ResponseOfferSnapshot,
-    ResponseQuery,
+    ResponsePrepareProposal, ResponseProcessProposal, ResponseQuery,
 };
 
 /// An ABCI application.
@@ -148,7 +148,6 @@ impl<A: Application> RequestDispatcher for A {
                 Value::ProcessProposal(req) => {
                     response::Value::ProcessProposal(self.process_proposal(req))
                 },
-                Value::SetOption(_) => response::Value::SetOption(Default::default()),
             }),
         }
     }

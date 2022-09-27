@@ -5,11 +5,9 @@
 //!
 //! [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#data-types)
 
-use core::convert::{TryFrom, TryInto};
-
 use bytes::Bytes;
 
-use crate::{block, prelude::*, vote, Error, Time};
+use crate::{block, prelude::*, vote, Time};
 
 /// A validator address with voting power.
 ///
@@ -33,15 +31,15 @@ pub struct VoteInfo {
     pub signed_last_block: bool,
 }
 
-/// The possible kinds of [`Evidence`].
+/// The possible kinds of [`Misbehavior`].
 ///
 /// Note: the
-/// [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#evidencetype-2)
-/// calls this `EvidenceType`, but we follow the Rust convention and name it `EvidenceKind`
+/// [ABCI documentation](https://github.com/tendermint/tendermint/blob/main/spec/abci/abci++_methods.md#misbehaviortype)
+/// calls this `MisbehaviorType`, but we follow the Rust convention and name it `MisbehaviorKind`
 /// to avoid confusion with Rust types.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[repr(i32)]
-pub enum EvidenceKind {
+pub enum MisbehaviorKind {
     /// Unknown evidence type (proto default value).
     Unknown = 0,
     /// Evidence that the validator voted for two different blocks in the same
@@ -55,12 +53,12 @@ pub enum EvidenceKind {
 ///
 /// [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#evidence)
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Evidence {
+pub struct Misbehavior {
     /// The kind of evidence.
     ///
     /// Note: this field is called `type` in the protobuf, but we call it `kind`
     /// to avoid the Rust keyword.
-    pub kind: EvidenceKind,
+    pub kind: MisbehaviorKind,
     /// The offending validator.
     pub validator: Validator,
     /// The height when the offense occurred.
@@ -75,11 +73,11 @@ pub struct Evidence {
     pub total_voting_power: vote::Power,
 }
 
-/// Information on the last block commit.
+/// Information on a block commit.
 ///
-/// [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#lastcommitinfo)
+/// [ABCI documentation](https://github.com/tendermint/tendermint/blob/main/spec/abci/abci++_methods.md#extendedcommitinfo)
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct LastCommitInfo {
+pub struct CommitInfo {
     /// The commit round.
     ///
     /// Reflects the total number of rounds it took to come to consensus for the
@@ -120,154 +118,378 @@ pub struct Snapshot {
 // Protobuf conversions
 // =============================================================================
 
-use tendermint_proto::{abci as pb, Protobuf};
+mod v0_34 {
+    use super::{CommitInfo, Misbehavior, MisbehaviorKind, Snapshot, Validator, VoteInfo};
+    use crate::{prelude::*, Error};
+    use tendermint_proto::v0_34::abci as pb;
+    use tendermint_proto::Protobuf;
 
-impl From<Validator> for pb::Validator {
-    fn from(v: Validator) -> Self {
-        Self {
-            address: Bytes::copy_from_slice(&v.address[..]),
-            power: v.power.into(),
+    use bytes::Bytes;
+
+    impl From<Validator> for pb::Validator {
+        fn from(v: Validator) -> Self {
+            Self {
+                address: Bytes::copy_from_slice(&v.address[..]),
+                power: v.power.into(),
+            }
         }
     }
-}
 
-impl TryFrom<pb::Validator> for Validator {
-    type Error = Error;
+    impl TryFrom<pb::Validator> for Validator {
+        type Error = Error;
 
-    fn try_from(vu: pb::Validator) -> Result<Self, Self::Error> {
-        let address = if vu.address.len() == 20 {
-            let mut bytes = [0u8; 20];
-            bytes.copy_from_slice(&vu.address);
-            bytes
-        } else {
-            return Err(Error::invalid_account_id_length());
-        };
+        fn try_from(vu: pb::Validator) -> Result<Self, Self::Error> {
+            let address = if vu.address.len() == 20 {
+                let mut bytes = [0u8; 20];
+                bytes.copy_from_slice(&vu.address);
+                bytes
+            } else {
+                return Err(Error::invalid_account_id_length());
+            };
 
-        Ok(Self {
-            address,
-            power: vu.power.try_into()?,
-        })
-    }
-}
-
-impl Protobuf<pb::Validator> for Validator {}
-
-impl From<VoteInfo> for pb::VoteInfo {
-    fn from(vi: VoteInfo) -> Self {
-        Self {
-            validator: Some(vi.validator.into()),
-            signed_last_block: vi.signed_last_block,
+            Ok(Self {
+                address,
+                power: vu.power.try_into()?,
+            })
         }
     }
-}
 
-impl TryFrom<pb::VoteInfo> for VoteInfo {
-    type Error = Error;
+    impl Protobuf<pb::Validator> for Validator {}
 
-    fn try_from(vi: pb::VoteInfo) -> Result<Self, Self::Error> {
-        Ok(Self {
-            validator: vi
-                .validator
-                .ok_or_else(Error::missing_validator)?
-                .try_into()?,
-            signed_last_block: vi.signed_last_block,
-        })
-    }
-}
-
-impl Protobuf<pb::VoteInfo> for VoteInfo {}
-
-impl From<Evidence> for pb::Evidence {
-    fn from(evidence: Evidence) -> Self {
-        Self {
-            r#type: evidence.kind as i32,
-            validator: Some(evidence.validator.into()),
-            height: evidence.height.into(),
-            time: Some(evidence.time.into()),
-            total_voting_power: evidence.total_voting_power.into(),
+    impl From<VoteInfo> for pb::VoteInfo {
+        fn from(vi: VoteInfo) -> Self {
+            Self {
+                validator: Some(vi.validator.into()),
+                signed_last_block: vi.signed_last_block,
+            }
         }
     }
-}
 
-impl TryFrom<pb::Evidence> for Evidence {
-    type Error = Error;
+    impl TryFrom<pb::VoteInfo> for VoteInfo {
+        type Error = Error;
 
-    fn try_from(evidence: pb::Evidence) -> Result<Self, Self::Error> {
-        let kind = match evidence.r#type {
-            0 => EvidenceKind::Unknown,
-            1 => EvidenceKind::DuplicateVote,
-            2 => EvidenceKind::LightClientAttack,
-            _ => return Err(Error::invalid_evidence()),
-        };
-
-        Ok(Self {
-            kind,
-            validator: evidence
-                .validator
-                .ok_or_else(Error::missing_validator)?
-                .try_into()?,
-            height: evidence.height.try_into()?,
-            time: evidence
-                .time
-                .ok_or_else(Error::missing_timestamp)?
-                .try_into()?,
-            total_voting_power: evidence.total_voting_power.try_into()?,
-        })
-    }
-}
-
-impl Protobuf<pb::Evidence> for Evidence {}
-
-impl From<LastCommitInfo> for pb::LastCommitInfo {
-    fn from(lci: LastCommitInfo) -> Self {
-        Self {
-            round: lci.round.into(),
-            votes: lci.votes.into_iter().map(Into::into).collect(),
+        fn try_from(vi: pb::VoteInfo) -> Result<Self, Self::Error> {
+            Ok(Self {
+                validator: vi
+                    .validator
+                    .ok_or_else(Error::missing_validator)?
+                    .try_into()?,
+                signed_last_block: vi.signed_last_block,
+            })
         }
     }
-}
 
-impl TryFrom<pb::LastCommitInfo> for LastCommitInfo {
-    type Error = Error;
+    impl Protobuf<pb::VoteInfo> for VoteInfo {}
 
-    fn try_from(lci: pb::LastCommitInfo) -> Result<Self, Self::Error> {
-        Ok(Self {
-            round: lci.round.try_into()?,
-            votes: lci
-                .votes
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<_, _>>()?,
-        })
-    }
-}
-
-impl Protobuf<pb::LastCommitInfo> for LastCommitInfo {}
-
-impl From<Snapshot> for pb::Snapshot {
-    fn from(snapshot: Snapshot) -> Self {
-        Self {
-            height: snapshot.height.into(),
-            format: snapshot.format,
-            chunks: snapshot.chunks,
-            hash: snapshot.hash,
-            metadata: snapshot.metadata,
+    impl From<Misbehavior> for pb::Evidence {
+        fn from(evidence: Misbehavior) -> Self {
+            Self {
+                r#type: evidence.kind as i32,
+                validator: Some(evidence.validator.into()),
+                height: evidence.height.into(),
+                time: Some(evidence.time.into()),
+                total_voting_power: evidence.total_voting_power.into(),
+            }
         }
     }
-}
 
-impl TryFrom<pb::Snapshot> for Snapshot {
-    type Error = Error;
+    impl TryFrom<pb::Evidence> for Misbehavior {
+        type Error = Error;
 
-    fn try_from(snapshot: pb::Snapshot) -> Result<Self, Self::Error> {
-        Ok(Self {
-            height: snapshot.height.try_into()?,
-            format: snapshot.format,
-            chunks: snapshot.chunks,
-            hash: snapshot.hash,
-            metadata: snapshot.metadata,
-        })
+        fn try_from(evidence: pb::Evidence) -> Result<Self, Self::Error> {
+            let kind = match evidence.r#type {
+                0 => MisbehaviorKind::Unknown,
+                1 => MisbehaviorKind::DuplicateVote,
+                2 => MisbehaviorKind::LightClientAttack,
+                _ => return Err(Error::invalid_evidence()),
+            };
+
+            Ok(Self {
+                kind,
+                validator: evidence
+                    .validator
+                    .ok_or_else(Error::missing_validator)?
+                    .try_into()?,
+                height: evidence.height.try_into()?,
+                time: evidence
+                    .time
+                    .ok_or_else(Error::missing_timestamp)?
+                    .try_into()?,
+                total_voting_power: evidence.total_voting_power.try_into()?,
+            })
+        }
     }
+
+    impl Protobuf<pb::Evidence> for Misbehavior {}
+
+    impl From<CommitInfo> for pb::LastCommitInfo {
+        fn from(lci: CommitInfo) -> Self {
+            Self {
+                round: lci.round.into(),
+                votes: lci.votes.into_iter().map(Into::into).collect(),
+            }
+        }
+    }
+
+    impl TryFrom<pb::LastCommitInfo> for CommitInfo {
+        type Error = Error;
+
+        fn try_from(lci: pb::LastCommitInfo) -> Result<Self, Self::Error> {
+            Ok(Self {
+                round: lci.round.try_into()?,
+                votes: lci
+                    .votes
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<_, _>>()?,
+            })
+        }
+    }
+
+    impl Protobuf<pb::LastCommitInfo> for CommitInfo {}
+
+    impl From<Snapshot> for pb::Snapshot {
+        fn from(snapshot: Snapshot) -> Self {
+            Self {
+                height: snapshot.height.into(),
+                format: snapshot.format,
+                chunks: snapshot.chunks,
+                hash: snapshot.hash,
+                metadata: snapshot.metadata,
+            }
+        }
+    }
+
+    impl TryFrom<pb::Snapshot> for Snapshot {
+        type Error = Error;
+
+        fn try_from(snapshot: pb::Snapshot) -> Result<Self, Self::Error> {
+            Ok(Self {
+                height: snapshot.height.try_into()?,
+                format: snapshot.format,
+                chunks: snapshot.chunks,
+                hash: snapshot.hash,
+                metadata: snapshot.metadata,
+            })
+        }
+    }
+
+    impl Protobuf<pb::Snapshot> for Snapshot {}
 }
 
-impl Protobuf<pb::Snapshot> for Snapshot {}
+mod v0_37 {
+    use super::{CommitInfo, Misbehavior, MisbehaviorKind, Snapshot, Validator, VoteInfo};
+    use crate::{prelude::*, Error};
+    use tendermint_proto::v0_37::abci as pb;
+    use tendermint_proto::Protobuf;
+
+    use bytes::Bytes;
+
+    impl From<Validator> for pb::Validator {
+        fn from(v: Validator) -> Self {
+            Self {
+                address: Bytes::copy_from_slice(&v.address[..]),
+                power: v.power.into(),
+            }
+        }
+    }
+
+    impl TryFrom<pb::Validator> for Validator {
+        type Error = Error;
+
+        fn try_from(vu: pb::Validator) -> Result<Self, Self::Error> {
+            let address = if vu.address.len() == 20 {
+                let mut bytes = [0u8; 20];
+                bytes.copy_from_slice(&vu.address);
+                bytes
+            } else {
+                return Err(Error::invalid_account_id_length());
+            };
+
+            Ok(Self {
+                address,
+                power: vu.power.try_into()?,
+            })
+        }
+    }
+
+    impl Protobuf<pb::Validator> for Validator {}
+
+    impl From<VoteInfo> for pb::VoteInfo {
+        fn from(vi: VoteInfo) -> Self {
+            Self {
+                validator: Some(vi.validator.into()),
+                signed_last_block: vi.signed_last_block,
+            }
+        }
+    }
+
+    impl TryFrom<pb::VoteInfo> for VoteInfo {
+        type Error = Error;
+
+        fn try_from(vi: pb::VoteInfo) -> Result<Self, Self::Error> {
+            Ok(Self {
+                validator: vi
+                    .validator
+                    .ok_or_else(Error::missing_validator)?
+                    .try_into()?,
+                signed_last_block: vi.signed_last_block,
+            })
+        }
+    }
+
+    impl Protobuf<pb::VoteInfo> for VoteInfo {}
+
+    // ExtendedVoteInfo is defined in 0.37, but the vote_extension field is always nil,
+    // so we can omit it from VoteInfo for the time being.
+
+    impl From<VoteInfo> for pb::ExtendedVoteInfo {
+        fn from(vi: VoteInfo) -> Self {
+            Self {
+                validator: Some(vi.validator.into()),
+                signed_last_block: vi.signed_last_block,
+                vote_extension: Default::default(),
+            }
+        }
+    }
+
+    impl TryFrom<pb::ExtendedVoteInfo> for VoteInfo {
+        type Error = Error;
+
+        fn try_from(vi: pb::ExtendedVoteInfo) -> Result<Self, Self::Error> {
+            Ok(Self {
+                validator: vi
+                    .validator
+                    .ok_or_else(Error::missing_validator)?
+                    .try_into()?,
+                signed_last_block: vi.signed_last_block,
+            })
+        }
+    }
+
+    impl Protobuf<pb::ExtendedVoteInfo> for VoteInfo {}
+
+    impl From<Misbehavior> for pb::Misbehavior {
+        fn from(evidence: Misbehavior) -> Self {
+            Self {
+                r#type: evidence.kind as i32,
+                validator: Some(evidence.validator.into()),
+                height: evidence.height.into(),
+                time: Some(evidence.time.into()),
+                total_voting_power: evidence.total_voting_power.into(),
+            }
+        }
+    }
+
+    impl TryFrom<pb::Misbehavior> for Misbehavior {
+        type Error = Error;
+
+        fn try_from(evidence: pb::Misbehavior) -> Result<Self, Self::Error> {
+            let kind = match evidence.r#type {
+                0 => MisbehaviorKind::Unknown,
+                1 => MisbehaviorKind::DuplicateVote,
+                2 => MisbehaviorKind::LightClientAttack,
+                _ => return Err(Error::invalid_evidence()),
+            };
+
+            Ok(Self {
+                kind,
+                validator: evidence
+                    .validator
+                    .ok_or_else(Error::missing_validator)?
+                    .try_into()?,
+                height: evidence.height.try_into()?,
+                time: evidence
+                    .time
+                    .ok_or_else(Error::missing_timestamp)?
+                    .try_into()?,
+                total_voting_power: evidence.total_voting_power.try_into()?,
+            })
+        }
+    }
+
+    impl Protobuf<pb::Misbehavior> for Misbehavior {}
+
+    // The CommitInfo domain type represents both CommitInfo and ExtendedCommitInfo
+    // as defined in protobuf for 0.37.
+
+    impl From<CommitInfo> for pb::CommitInfo {
+        fn from(lci: CommitInfo) -> Self {
+            Self {
+                round: lci.round.into(),
+                votes: lci.votes.into_iter().map(Into::into).collect(),
+            }
+        }
+    }
+
+    impl TryFrom<pb::CommitInfo> for CommitInfo {
+        type Error = Error;
+
+        fn try_from(lci: pb::CommitInfo) -> Result<Self, Self::Error> {
+            Ok(Self {
+                round: lci.round.try_into()?,
+                votes: lci
+                    .votes
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<_, _>>()?,
+            })
+        }
+    }
+
+    impl Protobuf<pb::CommitInfo> for CommitInfo {}
+
+    impl From<CommitInfo> for pb::ExtendedCommitInfo {
+        fn from(lci: CommitInfo) -> Self {
+            Self {
+                round: lci.round.into(),
+                votes: lci.votes.into_iter().map(Into::into).collect(),
+            }
+        }
+    }
+
+    impl TryFrom<pb::ExtendedCommitInfo> for CommitInfo {
+        type Error = Error;
+
+        fn try_from(lci: pb::ExtendedCommitInfo) -> Result<Self, Self::Error> {
+            Ok(Self {
+                round: lci.round.try_into()?,
+                votes: lci
+                    .votes
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<_, _>>()?,
+            })
+        }
+    }
+
+    impl Protobuf<pb::ExtendedCommitInfo> for CommitInfo {}
+
+    impl From<Snapshot> for pb::Snapshot {
+        fn from(snapshot: Snapshot) -> Self {
+            Self {
+                height: snapshot.height.into(),
+                format: snapshot.format,
+                chunks: snapshot.chunks,
+                hash: snapshot.hash,
+                metadata: snapshot.metadata,
+            }
+        }
+    }
+
+    impl TryFrom<pb::Snapshot> for Snapshot {
+        type Error = Error;
+
+        fn try_from(snapshot: pb::Snapshot) -> Result<Self, Self::Error> {
+            Ok(Self {
+                height: snapshot.height.try_into()?,
+                format: snapshot.format,
+                chunks: snapshot.chunks,
+                hash: snapshot.hash,
+                metadata: snapshot.metadata,
+            })
+        }
+    }
+
+    impl Protobuf<pb::Snapshot> for Snapshot {}
+}

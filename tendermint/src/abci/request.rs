@@ -18,7 +18,7 @@
 // This is also why certain submodules have #[allow(unused)] imports to bring
 // items into scope for doc links, rather than changing the doc links -- it
 // allows the doc comments to be copied without editing.
-use core::convert::{TryFrom, TryInto};
+use core::convert::TryFrom;
 
 // bring into scope for doc links
 #[allow(unused)]
@@ -36,6 +36,8 @@ mod info;
 mod init_chain;
 mod load_snapshot_chunk;
 mod offer_snapshot;
+mod prepare_proposal;
+mod process_proposal;
 mod query;
 mod set_option;
 
@@ -49,6 +51,8 @@ pub use info::Info;
 pub use init_chain::InitChain;
 pub use load_snapshot_chunk::LoadSnapshotChunk;
 pub use offer_snapshot::OfferSnapshot;
+pub use prepare_proposal::PrepareProposal;
+pub use process_proposal::ProcessProposal;
 pub use query::Query;
 pub use set_option::SetOption;
 
@@ -86,6 +90,10 @@ pub enum Request {
     LoadSnapshotChunk(LoadSnapshotChunk),
     #[doc = include_str!("doc/request-applysnapshotchunk.md")]
     ApplySnapshotChunk(ApplySnapshotChunk),
+    #[doc = include_str!("doc/request-prepareproposal.md")]
+    PrepareProposal(PrepareProposal),
+    #[doc = include_str!("doc/request-processproposal.md")]
+    ProcessProposal(ProcessProposal),
 }
 
 impl Request {
@@ -99,6 +107,8 @@ impl Request {
             DeliverTx(_) => MethodKind::Consensus,
             EndBlock(_) => MethodKind::Consensus,
             Commit => MethodKind::Consensus,
+            PrepareProposal(_) => MethodKind::Consensus,
+            ProcessProposal(_) => MethodKind::Consensus,
             CheckTx(_) => MethodKind::Mempool,
             ListSnapshots => MethodKind::Snapshot,
             OfferSnapshot(_) => MethodKind::Snapshot,
@@ -257,56 +267,139 @@ impl TryFrom<Request> for SnapshotRequest {
 // Protobuf conversions
 // =============================================================================
 
-use tendermint_proto::{abci as pb, Protobuf};
+mod v0_34 {
+    use super::Request;
+    use crate::{prelude::*, Error};
+    use tendermint_proto::v0_34::abci as pb;
+    use tendermint_proto::Protobuf;
 
-impl From<Request> for pb::Request {
-    fn from(request: Request) -> pb::Request {
-        use pb::request::Value;
-        let value = match request {
-            Request::Echo(x) => Some(Value::Echo(x.into())),
-            Request::Flush => Some(Value::Flush(Default::default())),
-            Request::Info(x) => Some(Value::Info(x.into())),
-            Request::SetOption(x) => Some(Value::SetOption(x.into())),
-            Request::InitChain(x) => Some(Value::InitChain(x.into())),
-            Request::Query(x) => Some(Value::Query(x.into())),
-            Request::BeginBlock(x) => Some(Value::BeginBlock(x.into())),
-            Request::CheckTx(x) => Some(Value::CheckTx(x.into())),
-            Request::DeliverTx(x) => Some(Value::DeliverTx(x.into())),
-            Request::EndBlock(x) => Some(Value::EndBlock(x.into())),
-            Request::Commit => Some(Value::Commit(Default::default())),
-            Request::ListSnapshots => Some(Value::ListSnapshots(Default::default())),
-            Request::OfferSnapshot(x) => Some(Value::OfferSnapshot(x.into())),
-            Request::LoadSnapshotChunk(x) => Some(Value::LoadSnapshotChunk(x.into())),
-            Request::ApplySnapshotChunk(x) => Some(Value::ApplySnapshotChunk(x.into())),
-        };
-        pb::Request { value }
-    }
-}
-
-impl TryFrom<pb::Request> for Request {
-    type Error = Error;
-
-    fn try_from(request: pb::Request) -> Result<Self, Self::Error> {
-        use pb::request::Value;
-        match request.value {
-            Some(Value::Echo(x)) => Ok(Request::Echo(x.try_into()?)),
-            Some(Value::Flush(pb::RequestFlush {})) => Ok(Request::Flush),
-            Some(Value::Info(x)) => Ok(Request::Info(x.try_into()?)),
-            Some(Value::SetOption(x)) => Ok(Request::SetOption(x.try_into()?)),
-            Some(Value::InitChain(x)) => Ok(Request::InitChain(x.try_into()?)),
-            Some(Value::Query(x)) => Ok(Request::Query(x.try_into()?)),
-            Some(Value::BeginBlock(x)) => Ok(Request::BeginBlock(x.try_into()?)),
-            Some(Value::CheckTx(x)) => Ok(Request::CheckTx(x.try_into()?)),
-            Some(Value::DeliverTx(x)) => Ok(Request::DeliverTx(x.try_into()?)),
-            Some(Value::EndBlock(x)) => Ok(Request::EndBlock(x.try_into()?)),
-            Some(Value::Commit(pb::RequestCommit {})) => Ok(Request::Commit),
-            Some(Value::ListSnapshots(pb::RequestListSnapshots {})) => Ok(Request::ListSnapshots),
-            Some(Value::OfferSnapshot(x)) => Ok(Request::OfferSnapshot(x.try_into()?)),
-            Some(Value::LoadSnapshotChunk(x)) => Ok(Request::LoadSnapshotChunk(x.try_into()?)),
-            Some(Value::ApplySnapshotChunk(x)) => Ok(Request::ApplySnapshotChunk(x.try_into()?)),
-            None => Err(crate::Error::missing_data()),
+    impl From<Request> for pb::Request {
+        fn from(request: Request) -> pb::Request {
+            use pb::request::Value;
+            let value = match request {
+                Request::Echo(x) => Some(Value::Echo(x.into())),
+                Request::Flush => Some(Value::Flush(Default::default())),
+                Request::Info(x) => Some(Value::Info(x.into())),
+                Request::SetOption(x) => Some(Value::SetOption(x.into())),
+                Request::InitChain(x) => Some(Value::InitChain(x.into())),
+                Request::Query(x) => Some(Value::Query(x.into())),
+                Request::BeginBlock(x) => Some(Value::BeginBlock(x.into())),
+                Request::CheckTx(x) => Some(Value::CheckTx(x.into())),
+                Request::DeliverTx(x) => Some(Value::DeliverTx(x.into())),
+                Request::EndBlock(x) => Some(Value::EndBlock(x.into())),
+                Request::Commit => Some(Value::Commit(Default::default())),
+                Request::ListSnapshots => Some(Value::ListSnapshots(Default::default())),
+                Request::OfferSnapshot(x) => Some(Value::OfferSnapshot(x.into())),
+                Request::LoadSnapshotChunk(x) => Some(Value::LoadSnapshotChunk(x.into())),
+                Request::ApplySnapshotChunk(x) => Some(Value::ApplySnapshotChunk(x.into())),
+                Request::PrepareProposal(x) => {
+                    panic!("PrepareProposal should not be used with Tendermint 0.34")
+                },
+                Request::ProcessProposal(x) => {
+                    panic!("ProcessProposal should not be used with Tendermint 0.34")
+                },
+            };
+            pb::Request { value }
         }
     }
+
+    impl TryFrom<pb::Request> for Request {
+        type Error = Error;
+
+        fn try_from(request: pb::Request) -> Result<Self, Self::Error> {
+            use pb::request::Value;
+            match request.value {
+                Some(Value::Echo(x)) => Ok(Request::Echo(x.try_into()?)),
+                Some(Value::Flush(pb::RequestFlush {})) => Ok(Request::Flush),
+                Some(Value::Info(x)) => Ok(Request::Info(x.try_into()?)),
+                Some(Value::SetOption(x)) => Ok(Request::SetOption(x.try_into()?)),
+                Some(Value::InitChain(x)) => Ok(Request::InitChain(x.try_into()?)),
+                Some(Value::Query(x)) => Ok(Request::Query(x.try_into()?)),
+                Some(Value::BeginBlock(x)) => Ok(Request::BeginBlock(x.try_into()?)),
+                Some(Value::CheckTx(x)) => Ok(Request::CheckTx(x.try_into()?)),
+                Some(Value::DeliverTx(x)) => Ok(Request::DeliverTx(x.try_into()?)),
+                Some(Value::EndBlock(x)) => Ok(Request::EndBlock(x.try_into()?)),
+                Some(Value::Commit(pb::RequestCommit {})) => Ok(Request::Commit),
+                Some(Value::ListSnapshots(pb::RequestListSnapshots {})) => {
+                    Ok(Request::ListSnapshots)
+                },
+                Some(Value::OfferSnapshot(x)) => Ok(Request::OfferSnapshot(x.try_into()?)),
+                Some(Value::LoadSnapshotChunk(x)) => Ok(Request::LoadSnapshotChunk(x.try_into()?)),
+                Some(Value::ApplySnapshotChunk(x)) => {
+                    Ok(Request::ApplySnapshotChunk(x.try_into()?))
+                },
+                None => Err(crate::Error::missing_data()),
+            }
+        }
+    }
+
+    impl Protobuf<pb::Request> for Request {}
 }
 
-impl Protobuf<pb::Request> for Request {}
+mod v0_37 {
+    use super::Request;
+    use crate::{prelude::*, Error};
+    use tendermint_proto::v0_37::abci as pb;
+    use tendermint_proto::Protobuf;
+
+    impl From<Request> for pb::Request {
+        fn from(request: Request) -> pb::Request {
+            use pb::request::Value;
+            let value = match request {
+                Request::Echo(x) => Some(Value::Echo(x.into())),
+                Request::Flush => Some(Value::Flush(Default::default())),
+                Request::Info(x) => Some(Value::Info(x.into())),
+                Request::InitChain(x) => Some(Value::InitChain(x.into())),
+                Request::Query(x) => Some(Value::Query(x.into())),
+                Request::BeginBlock(x) => Some(Value::BeginBlock(x.into())),
+                Request::CheckTx(x) => Some(Value::CheckTx(x.into())),
+                Request::DeliverTx(x) => Some(Value::DeliverTx(x.into())),
+                Request::EndBlock(x) => Some(Value::EndBlock(x.into())),
+                Request::Commit => Some(Value::Commit(Default::default())),
+                Request::ListSnapshots => Some(Value::ListSnapshots(Default::default())),
+                Request::OfferSnapshot(x) => Some(Value::OfferSnapshot(x.into())),
+                Request::LoadSnapshotChunk(x) => Some(Value::LoadSnapshotChunk(x.into())),
+                Request::ApplySnapshotChunk(x) => Some(Value::ApplySnapshotChunk(x.into())),
+                Request::PrepareProposal(x) => Some(Value::PrepareProposal(x.into())),
+                Request::ProcessProposal(x) => Some(Value::ProcessProposal(x.into())),
+                Request::SetOption(x) => {
+                    panic!("SetOption should not be used with Tendermint 0.37")
+                },
+            };
+            pb::Request { value }
+        }
+    }
+
+    impl TryFrom<pb::Request> for Request {
+        type Error = Error;
+
+        fn try_from(request: pb::Request) -> Result<Self, Self::Error> {
+            use pb::request::Value;
+            match request.value {
+                Some(Value::Echo(x)) => Ok(Request::Echo(x.try_into()?)),
+                Some(Value::Flush(pb::RequestFlush {})) => Ok(Request::Flush),
+                Some(Value::Info(x)) => Ok(Request::Info(x.try_into()?)),
+                Some(Value::InitChain(x)) => Ok(Request::InitChain(x.try_into()?)),
+                Some(Value::Query(x)) => Ok(Request::Query(x.try_into()?)),
+                Some(Value::BeginBlock(x)) => Ok(Request::BeginBlock(x.try_into()?)),
+                Some(Value::CheckTx(x)) => Ok(Request::CheckTx(x.try_into()?)),
+                Some(Value::DeliverTx(x)) => Ok(Request::DeliverTx(x.try_into()?)),
+                Some(Value::EndBlock(x)) => Ok(Request::EndBlock(x.try_into()?)),
+                Some(Value::Commit(pb::RequestCommit {})) => Ok(Request::Commit),
+                Some(Value::ListSnapshots(pb::RequestListSnapshots {})) => {
+                    Ok(Request::ListSnapshots)
+                },
+                Some(Value::OfferSnapshot(x)) => Ok(Request::OfferSnapshot(x.try_into()?)),
+                Some(Value::LoadSnapshotChunk(x)) => Ok(Request::LoadSnapshotChunk(x.try_into()?)),
+                Some(Value::ApplySnapshotChunk(x)) => {
+                    Ok(Request::ApplySnapshotChunk(x.try_into()?))
+                },
+                Some(Value::PrepareProposal(x)) => Ok(Request::PrepareProposal(x.try_into()?)),
+                Some(Value::ProcessProposal(x)) => Ok(Request::ProcessProposal(x.try_into()?)),
+                None => Err(crate::Error::missing_data()),
+            }
+        }
+    }
+
+    impl Protobuf<pb::Request> for Request {}
+}
