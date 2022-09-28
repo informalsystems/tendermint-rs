@@ -6,10 +6,10 @@ use tendermint_proto::abci::{
     request, response, Request, RequestApplySnapshotChunk, RequestBeginBlock, RequestCheckTx,
     RequestCommit, RequestDeliverTx, RequestEcho, RequestEndBlock, RequestFlush, RequestInfo,
     RequestInitChain, RequestListSnapshots, RequestLoadSnapshotChunk, RequestOfferSnapshot,
-    RequestQuery, ResponseApplySnapshotChunk, ResponseBeginBlock, ResponseCheckTx, ResponseCommit,
-    ResponseDeliverTx, ResponseEcho, ResponseEndBlock, ResponseFlush, ResponseInfo,
-    ResponseInitChain, ResponseListSnapshots, ResponseLoadSnapshotChunk, ResponseOfferSnapshot,
-    ResponseQuery,
+    RequestQuery, RequestSetOption, ResponseApplySnapshotChunk, ResponseBeginBlock,
+    ResponseCheckTx, ResponseCommit, ResponseDeliverTx, ResponseEcho, ResponseEndBlock,
+    ResponseFlush, ResponseInfo, ResponseInitChain, ResponseListSnapshots,
+    ResponseLoadSnapshotChunk, ResponseOfferSnapshot, ResponseQuery, ResponseSetOption,
 };
 
 use crate::{codec::ClientCodec, Error};
@@ -111,6 +111,15 @@ impl Client {
     /// Commit the current state at the current height.
     pub fn commit(&mut self) -> Result<ResponseCommit, Error> {
         perform!(self, Commit, RequestCommit {})
+    }
+
+    /// Request that the application set an option to a particular value.
+    ///
+    /// This request lacks specification and should not be used.
+    /// It will be removed in ABCI 0.37.
+    #[deprecated]
+    pub fn set_option(&mut self, req: RequestSetOption) -> Result<ResponseSetOption, Error> {
+        perform!(self, SetOption, req)
     }
 
     /// Used during state sync to discover available snapshots on peers.
