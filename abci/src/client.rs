@@ -116,8 +116,8 @@ impl Client {
     /// Request that the application set an option to a particular value.
     ///
     /// This request lacks specification and should not be used.
-    /// It will be removed in ABCI 0.37.
-    #[deprecated]
+    /// It will be removed in Tendermint Core v0.37.
+    #[deprecated(note = "The set_option ABCI method will be removed in Tendermint Core v0.37")]
     pub fn set_option(&mut self, req: RequestSetOption) -> Result<ResponseSetOption, Error> {
         perform!(self, SetOption, req)
     }
