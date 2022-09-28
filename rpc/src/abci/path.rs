@@ -6,8 +6,9 @@ use core::{
 };
 
 use serde::{Deserialize, Serialize};
+use tendermint::error::Error;
 
-use crate::{error::Error, prelude::*};
+use crate::prelude::*;
 
 /// Path to ABCI data
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]

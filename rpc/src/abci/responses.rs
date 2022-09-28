@@ -3,9 +3,10 @@
 use core::fmt::{self, Display};
 
 use serde::{Deserialize, Deserializer, Serialize};
+use tendermint::{consensus, serializers, validator};
 
 use super::{code::Code, data::Data, gas::Gas, info::Info, log::Log, tag::Tag};
-use crate::{consensus, prelude::*, serializers, validator};
+use crate::prelude::*;
 
 /// Responses for ABCI calls which occur during block processing.
 ///

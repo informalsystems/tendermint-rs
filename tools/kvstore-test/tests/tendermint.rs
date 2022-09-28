@@ -22,11 +22,11 @@ mod rpc {
 
     use futures::StreamExt;
     use tendermint::{
-        abci::{Code, Log, Transaction},
         block::Height,
         merkle::simple_hash_from_byte_vectors,
     };
     use tendermint_rpc::{
+        abci::{Code, Log, Transaction},
         endpoint::tx::Response as ResultTx,
         event::{Event, EventData, TxInfo},
         query::{EventType, Query},
@@ -109,12 +109,7 @@ mod rpc {
         // Check for empty merkle root.
         // See: https://github.com/informalsystems/tendermint-rs/issues/562
         let computed_data_hash = simple_hash_from_byte_vectors(
-            block_info
-                .block
-                .data
-                .iter()
-                .map(|t| t.to_owned().into())
-                .collect(),
+            block_info.block.data.iter().map(|t| t.to_owned()).collect(),
         );
         assert_eq!(
             computed_data_hash,
@@ -480,7 +475,7 @@ mod rpc {
         http_client: &HttpClient,
         websocket_client: &mut WebSocketClient,
         tx: Transaction,
-    ) -> Result<(tendermint::abci::transaction::Hash, TxInfo), tendermint_rpc::Error> {
+    ) -> Result<(tendermint_rpc::abci::transaction::Hash, TxInfo), tendermint_rpc::Error> {
         let mut subs = websocket_client.subscribe(EventType::Tx.into()).await?;
         let r = http_client.broadcast_tx_async(tx.clone()).await?;
 

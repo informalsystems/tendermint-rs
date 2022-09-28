@@ -1,8 +1,8 @@
 //! Fork evidence data structures and interfaces.
 
 use contracts::contract_trait;
-use tendermint::abci::transaction::Hash;
 pub use tendermint::evidence::Evidence;
+use tendermint_rpc::abci::transaction::Hash;
 
 use crate::{components::io::IoError, verifier::types::PeerId};
 

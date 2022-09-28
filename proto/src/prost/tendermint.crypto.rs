@@ -1,24 +1,3 @@
-/// PublicKey defines the keys available for use with Tendermint Validators
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PublicKey {
-    #[prost(oneof="public_key::Sum", tags="1, 2")]
-    pub sum: ::core::option::Option<public_key::Sum>,
-}
-/// Nested message and enum types in `PublicKey`.
-pub mod public_key {
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
-    #[serde(tag = "type", content = "value")]
-    #[derive(Clone, PartialEq, ::prost::Oneof)]
-    pub enum Sum {
-        #[prost(bytes, tag="1")]
-        #[serde(rename = "tendermint/PubKeyEd25519", with = "crate::serializers::bytes::base64string")]
-        Ed25519(::prost::alloc::vec::Vec<u8>),
-        #[prost(bytes, tag="2")]
-        #[serde(rename = "tendermint/PubKeySecp256k1", with = "crate::serializers::bytes::base64string")]
-        Secp256k1(::prost::alloc::vec::Vec<u8>),
-    }
-}
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Proof {
@@ -70,4 +49,25 @@ pub struct ProofOp {
 pub struct ProofOps {
     #[prost(message, repeated, tag="1")]
     pub ops: ::prost::alloc::vec::Vec<ProofOp>,
+}
+/// PublicKey defines the keys available for use with Tendermint Validators
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PublicKey {
+    #[prost(oneof="public_key::Sum", tags="1, 2")]
+    pub sum: ::core::option::Option<public_key::Sum>,
+}
+/// Nested message and enum types in `PublicKey`.
+pub mod public_key {
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[serde(tag = "type", content = "value")]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Sum {
+        #[prost(bytes, tag="1")]
+        #[serde(rename = "tendermint/PubKeyEd25519", with = "crate::serializers::bytes::base64string")]
+        Ed25519(::prost::alloc::vec::Vec<u8>),
+        #[prost(bytes, tag="2")]
+        #[serde(rename = "tendermint/PubKeySecp256k1", with = "crate::serializers::bytes::base64string")]
+        Secp256k1(::prost::alloc::vec::Vec<u8>),
+    }
 }

@@ -8,8 +8,9 @@ use core::{
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
+use tendermint::error::Error;
 
-use crate::{error::Error, prelude::*};
+use crate::prelude::*;
 
 /// Size of a transaction hash in bytes
 pub const LENGTH: usize = 32;

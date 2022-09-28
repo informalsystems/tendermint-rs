@@ -3,9 +3,10 @@
 use core::{fmt, str::FromStr};
 
 use serde::{Deserialize, Serialize};
-use tendermint_proto::serializers::bytes::base64string;
+use tendermint::error::Error;
 
-use crate::{error::Error, prelude::*};
+use crate::prelude::*;
+use crate::serializers::bytes::base64string;
 
 /// Tags
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -74,18 +75,5 @@ impl FromStr for Value {
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", &self.0)
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn tag_serde() {
-        let json = r#"{"key": "cGFja2V0X3RpbWVvdXRfaGVpZ2h0", "value": "MC00ODQw"}"#;
-        let tag: Tag = serde_json::from_str(json).unwrap();
-        assert_eq!("packet_timeout_height", tag.key.0);
-        assert_eq!("0-4840", tag.value.0);
     }
 }

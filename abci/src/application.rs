@@ -8,11 +8,11 @@ pub mod kvstore;
 use tendermint_proto::abci::{
     request::Value, response, Request, RequestApplySnapshotChunk, RequestBeginBlock,
     RequestCheckTx, RequestDeliverTx, RequestEcho, RequestEndBlock, RequestInfo, RequestInitChain,
-    RequestLoadSnapshotChunk, RequestOfferSnapshot, RequestQuery, RequestSetOption, Response,
+    RequestLoadSnapshotChunk, RequestOfferSnapshot, RequestQuery, Response,
     ResponseApplySnapshotChunk, ResponseBeginBlock, ResponseCheckTx, ResponseCommit,
     ResponseDeliverTx, ResponseEcho, ResponseEndBlock, ResponseFlush, ResponseInfo,
     ResponseInitChain, ResponseListSnapshots, ResponseLoadSnapshotChunk, ResponseOfferSnapshot,
-    ResponseQuery, ResponseSetOption,
+    ResponseQuery,
 };
 
 /// An ABCI application.
@@ -76,12 +76,6 @@ pub trait Application: Send + Clone + 'static {
         Default::default()
     }
 
-    /// Allows the Tendermint node to request that the application set an
-    /// option to a particular value.
-    fn set_option(&self, _request: RequestSetOption) -> ResponseSetOption {
-        Default::default()
-    }
-
     /// Used during state sync to discover available snapshots on peers.
     fn list_snapshots(&self) -> ResponseListSnapshots {
         Default::default()
@@ -123,7 +117,6 @@ impl<A: Application> RequestDispatcher for A {
                 Value::Echo(req) => response::Value::Echo(self.echo(req)),
                 Value::Flush(_) => response::Value::Flush(self.flush()),
                 Value::Info(req) => response::Value::Info(self.info(req)),
-                Value::SetOption(req) => response::Value::SetOption(self.set_option(req)),
                 Value::InitChain(req) => response::Value::InitChain(self.init_chain(req)),
                 Value::Query(req) => response::Value::Query(self.query(req)),
                 Value::BeginBlock(req) => response::Value::BeginBlock(self.begin_block(req)),
@@ -141,6 +134,7 @@ impl<A: Application> RequestDispatcher for A {
                 Value::ApplySnapshotChunk(req) => {
                     response::Value::ApplySnapshotChunk(self.apply_snapshot_chunk(req))
                 },
+                Value::SetOption(_) => response::Value::SetOption(Default::default()),
             }),
         }
     }

@@ -11,8 +11,9 @@ use core::{
 };
 
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+use tendermint::error::Error;
 
-use crate::{error::Error, prelude::*};
+use crate::prelude::*;
 
 /// Gas: representation of transaction processing resource costs
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]

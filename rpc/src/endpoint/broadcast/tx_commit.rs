@@ -2,12 +2,12 @@
 //! if we timeout waiting for tx to commit.
 
 use serde::{Deserialize, Serialize};
-use tendermint::{
-    abci::{responses::Codespace, transaction, Code, Data, Event, Gas, Info, Log, Transaction},
-    block,
-};
+use tendermint::block;
 
-use crate::prelude::*;
+use crate::{
+    abci::{responses::Codespace, transaction, Code, Data, Event, Gas, Info, Log, Transaction},
+    prelude::*,
+};
 
 /// `/broadcast_tx_commit`: only returns error if `mempool.CheckTx()` errs or
 /// if we timeout waiting for tx to commit.
