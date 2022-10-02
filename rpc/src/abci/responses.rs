@@ -8,39 +8,6 @@ use tendermint::{consensus, serializers, validator};
 use super::{code::Code, data::Data, gas::Gas, info::Info, log::Log, tag::Tag};
 use crate::prelude::*;
 
-/// Responses for ABCI calls which occur during block processing.
-///
-/// Returned from the `/block_results` RPC endpoint.
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Responses {
-    /// Deliver TX response.
-    // TODO(tarcieri): remove the `alias` attribute when this lands upstream:
-    // <https://github.com/tendermint/tendermint/pull/3708/files>
-    #[serde(alias = "DeliverTx")]
-    #[serde(default, deserialize_with = "deserialize_deliver_tx")]
-    pub deliver_tx: Vec<DeliverTx>,
-
-    /// Begin block response.
-    // TODO(tarcieri): remove the `alias` attribute when this lands upstream:
-    // <https://github.com/tendermint/tendermint/pull/3708/files>
-    #[serde(alias = "BeginBlock")]
-    pub begin_block: Option<BeginBlock>,
-
-    /// End block response.
-    // TODO(tarcieri): remove the `alias` attribute when this lands upstream:
-    // <https://github.com/tendermint/tendermint/pull/3708/files>
-    #[serde(alias = "EndBlock")]
-    pub end_block: Option<EndBlock>,
-}
-
-/// Return an empty vec in the event `deliver_tx` is `null`
-fn deserialize_deliver_tx<'de, D>(deserializer: D) -> Result<Vec<DeliverTx>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    Ok(Option::deserialize(deserializer)?.unwrap_or_default())
-}
-
 /// Deliver TX response.
 ///
 /// This type corresponds to the `ResponseDeliverTx` proto from:

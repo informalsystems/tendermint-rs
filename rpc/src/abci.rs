@@ -27,6 +27,6 @@ pub use self::{
     gas::Gas,
     info::Info,
     log::Log,
-    responses::{DeliverTx, Event, Responses},
+    responses::{DeliverTx, Event},
     transaction::Transaction,
 };
