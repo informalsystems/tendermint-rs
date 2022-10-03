@@ -1,11 +1,10 @@
 //! `/tx` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
-use tendermint::block;
-use tendermint::Hash;
+use tendermint::{abci, block, Hash};
 use tendermint_proto::types::TxProof;
 
-use crate::{abci, Method};
+use crate::Method;
 
 /// Request for finding a transaction by its hash.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -48,8 +47,8 @@ pub struct Response {
     pub hash: Hash,
     pub height: block::Height,
     pub index: u32,
-    pub tx_result: abci::DeliverTx,
-    pub tx: abci::Transaction,
+    pub tx_result: abci::response::DeliverTx,
+    pub tx: crate::abci::Transaction,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proof: Option<TxProof>,
 }

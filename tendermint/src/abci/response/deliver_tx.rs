@@ -1,10 +1,12 @@
 use bytes::Bytes;
+use serde::{Deserialize, Serialize};
 
 use super::super::Event;
 use crate::prelude::*;
 
 #[doc = include_str!("../doc/response-delivertx.md")]
-#[derive(Clone, PartialEq, Eq, Debug, Default)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
+#[serde(into = "pb::ResponseDeliverTx", try_from = "pb::ResponseDeliverTx")]
 pub struct DeliverTx {
     /// The response code.
     ///

@@ -3,57 +3,9 @@
 use core::fmt::{self, Display};
 
 use serde::{Deserialize, Deserializer, Serialize};
-use tendermint::{consensus, serializers, validator};
+use tendermint::{abci, consensus, validator};
 
-use super::{code::Code, data::Data, gas::Gas, info::Info, log::Log, tag::Tag};
 use crate::prelude::*;
-
-/// Deliver TX response.
-///
-/// This type corresponds to the `ResponseDeliverTx` proto from:
-///
-/// <https://github.com/tendermint/tendermint/blob/main/abci/types/types.proto>
-// TODO(tarcieri): generate this automatically from the proto
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct DeliverTx {
-    /// ABCI application response code
-    pub code: Code,
-
-    /// ABCI application data
-    #[serde(with = "serializers::nullable")]
-    pub data: Data,
-
-    /// ABCI log data (nondeterministic)
-    pub log: Log,
-
-    /// ABCI info (nondeterministic)
-    pub info: Info,
-
-    /// Amount of gas wanted
-    #[serde(default)]
-    pub gas_wanted: Gas,
-
-    /// Amount of gas used
-    #[serde(default)]
-    pub gas_used: Gas,
-
-    /// Events
-    pub events: Vec<Event>,
-
-    /// Codespace
-    pub codespace: Codespace,
-}
-
-/// Event
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub struct Event {
-    /// Event type
-    #[serde(rename = "type")]
-    pub type_str: String,
-
-    /// Attributes
-    pub attributes: Vec<Tag>,
-}
 
 /// Begin block response.
 ///
@@ -65,7 +17,7 @@ pub struct Event {
 pub struct BeginBlock {
     /// Tags
     #[serde(default)]
-    pub tags: Vec<Tag>,
+    pub tags: Vec<abci::EventAttribute>,
 }
 
 /// End block response.
@@ -85,7 +37,7 @@ pub struct EndBlock {
 
     /// Tags
     #[serde(default)]
-    pub tags: Vec<Tag>,
+    pub tags: Vec<abci::EventAttribute>,
 }
 
 /// Return an empty vec in the event `validator_updates` is `null`

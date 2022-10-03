@@ -28,6 +28,7 @@ const ALIAS_POWER_QUOTED: &str =
     r#"#[serde(alias = "power", with = "crate::serializers::from_str")]"#;
 const PART_SET_HEADER_TOTAL: &str =
     r#"#[serde(with = "crate::serializers::part_set_header_total")]"#;
+const RENAME_TYPE: &str = r#"#[serde(rename = "type")]"#;
 const RENAME_EDPUBKEY: &str = r#"#[serde(rename = "tendermint/PubKeyEd25519", with = "crate::serializers::bytes::base64string")]"#;
 const RENAME_SECPPUBKEY: &str = r#"#[serde(rename = "tendermint/PubKeySecp256k1", with = "crate::serializers::bytes::base64string")]"#;
 const RENAME_SRPUBKEY: &str = r#"#[serde(rename = "tendermint/PubKeySr25519", with = "crate::serializers::bytes::base64string")]"#;
@@ -48,6 +49,10 @@ const ALIAS_PARTS: &str = r#"#[serde(alias = "parts")]"#;
 /// The first item is a path as defined in the prost_build::Config::btree_map here:
 /// https://docs.rs/prost-build/0.6.1/prost_build/struct.Config.html#method.btree_map
 pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
+    (".tendermint.abci.Event", SERIALIZED),
+    (".tendermint.abci.EventAttribute", SERIALIZED),
+    (".tendermint.abci.ResponseDeliverTx", SERIALIZED),
+    (".tendermint.abci.ResponseInfo", SERIALIZED),
     (".tendermint.libs.bits.BitArray", SERIALIZED),
     (".tendermint.types.EvidenceParams", SERIALIZED),
     (".tendermint.types.BlockIDFlag", PRIMITIVE_ENUM),
@@ -70,7 +75,6 @@ pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.crypto.PublicKey", SERIALIZED),
     (".tendermint.crypto.PublicKey.sum", TYPE_TAG),
     (".tendermint.types.Evidence.sum", TYPE_TAG),
-    (".tendermint.abci.ResponseInfo", SERIALIZED),
     (".tendermint.types.CanonicalBlockID", SERIALIZED),
     (".tendermint.types.CanonicalPartSetHeader", SERIALIZED),
     (".tendermint.types.Validator", SERIALIZED),
@@ -87,12 +91,9 @@ pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
 /// The first item is a path as defined in the prost_build::Config::btree_map here:
 /// https://docs.rs/prost-build/0.6.1/prost_build/struct.Config.html#method.btree_map
 pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
-    (
-        ".tendermint.types.EvidenceParams.max_bytes",
-        QUOTED_WITH_DEFAULT,
-    ),
-    (".tendermint.version.Consensus.block", QUOTED),
-    (".tendermint.version.Consensus.app", QUOTED_WITH_DEFAULT),
+    (".tendermint.abci.Event.type", RENAME_TYPE),
+    (".tendermint.abci.EventAttribute.key", BASE64STRING),
+    (".tendermint.abci.EventAttribute.value", BASE64STRING),
     (".tendermint.abci.ResponseInfo.data", DEFAULT),
     (".tendermint.abci.ResponseInfo.version", DEFAULT),
     (
@@ -108,6 +109,12 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         ".tendermint.abci.ResponseInfo.last_block_app_hash",
         BYTES_SKIP_IF_EMPTY,
     ),
+    (
+        ".tendermint.types.EvidenceParams.max_bytes",
+        QUOTED_WITH_DEFAULT,
+    ),
+    (".tendermint.version.Consensus.block", QUOTED),
+    (".tendermint.version.Consensus.app", QUOTED_WITH_DEFAULT),
     (".tendermint.types.BlockID.hash", HEXSTRING),
     (".tendermint.types.BlockID.part_set_header", ALIAS_PARTS),
     (

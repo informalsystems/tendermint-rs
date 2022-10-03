@@ -3,7 +3,7 @@
 use alloc::collections::BTreeMap as HashMap;
 
 use serde::{Deserialize, Serialize};
-use tendermint::Block;
+use tendermint::{abci, Block};
 
 use crate::{
     abci::responses::{BeginBlock, EndBlock},
@@ -79,5 +79,5 @@ pub struct TxResult {
     pub log: Option<String>,
     pub gas_wanted: Option<String>,
     pub gas_used: Option<String>,
-    pub events: Vec<crate::abci::Event>,
+    pub events: Vec<abci::Event>,
 }

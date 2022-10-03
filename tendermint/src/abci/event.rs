@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::prelude::*;
 
 /// An event that occurred while processing a request.
@@ -10,7 +12,8 @@ use crate::prelude::*;
 /// be queried using these events.
 ///
 /// [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#events)
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(into = "pb::Event", try_from = "pb::Event")]
 pub struct Event {
     /// The kind of event.
     ///
@@ -59,7 +62,8 @@ impl Event {
 /// [`Event::new`] for details.
 ///
 /// [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#events)
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(into = "pb::EventAttribute", try_from = "pb::EventAttribute")]
 pub struct EventAttribute {
     /// The event key.
     pub key: String,

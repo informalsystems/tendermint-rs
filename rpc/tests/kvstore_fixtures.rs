@@ -546,39 +546,27 @@ fn incoming_fixtures() {
                 assert!(result.deliver_tx.data.is_none());
                 assert_eq!(result.deliver_tx.events.len(), 1);
                 assert_eq!(result.deliver_tx.events[0].attributes.len(), 4);
+                assert_eq!(result.deliver_tx.events[0].attributes[0].key, "creator");
                 assert_eq!(
-                    result.deliver_tx.events[0].attributes[0].key.as_ref(),
-                    "creator"
-                );
-                assert_eq!(
-                    result.deliver_tx.events[0].attributes[0].value.as_ref(),
+                    result.deliver_tx.events[0].attributes[0].value,
                     "Cosmoshi Netowoko"
                 );
+                assert_eq!(result.deliver_tx.events[0].attributes[1].key, "key");
                 assert_eq!(
-                    result.deliver_tx.events[0].attributes[1].key.as_ref(),
-                    "key"
-                );
-                assert_eq!(
-                    result.deliver_tx.events[0].attributes[1].value.as_ref(),
+                    result.deliver_tx.events[0].attributes[1].value,
                     "commit-key"
                 );
+                assert_eq!(result.deliver_tx.events[0].attributes[2].key, "index_key");
                 assert_eq!(
-                    result.deliver_tx.events[0].attributes[2].key.as_ref(),
-                    "index_key"
-                );
-                assert_eq!(
-                    result.deliver_tx.events[0].attributes[2].value.as_ref(),
+                    result.deliver_tx.events[0].attributes[2].value,
                     "index is working"
                 );
+                assert_eq!(result.deliver_tx.events[0].attributes[3].key, "noindex_key");
                 assert_eq!(
-                    result.deliver_tx.events[0].attributes[3].key.as_ref(),
-                    "noindex_key"
-                );
-                assert_eq!(
-                    result.deliver_tx.events[0].attributes[3].value.as_ref(),
+                    result.deliver_tx.events[0].attributes[3].value,
                     "index is working"
                 );
-                assert_eq!(result.deliver_tx.events[0].type_str, "app");
+                assert_eq!(result.deliver_tx.events[0].kind, "app");
                 assert_eq!(result.deliver_tx.gas_used.value(), 0);
                 assert_eq!(result.deliver_tx.gas_wanted.value(), 0);
                 assert!(result.deliver_tx.info.to_string().is_empty());
@@ -1130,18 +1118,18 @@ fn incoming_fixtures() {
                     assert!(tx_result.result.gas_wanted.is_none());
                     assert!(tx_result.result.gas_used.is_none());
                     assert_eq!(tx_result.result.events.len(), 1);
-                    assert_eq!(tx_result.result.events[0].type_str, "app");
+                    assert_eq!(tx_result.result.events[0].kind, "app");
                     for attr in &tx_result.result.events[0].attributes {
-                        match attr.key.as_ref() {
+                        match attr.key.as_str() {
                             "creator" => {
-                                assert_eq!(attr.value.as_ref(), "Cosmoshi Netowoko")
+                                assert_eq!(attr.value, "Cosmoshi Netowoko")
                             },
-                            "key" => assert_eq!(attr.value.as_ref(), "tx0"),
+                            "key" => assert_eq!(attr.value, "tx0"),
                             "index_key" => {
-                                assert_eq!(attr.value.as_ref(), "index is working")
+                                assert_eq!(attr.value, "index is working")
                             },
                             "noindex_key" => {
-                                assert_eq!(attr.value.as_ref(), "index is working")
+                                assert_eq!(attr.value, "index is working")
                             },
                             _ => panic!("unknown attribute found {}", attr.key),
                         }
@@ -1162,18 +1150,18 @@ fn incoming_fixtures() {
                     assert!(tx_result.result.gas_wanted.is_none());
                     assert!(tx_result.result.gas_used.is_none());
                     assert_eq!(tx_result.result.events.len(), 1);
-                    assert_eq!(tx_result.result.events[0].type_str, "app");
+                    assert_eq!(tx_result.result.events[0].kind, "app");
                     for attr in &tx_result.result.events[0].attributes {
-                        match attr.key.as_ref() {
+                        match attr.key.as_str() {
                             "creator" => {
-                                assert_eq!(attr.value.as_ref(), "Cosmoshi Netowoko")
+                                assert_eq!(attr.value, "Cosmoshi Netowoko")
                             },
-                            "key" => assert_eq!(attr.value.as_ref(), "tx1"),
+                            "key" => assert_eq!(attr.value, "tx1"),
                             "index_key" => {
-                                assert_eq!(attr.value.as_ref(), "index is working")
+                                assert_eq!(attr.value, "index is working")
                             },
                             "noindex_key" => {
-                                assert_eq!(attr.value.as_ref(), "index is working")
+                                assert_eq!(attr.value, "index is working")
                             },
                             _ => panic!("unknown attribute found {}", attr.key),
                         }
@@ -1195,18 +1183,18 @@ fn incoming_fixtures() {
                     assert!(tx_result.result.gas_wanted.is_none());
                     assert!(tx_result.result.gas_used.is_none());
                     assert_eq!(tx_result.result.events.len(), 1);
-                    assert_eq!(tx_result.result.events[0].type_str, "app");
+                    assert_eq!(tx_result.result.events[0].kind, "app");
                     for attr in &tx_result.result.events[0].attributes {
-                        match attr.key.as_ref() {
+                        match attr.key.as_str() {
                             "creator" => {
-                                assert_eq!(attr.value.as_ref(), "Cosmoshi Netowoko")
+                                assert_eq!(attr.value, "Cosmoshi Netowoko")
                             },
-                            "key" => assert_eq!(attr.value.as_ref(), "tx2"),
+                            "key" => assert_eq!(attr.value, "tx2"),
                             "index_key" => {
-                                assert_eq!(attr.value.as_ref(), "index is working")
+                                assert_eq!(attr.value, "index is working")
                             },
                             "noindex_key" => {
-                                assert_eq!(attr.value.as_ref(), "index is working")
+                                assert_eq!(attr.value, "index is working")
                             },
                             _ => panic!("unknown attribute found {}", attr.key),
                         }
@@ -1227,18 +1215,18 @@ fn incoming_fixtures() {
                     assert!(tx_result.result.gas_wanted.is_none());
                     assert!(tx_result.result.gas_used.is_none());
                     assert_eq!(tx_result.result.events.len(), 1);
-                    assert_eq!(tx_result.result.events[0].type_str, "app");
+                    assert_eq!(tx_result.result.events[0].kind, "app");
                     for attr in &tx_result.result.events[0].attributes {
-                        match attr.key.as_ref() {
+                        match attr.key.as_str() {
                             "creator" => {
-                                assert_eq!(attr.value.as_ref(), "Cosmoshi Netowoko")
+                                assert_eq!(attr.value, "Cosmoshi Netowoko")
                             },
-                            "key" => assert_eq!(attr.value.as_ref(), "tx3"),
+                            "key" => assert_eq!(attr.value, "tx3"),
                             "index_key" => {
-                                assert_eq!(attr.value.as_ref(), "index is working")
+                                assert_eq!(attr.value, "index is working")
                             },
                             "noindex_key" => {
-                                assert_eq!(attr.value.as_ref(), "index is working")
+                                assert_eq!(attr.value, "index is working")
                             },
                             _ => panic!("unknown attribute found {}", attr.key),
                         }
@@ -1259,18 +1247,18 @@ fn incoming_fixtures() {
                     assert!(tx_result.result.gas_wanted.is_none());
                     assert!(tx_result.result.gas_used.is_none());
                     assert_eq!(tx_result.result.events.len(), 1);
-                    assert_eq!(tx_result.result.events[0].type_str, "app");
+                    assert_eq!(tx_result.result.events[0].kind, "app");
                     for attr in &tx_result.result.events[0].attributes {
-                        match attr.key.as_ref() {
+                        match attr.key.as_str() {
                             "creator" => {
-                                assert_eq!(attr.value.as_ref(), "Cosmoshi Netowoko")
+                                assert_eq!(attr.value, "Cosmoshi Netowoko")
                             },
-                            "key" => assert_eq!(attr.value.as_ref(), "tx4"),
+                            "key" => assert_eq!(attr.value, "tx4"),
                             "index_key" => {
-                                assert_eq!(attr.value.as_ref(), "index is working")
+                                assert_eq!(attr.value, "index is working")
                             },
                             "noindex_key" => {
-                                assert_eq!(attr.value.as_ref(), "index is working")
+                                assert_eq!(attr.value, "index is working")
                             },
                             _ => panic!("unknown attribute found {}", attr.key),
                         }
@@ -1364,13 +1352,13 @@ fn incoming_fixtures() {
                 // Test a few selected attributes of the results.
                 for tx in result.txs {
                     assert_ne!(tx.hash.as_bytes(), [0; 32]);
-                    assert_eq!(tx.tx_result.code, tendermint_rpc::abci::Code::Ok);
+                    assert_eq!(tx.tx_result.code, tendermint_rpc::abci::Code::Ok.value());
                     assert_eq!(tx.tx_result.events.len(), 1);
-                    assert_eq!(tx.tx_result.events[0].type_str, "app");
-                    assert_eq!(tx.tx_result.gas_used.value(), 0);
-                    assert_eq!(tx.tx_result.gas_wanted.value(), 0);
+                    assert_eq!(tx.tx_result.events[0].kind, "app");
+                    assert_eq!(tx.tx_result.gas_used, 0);
+                    assert_eq!(tx.tx_result.gas_wanted, 0);
                     assert!(tx.tx_result.info.to_string().is_empty());
-                    assert!(tx.tx_result.log.value().is_empty());
+                    assert!(tx.tx_result.log.is_empty());
                     assert!(tx.proof.is_none());
                 }
             },
@@ -1380,13 +1368,13 @@ fn incoming_fixtures() {
                 // Test a few selected attributes of the results.
                 for tx in result.txs {
                     assert_ne!(tx.hash.as_bytes(), [0; 32]);
-                    assert_eq!(tx.tx_result.code, tendermint_rpc::abci::Code::Ok);
+                    assert_eq!(tx.tx_result.code, tendermint_rpc::abci::Code::Ok.value());
                     assert_eq!(tx.tx_result.events.len(), 1);
-                    assert_eq!(tx.tx_result.events[0].type_str, "app");
-                    assert_eq!(tx.tx_result.gas_used.value(), 0);
-                    assert_eq!(tx.tx_result.gas_wanted.value(), 0);
+                    assert_eq!(tx.tx_result.events[0].kind, "app");
+                    assert_eq!(tx.tx_result.gas_used, 0);
+                    assert_eq!(tx.tx_result.gas_wanted, 0);
                     assert!(tx.tx_result.info.to_string().is_empty());
-                    assert!(tx.tx_result.log.value().is_empty());
+                    assert!(tx.tx_result.log.is_empty());
                     let proof = tx.proof.unwrap();
                     assert_eq!(proof.data, tx.tx.as_bytes());
                     assert!(proof.proof.is_some());

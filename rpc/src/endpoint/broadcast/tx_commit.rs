@@ -2,10 +2,10 @@
 //! if we timeout waiting for tx to commit.
 
 use serde::{Deserialize, Serialize};
-use tendermint::{block, Hash};
+use tendermint::{abci, block, Hash};
 
 use crate::{
-    abci::{responses::Codespace, Code, Data, Event, Gas, Info, Log, Transaction},
+    abci::{responses::Codespace, Code, Data, Gas, Info, Log, Transaction},
     prelude::*,
 };
 
@@ -84,7 +84,7 @@ pub struct TxResult {
     pub gas_used: Gas,
 
     /// Events
-    pub events: Vec<Event>,
+    pub events: Vec<abci::Event>,
 
     /// Codespace
     pub codespace: Codespace,
