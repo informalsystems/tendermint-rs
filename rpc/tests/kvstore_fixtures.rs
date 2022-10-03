@@ -1,8 +1,7 @@
 //! Tendermint kvstore RPC endpoint testing.
 
 use core::str::FromStr;
-use std::collections::BTreeMap as HashMap;
-use std::{fs, path::PathBuf};
+use std::{collections::BTreeMap as HashMap, fs, path::PathBuf};
 
 use subtle_encoding::{base64, hex};
 use tendermint::{
