@@ -321,7 +321,6 @@ pub struct ResponseCheckTx {
     #[prost(string, tag="11")]
     pub mempool_error: ::prost::alloc::string::String,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseDeliverTx {
     #[prost(uint32, tag="1")]
@@ -493,24 +492,19 @@ pub struct LastCommitInfo {
 /// Event allows application developers to attach additional information to
 /// ResponseBeginBlock, ResponseEndBlock, ResponseCheckTx and ResponseDeliverTx.
 /// Later, transactions may be queried using these events.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Event {
     #[prost(string, tag="1")]
-    #[serde(rename = "type")]
     pub r#type: ::prost::alloc::string::String,
     #[prost(message, repeated, tag="2")]
     pub attributes: ::prost::alloc::vec::Vec<EventAttribute>,
 }
 /// EventAttribute is a single key-value pair, associated with an event.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventAttribute {
     #[prost(bytes="bytes", tag="1")]
-    #[serde(with = "crate::serializers::bytes::base64string")]
     pub key: ::prost::bytes::Bytes,
     #[prost(bytes="bytes", tag="2")]
-    #[serde(with = "crate::serializers::bytes::base64string")]
     pub value: ::prost::bytes::Bytes,
     /// nondeterministic
     #[prost(bool, tag="3")]

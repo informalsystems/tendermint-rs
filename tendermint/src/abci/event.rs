@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
+use crate::serializers::bytes::base64string;
 
 /// An event that occurred while processing a request.
 ///
@@ -13,12 +14,12 @@ use crate::prelude::*;
 ///
 /// [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#events)
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
-#[serde(into = "pb::Event", try_from = "pb::Event")]
 pub struct Event {
     /// The kind of event.
     ///
     /// Tendermint calls this the `type`, but we use `kind` to avoid confusion
     /// with Rust types and follow Rust conventions.
+    #[serde(rename = "type")]
     pub kind: String,
     /// A list of [`EventAttribute`]s describing the event.
     pub attributes: Vec<EventAttribute>,
@@ -63,11 +64,18 @@ impl Event {
 ///
 /// [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#events)
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
-#[serde(into = "pb::EventAttribute", try_from = "pb::EventAttribute")]
 pub struct EventAttribute {
     /// The event key.
+    #[serde(
+        serialize_with = "base64string::serialize",
+        deserialize_with = "base64string::deserialize_to_string"
+    )]
     pub key: String,
     /// The event value.
+    #[serde(
+        serialize_with = "base64string::serialize",
+        deserialize_with = "base64string::deserialize_to_string"
+    )]
     pub value: String,
     /// Whether Tendermint's indexer should index this event.
     ///
