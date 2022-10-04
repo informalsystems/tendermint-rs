@@ -13,6 +13,11 @@ pub struct Request {
     ///
     /// If no hash is provided, it will return no block (as if the hash
     /// did not match any block).
+    ///
+    /// Serialized internally into a base64-encoded string before sending to
+    /// the RPC server.
+    #[serde(default)]
+    #[serde(with = "crate::serializers::opt_tm_hash_base64")]
     pub hash: Option<Hash>,
 }
 

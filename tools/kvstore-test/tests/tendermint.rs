@@ -17,6 +17,7 @@ mod rpc {
     use std::{
         cmp::min,
         convert::TryFrom,
+        str::FromStr,
         sync::atomic::{AtomicU8, Ordering},
     };
 
