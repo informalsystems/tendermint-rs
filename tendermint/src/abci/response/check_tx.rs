@@ -1,10 +1,12 @@
 use bytes::Bytes;
+use serde::{Deserialize, Serialize};
 
 use super::super::Event;
 use crate::prelude::*;
+use crate::serializers;
 
 #[doc = include_str!("../doc/response-checktx.md")]
-#[derive(Clone, PartialEq, Eq, Debug, Default)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
 pub struct CheckTx {
     /// The response code.
     ///
@@ -23,8 +25,10 @@ pub struct CheckTx {
     /// **May be non-deterministic**.
     pub info: String,
     /// Amount of gas requested for the transaction.
+    #[serde(with = "serializers::from_str")]
     pub gas_wanted: i64,
     /// Amount of gas consumed by the transaction.
+    #[serde(with = "serializers::from_str")]
     pub gas_used: i64,
     /// Events that occurred while checking the transaction.
     pub events: Vec<Event>,

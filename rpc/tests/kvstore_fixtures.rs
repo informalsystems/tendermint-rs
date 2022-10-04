@@ -533,7 +533,7 @@ fn incoming_fixtures() {
                 );
                 assert!(result.check_tx.data.is_none());
                 assert!(result.check_tx.events.is_empty());
-                assert_eq!(result.check_tx.gas_used.value(), 0);
+                assert_eq!(result.check_tx.gas_used, 0);
                 // Todo: https://github.com/informalsystems/tendermint-rs/issues/761
                 // assert_eq!(result.check_tx.gas_wanted.value(), 1);
                 assert!(result.check_tx.info.to_string().is_empty());
@@ -567,8 +567,8 @@ fn incoming_fixtures() {
                     "index is working"
                 );
                 assert_eq!(result.deliver_tx.events[0].kind, "app");
-                assert_eq!(result.deliver_tx.gas_used.value(), 0);
-                assert_eq!(result.deliver_tx.gas_wanted.value(), 0);
+                assert_eq!(result.deliver_tx.gas_used, 0);
+                assert_eq!(result.deliver_tx.gas_wanted, 0);
                 assert!(result.deliver_tx.info.to_string().is_empty());
                 assert!(result.deliver_tx.log.value().is_empty());
                 assert_ne!(

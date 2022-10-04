@@ -5,8 +5,9 @@ use serde::{Deserialize, Serialize};
 use tendermint::{abci, block, Hash};
 
 use crate::{
-    abci::{responses::Codespace, Code, Data, Gas, Info, Log, Transaction},
+    abci::{responses::Codespace, Code, Data, Info, Log, Transaction},
     prelude::*,
+    serializers,
 };
 
 /// `/broadcast_tx_commit`: only returns error if `mempool.CheckTx()` errs or
@@ -68,7 +69,7 @@ pub struct TxResult {
     pub code: Code,
 
     /// Data
-    #[serde(with = "tendermint_proto::serializers::optional")]
+    #[serde(with = "serializers::optional")]
     pub data: Option<Data>,
 
     /// Log
@@ -78,10 +79,12 @@ pub struct TxResult {
     pub info: Info,
 
     /// Amount of gas wanted
-    pub gas_wanted: Gas,
+    #[serde(with = "serializers::from_str")]
+    pub gas_wanted: i64,
 
     /// Amount of gas used
-    pub gas_used: Gas,
+    #[serde(with = "serializers::from_str")]
+    pub gas_used: i64,
 
     /// Events
     pub events: Vec<abci::Event>,
@@ -96,7 +99,7 @@ pub struct TxResult {
     /// to the priority assigned to the transaction.
     ///
     /// Only relevant for `CheckTx`.
-    #[serde(with = "tendermint_proto::serializers::from_str")]
+    #[serde(with = "serializers::from_str")]
     pub priority: i64,
 
     /// Only relevant for `CheckTx`.
