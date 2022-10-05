@@ -1,9 +1,11 @@
 //! `/broadcast_tx_sync`: returns with the response from `CheckTx`.
 
+use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use tendermint::Hash;
 
-use crate::abci::{Code, Data, Log, Transaction};
+use crate::abci::{Code, Log, Transaction};
+use crate::serializers;
 
 /// `/broadcast_tx_sync`: returns with the response from `CheckTx`.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -36,7 +38,8 @@ pub struct Response {
     pub code: Code,
 
     /// Data
-    pub data: Data,
+    #[serde(with = "serializers::bytes::base64string")]
+    pub data: Bytes,
 
     /// Log
     pub log: Log,

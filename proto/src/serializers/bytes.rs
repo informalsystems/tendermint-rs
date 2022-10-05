@@ -38,12 +38,14 @@ pub mod base64string {
     use crate::prelude::*;
 
     /// Deserialize base64string into Vec<u8>
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
     where
         D: Deserializer<'de>,
+        Vec<u8>: Into<T>,
     {
         let string = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
-        base64::decode(&string).map_err(serde::de::Error::custom)
+        let v = base64::decode(&string).map_err(serde::de::Error::custom)?;
+        Ok(v.into())
     }
 
     /// Deserialize base64string into String

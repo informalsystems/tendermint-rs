@@ -516,7 +516,7 @@ fn incoming_fixtures() {
             "broadcast_tx_async" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
                 assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
-                assert!(result.data.value().is_empty());
+                assert!(result.data.is_empty());
                 assert_ne!(
                     result.hash,
                     Hash::from_bytes(Algorithm::Sha256, &[0; 32]).unwrap()
@@ -531,7 +531,7 @@ fn incoming_fixtures() {
                     result.check_tx.codespace,
                     tendermint_rpc::abci::responses::Codespace::default()
                 );
-                assert!(result.check_tx.data.is_none());
+                assert!(result.check_tx.data.is_empty());
                 assert!(result.check_tx.events.is_empty());
                 assert_eq!(result.check_tx.gas_used, 0);
                 // Todo: https://github.com/informalsystems/tendermint-rs/issues/761
@@ -543,7 +543,7 @@ fn incoming_fixtures() {
                     result.deliver_tx.codespace,
                     tendermint_rpc::abci::responses::Codespace::default()
                 );
-                assert!(result.deliver_tx.data.is_none());
+                assert!(result.deliver_tx.data.is_empty());
                 assert_eq!(result.deliver_tx.events.len(), 1);
                 assert_eq!(result.deliver_tx.events[0].attributes.len(), 4);
                 assert_eq!(result.deliver_tx.events[0].attributes[0].key, "creator");
@@ -579,7 +579,7 @@ fn incoming_fixtures() {
             "broadcast_tx_sync" => {
                 let result = endpoint::broadcast::tx_sync::Response::from_string(content).unwrap();
                 assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
-                assert!(result.data.value().is_empty());
+                assert!(result.data.is_empty());
                 assert_ne!(
                     result.hash,
                     Hash::from_bytes(Algorithm::Sha256, &[0; 32]).unwrap()
@@ -1273,7 +1273,7 @@ fn incoming_fixtures() {
             "subscribe_txs_broadcast_tx_0" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
                 assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
-                assert!(result.data.value().is_empty());
+                assert!(result.data.is_empty());
                 assert_ne!(
                     result.hash,
                     Hash::from_bytes(Algorithm::Sha256, &[0; 32]).unwrap()
@@ -1283,7 +1283,7 @@ fn incoming_fixtures() {
             "subscribe_txs_broadcast_tx_1" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
                 assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
-                assert!(result.data.value().is_empty());
+                assert!(result.data.is_empty());
                 assert_ne!(
                     result.hash,
                     Hash::from_bytes(Algorithm::Sha256, &[0; 32]).unwrap()
@@ -1293,7 +1293,7 @@ fn incoming_fixtures() {
             "subscribe_txs_broadcast_tx_2" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
                 assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
-                assert!(result.data.value().is_empty());
+                assert!(result.data.is_empty());
                 assert_ne!(
                     result.hash,
                     Hash::from_bytes(Algorithm::Sha256, &[0; 32]).unwrap()
@@ -1303,7 +1303,7 @@ fn incoming_fixtures() {
             "subscribe_txs_broadcast_tx_3" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
                 assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
-                assert!(result.data.value().is_empty());
+                assert!(result.data.is_empty());
                 assert_ne!(
                     result.hash,
                     Hash::from_bytes(Algorithm::Sha256, &[0; 32]).unwrap()
@@ -1313,7 +1313,7 @@ fn incoming_fixtures() {
             "subscribe_txs_broadcast_tx_4" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
                 assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
-                assert!(result.data.value().is_empty());
+                assert!(result.data.is_empty());
                 assert_ne!(
                     result.hash,
                     Hash::from_bytes(Algorithm::Sha256, &[0; 32]).unwrap()
@@ -1323,7 +1323,7 @@ fn incoming_fixtures() {
             "subscribe_txs_broadcast_tx_5" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
                 assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
-                assert!(result.data.value().is_empty());
+                assert!(result.data.is_empty());
                 assert_ne!(
                     result.hash,
                     Hash::from_bytes(Algorithm::Sha256, &[0; 32]).unwrap()

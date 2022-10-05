@@ -12,11 +12,10 @@
 //! interface.
 
 mod code;
-mod data;
 mod info;
 mod log;
 
 pub mod responses;
 pub mod transaction;
 
-pub use self::{code::Code, data::Data, info::Info, log::Log, transaction::Transaction};
+pub use self::{code::Code, info::Info, log::Log, transaction::Transaction};

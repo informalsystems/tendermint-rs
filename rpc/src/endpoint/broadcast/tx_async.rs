@@ -1,9 +1,11 @@
 //! `/broadcast_tx_async`: broadcast a transaction and return immediately.
 
+use crate::serializers;
+use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use tendermint::Hash;
 
-use crate::abci::{Code, Data, Log, Transaction};
+use crate::abci::{Code, Log, Transaction};
 
 /// `/broadcast_tx_async`: broadcast a transaction and return immediately.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -36,7 +38,8 @@ pub struct Response {
     pub code: Code,
 
     /// Data
-    pub data: Data,
+    #[serde(with = "serializers::bytes::base64string")]
+    pub data: Bytes,
 
     /// Log
     pub log: Log,
