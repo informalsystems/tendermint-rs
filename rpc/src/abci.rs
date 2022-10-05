@@ -12,9 +12,8 @@
 //! interface.
 
 mod code;
-mod info;
 
 pub mod responses;
 pub mod transaction;
 
-pub use self::{code::Code, info::Info, transaction::Transaction};
+pub use self::{code::Code, transaction::Transaction};
