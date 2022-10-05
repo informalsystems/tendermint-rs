@@ -3,10 +3,7 @@
 use serde::{Deserialize, Serialize};
 use tendermint::{block, merkle::proof::Proof, serializers};
 
-use crate::{
-    abci::{Code, Log},
-    prelude::*,
-};
+use crate::{abci::Code, prelude::*};
 
 /// Query the ABCI application for information
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -70,7 +67,7 @@ pub struct AbciQuery {
     pub code: Code,
 
     /// Log value
-    pub log: Log,
+    pub log: String,
 
     /// Info value
     #[serde(default = "String::new")]

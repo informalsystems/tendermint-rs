@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use tendermint::{abci, block, Hash};
 
 use crate::{
-    abci::{responses::Codespace, Code, Info, Log, Transaction},
+    abci::{responses::Codespace, Code, Info, Transaction},
     prelude::*,
     serializers,
 };
@@ -74,7 +74,7 @@ pub struct TxResult {
     pub data: Bytes,
 
     /// Log
-    pub log: Log,
+    pub log: String,
 
     /// ABCI info (nondeterministic)
     pub info: Info,
