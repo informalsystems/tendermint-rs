@@ -15,6 +15,7 @@ pub struct DeliverTx {
     /// the application state.
     pub code: u32,
     /// Result bytes, if any.
+    #[serde(with = "serializers::nullable")]
     pub data: Bytes,
     /// The output of the application's logger.
     ///
