@@ -20,7 +20,7 @@ where
     }
     let mut decoded_bytes = [0u8; SHA256_HASH_SIZE];
     decoded_bytes.copy_from_slice(decoded.as_ref());
-    Ok(Hash::from_bytes(Sha256, &decoded_bytes).map_err(serde::de::Error::custom)?)
+    Hash::from_bytes(Sha256, &decoded_bytes).map_err(serde::de::Error::custom)
 }
 
 /// Serialize from a tendermint::Hash into a base64-encoded string
