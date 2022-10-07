@@ -951,13 +951,13 @@ fn incoming_fixtures() {
                         rbb.events[0].attributes[0].value,
                         "cosmos17xpfvakm2amg962yls6f84z3kell8c5lserqta"
                     );
-                    assert_eq!(rbb.events[0].attributes[0].index, true);
+                    assert!(rbb.events[0].attributes[0].index);
                     assert_eq!(rbb.events[0].attributes[1].key, "sender");
                     assert_eq!(
                         rbb.events[0].attributes[1].value,
                         "cosmos1m3h30wlvsf8llruxtpukdvsy0km2kum8g38c8q"
                     );
-                    assert_eq!(rbb.events[0].attributes[1].index, false);
+                    assert!(!rbb.events[0].attributes[1].index);
                     assert_eq!(rbb.events[1].kind, "message");
                     assert_eq!(rbb.events[1].attributes.len(), 1);
                     assert_eq!(rbb.events[1].attributes[0].key, "sender");
