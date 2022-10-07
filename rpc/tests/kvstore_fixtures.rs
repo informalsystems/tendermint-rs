@@ -332,7 +332,7 @@ fn incoming_fixtures() {
                 assert_eq!(result.response.index, 0);
                 assert!(result.response.info.is_empty());
                 assert_eq!(result.response.key, base64::decode("dHgw").unwrap());
-                assert_eq!(result.response.log.value(), "exists");
+                assert_eq!(result.response.log.as_ref(), "exists");
                 assert!(result.response.proof.is_none());
                 assert_eq!(result.response.value, base64::decode("dmFsdWU=").unwrap());
             },
@@ -346,7 +346,7 @@ fn incoming_fixtures() {
                     result.response.key,
                     base64::decode("bm9uX2V4aXN0ZW50X2tleQ==").unwrap()
                 );
-                assert_eq!(result.response.log.value(), "does not exist");
+                assert_eq!(result.response.log.as_ref(), "does not exist");
                 assert!(result.response.proof.is_none());
                 assert!(result.response.value.is_empty());
             },
@@ -549,7 +549,7 @@ fn incoming_fixtures() {
                     result.hash,
                     tendermint::abci::transaction::Hash::new([0; 32])
                 );
-                assert!(result.log.value().is_empty());
+                assert!(result.log.as_ref().is_empty());
             },
             "broadcast_tx_commit" => {
                 let result =
@@ -565,7 +565,7 @@ fn incoming_fixtures() {
                 // Todo: https://github.com/informalsystems/tendermint-rs/issues/761
                 // assert_eq!(result.check_tx.gas_wanted.value(), 1);
                 assert!(result.check_tx.info.to_string().is_empty());
-                assert!(result.check_tx.log.value().is_empty());
+                assert!(result.check_tx.log.as_ref().is_empty());
                 assert_eq!(result.deliver_tx.code, tendermint::abci::Code::Ok);
                 assert_eq!(
                     result.deliver_tx.codespace,
@@ -634,7 +634,7 @@ fn incoming_fixtures() {
                 assert_eq!(result.deliver_tx.gas_used.value(), 0);
                 assert_eq!(result.deliver_tx.gas_wanted.value(), 0);
                 assert!(result.deliver_tx.info.to_string().is_empty());
-                assert!(result.deliver_tx.log.value().is_empty());
+                assert!(result.deliver_tx.log.as_ref().is_empty());
                 assert_ne!(
                     result.hash,
                     tendermint::abci::transaction::Hash::new([0; 32])
@@ -648,7 +648,7 @@ fn incoming_fixtures() {
                     result.hash,
                     tendermint::abci::transaction::Hash::new([0; 32])
                 );
-                assert!(result.log.value().is_empty());
+                assert!(result.log.as_ref().is_empty());
             },
             "commit_at_height_10" => {
                 let result = endpoint::commit::Response::from_string(content).unwrap();
@@ -1401,7 +1401,7 @@ fn incoming_fixtures() {
                     result.hash,
                     tendermint::abci::transaction::Hash::new([0; 32])
                 );
-                assert!(result.log.value().is_empty());
+                assert!(result.log.as_ref().is_empty());
             },
             "subscribe_txs_broadcast_tx_1" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
@@ -1411,7 +1411,7 @@ fn incoming_fixtures() {
                     result.hash,
                     tendermint::abci::transaction::Hash::new([0; 32])
                 );
-                assert!(result.log.value().is_empty());
+                assert!(result.log.as_ref().is_empty());
             },
             "subscribe_txs_broadcast_tx_2" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
@@ -1421,7 +1421,7 @@ fn incoming_fixtures() {
                     result.hash,
                     tendermint::abci::transaction::Hash::new([0; 32])
                 );
-                assert!(result.log.value().is_empty());
+                assert!(result.log.as_ref().is_empty());
             },
             "subscribe_txs_broadcast_tx_3" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
@@ -1431,7 +1431,7 @@ fn incoming_fixtures() {
                     result.hash,
                     tendermint::abci::transaction::Hash::new([0; 32])
                 );
-                assert!(result.log.value().is_empty());
+                assert!(result.log.as_ref().is_empty());
             },
             "subscribe_txs_broadcast_tx_4" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
@@ -1441,7 +1441,7 @@ fn incoming_fixtures() {
                     result.hash,
                     tendermint::abci::transaction::Hash::new([0; 32])
                 );
-                assert!(result.log.value().is_empty());
+                assert!(result.log.as_ref().is_empty());
             },
             "subscribe_txs_broadcast_tx_5" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
@@ -1451,7 +1451,7 @@ fn incoming_fixtures() {
                     result.hash,
                     tendermint::abci::transaction::Hash::new([0; 32])
                 );
-                assert!(result.log.value().is_empty());
+                assert!(result.log.as_ref().is_empty());
             },
             "tx" => {
                 let result = endpoint::tx::Response::from_string(content).unwrap();
@@ -1476,7 +1476,7 @@ fn incoming_fixtures() {
                     assert_eq!(tx.tx_result.gas_used.value(), 0);
                     assert_eq!(tx.tx_result.gas_wanted.value(), 0);
                     assert!(tx.tx_result.info.to_string().is_empty());
-                    assert!(tx.tx_result.log.value().is_empty());
+                    assert!(tx.tx_result.log.as_ref().is_empty());
                     assert!(tx.proof.is_none());
                 }
             },
@@ -1492,7 +1492,7 @@ fn incoming_fixtures() {
                     assert_eq!(tx.tx_result.gas_used.value(), 0);
                     assert_eq!(tx.tx_result.gas_wanted.value(), 0);
                     assert!(tx.tx_result.info.to_string().is_empty());
-                    assert!(tx.tx_result.log.value().is_empty());
+                    assert!(tx.tx_result.log.as_ref().is_empty());
                     let proof = tx.proof.unwrap();
                     assert_eq!(proof.data, tx.tx.as_bytes());
                     assert!(proof.proof.is_some());
