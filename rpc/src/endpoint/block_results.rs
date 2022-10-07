@@ -1,10 +1,10 @@
 //! `/block_results` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
-use tendermint::{abci, block, consensus, validator};
+use tendermint::{abci, block, consensus};
 
-use crate::abci::responses::deserialize_validator_updates;
 use crate::prelude::*;
+use crate::serializers;
 
 /// Get ABCI results at a given height.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
@@ -50,8 +50,8 @@ pub struct Response {
     pub end_block_events: Option<Vec<abci::Event>>,
 
     /// Validator updates (might be explicit null)
-    #[serde(deserialize_with = "deserialize_validator_updates")]
-    pub validator_updates: Vec<validator::Update>,
+    #[serde(deserialize_with = "serializers::nullable::deserialize")]
+    pub validator_updates: Vec<abci::types::ValidatorUpdate>,
 
     /// New consensus params (might be explicit null)
     pub consensus_param_updates: Option<consensus::Params>,

@@ -57,7 +57,35 @@
             ]
           }
         },
-        "result_begin_block": {},
+        "result_begin_block": {
+          "events": [
+            {
+              "type": "transfer",
+              "attributes": [
+                {
+                  "index": true,
+                  "key": "cmVjaXBpZW50",
+                  "value": "Y29zbW9zMTd4cGZ2YWttMmFtZzk2MnlsczZmODR6M2tlbGw4YzVsc2VycXRh"
+                },
+                {
+                  "index": false,
+                  "key": "c2VuZGVy",
+                  "value": "Y29zbW9zMW0zaDMwd2x2c2Y4bGxydXh0cHVrZHZzeTBrbTJrdW04ZzM4Yzhx"
+                }
+              ]
+            },
+            {
+              "type": "message",
+              "attributes": [
+                {
+                  "index": true,
+                  "key": "c2VuZGVy",
+                  "value": "Y29zbW9zMW0zaDMwd2x2c2Y4bGxydXh0cHVrZHZzeTBrbTJrdW04ZzM4Yzhx"
+                }
+              ]
+            }
+          ]
+        },
         "result_end_block": {
           "validator_updates": null
         }
