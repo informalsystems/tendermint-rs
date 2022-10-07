@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use tendermint::{abci, block, Hash};
 
 use crate::{
-    abci::{responses::Codespace, Code, Transaction},
+    abci::{Code, Transaction},
     prelude::*,
     serializers,
 };
@@ -91,7 +91,7 @@ pub struct TxResult {
     pub events: Vec<abci::Event>,
 
     /// Codespace
-    pub codespace: Codespace,
+    pub codespace: String,
 
     /// Only relevant for `CheckTx`.
     pub sender: String,

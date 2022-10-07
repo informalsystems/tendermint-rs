@@ -13,7 +13,6 @@
 
 mod code;
 
-pub mod responses;
 pub mod transaction;
 
 pub use self::{code::Code, transaction::Transaction};

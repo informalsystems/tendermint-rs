@@ -527,10 +527,7 @@ fn incoming_fixtures() {
                 let result =
                     endpoint::broadcast::tx_commit::Response::from_string(content).unwrap();
                 assert_eq!(result.check_tx.code, tendermint_rpc::abci::Code::Ok);
-                assert_eq!(
-                    result.check_tx.codespace,
-                    tendermint_rpc::abci::responses::Codespace::default()
-                );
+                assert!(result.check_tx.codespace.is_empty());
                 assert!(result.check_tx.data.is_empty());
                 assert!(result.check_tx.events.is_empty());
                 assert_eq!(result.check_tx.gas_used, 0);
@@ -539,10 +536,7 @@ fn incoming_fixtures() {
                 assert!(result.check_tx.info.to_string().is_empty());
                 assert!(result.check_tx.log.is_empty());
                 assert_eq!(result.deliver_tx.code, tendermint_rpc::abci::Code::Ok);
-                assert_eq!(
-                    result.deliver_tx.codespace,
-                    tendermint_rpc::abci::responses::Codespace::default()
-                );
+                assert!(result.deliver_tx.codespace.is_empty());
                 assert!(result.deliver_tx.data.is_empty());
                 assert_eq!(result.deliver_tx.events.len(), 1);
                 assert_eq!(result.deliver_tx.events[0].attributes.len(), 4);
