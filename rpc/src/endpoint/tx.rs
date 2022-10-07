@@ -13,7 +13,7 @@ pub struct Request {
     ///
     /// Serialized internally into a base64-encoded string before sending to
     /// the RPC server.
-    #[serde(with = "crate::serializers::hash_base64")]
+    #[serde(with = "crate::serializers::tx_hash_base64")]
     pub hash: abci::transaction::Hash,
     /// Whether or not to include the proofs of the transaction's inclusion in
     /// the block.
