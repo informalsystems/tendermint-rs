@@ -1,8 +1,7 @@
 //! Tendermint kvstore RPC endpoint testing.
 
 use core::str::FromStr;
-use std::collections::BTreeMap as HashMap;
-use std::{fs, path::PathBuf};
+use std::{collections::BTreeMap as HashMap, fs, path::PathBuf};
 
 use subtle_encoding::{base64, hex};
 use tendermint::{
@@ -95,6 +94,17 @@ fn outgoing_fixtures() {
                     serde_json::from_str::<RequestWrapper<endpoint::block::Request>>(&content)
                         .unwrap();
                 assert_eq!(wrapped.params().height.unwrap().value(), 10);
+            },
+            "block_by_hash" => {
+                // First, get the hash at height 1.
+                let wrapped = serde_json::from_str::<
+                    RequestWrapper<endpoint::block_by_hash::Request>,
+                >(&content)
+                .unwrap();
+                assert_eq!(
+                    wrapped.params().hash.unwrap().to_string(),
+                    "00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF"
+                );
             },
             "block_results_at_height_10" => {
                 let wrapped = serde_json::from_str::<
@@ -469,6 +479,13 @@ fn incoming_fixtures() {
                 assert_eq!(result.height.value(), 10);
                 assert!(result.txs_results.is_none());
                 assert!(result.validator_updates.is_empty());
+            },
+            "block_by_hash" => {
+                let result = endpoint::block::Response::from_string(content).unwrap();
+                assert_eq!(
+                    result.block_id.hash.to_string(),
+                    "BCF3DB412E80A396D10BF5B5E6D3E63D3B06DEB25AA958BCB8CE18D023838042"
+                );
             },
             "block_search" => {
                 let result = endpoint::block_search::Response::from_string(content).unwrap();

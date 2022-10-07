@@ -16,7 +16,10 @@ where
 pub fn serialize<S, T>(value: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
-    T: Clone + Default + Serialize,
+    T: Default + Serialize,
 {
-    value.clone().unwrap_or_default().serialize(serializer)
+    match value {
+        Some(v) => v.serialize(serializer),
+        None => T::default().serialize(serializer),
+    }
 }

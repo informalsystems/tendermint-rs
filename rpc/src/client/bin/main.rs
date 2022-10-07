@@ -77,6 +77,8 @@ enum ClientRequest {
     },
     /// Get a block at a given height.
     Block { height: u32 },
+    /// Get a block by its hash.
+    BlockByHash { hash: String },
     /// Get block headers between two heights (min <= height <= max).
     Blockchain {
         /// The minimum height
@@ -308,6 +310,14 @@ where
         ClientRequest::Block { height } => {
             serde_json::to_string_pretty(&client.block(height).await?).map_err(Error::serde)?
         },
+        ClientRequest::BlockByHash { hash } => serde_json::to_string_pretty(
+            &client
+                .block_by_hash(
+                    tendermint::Hash::from_str(&hash).map_err(|e| Error::parse(e.to_string()))?,
+                )
+                .await?,
+        )
+        .map_err(Error::serde)?,
         ClientRequest::Blockchain { min, max } => {
             serde_json::to_string_pretty(&client.blockchain(min, max).await?)
                 .map_err(Error::serde)?

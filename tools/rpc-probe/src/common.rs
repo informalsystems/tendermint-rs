@@ -33,6 +33,16 @@ pub fn block(height: u64) -> PlannedInteraction {
     .into()
 }
 
+pub fn block_by_hash(hash: &str) -> PlannedInteraction {
+    Request::new(
+        "block_by_hash",
+        json!({
+            "hash": format!("{}", hash),
+        }),
+    )
+    .into()
+}
+
 pub fn block_search(query: &str, page: u32, per_page: u32, order_by: &str) -> PlannedInteraction {
     Request::new(
         "block_search",
