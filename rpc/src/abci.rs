@@ -11,8 +11,6 @@
 //! disentangles improving the ABCI domain modeling from changes to the RPC
 //! interface.
 
-mod code;
-
 pub mod transaction;
 
-pub use self::{code::Code, transaction::Transaction};
+pub use self::transaction::Transaction;

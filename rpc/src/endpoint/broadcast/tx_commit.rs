@@ -5,11 +5,7 @@ use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use tendermint::{abci, block, Hash};
 
-use crate::{
-    abci::{Code, Transaction},
-    prelude::*,
-    serializers,
-};
+use crate::{abci::Transaction, prelude::*, serializers};
 
 /// `/broadcast_tx_commit`: only returns error if `mempool.CheckTx()` errs or
 /// if we timeout waiting for tx to commit.
@@ -67,7 +63,7 @@ impl crate::Response for Response {}
 #[serde(default)]
 pub struct TxResult {
     /// Code
-    pub code: Code,
+    pub code: abci::Code,
 
     /// Data
     #[serde(with = "tendermint::serializers::bytes::base64string")]

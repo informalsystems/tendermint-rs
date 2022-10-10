@@ -2,13 +2,9 @@
 
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
-use tendermint::Hash;
+use tendermint::{abci::Code, Hash};
 
-use crate::{
-    abci::{Code, Transaction},
-    prelude::*,
-    serializers,
-};
+use crate::{abci::Transaction, prelude::*, serializers};
 
 /// `/broadcast_tx_sync`: returns with the response from `CheckTx`.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

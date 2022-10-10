@@ -2,13 +2,9 @@
 
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
-use tendermint::Hash;
+use tendermint::{abci::Code, Hash};
 
-use crate::{
-    abci::{Code, Transaction},
-    prelude::*,
-    serializers,
-};
+use crate::{abci::Transaction, prelude::*, serializers};
 
 /// `/broadcast_tx_async`: broadcast a transaction and return immediately.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

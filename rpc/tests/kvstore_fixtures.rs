@@ -5,6 +5,7 @@ use std::{collections::BTreeMap as HashMap, fs, path::PathBuf};
 
 use subtle_encoding::{base64, hex};
 use tendermint::{
+    abci,
     evidence::{Duration, Evidence},
     hash::Algorithm,
     public_key,
@@ -532,7 +533,7 @@ fn incoming_fixtures() {
             },
             "broadcast_tx_async" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
-                assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
+                assert_eq!(result.code, abci::Code::Ok);
                 assert!(result.data.is_empty());
                 assert_ne!(
                     result.hash,
@@ -543,7 +544,7 @@ fn incoming_fixtures() {
             "broadcast_tx_commit" => {
                 let result =
                     endpoint::broadcast::tx_commit::Response::from_string(content).unwrap();
-                assert_eq!(result.check_tx.code, tendermint_rpc::abci::Code::Ok);
+                assert_eq!(result.check_tx.code, abci::Code::Ok);
                 assert!(result.check_tx.codespace.is_empty());
                 assert!(result.check_tx.data.is_empty());
                 assert!(result.check_tx.events.is_empty());
@@ -552,7 +553,7 @@ fn incoming_fixtures() {
                 // assert_eq!(result.check_tx.gas_wanted.value(), 1);
                 assert!(result.check_tx.info.to_string().is_empty());
                 assert!(result.check_tx.log.is_empty());
-                assert_eq!(result.deliver_tx.code, tendermint_rpc::abci::Code::Ok);
+                assert_eq!(result.deliver_tx.code, abci::Code::Ok);
                 assert!(result.deliver_tx.codespace.is_empty());
                 assert!(result.deliver_tx.data.is_empty());
                 assert_eq!(result.deliver_tx.events.len(), 1);
@@ -589,7 +590,7 @@ fn incoming_fixtures() {
             },
             "broadcast_tx_sync" => {
                 let result = endpoint::broadcast::tx_sync::Response::from_string(content).unwrap();
-                assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
+                assert_eq!(result.code, abci::Code::Ok);
                 assert!(result.data.is_empty());
                 assert_ne!(
                     result.hash,
@@ -1305,7 +1306,7 @@ fn incoming_fixtures() {
             },
             "subscribe_txs_broadcast_tx_0" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
-                assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
+                assert_eq!(result.code, abci::Code::Ok);
                 assert!(result.data.is_empty());
                 assert_ne!(
                     result.hash,
@@ -1315,7 +1316,7 @@ fn incoming_fixtures() {
             },
             "subscribe_txs_broadcast_tx_1" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
-                assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
+                assert_eq!(result.code, abci::Code::Ok);
                 assert!(result.data.is_empty());
                 assert_ne!(
                     result.hash,
@@ -1325,7 +1326,7 @@ fn incoming_fixtures() {
             },
             "subscribe_txs_broadcast_tx_2" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
-                assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
+                assert_eq!(result.code, abci::Code::Ok);
                 assert!(result.data.is_empty());
                 assert_ne!(
                     result.hash,
@@ -1335,7 +1336,7 @@ fn incoming_fixtures() {
             },
             "subscribe_txs_broadcast_tx_3" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
-                assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
+                assert_eq!(result.code, abci::Code::Ok);
                 assert!(result.data.is_empty());
                 assert_ne!(
                     result.hash,
@@ -1345,7 +1346,7 @@ fn incoming_fixtures() {
             },
             "subscribe_txs_broadcast_tx_4" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
-                assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
+                assert_eq!(result.code, abci::Code::Ok);
                 assert!(result.data.is_empty());
                 assert_ne!(
                     result.hash,
@@ -1355,7 +1356,7 @@ fn incoming_fixtures() {
             },
             "subscribe_txs_broadcast_tx_5" => {
                 let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
-                assert_eq!(result.code, tendermint_rpc::abci::Code::Ok);
+                assert_eq!(result.code, abci::Code::Ok);
                 assert!(result.data.is_empty());
                 assert_ne!(
                     result.hash,
@@ -1385,7 +1386,7 @@ fn incoming_fixtures() {
                 // Test a few selected attributes of the results.
                 for tx in result.txs {
                     assert_ne!(tx.hash.as_bytes(), [0; 32]);
-                    assert_eq!(tx.tx_result.code, tendermint_rpc::abci::Code::Ok.value());
+                    assert_eq!(tx.tx_result.code, abci::Code::Ok.value());
                     assert_eq!(tx.tx_result.events.len(), 1);
                     assert_eq!(tx.tx_result.events[0].kind, "app");
                     assert_eq!(tx.tx_result.gas_used, 0);
@@ -1401,7 +1402,7 @@ fn incoming_fixtures() {
                 // Test a few selected attributes of the results.
                 for tx in result.txs {
                     assert_ne!(tx.hash.as_bytes(), [0; 32]);
-                    assert_eq!(tx.tx_result.code, tendermint_rpc::abci::Code::Ok.value());
+                    assert_eq!(tx.tx_result.code, abci::Code::Ok.value());
                     assert_eq!(tx.tx_result.events.len(), 1);
                     assert_eq!(tx.tx_result.events[0].kind, "app");
                     assert_eq!(tx.tx_result.gas_used, 0);

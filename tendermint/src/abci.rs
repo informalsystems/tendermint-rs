@@ -36,6 +36,7 @@
 //! [mat]: https://docs.tendermint.com/master/spec/abci/abci.html
 //! [tmabci]: https://github.com/informalsystems/tendermint-rs/tree/master/abci
 
+mod code;
 mod event;
 mod kind;
 
@@ -47,6 +48,7 @@ pub use event::{Event, EventAttribute, EventAttributeIndexExt};
 
 #[doc(inline)]
 pub use self::{
+    code::Code,
     kind::MethodKind,
     request::{ConsensusRequest, InfoRequest, MempoolRequest, Request, SnapshotRequest},
     response::{ConsensusResponse, InfoResponse, MempoolResponse, Response, SnapshotResponse},
