@@ -4,19 +4,20 @@ use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use tendermint::{abci::Code, Hash};
 
-use crate::{abci::Transaction, prelude::*, serializers};
+use crate::{prelude::*, serializers};
 
 /// `/broadcast_tx_sync`: returns with the response from `CheckTx`.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request {
     /// Transaction to broadcast
-    pub tx: Transaction,
+    #[serde(with = "serializers::bytes::base64string")]
+    pub tx: Vec<u8>,
 }
 
 impl Request {
     /// Create a new sync transaction broadcast RPC request
-    pub fn new(tx: Transaction) -> Request {
-        Request { tx }
+    pub fn new(tx: impl Into<Vec<u8>>) -> Request {
+        Request { tx: tx.into() }
     }
 }
 

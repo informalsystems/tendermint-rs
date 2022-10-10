@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use tendermint::{abci, block, Hash};
 use tendermint_proto::types::TxProof;
 
-use crate::Method;
+use crate::{prelude::*, serializers, Method};
 
 /// Request for finding a transaction by its hash.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -13,7 +13,7 @@ pub struct Request {
     ///
     /// Serialized internally into a base64-encoded string before sending to
     /// the RPC server.
-    #[serde(with = "crate::serializers::tx_hash_base64")]
+    #[serde(with = "serializers::tx_hash_base64")]
     pub hash: Hash,
     /// Whether or not to include the proofs of the transaction's inclusion in
     /// the block.
@@ -48,7 +48,8 @@ pub struct Response {
     pub height: block::Height,
     pub index: u32,
     pub tx_result: abci::response::DeliverTx,
-    pub tx: crate::abci::Transaction,
+    #[serde(with = "serializers::bytes::base64string")]
+    pub tx: Vec<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proof: Option<TxProof>,
 }

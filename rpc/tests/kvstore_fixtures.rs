@@ -138,7 +138,7 @@ fn outgoing_fixtures() {
                 >(&content)
                 .unwrap();
                 assert_eq!(
-                    wrapped.params().tx.as_bytes(),
+                    wrapped.params().tx,
                     base64::decode("YXN5bmMta2V5PXZhbHVl").unwrap()
                 );
             },
@@ -148,7 +148,7 @@ fn outgoing_fixtures() {
                 >(&content)
                 .unwrap();
                 assert_eq!(
-                    wrapped.params().tx.as_bytes(),
+                    wrapped.params().tx,
                     base64::decode("Y29tbWl0LWtleT12YWx1ZQ==").unwrap()
                 );
             },
@@ -158,7 +158,7 @@ fn outgoing_fixtures() {
                 >(&content)
                 .unwrap();
                 assert_eq!(
-                    wrapped.params().tx.as_bytes(),
+                    wrapped.params().tx,
                     base64::decode("c3luYy1rZXk9dmFsdWU=").unwrap()
                 );
             },
@@ -214,60 +214,42 @@ fn outgoing_fixtures() {
                     RequestWrapper<endpoint::broadcast::tx_async::Request>,
                 >(&content)
                 .unwrap();
-                assert_eq!(
-                    wrapped.params().tx.as_bytes(),
-                    base64::decode("dHgwPXZhbHVl").unwrap()
-                );
+                assert_eq!(wrapped.params().tx, base64::decode("dHgwPXZhbHVl").unwrap());
             },
             "subscribe_txs_broadcast_tx_1" => {
                 let wrapped = serde_json::from_str::<
                     RequestWrapper<endpoint::broadcast::tx_async::Request>,
                 >(&content)
                 .unwrap();
-                assert_eq!(
-                    wrapped.params().tx.as_bytes(),
-                    base64::decode("dHgxPXZhbHVl").unwrap()
-                );
+                assert_eq!(wrapped.params().tx, base64::decode("dHgxPXZhbHVl").unwrap());
             },
             "subscribe_txs_broadcast_tx_2" => {
                 let wrapped = serde_json::from_str::<
                     RequestWrapper<endpoint::broadcast::tx_async::Request>,
                 >(&content)
                 .unwrap();
-                assert_eq!(
-                    wrapped.params().tx.as_bytes(),
-                    base64::decode("dHgyPXZhbHVl").unwrap()
-                );
+                assert_eq!(wrapped.params().tx, base64::decode("dHgyPXZhbHVl").unwrap());
             },
             "subscribe_txs_broadcast_tx_3" => {
                 let wrapped = serde_json::from_str::<
                     RequestWrapper<endpoint::broadcast::tx_async::Request>,
                 >(&content)
                 .unwrap();
-                assert_eq!(
-                    wrapped.params().tx.as_bytes(),
-                    base64::decode("dHgzPXZhbHVl").unwrap()
-                );
+                assert_eq!(wrapped.params().tx, base64::decode("dHgzPXZhbHVl").unwrap());
             },
             "subscribe_txs_broadcast_tx_4" => {
                 let wrapped = serde_json::from_str::<
                     RequestWrapper<endpoint::broadcast::tx_async::Request>,
                 >(&content)
                 .unwrap();
-                assert_eq!(
-                    wrapped.params().tx.as_bytes(),
-                    base64::decode("dHg0PXZhbHVl").unwrap()
-                );
+                assert_eq!(wrapped.params().tx, base64::decode("dHg0PXZhbHVl").unwrap());
             },
             "subscribe_txs_broadcast_tx_5" => {
                 let wrapped = serde_json::from_str::<
                     RequestWrapper<endpoint::broadcast::tx_async::Request>,
                 >(&content)
                 .unwrap();
-                assert_eq!(
-                    wrapped.params().tx.as_bytes(),
-                    base64::decode("dHg1PXZhbHVl").unwrap()
-                );
+                assert_eq!(wrapped.params().tx, base64::decode("dHg1PXZhbHVl").unwrap());
             },
             "tx" => {
                 let wrapped =
@@ -1410,7 +1392,7 @@ fn incoming_fixtures() {
                     assert!(tx.tx_result.info.to_string().is_empty());
                     assert!(tx.tx_result.log.is_empty());
                     let proof = tx.proof.unwrap();
-                    assert_eq!(proof.data, tx.tx.as_bytes());
+                    assert_eq!(proof.data, tx.tx);
                     assert!(proof.proof.is_some());
                     assert_ne!(proof.root_hash, [0; 32]);
                 }

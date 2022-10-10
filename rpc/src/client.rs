@@ -20,7 +20,6 @@ pub use transport::websocket::{
 };
 
 use crate::{
-    abci::Transaction,
     endpoint::{validators::DEFAULT_VALIDATORS_PER_PAGE, *},
     paging::Paging,
     prelude::*,
@@ -121,28 +120,28 @@ pub trait Client {
     }
 
     /// `/broadcast_tx_async`: broadcast a transaction, returning immediately.
-    async fn broadcast_tx_async(
-        &self,
-        tx: Transaction,
-    ) -> Result<broadcast::tx_async::Response, Error> {
+    async fn broadcast_tx_async<T>(&self, tx: T) -> Result<broadcast::tx_async::Response, Error>
+    where
+        T: Into<Vec<u8>> + Send,
+    {
         self.perform(broadcast::tx_async::Request::new(tx)).await
     }
 
     /// `/broadcast_tx_sync`: broadcast a transaction, returning the response
     /// from `CheckTx`.
-    async fn broadcast_tx_sync(
-        &self,
-        tx: Transaction,
-    ) -> Result<broadcast::tx_sync::Response, Error> {
+    async fn broadcast_tx_sync<T>(&self, tx: T) -> Result<broadcast::tx_sync::Response, Error>
+    where
+        T: Into<Vec<u8>> + Send,
+    {
         self.perform(broadcast::tx_sync::Request::new(tx)).await
     }
 
     /// `/broadcast_tx_commit`: broadcast a transaction, returning the response
     /// from `DeliverTx`.
-    async fn broadcast_tx_commit(
-        &self,
-        tx: Transaction,
-    ) -> Result<broadcast::tx_commit::Response, Error> {
+    async fn broadcast_tx_commit<T>(&self, tx: T) -> Result<broadcast::tx_commit::Response, Error>
+    where
+        T: Into<Vec<u8>> + Send,
+    {
         self.perform(broadcast::tx_commit::Request::new(tx)).await
     }
 

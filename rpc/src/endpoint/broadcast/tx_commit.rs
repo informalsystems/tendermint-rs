@@ -5,7 +5,7 @@ use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use tendermint::{abci, block, Hash};
 
-use crate::{abci::Transaction, prelude::*, serializers};
+use crate::{prelude::*, serializers};
 
 /// `/broadcast_tx_commit`: only returns error if `mempool.CheckTx()` errs or
 /// if we timeout waiting for tx to commit.
@@ -15,13 +15,14 @@ use crate::{abci::Transaction, prelude::*, serializers};
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request {
     /// Transaction to broadcast
-    pub tx: Transaction,
+    #[serde(with = "serializers::bytes::base64string")]
+    pub tx: Vec<u8>,
 }
 
 impl Request {
     /// Create a new commit transaction broadcast RPC request
-    pub fn new(tx: Transaction) -> Request {
-        Request { tx }
+    pub fn new(tx: impl Into<Vec<u8>>) -> Request {
+        Request { tx: tx.into() }
     }
 }
 

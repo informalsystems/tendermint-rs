@@ -6,8 +6,8 @@ use futures::StreamExt;
 use structopt::StructOpt;
 use tendermint::Hash;
 use tendermint_rpc::{
-    abci::Transaction, query::Query, Client, Error, HttpClient, Order, Paging, Scheme,
-    Subscription, SubscriptionClient, Url, WebSocketClient,
+    query::Query, Client, Error, HttpClient, Order, Paging, Scheme, Subscription,
+    SubscriptionClient, Url, WebSocketClient,
 };
 use tokio::time::Duration;
 use tracing::{error, info, level_filters::LevelFilter, warn};
@@ -335,24 +335,18 @@ where
             serde_json::to_string_pretty(&client.block_search(query, page, per_page, order).await?)
                 .map_err(Error::serde)?
         },
-        ClientRequest::BroadcastTxAsync { tx } => serde_json::to_string_pretty(
-            &client
-                .broadcast_tx_async(Transaction::from(tx.into_bytes()))
-                .await?,
-        )
-        .map_err(Error::serde)?,
-        ClientRequest::BroadcastTxCommit { tx } => serde_json::to_string_pretty(
-            &client
-                .broadcast_tx_commit(Transaction::from(tx.into_bytes()))
-                .await?,
-        )
-        .map_err(Error::serde)?,
-        ClientRequest::BroadcastTxSync { tx } => serde_json::to_string_pretty(
-            &client
-                .broadcast_tx_sync(Transaction::from(tx.into_bytes()))
-                .await?,
-        )
-        .map_err(Error::serde)?,
+        ClientRequest::BroadcastTxAsync { tx } => {
+            serde_json::to_string_pretty(&client.broadcast_tx_async(tx).await?)
+                .map_err(Error::serde)?
+        },
+        ClientRequest::BroadcastTxCommit { tx } => {
+            serde_json::to_string_pretty(&client.broadcast_tx_commit(tx).await?)
+                .map_err(Error::serde)?
+        },
+        ClientRequest::BroadcastTxSync { tx } => {
+            serde_json::to_string_pretty(&client.broadcast_tx_sync(tx).await?)
+                .map_err(Error::serde)?
+        },
         ClientRequest::ConsensusParams { height } => {
             serde_json::to_string_pretty(&client.consensus_params(height).await?)
                 .map_err(Error::serde)?
