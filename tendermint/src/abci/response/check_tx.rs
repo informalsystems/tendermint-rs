@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
-use super::super::Event;
+use super::super::{Code, Event};
 use crate::prelude::*;
 use crate::serializers;
 
@@ -13,7 +13,7 @@ pub struct CheckTx {
     /// Transactions where `code != 0` will be rejected; these transactions will
     /// not be broadcast to other nodes or included in a proposal block.
     /// Tendermint attributes no other value to the response code.
-    pub code: u32,
+    pub code: Code,
     /// Result bytes, if any.
     #[serde(with = "serializers::nullable")]
     pub data: Bytes,
@@ -55,7 +55,7 @@ use tendermint_proto::{abci as pb, Protobuf};
 impl From<CheckTx> for pb::ResponseCheckTx {
     fn from(check_tx: CheckTx) -> Self {
         Self {
-            code: check_tx.code,
+            code: check_tx.code.into(),
             data: check_tx.data,
             log: check_tx.log,
             info: check_tx.info,
@@ -75,7 +75,7 @@ impl TryFrom<pb::ResponseCheckTx> for CheckTx {
 
     fn try_from(check_tx: pb::ResponseCheckTx) -> Result<Self, Self::Error> {
         Ok(Self {
-            code: check_tx.code,
+            code: check_tx.code.into(),
             data: check_tx.data,
             log: check_tx.log,
             info: check_tx.info,

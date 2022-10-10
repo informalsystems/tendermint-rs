@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
-use super::super::Event;
+use super::super::{Code, Event};
 use crate::prelude::*;
 use crate::serializers;
 
@@ -13,7 +13,7 @@ pub struct DeliverTx {
     /// This code should be `0` only if the transaction is fully valid. However,
     /// invalid transactions included in a block will still be executed against
     /// the application state.
-    pub code: u32,
+    pub code: Code,
     /// Result bytes, if any.
     #[serde(with = "serializers::nullable")]
     pub data: Bytes,
@@ -48,7 +48,7 @@ use tendermint_proto::{abci as pb, Protobuf};
 impl From<DeliverTx> for pb::ResponseDeliverTx {
     fn from(deliver_tx: DeliverTx) -> Self {
         Self {
-            code: deliver_tx.code,
+            code: deliver_tx.code.into(),
             data: deliver_tx.data,
             log: deliver_tx.log,
             info: deliver_tx.info,
@@ -65,7 +65,7 @@ impl TryFrom<pb::ResponseDeliverTx> for DeliverTx {
 
     fn try_from(deliver_tx: pb::ResponseDeliverTx) -> Result<Self, Self::Error> {
         Ok(Self {
-            code: deliver_tx.code,
+            code: deliver_tx.code.into(),
             data: deliver_tx.data,
             log: deliver_tx.log,
             info: deliver_tx.info,

@@ -1386,7 +1386,7 @@ fn incoming_fixtures() {
                 // Test a few selected attributes of the results.
                 for tx in result.txs {
                     assert_ne!(tx.hash.as_bytes(), [0; 32]);
-                    assert_eq!(tx.tx_result.code, abci::Code::Ok.value());
+                    assert_eq!(tx.tx_result.code, abci::Code::Ok);
                     assert_eq!(tx.tx_result.events.len(), 1);
                     assert_eq!(tx.tx_result.events[0].kind, "app");
                     assert_eq!(tx.tx_result.gas_used, 0);
@@ -1402,7 +1402,7 @@ fn incoming_fixtures() {
                 // Test a few selected attributes of the results.
                 for tx in result.txs {
                     assert_ne!(tx.hash.as_bytes(), [0; 32]);
-                    assert_eq!(tx.tx_result.code, abci::Code::Ok.value());
+                    assert_eq!(tx.tx_result.code, abci::Code::Ok);
                     assert_eq!(tx.tx_result.events.len(), 1);
                     assert_eq!(tx.tx_result.events[0].kind, "app");
                     assert_eq!(tx.tx_result.gas_used, 0);
