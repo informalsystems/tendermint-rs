@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use super::super::{types::ValidatorUpdate, Event};
-use crate::{consensus, prelude::*, serializers};
+use super::super::Event;
+use crate::{consensus, prelude::*, serializers, validator};
 
 #[doc = include_str!("../doc/response-endblock.md")]
 #[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
@@ -10,7 +10,7 @@ pub struct EndBlock {
     ///
     /// Setting the voting power to 0 removes a validator.
     #[serde(with = "serializers::nullable")]
-    pub validator_updates: Vec<ValidatorUpdate>,
+    pub validator_updates: Vec<validator::Update>,
     /// Changes to consensus parameters (optional).
     pub consensus_param_updates: Option<consensus::Params>,
     /// Events that occurred while ending the block.

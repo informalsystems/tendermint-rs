@@ -4,6 +4,7 @@ use core::convert::{TryFrom, TryInto};
 
 use serde::{Deserialize, Serialize};
 use tendermint_proto::{
+    abci::ValidatorUpdate as RawValidatorUpdate,
     types::{
         SimpleValidator as RawSimpleValidator, Validator as RawValidator,
         ValidatorSet as RawValidatorSet,
@@ -11,7 +12,10 @@ use tendermint_proto::{
     Protobuf,
 };
 
-use crate::{account, hash::Hash, merkle, prelude::*, vote, Error, PublicKey, Signature};
+use crate::{
+    account, hash::Hash, merkle, prelude::*, public_key::deserialize_public_key, vote, Error,
+    PublicKey, Signature,
+};
 
 /// Validator set contains a vector of validators
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -315,6 +319,47 @@ impl ProposerPriority {
     }
 }
 
+/// A change to the validator set.
+///
+/// Used to inform Tendermint of changes to the validator set.
+///
+/// [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#validatorupdate)
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct Update {
+    /// Validator public key
+    #[serde(deserialize_with = "deserialize_public_key")]
+    pub pub_key: PublicKey,
+
+    /// New voting power
+    #[serde(default)]
+    pub power: vote::Power,
+}
+
+impl Protobuf<RawValidatorUpdate> for Update {}
+
+impl From<Update> for RawValidatorUpdate {
+    fn from(vu: Update) -> Self {
+        Self {
+            pub_key: Some(vu.pub_key.into()),
+            power: vu.power.into(),
+        }
+    }
+}
+
+impl TryFrom<RawValidatorUpdate> for Update {
+    type Error = Error;
+
+    fn try_from(vu: RawValidatorUpdate) -> Result<Self, Self::Error> {
+        Ok(Self {
+            pub_key: vu
+                .pub_key
+                .ok_or_else(Error::missing_public_key)?
+                .try_into()?,
+            power: vu.power.try_into()?,
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -403,5 +448,33 @@ mod tests {
             val_set.total_voting_power().value(),
             148_151_478_422_287_875 + 158_095_448_483_785_107 + 770_561_664_770_006_272
         );
+    }
+
+    #[test]
+    fn deserialize_validator_updates() {
+        const FMT1: &str = r#"{
+            "pub_key": {
+                "Sum": {
+                    "type": "tendermint.crypto.PublicKey_Ed25519",
+                    "value": {
+                        "ed25519": "VqJCr3vjQdffcLIG6RMBl2MgXDFYNY6b3Joaa43gV3o="
+                    }
+                }
+            },
+            "power": "573929"
+        }"#;
+        const FMT2: &str = r#"{
+            "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "VqJCr3vjQdffcLIG6RMBl2MgXDFYNY6b3Joaa43gV3o="
+            },
+            "power": "573929"
+        }"#;
+
+        let update1 = serde_json::from_str::<Update>(FMT1).unwrap();
+        let update2 = serde_json::from_str::<Update>(FMT2).unwrap();
+
+        assert_eq!(u64::from(update1.power), 573929);
+        assert_eq!(update1, update2);
     }
 }

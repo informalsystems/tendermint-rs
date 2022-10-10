@@ -1,7 +1,7 @@
 //! `/block_results` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
-use tendermint::{abci, block, consensus};
+use tendermint::{abci, block, consensus, validator};
 
 use crate::prelude::*;
 use crate::serializers;
@@ -51,7 +51,7 @@ pub struct Response {
 
     /// Validator updates (might be explicit null)
     #[serde(deserialize_with = "serializers::nullable::deserialize")]
-    pub validator_updates: Vec<abci::types::ValidatorUpdate>,
+    pub validator_updates: Vec<validator::Update>,
 
     /// New consensus params (might be explicit null)
     pub consensus_param_updates: Option<consensus::Params>,

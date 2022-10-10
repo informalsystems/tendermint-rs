@@ -8,9 +8,8 @@
 use core::convert::{TryFrom, TryInto};
 
 use bytes::Bytes;
-use serde::{Deserialize, Serialize};
 
-use crate::{block, prelude::*, public_key::deserialize_public_key, vote, Error, PublicKey, Time};
+use crate::{block, prelude::*, vote, Error, Time};
 
 /// A validator address with voting power.
 ///
@@ -20,20 +19,6 @@ pub struct Validator {
     /// The validator's address (the first 20 bytes of `SHA256(public_key)`).
     pub address: [u8; 20],
     /// The voting power of the validator.
-    pub power: vote::Power,
-}
-
-/// A change to the validator set.
-///
-/// Used to inform Tendermint of changes to the validator set.
-///
-/// [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#validatorupdate)
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
-pub struct ValidatorUpdate {
-    /// The validator's public key.
-    #[serde(deserialize_with = "deserialize_public_key")]
-    pub pub_key: PublicKey,
-    /// The validator's voting power.
     pub power: vote::Power,
 }
 
@@ -167,31 +152,6 @@ impl TryFrom<pb::Validator> for Validator {
 
 impl Protobuf<pb::Validator> for Validator {}
 
-impl From<ValidatorUpdate> for pb::ValidatorUpdate {
-    fn from(vu: ValidatorUpdate) -> Self {
-        Self {
-            pub_key: Some(vu.pub_key.into()),
-            power: vu.power.into(),
-        }
-    }
-}
-
-impl TryFrom<pb::ValidatorUpdate> for ValidatorUpdate {
-    type Error = Error;
-
-    fn try_from(vu: pb::ValidatorUpdate) -> Result<Self, Self::Error> {
-        Ok(Self {
-            pub_key: vu
-                .pub_key
-                .ok_or_else(Error::missing_public_key)?
-                .try_into()?,
-            power: vu.power.try_into()?,
-        })
-    }
-}
-
-impl Protobuf<pb::ValidatorUpdate> for ValidatorUpdate {}
-
 impl From<VoteInfo> for pb::VoteInfo {
     fn from(vi: VoteInfo) -> Self {
         Self {
@@ -311,36 +271,3 @@ impl TryFrom<pb::Snapshot> for Snapshot {
 }
 
 impl Protobuf<pb::Snapshot> for Snapshot {}
-
-#[cfg(test)]
-mod tests {
-    use super::ValidatorUpdate;
-
-    #[test]
-    fn deserialize_validator_updates() {
-        const FMT1: &str = r#"{
-            "pub_key": {
-                "Sum": {
-                    "type": "tendermint.crypto.PublicKey_Ed25519",
-                    "value": {
-                        "ed25519": "VqJCr3vjQdffcLIG6RMBl2MgXDFYNY6b3Joaa43gV3o="
-                    }
-                }
-            },
-            "power": "573929"
-        }"#;
-        const FMT2: &str = r#"{
-            "pub_key": {
-                "type": "tendermint/PubKeyEd25519",
-                "value": "VqJCr3vjQdffcLIG6RMBl2MgXDFYNY6b3Joaa43gV3o="
-            },
-            "power": "573929"
-        }"#;
-
-        let update1 = serde_json::from_str::<ValidatorUpdate>(FMT1).unwrap();
-        let update2 = serde_json::from_str::<ValidatorUpdate>(FMT2).unwrap();
-
-        assert_eq!(u64::from(update1.power), 573929);
-        assert_eq!(update1, update2);
-    }
-}
