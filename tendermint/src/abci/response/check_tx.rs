@@ -39,9 +39,9 @@ pub struct CheckTx {
     pub sender: String,
     /// The transaction's priority (for mempool ordering).
     pub priority: i64,
-    // mempool_error is contained in the proto, but skipped here:
-    // > mempool_error is set by Tendermint.
-    // > ABCI applictions creating a ResponseCheckTX should not set mempool_error.
+    /// mempool_error is set by Tendermint.
+    /// ABCI applictions should not set mempool_error.
+    pub mempool_error: String,
 }
 
 // =============================================================================
@@ -65,7 +65,7 @@ impl From<CheckTx> for pb::ResponseCheckTx {
             codespace: check_tx.codespace,
             sender: check_tx.sender,
             priority: check_tx.priority,
-            mempool_error: String::default(),
+            mempool_error: check_tx.mempool_error,
         }
     }
 }
@@ -89,6 +89,7 @@ impl TryFrom<pb::ResponseCheckTx> for CheckTx {
             codespace: check_tx.codespace,
             sender: check_tx.sender,
             priority: check_tx.priority,
+            mempool_error: check_tx.mempool_error,
         })
     }
 }
