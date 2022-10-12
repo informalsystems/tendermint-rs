@@ -54,7 +54,7 @@ impl TrustThresholdFraction {
     /// The parameters are valid iff `1/3 <= numerator/denominator < 1`.
     /// In any other case we return an error.
     pub fn new(numerator: u64, denominator: u64) -> Result<Self, Error> {
-        if numerator >= denominator {
+        if numerator > denominator {
             return Err(Error::trust_threshold_too_large());
         }
         if denominator == 0 {
