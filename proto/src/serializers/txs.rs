@@ -1,10 +1,10 @@
-//! Serialize/deserialize Vec<Vec<u8>> type from and into transactions (Base64String array).
+//! Serialize/deserialize `Vec<Vec<u8>>` type from and into transactions (Base64String array).
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use subtle_encoding::base64;
 
 use crate::prelude::*;
 
-/// Deserialize transactions into Vec<Vec<u8>>
+/// Deserialize transactions into `Vec<Vec<u8>>`
 pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<Vec<u8>>, D::Error>
 where
     D: Deserializer<'de>,
@@ -23,7 +23,7 @@ where
         .collect()
 }
 
-/// Serialize from Vec<Vec<u8>> into transactions
+/// Serialize from `Vec<Vec<u8>>` into transactions
 pub fn serialize<S>(value: &[Vec<u8>], serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
