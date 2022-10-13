@@ -1,11 +1,11 @@
-//! Option<Hash> serialization with validation
+//! `Option<Hash>` serialization with validation
 
 use serde::{Deserializer, Serializer};
 
 use super::hash;
 use crate::Hash;
 
-/// Deserialize hexstring into Option<Hash>
+/// Deserialize hexstring into `Option<Hash>`
 pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<Hash>, D::Error>
 where
     D: Deserializer<'de>,
@@ -13,7 +13,7 @@ where
     hash::deserialize(deserializer).map(Some)
 }
 
-/// Serialize from Option<Hash> into hexstring
+/// Serialize from `Option<Hash>` into hexstring
 pub fn serialize<S>(value: &Option<Hash>, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,

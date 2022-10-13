@@ -1,4 +1,4 @@
-//! Serialize/deserialize bytes (Vec<u8>) type
+//! Serialize/deserialize bytes (`Vec<u8>`) type
 
 /// Serialize into hexstring, deserialize from hexstring
 pub mod hexstring {
@@ -7,7 +7,7 @@ pub mod hexstring {
 
     use crate::prelude::*;
 
-    /// Deserialize hexstring into Vec<u8>
+    /// Deserialize hexstring into `Vec<u8>`
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where
         D: Deserializer<'de>,
@@ -18,7 +18,7 @@ pub mod hexstring {
             .map_err(serde::de::Error::custom)
     }
 
-    /// Serialize from T into hexstring
+    /// Serialize from `T` into hexstring
     pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -37,7 +37,7 @@ pub mod base64string {
 
     use crate::prelude::*;
 
-    /// Deserialize base64string into Vec<u8>
+    /// Deserialize base64string into `Vec<u8>`
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where
         D: Deserializer<'de>,
@@ -68,14 +68,14 @@ pub mod base64string {
     }
 }
 
-/// Serialize into Vec<base64string>, deserialize from Vec<base64string>
+/// Serialize into `Vec<base64string>`, deserialize from `Vec<base64string>`
 pub mod vec_base64string {
     use serde::{Deserialize, Deserializer, Serializer};
     use subtle_encoding::base64;
 
     use crate::prelude::*;
 
-    /// Deserialize array into Vec<Vec<u8>>
+    /// Deserialize array into `Vec<Vec<u8>>`
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<Vec<u8>>, D::Error>
     where
         D: Deserializer<'de>,
@@ -87,7 +87,7 @@ pub mod vec_base64string {
             .collect()
     }
 
-    /// Serialize from Vec<T> into Vec<base64string>
+    /// Serialize from `Vec<T>` into `Vec<base64string>`
     pub fn serialize<S, T>(value: &[T], serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -103,14 +103,14 @@ pub mod vec_base64string {
     }
 }
 
-/// Serialize into Option<base64string>, deserialize from Option<base64string>
+/// Serialize into `Option<base64string>`, deserialize from `Option<base64string>`
 pub mod option_base64string {
     use serde::{Deserialize, Deserializer, Serializer};
     use subtle_encoding::base64;
 
     use crate::prelude::*;
 
-    /// Deserialize Option<base64string> into Vec<u8> or null
+    /// Deserialize `Option<base64string>` into `Vec<u8>` or null
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where
         D: Deserializer<'de>,
@@ -119,7 +119,7 @@ pub mod option_base64string {
         base64::decode(&string).map_err(serde::de::Error::custom)
     }
 
-    /// Serialize from T into Option<base64string>
+    /// Serialize from `T` into `Option<base64string>`
     pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -137,7 +137,7 @@ pub mod string {
 
     use crate::prelude::*;
 
-    /// Deserialize string into Vec<u8>
+    /// Deserialize string into `Vec<u8>`
     #[allow(dead_code)]
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where
@@ -147,7 +147,7 @@ pub mod string {
         Ok(string.as_bytes().to_vec())
     }
 
-    /// Serialize from T into string
+    /// Serialize from `T` into string
     #[allow(dead_code)]
     pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
     where
