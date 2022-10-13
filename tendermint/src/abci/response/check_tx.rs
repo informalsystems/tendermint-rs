@@ -38,6 +38,7 @@ pub struct CheckTx {
     /// The transaction's sender (e.g. the signer).
     pub sender: String,
     /// The transaction's priority (for mempool ordering).
+    #[serde(with = "serializers::from_str")]
     pub priority: i64,
     /// mempool_error is set by Tendermint.
     /// ABCI applictions should not set mempool_error.
