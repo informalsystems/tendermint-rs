@@ -9,7 +9,7 @@
 //! All serializers are presented in a serializers::<Rust_nickname>::<JSON_representation_name>
 //! format.
 //!
-//! This example shows how to serialize Vec<u8> into different types of strings:
+//! This example shows how to serialize `Vec<u8>` into different types of strings:
 //! ```ignore
 //! use serde::{Serialize, Deserialize};
 //! use crate::serializers;

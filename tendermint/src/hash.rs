@@ -34,7 +34,7 @@ pub enum Hash {
 
 impl Protobuf<Vec<u8>> for Hash {}
 
-/// Default conversion from Vec<u8> is SHA256 Hash or None
+/// Default conversion from `Vec<u8>` is SHA256 Hash or `None`
 impl TryFrom<Vec<u8>> for Hash {
     type Error = Error;
 
@@ -231,7 +231,7 @@ impl From<AppHash> for Vec<u8> {
 }
 
 impl AppHash {
-    /// Return AppHash value as vec<u8>
+    /// Return AppHash value as `Vec<u8>`
     pub fn value(&self) -> Vec<u8> {
         self.0.clone()
     }
