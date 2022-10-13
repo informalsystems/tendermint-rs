@@ -7,6 +7,7 @@ use crate::serializers;
 
 #[doc = include_str!("../doc/response-checktx.md")]
 #[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
+#[serde(default)]
 pub struct CheckTx {
     /// The response code.
     ///
