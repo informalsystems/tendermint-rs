@@ -322,7 +322,10 @@ fn incoming_fixtures() {
                 let result = endpoint::abci_info::Response::from_string(content).unwrap();
                 assert_eq!(result.response.app_version, 1);
                 assert_eq!(result.response.data, "{\"size\":0}");
-                assert_eq!(result.response.last_block_app_hash, b"AAAAAAAAAAA="[..]);
+                assert_eq!(
+                    result.response.last_block_app_hash.as_bytes(),
+                    b"AAAAAAAAAAA="
+                );
                 assert_eq!(result.response.version, "0.17.0");
             },
             "abci_query_with_existing_key" => {
@@ -370,7 +373,7 @@ fn incoming_fixtures() {
                 let result = endpoint::block::Response::from_string(content).unwrap();
                 assert!(result.block.data.get(0).is_none());
                 assert!(result.block.evidence.iter().next().is_none());
-                assert!(result.block.header.app_hash.value().is_empty());
+                assert!(result.block.header.app_hash.as_bytes().is_empty());
                 assert_eq!(result.block.header.chain_id.as_str(), CHAIN_ID);
                 assert!(!result.block.header.consensus_hash.is_empty());
                 assert_eq!(result.block.header.data_hash, empty_merkle_root_hash);
@@ -411,7 +414,7 @@ fn incoming_fixtures() {
                 let result = endpoint::block::Response::from_string(content).unwrap();
                 assert!(result.block.data.get(0).is_none());
                 assert!(result.block.evidence.iter().next().is_none());
-                assert_eq!(result.block.header.app_hash.value(), [0u8; 8]);
+                assert_eq!(result.block.header.app_hash.as_bytes(), &[0u8; 8]);
                 assert_eq!(result.block.header.chain_id.as_str(), CHAIN_ID);
                 assert!(!result.block.header.consensus_hash.is_empty());
                 assert_eq!(result.block.header.data_hash, empty_merkle_root_hash);
@@ -590,7 +593,7 @@ fn incoming_fixtures() {
                 assert!(result.signed_header.commit.signatures[0]
                     .validator_address()
                     .is_some());
-                assert_eq!(result.signed_header.header.app_hash.value(), [0u8; 8]);
+                assert_eq!(result.signed_header.header.app_hash.as_bytes(), [0u8; 8]);
                 assert_eq!(result.signed_header.header.chain_id.as_str(), CHAIN_ID);
                 assert!(!result.signed_header.header.consensus_hash.is_empty());
                 assert_eq!(
@@ -740,7 +743,7 @@ fn incoming_fixtures() {
                 assert_eq!(result.node_info.version.to_string(), "0.34.21");
                 assert!(!result.sync_info.catching_up);
                 assert_eq!(
-                    result.sync_info.latest_app_hash.value(),
+                    result.sync_info.latest_app_hash.as_bytes(),
                     [6, 0, 0, 0, 0, 0, 0, 0]
                 );
                 assert!(!result.sync_info.latest_block_hash.is_empty());
@@ -765,14 +768,14 @@ fn incoming_fixtures() {
                     assert_eq!(block_meta.block_id.part_set_header.total, 1);
                     assert!(block_meta.block_size > 0);
                     if block_meta.header.height.value() == 1 {
-                        assert!(block_meta.header.app_hash.value().is_empty());
+                        assert!(block_meta.header.app_hash.as_bytes().is_empty());
                         assert_eq!(block_meta.header.data_hash, empty_merkle_root_hash);
                         assert_eq!(block_meta.header.evidence_hash, empty_merkle_root_hash);
                         assert!(block_meta.header.last_block_id.is_none());
                         assert_eq!(block_meta.header.last_commit_hash, empty_merkle_root_hash);
                         assert_eq!(block_meta.header.last_results_hash, empty_merkle_root_hash);
                     } else {
-                        assert!(!block_meta.header.app_hash.value().is_empty());
+                        assert!(!block_meta.header.app_hash.as_bytes().is_empty());
                         assert!(block_meta.header.data_hash.is_some());
                         assert!(block_meta.header.evidence_hash.is_some());
                         assert!(block_meta.header.last_block_id.is_some());
@@ -836,7 +839,7 @@ fn incoming_fixtures() {
                     let b = block.unwrap();
                     assert!(b.data.get(0).is_none());
                     assert!(b.evidence.iter().next().is_none());
-                    assert!(!b.header.app_hash.value().is_empty());
+                    assert!(!b.header.app_hash.as_bytes().is_empty());
                     assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
                     assert!(!b.header.consensus_hash.is_empty());
                     assert_eq!(b.header.data_hash, empty_merkle_root_hash);
@@ -891,7 +894,7 @@ fn incoming_fixtures() {
                     let b = block.unwrap();
                     assert!(b.data.get(0).is_none());
                     assert!(b.evidence.iter().next().is_none());
-                    assert!(!b.header.app_hash.value().is_empty());
+                    assert!(!b.header.app_hash.as_bytes().is_empty());
                     assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
                     assert!(!b.header.consensus_hash.is_empty());
                     assert_eq!(b.header.data_hash, empty_merkle_root_hash);
@@ -968,7 +971,7 @@ fn incoming_fixtures() {
                     let b = block.unwrap();
                     assert!(b.data.get(0).is_none());
                     assert!(b.evidence.iter().next().is_none());
-                    assert!(!b.header.app_hash.value().is_empty());
+                    assert!(!b.header.app_hash.as_bytes().is_empty());
                     assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
                     assert!(!b.header.consensus_hash.is_empty());
                     assert_eq!(b.header.data_hash, empty_merkle_root_hash);
@@ -1023,7 +1026,7 @@ fn incoming_fixtures() {
                     let b = block.unwrap();
                     assert!(b.data.get(0).is_none());
                     assert!(b.evidence.iter().next().is_none());
-                    assert!(!b.header.app_hash.value().is_empty());
+                    assert!(!b.header.app_hash.as_bytes().is_empty());
                     assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
                     assert!(!b.header.consensus_hash.is_empty());
                     assert_eq!(b.header.data_hash, empty_merkle_root_hash);
@@ -1078,7 +1081,7 @@ fn incoming_fixtures() {
                     let b = block.unwrap();
                     assert!(b.data.get(0).is_none());
                     assert!(b.evidence.iter().next().is_none());
-                    assert!(!b.header.app_hash.value().is_empty());
+                    assert!(!b.header.app_hash.as_bytes().is_empty());
                     assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
                     assert!(!b.header.consensus_hash.is_empty());
                     assert_eq!(b.header.data_hash, empty_merkle_root_hash);

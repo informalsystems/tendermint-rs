@@ -244,9 +244,9 @@ impl From<AppHash> for Bytes {
 }
 
 impl AppHash {
-    /// Return AppHash value as `Vec<u8>`
-    pub fn value(&self) -> Vec<u8> {
-        self.0.clone()
+    /// Return the hash bytes as a byte slice.
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.0
     }
 
     /// Decode a `Hash` from upper-case hexadecimal
