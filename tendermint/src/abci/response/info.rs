@@ -1,9 +1,8 @@
-use crate::{block, prelude::*, Error};
+use crate::{block, prelude::*, AppHash, Error};
 use core::convert::TryFrom;
 use tendermint_proto::abci as pb;
 use tendermint_proto::Protobuf;
 
-use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
 #[doc = include_str!("../doc/response-info.md")]
@@ -19,8 +18,7 @@ pub struct Info {
     /// The latest block for which the app has called [`Commit`](super::super::Request::Commit).
     pub last_block_height: block::Height,
     /// The latest result of [`Commit`](super::super::Request::Commit).
-    // XXX(hdevalence): fix this, should be apphash?
-    pub last_block_app_hash: Bytes,
+    pub last_block_app_hash: AppHash,
 }
 
 // =============================================================================
@@ -34,7 +32,7 @@ impl From<Info> for pb::ResponseInfo {
             version: info.version,
             app_version: info.app_version,
             last_block_height: info.last_block_height.into(),
-            last_block_app_hash: info.last_block_app_hash,
+            last_block_app_hash: info.last_block_app_hash.into(),
         }
     }
 }
@@ -48,7 +46,7 @@ impl TryFrom<pb::ResponseInfo> for Info {
             version: info.version,
             app_version: info.app_version,
             last_block_height: info.last_block_height.try_into()?,
-            last_block_app_hash: info.last_block_app_hash,
+            last_block_app_hash: info.last_block_app_hash.try_into()?,
         })
     }
 }
