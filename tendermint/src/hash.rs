@@ -230,6 +230,19 @@ impl From<AppHash> for Vec<u8> {
     }
 }
 
+impl TryFrom<Bytes> for AppHash {
+    type Error = Error;
+
+    fn try_from(value: Bytes) -> Result<Self, Self::Error> {
+        Ok(AppHash(value.into()))
+    }
+}
+impl From<AppHash> for Bytes {
+    fn from(value: AppHash) -> Self {
+        value.0.into()
+    }
+}
+
 impl AppHash {
     /// Return AppHash value as `Vec<u8>`
     pub fn value(&self) -> Vec<u8> {
