@@ -39,3 +39,5 @@ ed25519 = { version = "1.3", default-features = false }
 
 [dev-dependencies]
 tendermint-testgen = { path = "../testgen", default-features = false }
+sha2 = { version = "0.9", default-features = false }
+
