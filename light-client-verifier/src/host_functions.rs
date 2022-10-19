@@ -42,6 +42,16 @@ mod tests {
 
     impl<D: Digest, S: signature::Signature> DigestVerifier<D, S> for SubstrateSignatureVerifier<D> {
         fn verify_digest(&self, digest: D, signature: &S) -> Result<(), ed25519::Error> {
+            // TODO; having issues here
+            /*
+                        error[E0277]: the trait bound `VerifyingKey: DigestVerifier<D, _>` is not satisfied
+              --> light-client-verifier/src/host_functions.rs:46:38
+               |
+            46 |             self.inner.verify_digest(digest, signature)
+               |                        ------------- ^^^^^^ the trait `DigestVerifier<D, _>` is not implemented for `VerifyingKey`
+               |                        |
+               |                        required by a bound introduced by this call
+                         */
             self.inner.verify_digest(digest, signature)
         }
     }
@@ -102,7 +112,6 @@ mod tests {
             // Self::secp256k1_verify(sig, message, public)
             let verifier =
                 <<Self as CryptoProvider>::EcdsaSecp256k1Verifier>::from_bytes(public).unwrap();
-            // TODO: probably should name the verifier properly - not sure how to do it better
             let signature = k256::ecdsa::Signature::from_der(sig).unwrap();
             Ok(verifier.verify(message, &signature).unwrap())
         }
