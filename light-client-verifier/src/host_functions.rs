@@ -1,6 +1,5 @@
 use digest::FixedOutput;
 use digest::{consts::U32, Digest};
-use tendermint::signature::Signer;
 use tendermint::signature::Verifier;
 
 pub trait CryptoProvider {
@@ -22,6 +21,7 @@ mod tests {
 
     use super::*;
     struct SubstrateHostFunctionsManager;
+    use k256::ecdsa::VerifyingKey;
 
     #[derive(Debug, Default)]
     struct SubstrateSha256(sha2::Sha256);
@@ -31,7 +31,7 @@ mod tests {
         _d: PhantomData<D>,
     }
 
-    impl<D: Digest> SubstrateSignatureVerifier<D> {
+    impl<D: Digest + FixedOutput<OutputSize = U32>> SubstrateSignatureVerifier<D> {
         fn from_bytes(public_key: &[u8]) -> Result<Self, ed25519::Error> {
             Ok(Self {
                 inner: k256::ecdsa::VerifyingKey::from_sec1_bytes(public_key)?,
@@ -40,28 +40,24 @@ mod tests {
         }
     }
 
-    impl<D: Digest, S: signature::Signature> DigestVerifier<D, S> for SubstrateSignatureVerifier<D> {
+    impl<D: Digest + FixedOutput<OutputSize = U32>, S: signature::Signature> DigestVerifier<D, S>
+        for SubstrateSignatureVerifier<D>
+    where
+        VerifyingKey: DigestVerifier<D, S>,
+    {
         fn verify_digest(&self, digest: D, signature: &S) -> Result<(), ed25519::Error> {
-            // TODO; having issues here
-            /*
-                        error[E0277]: the trait bound `VerifyingKey: DigestVerifier<D, _>` is not satisfied
-              --> light-client-verifier/src/host_functions.rs:46:38
-               |
-            46 |             self.inner.verify_digest(digest, signature)
-               |                        ------------- ^^^^^^ the trait `DigestVerifier<D, _>` is not implemented for `VerifyingKey`
-               |                        |
-               |                        required by a bound introduced by this call
-                         */
             self.inner.verify_digest(digest, signature)
         }
     }
 
-    impl<S: signature::PrehashSignature, D: Digest> tendermint::signature::Verifier<S>
-        for SubstrateSignatureVerifier<D>
+    impl<S: signature::PrehashSignature, D: Digest + FixedOutput<OutputSize = U32>>
+        tendermint::signature::Verifier<S> for SubstrateSignatureVerifier<D>
+    where
+        VerifyingKey: DigestVerifier<D, S>,
     {
         fn verify(&self, msg: &[u8], signature: &S) -> Result<(), ed25519::Error> {
             let mut hasher = D::new();
-            hasher.update(msg);
+            Digest::update(&mut hasher, msg);
             self.verify_digest(hasher, signature)
         }
     }
@@ -82,7 +78,7 @@ mod tests {
     impl digest::FixedOutput for SubstrateSha256 {
         fn finalize_into(self, out: &mut digest::Output<Self>) {
             use sha2::Digest;
-            self.0.finalize();
+            *out = self.0.finalize();
         }
     }
 
@@ -106,14 +102,14 @@ mod tests {
             result
         }
         fn ed25519_verify(sig: &[u8], msg: &[u8], pub_key: &[u8]) -> Result<(), ()> {
-            unimplemented!()
-        }
-        fn secp256k1_verify(sig: &[u8], message: &[u8], public: &[u8]) -> Result<(), ()> {
-            // Self::secp256k1_verify(sig, message, public)
             let verifier =
-                <<Self as CryptoProvider>::EcdsaSecp256k1Verifier>::from_bytes(public).unwrap();
+                <<Self as CryptoProvider>::EcdsaSecp256k1Verifier>::from_bytes(pub_key).unwrap();
             let signature = k256::ecdsa::Signature::from_der(sig).unwrap();
-            Ok(verifier.verify(message, &signature).unwrap())
+            Ok(verifier.verify(msg, &signature).unwrap())
+        }
+
+        fn secp256k1_verify(sig: &[u8], message: &[u8], public: &[u8]) -> Result<(), ()> {
+            unimplemented!()
         }
     }
 }
