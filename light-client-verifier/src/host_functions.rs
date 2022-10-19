@@ -1,11 +1,12 @@
 use digest::FixedOutput;
 use digest::{consts::U32, Digest};
+use signature::Signer;
 use tendermint::signature::Verifier;
 
 pub trait CryptoProvider {
     type Sha256: Digest + FixedOutput<OutputSize = U32>;
 
-    // type EcdsaSecp256k1Signer: Signer<k256::ecdsa::Signature>;
+    type EcdsaSecp256k1Signer: Signer<k256::ecdsa::Signature>;
     type EcdsaSecp256k1Verifier: Verifier<k256::ecdsa::Signature>;
 
     // type Ed25519Signer: Signer<ed25519::Signature>;
@@ -17,14 +18,19 @@ mod tests {
 
     use core::marker::PhantomData;
 
-    use signature::DigestVerifier;
+    use signature::{DigestSigner, DigestVerifier};
 
     use super::*;
     struct SubstrateHostFunctionsManager;
-    use k256::ecdsa::VerifyingKey;
+    use k256::ecdsa::{SigningKey, VerifyingKey};
 
     #[derive(Debug, Default)]
     struct SubstrateSha256(sha2::Sha256);
+
+    struct SubstrateSigner<D> {
+        inner: k256::ecdsa::SigningKey,
+        _d: PhantomData<D>,
+    }
     #[derive(Debug)]
     struct SubstrateSignatureVerifier<D> {
         inner: k256::ecdsa::VerifyingKey,
@@ -82,6 +88,17 @@ mod tests {
         }
     }
 
+    impl<D: Digest, S: signature::Signature> Signer<S> for SubstrateSigner<D>
+    where
+        SigningKey: DigestSigner<D, S>,
+    {
+        fn try_sign(&self, msg: &[u8]) -> Result<S, ed25519::Error> {
+            let mut hasher = D::new();
+            Digest::update(&mut hasher, msg);
+            self.inner.try_sign_digest(hasher)
+        }
+    }
+
     trait SubstrateHostFunctions: CryptoProvider {
         fn sha2_256(preimage: &[u8]) -> [u8; 32];
         fn ed25519_verify(sig: &[u8], msg: &[u8], pub_key: &[u8]) -> Result<(), ()>;
@@ -91,6 +108,7 @@ mod tests {
     impl CryptoProvider for SubstrateHostFunctionsManager {
         type Sha256 = SubstrateSha256;
 
+        type EcdsaSecp256k1Signer = SubstrateSigner<Self::Sha256>;
         type EcdsaSecp256k1Verifier = SubstrateSignatureVerifier<Self::Sha256>;
     }
 
