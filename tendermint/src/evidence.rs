@@ -36,10 +36,6 @@ pub enum Evidence {
     //#[serde(rename = "tendermint/DuplicateVoteEvidence")]
     DuplicateVote(DuplicateVoteEvidence),
 
-    /// Conflicting headers evidence - Todo: this is not implemented in protobuf, it's ignored now
-    //#[serde(rename = "tendermint/ConflictingHeadersEvidence")]
-    ConflictingHeaders(Box<ConflictingHeadersEvidence>),
-
     /// LightClient attack evidence - Todo: Implement details
     LightClientAttackEvidence,
 }
@@ -61,7 +57,6 @@ impl From<Evidence> for RawEvidence {
             Evidence::DuplicateVote(ev) => RawEvidence {
                 sum: Some(RawSum::DuplicateVoteEvidence(ev.into())),
             },
-            Evidence::ConflictingHeaders(_ev) => RawEvidence { sum: None }, // Todo: implement
             Evidence::LightClientAttackEvidence => RawEvidence { sum: None }, // Todo: implement
         }
     }
@@ -130,23 +125,6 @@ impl DuplicateVoteEvidence {
     /// Get votes
     pub fn votes(&self) -> (&Vote, &Vote) {
         (&self.vote_a, &self.vote_b)
-    }
-}
-
-/// Conflicting headers evidence.
-// Todo: This struct doesn't seem to have a protobuf definition.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ConflictingHeadersEvidence {
-    //#[serde(rename = "H1")]
-    pub h1: SignedHeader,
-    //#[serde(rename = "H2")]
-    pub h2: SignedHeader,
-}
-
-impl ConflictingHeadersEvidence {
-    /// Create a new evidence of conflicting headers
-    pub fn new(h1: SignedHeader, h2: SignedHeader) -> Self {
-        Self { h1, h2 }
     }
 }
 
