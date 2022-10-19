@@ -16,8 +16,9 @@ pub trait CryptoProvider {
 #[cfg(test)]
 mod tests {
 
+    /// A draft for an imlpementation of the HostFunctionManager for a specific chain (i.e. Polkadot/Substrate)
+    /// that uses the [`CryptoProvider`] trait
     use core::marker::PhantomData;
-
     use signature::{DigestSigner, DigestVerifier};
 
     use super::*;
