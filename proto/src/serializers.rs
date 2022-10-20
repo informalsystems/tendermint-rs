@@ -52,6 +52,8 @@
 
 // Todo: remove dead_code allowance as soon as more types are implemented
 #![allow(dead_code)]
+
+pub mod allow_null;
 pub mod bytes;
 pub mod evidence;
 pub mod from_str;
