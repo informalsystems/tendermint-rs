@@ -36,6 +36,7 @@ pub mod consensus;
 pub mod evidence;
 pub mod genesis;
 pub mod hash;
+pub mod host_functions;
 pub mod merkle;
 mod moniker;
 pub mod node;
