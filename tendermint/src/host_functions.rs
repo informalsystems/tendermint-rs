@@ -1,7 +1,7 @@
+use crate::signature::Verifier;
 use digest::FixedOutput;
 use digest::{consts::U32, Digest};
 use signature::Signer;
-use tendermint::signature::Verifier;
 
 pub trait CryptoProvider {
     type Sha256: Digest + FixedOutput<OutputSize = U32>;
@@ -29,19 +29,19 @@ mod tests {
     struct SubstrateSha256(sha2::Sha256);
 
     struct SubstrateSigner<D> {
-        inner: k256::ecdsa::SigningKey,
+        inner: SigningKey,
         _d: PhantomData<D>,
     }
     #[derive(Debug)]
     struct SubstrateSignatureVerifier<D> {
-        inner: k256::ecdsa::VerifyingKey,
+        inner: VerifyingKey,
         _d: PhantomData<D>,
     }
 
     impl<D: Digest + FixedOutput<OutputSize = U32>> SubstrateSignatureVerifier<D> {
         fn from_bytes(public_key: &[u8]) -> Result<Self, ed25519::Error> {
             Ok(Self {
-                inner: k256::ecdsa::VerifyingKey::from_sec1_bytes(public_key)?,
+                inner: VerifyingKey::from_sec1_bytes(public_key)?,
                 _d: PhantomData::default(),
             })
         }
@@ -57,8 +57,8 @@ mod tests {
         }
     }
 
-    impl<S: signature::PrehashSignature, D: Digest + FixedOutput<OutputSize = U32>>
-        tendermint::signature::Verifier<S> for SubstrateSignatureVerifier<D>
+    impl<S: signature::PrehashSignature, D: Digest + FixedOutput<OutputSize = U32>> Verifier<S>
+        for SubstrateSignatureVerifier<D>
     where
         VerifyingKey: DigestVerifier<D, S>,
     {
@@ -82,7 +82,7 @@ mod tests {
         }
     }
 
-    impl digest::FixedOutput for SubstrateSha256 {
+    impl FixedOutput for SubstrateSha256 {
         fn finalize_into(self, out: &mut digest::Output<Self>) {
             use sha2::Digest;
             *out = self.0.finalize();
@@ -127,7 +127,7 @@ mod tests {
             Ok(verifier.verify(msg, &signature).unwrap())
         }
 
-        fn secp256k1_verify(sig: &[u8], message: &[u8], public: &[u8]) -> Result<(), ()> {
+        fn secp256k1_verify(_sig: &[u8], _message: &[u8], _public: &[u8]) -> Result<(), ()> {
             unimplemented!()
         }
     }
