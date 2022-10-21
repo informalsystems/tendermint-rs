@@ -18,7 +18,6 @@
 // This is also why certain submodules have #[allow(unused)] imports to bring
 // items into scope for doc links, rather than changing the doc links -- it
 // allows the doc comments to be copied without editing.
-use core::convert::{TryFrom, TryInto};
 
 // bring into scope for doc links
 #[allow(unused)]
@@ -38,6 +37,8 @@ mod init_chain;
 mod list_snapshots;
 mod load_snapshot_chunk;
 mod offer_snapshot;
+mod prepare_proposal;
+mod process_proposal;
 mod query;
 mod set_option;
 
@@ -54,6 +55,8 @@ pub use init_chain::InitChain;
 pub use list_snapshots::ListSnapshots;
 pub use load_snapshot_chunk::LoadSnapshotChunk;
 pub use offer_snapshot::OfferSnapshot;
+pub use prepare_proposal::PrepareProposal;
+pub use process_proposal::ProcessProposal;
 pub use query::Query;
 pub use set_option::SetOption;
 
@@ -92,6 +95,10 @@ pub enum Response {
     LoadSnapshotChunk(LoadSnapshotChunk),
     #[doc = include_str!("doc/response-applysnapshotchunk.md")]
     ApplySnapshotChunk(ApplySnapshotChunk),
+    #[doc = include_str!("doc/response-prepareproposal.md")]
+    PrepareProposal(PrepareProposal),
+    #[doc = include_str!("doc/response-processproposal.md")]
+    ProcessProposal(ProcessProposal),
 }
 
 /// The consensus category of ABCI responses.
@@ -238,58 +245,139 @@ impl TryFrom<Response> for SnapshotResponse {
 // Protobuf conversions
 // =============================================================================
 
-use tendermint_proto::{abci as pb, Protobuf};
+mod v0_34 {
+    use super::Response;
+    use crate::Error;
+    use tendermint_proto::v0_34::abci as pb;
+    use tendermint_proto::Protobuf;
 
-impl From<Response> for pb::Response {
-    fn from(response: Response) -> pb::Response {
-        use pb::response::Value;
-        let value = match response {
-            Response::Exception(x) => Some(Value::Exception(x.into())),
-            Response::Echo(x) => Some(Value::Echo(x.into())),
-            Response::Flush => Some(Value::Flush(Default::default())),
-            Response::Info(x) => Some(Value::Info(x.into())),
-            Response::SetOption(x) => Some(Value::SetOption(x.into())),
-            Response::InitChain(x) => Some(Value::InitChain(x.into())),
-            Response::Query(x) => Some(Value::Query(x.into())),
-            Response::BeginBlock(x) => Some(Value::BeginBlock(x.into())),
-            Response::CheckTx(x) => Some(Value::CheckTx(x.into())),
-            Response::DeliverTx(x) => Some(Value::DeliverTx(x.into())),
-            Response::EndBlock(x) => Some(Value::EndBlock(x.into())),
-            Response::Commit(x) => Some(Value::Commit(x.into())),
-            Response::ListSnapshots(x) => Some(Value::ListSnapshots(x.into())),
-            Response::OfferSnapshot(x) => Some(Value::OfferSnapshot(x.into())),
-            Response::LoadSnapshotChunk(x) => Some(Value::LoadSnapshotChunk(x.into())),
-            Response::ApplySnapshotChunk(x) => Some(Value::ApplySnapshotChunk(x.into())),
-        };
-        pb::Response { value }
-    }
-}
-
-impl TryFrom<pb::Response> for Response {
-    type Error = Error;
-
-    fn try_from(response: pb::Response) -> Result<Self, Self::Error> {
-        use pb::response::Value;
-        match response.value {
-            Some(Value::Exception(x)) => Ok(Response::Exception(x.try_into()?)),
-            Some(Value::Echo(x)) => Ok(Response::Echo(x.try_into()?)),
-            Some(Value::Flush(_)) => Ok(Response::Flush),
-            Some(Value::Info(x)) => Ok(Response::Info(x.try_into()?)),
-            Some(Value::SetOption(x)) => Ok(Response::SetOption(x.try_into()?)),
-            Some(Value::InitChain(x)) => Ok(Response::InitChain(x.try_into()?)),
-            Some(Value::Query(x)) => Ok(Response::Query(x.try_into()?)),
-            Some(Value::BeginBlock(x)) => Ok(Response::BeginBlock(x.try_into()?)),
-            Some(Value::CheckTx(x)) => Ok(Response::CheckTx(x.try_into()?)),
-            Some(Value::DeliverTx(x)) => Ok(Response::DeliverTx(x.try_into()?)),
-            Some(Value::EndBlock(x)) => Ok(Response::EndBlock(x.try_into()?)),
-            Some(Value::Commit(x)) => Ok(Response::Commit(x.try_into()?)),
-            Some(Value::ListSnapshots(x)) => Ok(Response::ListSnapshots(x.try_into()?)),
-            Some(Value::OfferSnapshot(x)) => Ok(Response::OfferSnapshot(x.try_into()?)),
-            Some(Value::LoadSnapshotChunk(x)) => Ok(Response::LoadSnapshotChunk(x.try_into()?)),
-            Some(Value::ApplySnapshotChunk(x)) => Ok(Response::ApplySnapshotChunk(x.try_into()?)),
-            None => Err(crate::Error::missing_data()),
+    impl From<Response> for pb::Response {
+        fn from(response: Response) -> pb::Response {
+            use pb::response::Value;
+            let value = match response {
+                Response::Exception(x) => Some(Value::Exception(x.into())),
+                Response::Echo(x) => Some(Value::Echo(x.into())),
+                Response::Flush => Some(Value::Flush(Default::default())),
+                Response::Info(x) => Some(Value::Info(x.into())),
+                Response::SetOption(x) => Some(Value::SetOption(x.into())),
+                Response::InitChain(x) => Some(Value::InitChain(x.into())),
+                Response::Query(x) => Some(Value::Query(x.into())),
+                Response::BeginBlock(x) => Some(Value::BeginBlock(x.into())),
+                Response::CheckTx(x) => Some(Value::CheckTx(x.into())),
+                Response::DeliverTx(x) => Some(Value::DeliverTx(x.into())),
+                Response::EndBlock(x) => Some(Value::EndBlock(x.into())),
+                Response::Commit(x) => Some(Value::Commit(x.into())),
+                Response::ListSnapshots(x) => Some(Value::ListSnapshots(x.into())),
+                Response::OfferSnapshot(x) => Some(Value::OfferSnapshot(x.into())),
+                Response::LoadSnapshotChunk(x) => Some(Value::LoadSnapshotChunk(x.into())),
+                Response::ApplySnapshotChunk(x) => Some(Value::ApplySnapshotChunk(x.into())),
+                Response::PrepareProposal(_) => {
+                    panic!("PrepareProposal should not be used with Tendermint 0.34")
+                },
+                Response::ProcessProposal(_) => {
+                    panic!("ProcessProposal should not be used with Tendermint 0.34")
+                },
+            };
+            pb::Response { value }
         }
     }
+
+    impl TryFrom<pb::Response> for Response {
+        type Error = Error;
+
+        fn try_from(response: pb::Response) -> Result<Self, Self::Error> {
+            use pb::response::Value;
+            match response.value {
+                Some(Value::Exception(x)) => Ok(Response::Exception(x.try_into()?)),
+                Some(Value::Echo(x)) => Ok(Response::Echo(x.try_into()?)),
+                Some(Value::Flush(_)) => Ok(Response::Flush),
+                Some(Value::Info(x)) => Ok(Response::Info(x.try_into()?)),
+                Some(Value::SetOption(x)) => Ok(Response::SetOption(x.try_into()?)),
+                Some(Value::InitChain(x)) => Ok(Response::InitChain(x.try_into()?)),
+                Some(Value::Query(x)) => Ok(Response::Query(x.try_into()?)),
+                Some(Value::BeginBlock(x)) => Ok(Response::BeginBlock(x.try_into()?)),
+                Some(Value::CheckTx(x)) => Ok(Response::CheckTx(x.try_into()?)),
+                Some(Value::DeliverTx(x)) => Ok(Response::DeliverTx(x.try_into()?)),
+                Some(Value::EndBlock(x)) => Ok(Response::EndBlock(x.try_into()?)),
+                Some(Value::Commit(x)) => Ok(Response::Commit(x.try_into()?)),
+                Some(Value::ListSnapshots(x)) => Ok(Response::ListSnapshots(x.try_into()?)),
+                Some(Value::OfferSnapshot(x)) => Ok(Response::OfferSnapshot(x.try_into()?)),
+                Some(Value::LoadSnapshotChunk(x)) => Ok(Response::LoadSnapshotChunk(x.try_into()?)),
+                Some(Value::ApplySnapshotChunk(x)) => {
+                    Ok(Response::ApplySnapshotChunk(x.try_into()?))
+                },
+                None => Err(crate::Error::missing_data()),
+            }
+        }
+    }
+
+    impl Protobuf<pb::Response> for Response {}
 }
 
-impl Protobuf<pb::Response> for Response {}
+mod v0_37 {
+    use super::Response;
+    use crate::Error;
+    use tendermint_proto::v0_37::abci as pb;
+    use tendermint_proto::Protobuf;
+
+    impl From<Response> for pb::Response {
+        fn from(response: Response) -> pb::Response {
+            use pb::response::Value;
+            let value = match response {
+                Response::Exception(x) => Some(Value::Exception(x.into())),
+                Response::Echo(x) => Some(Value::Echo(x.into())),
+                Response::Flush => Some(Value::Flush(Default::default())),
+                Response::Info(x) => Some(Value::Info(x.into())),
+                Response::InitChain(x) => Some(Value::InitChain(x.into())),
+                Response::Query(x) => Some(Value::Query(x.into())),
+                Response::BeginBlock(x) => Some(Value::BeginBlock(x.into())),
+                Response::CheckTx(x) => Some(Value::CheckTx(x.into())),
+                Response::DeliverTx(x) => Some(Value::DeliverTx(x.into())),
+                Response::EndBlock(x) => Some(Value::EndBlock(x.into())),
+                Response::Commit(x) => Some(Value::Commit(x.into())),
+                Response::ListSnapshots(x) => Some(Value::ListSnapshots(x.into())),
+                Response::OfferSnapshot(x) => Some(Value::OfferSnapshot(x.into())),
+                Response::LoadSnapshotChunk(x) => Some(Value::LoadSnapshotChunk(x.into())),
+                Response::ApplySnapshotChunk(x) => Some(Value::ApplySnapshotChunk(x.into())),
+                Response::PrepareProposal(x) => Some(Value::PrepareProposal(x.into())),
+                Response::ProcessProposal(x) => Some(Value::ProcessProposal(x.into())),
+                Response::SetOption(x) => {
+                    panic!("SetOption should not be used with Tendermint 0.37")
+                },
+            };
+            pb::Response { value }
+        }
+    }
+
+    impl TryFrom<pb::Response> for Response {
+        type Error = Error;
+
+        fn try_from(response: pb::Response) -> Result<Self, Self::Error> {
+            use pb::response::Value;
+            match response.value {
+                Some(Value::Exception(x)) => Ok(Response::Exception(x.try_into()?)),
+                Some(Value::Echo(x)) => Ok(Response::Echo(x.try_into()?)),
+                Some(Value::Flush(_)) => Ok(Response::Flush),
+                Some(Value::Info(x)) => Ok(Response::Info(x.try_into()?)),
+                Some(Value::InitChain(x)) => Ok(Response::InitChain(x.try_into()?)),
+                Some(Value::Query(x)) => Ok(Response::Query(x.try_into()?)),
+                Some(Value::BeginBlock(x)) => Ok(Response::BeginBlock(x.try_into()?)),
+                Some(Value::CheckTx(x)) => Ok(Response::CheckTx(x.try_into()?)),
+                Some(Value::DeliverTx(x)) => Ok(Response::DeliverTx(x.try_into()?)),
+                Some(Value::EndBlock(x)) => Ok(Response::EndBlock(x.try_into()?)),
+                Some(Value::Commit(x)) => Ok(Response::Commit(x.try_into()?)),
+                Some(Value::ListSnapshots(x)) => Ok(Response::ListSnapshots(x.try_into()?)),
+                Some(Value::OfferSnapshot(x)) => Ok(Response::OfferSnapshot(x.try_into()?)),
+                Some(Value::LoadSnapshotChunk(x)) => Ok(Response::LoadSnapshotChunk(x.try_into()?)),
+                Some(Value::ApplySnapshotChunk(x)) => {
+                    Ok(Response::ApplySnapshotChunk(x.try_into()?))
+                },
+                Some(Value::PrepareProposal(x)) => Ok(Response::PrepareProposal(x.try_into()?)),
+                Some(Value::ProcessProposal(x)) => Ok(Response::ProcessProposal(x.try_into()?)),
+                None => Err(crate::Error::missing_data()),
+            }
+        }
+    }
+
+    impl Protobuf<pb::Response> for Response {}
+}

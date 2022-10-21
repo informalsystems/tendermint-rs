@@ -292,10 +292,10 @@ mod v0_34 {
                 Request::OfferSnapshot(x) => Some(Value::OfferSnapshot(x.into())),
                 Request::LoadSnapshotChunk(x) => Some(Value::LoadSnapshotChunk(x.into())),
                 Request::ApplySnapshotChunk(x) => Some(Value::ApplySnapshotChunk(x.into())),
-                Request::PrepareProposal(x) => {
+                Request::PrepareProposal(_) => {
                     panic!("PrepareProposal should not be used with Tendermint 0.34")
                 },
-                Request::ProcessProposal(x) => {
+                Request::ProcessProposal(_) => {
                     panic!("ProcessProposal should not be used with Tendermint 0.34")
                 },
             };
