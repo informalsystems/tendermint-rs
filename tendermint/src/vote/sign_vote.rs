@@ -341,58 +341,6 @@ mod tests {
     }
 
     #[test]
-    fn test_vote_rountrip_with_sig() {
-        let dt = datetime!(2017-12-25 03:00:01.234 UTC);
-        let vote = Vote {
-            validator_address: AccountId::try_from(vec![
-                0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
-                0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
-            ])
-            .unwrap(),
-            validator_index: ValidatorIndex::try_from(56789).unwrap(),
-            height: Height::from(12345_u32),
-            round: Round::from(2_u16),
-            timestamp: Some(dt.try_into().unwrap()),
-            vote_type: Type::Prevote,
-            block_id: Some(BlockId {
-                hash: Hash::from_hex_upper(Algorithm::Sha256, "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA")
-                    .unwrap(), // Hash::new(Algorithm::Sha256,
-                // b"hash".to_vec().as_slice()).unwrap(),
-                part_set_header: Header::new(
-                    1_000_000,
-                    Hash::from_hex_upper(Algorithm::Sha256, "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA")
-                        .unwrap(),
-                )
-                .unwrap(),
-            }),
-            // signature: None,
-            signature: Signature::new(vec![
-                130u8, 246, 183, 50, 153, 248, 28, 57, 51, 142, 55, 217, 194, 24, 134, 212, 233,
-                100, 211, 10, 24, 174, 179, 117, 41, 65, 141, 134, 149, 239, 65, 174, 217, 42, 6,
-                184, 112, 17, 7, 97, 255, 221, 252, 16, 60, 144, 30, 212, 167, 39, 67, 35, 118,
-                192, 133, 130, 193, 115, 32, 206, 152, 91, 173, 10,
-            ])
-            .unwrap(),
-        };
-        let got = vote.encode_vec().unwrap();
-        let v = Vote::decode_vec(&got).unwrap();
-
-        assert_eq!(v, vote);
-        // SignVoteRequest
-        {
-            let svr = SignVoteRequest {
-                vote,
-                chain_id: ChainId::from_str("test_chain_id").unwrap(),
-            };
-            let mut got = vec![];
-            let _have = svr.encode(&mut got);
-
-            let svr2 = SignVoteRequest::decode(got.as_ref()).unwrap();
-            assert_eq!(svr, svr2);
-        }
-    }
-
-    #[test]
     fn test_deserialization() {
         let encoded = vec![
             10, 188, 1, 8, 1, 16, 185, 96, 24, 2, 34, 74, 10, 32, 222, 173, 190, 239, 222, 173,
@@ -436,5 +384,61 @@ mod tests {
         };
         let got = SignVoteRequest::decode_vec(&encoded).unwrap();
         assert_eq!(got, want);
+    }
+
+    tendermint_pb_modules! {
+        use super::*;
+
+        #[test]
+        fn test_vote_rountrip_with_sig() {
+            let dt = datetime!(2017-12-25 03:00:01.234 UTC);
+            let vote = Vote {
+                validator_address: AccountId::try_from(vec![
+                    0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
+                    0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
+                ])
+                .unwrap(),
+                validator_index: ValidatorIndex::try_from(56789).unwrap(),
+                height: Height::from(12345_u32),
+                round: Round::from(2_u16),
+                timestamp: Some(dt.try_into().unwrap()),
+                vote_type: Type::Prevote,
+                block_id: Some(BlockId {
+                    hash: Hash::from_hex_upper(Algorithm::Sha256, "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA")
+                        .unwrap(), // Hash::new(Algorithm::Sha256,
+                    // b"hash".to_vec().as_slice()).unwrap(),
+                    part_set_header: Header::new(
+                        1_000_000,
+                        Hash::from_hex_upper(Algorithm::Sha256, "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA")
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                }),
+                // signature: None,
+                signature: Signature::new(vec![
+                    130u8, 246, 183, 50, 153, 248, 28, 57, 51, 142, 55, 217, 194, 24, 134, 212, 233,
+                    100, 211, 10, 24, 174, 179, 117, 41, 65, 141, 134, 149, 239, 65, 174, 217, 42, 6,
+                    184, 112, 17, 7, 97, 255, 221, 252, 16, 60, 144, 30, 212, 167, 39, 67, 35, 118,
+                    192, 133, 130, 193, 115, 32, 206, 152, 91, 173, 10,
+                ])
+                .unwrap(),
+            };
+            let got = Protobuf::<pb::types::Vote>::encode_vec(&vote).unwrap();
+            let v = <Vote as Protobuf::<pb::types::Vote>>::decode_vec(&got).unwrap();
+
+            assert_eq!(v, vote);
+            // SignVoteRequest
+            {
+                let svr = SignVoteRequest {
+                    vote,
+                    chain_id: ChainId::from_str("test_chain_id").unwrap(),
+                };
+                let mut got = vec![];
+                let _have = svr.encode(&mut got);
+
+                let svr2 = SignVoteRequest::decode(got.as_ref()).unwrap();
+                assert_eq!(svr, svr2);
+            }
+        }
     }
 }

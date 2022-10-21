@@ -1,17 +1,10 @@
 use core::{
-    convert::{TryFrom, TryInto},
     fmt::{self, Display},
     str::{self, FromStr},
 };
 
 use serde::{Deserialize, Serialize};
-use tendermint_proto::{
-    types::{
-        BlockId as RawBlockId, CanonicalBlockId as RawCanonicalBlockId,
-        PartSetHeader as RawPartSetHeader,
-    },
-    Protobuf,
-};
+use tendermint_proto::types::BlockId as RawBlockId;
 
 use crate::{
     block::parts::Header as PartSetHeader,
@@ -62,68 +55,79 @@ pub struct Id {
     pub part_set_header: PartSetHeader,
 }
 
-impl Protobuf<RawBlockId> for Id {}
-
-impl TryFrom<RawBlockId> for Id {
-    type Error = Error;
-
-    fn try_from(value: RawBlockId) -> Result<Self, Self::Error> {
-        if value.part_set_header.is_none() {
-            return Err(Error::invalid_part_set_header(
-                "part_set_header is None".to_string(),
-            ));
+tendermint_pb_modules! {
+    use pb::{
+        types::{
+            BlockId as RawBlockId, CanonicalBlockId as RawCanonicalBlockId,
+            PartSetHeader as RawPartSetHeader,
         }
-        Ok(Self {
-            hash: value.hash.try_into()?,
-            part_set_header: value.part_set_header.unwrap().try_into()?,
-        })
-    }
-}
+    };
+    use super::Id;
+    use crate::{prelude::*, Error};
 
-impl From<Id> for RawBlockId {
-    fn from(value: Id) -> Self {
-        // https://github.com/tendermint/tendermint/blob/1635d1339c73ae6a82e062cd2dc7191b029efa14/types/block.go#L1204
-        // The Go implementation encodes a nil value into an empty struct. We try our best to
-        // anticipate an empty struct by using the default implementation which would otherwise be
-        // invalid.
-        if value == Id::default() {
-            RawBlockId {
-                hash: vec![],
-                part_set_header: Some(RawPartSetHeader {
-                    total: 0,
-                    hash: vec![],
-                }),
+    impl Protobuf<RawBlockId> for Id {}
+
+    impl TryFrom<RawBlockId> for Id {
+        type Error = Error;
+
+        fn try_from(value: RawBlockId) -> Result<Self, Self::Error> {
+            if value.part_set_header.is_none() {
+                return Err(Error::invalid_part_set_header(
+                    "part_set_header is None".to_string(),
+                ));
             }
-        } else {
-            RawBlockId {
-                hash: value.hash.into(),
+            Ok(Self {
+                hash: value.hash.try_into()?,
+                part_set_header: value.part_set_header.unwrap().try_into()?,
+            })
+        }
+    }
+
+    impl From<Id> for RawBlockId {
+        fn from(value: Id) -> Self {
+            // https://github.com/tendermint/tendermint/blob/1635d1339c73ae6a82e062cd2dc7191b029efa14/types/block.go#L1204
+            // The Go implementation encodes a nil value into an empty struct. We try our best to
+            // anticipate an empty struct by using the default implementation which would otherwise be
+            // invalid.
+            if value == Id::default() {
+                RawBlockId {
+                    hash: vec![],
+                    part_set_header: Some(RawPartSetHeader {
+                        total: 0,
+                        hash: vec![],
+                    }),
+                }
+            } else {
+                RawBlockId {
+                    hash: value.hash.into(),
+                    part_set_header: Some(value.part_set_header.into()),
+                }
+            }
+        }
+    }
+
+    impl TryFrom<RawCanonicalBlockId> for Id {
+        type Error = Error;
+
+        fn try_from(value: RawCanonicalBlockId) -> Result<Self, Self::Error> {
+            if value.part_set_header.is_none() {
+                return Err(Error::invalid_part_set_header(
+                    "part_set_header is None".to_string(),
+                ));
+            }
+            Ok(Self {
+                hash: value.hash.try_into()?,
+                part_set_header: value.part_set_header.unwrap().try_into()?,
+            })
+        }
+    }
+
+    impl From<Id> for RawCanonicalBlockId {
+        fn from(value: Id) -> Self {
+            RawCanonicalBlockId {
+                hash: value.hash.as_bytes().to_vec(),
                 part_set_header: Some(value.part_set_header.into()),
             }
-        }
-    }
-}
-
-impl TryFrom<RawCanonicalBlockId> for Id {
-    type Error = Error;
-
-    fn try_from(value: RawCanonicalBlockId) -> Result<Self, Self::Error> {
-        if value.part_set_header.is_none() {
-            return Err(Error::invalid_part_set_header(
-                "part_set_header is None".to_string(),
-            ));
-        }
-        Ok(Self {
-            hash: value.hash.try_into()?,
-            part_set_header: value.part_set_header.unwrap().try_into()?,
-        })
-    }
-}
-
-impl From<Id> for RawCanonicalBlockId {
-    fn from(value: Id) -> Self {
-        RawCanonicalBlockId {
-            hash: value.hash.as_bytes().to_vec(),
-            part_set_header: Some(value.part_set_header.into()),
         }
     }
 }

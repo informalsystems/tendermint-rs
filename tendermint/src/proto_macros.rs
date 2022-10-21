@@ -2,19 +2,19 @@
 
 macro_rules! tendermint_pb_modules {
     {
-        $(contents:item)*
+        $($contents:item)*
     } => {
         mod v0_34 {
             use tendermint_proto::v0_34 as pb;
             use tendermint_proto::Protobuf;
 
-            $(contents)*
+            $($contents)*
         }
         mod v0_37 {
             use tendermint_proto::v0_37 as pb;
             use tendermint_proto::Protobuf;
 
-            $(contents)*
+            $($contents)*
         }
     };
 }

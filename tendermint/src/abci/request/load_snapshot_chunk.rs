@@ -15,30 +15,30 @@ pub struct LoadSnapshotChunk {
 // Protobuf conversions
 // =============================================================================
 
-use core::convert::TryFrom;
+tendermint_pb_modules! {
+    use super::LoadSnapshotChunk;
 
-use tendermint_proto::{abci as pb, Protobuf};
-
-impl From<LoadSnapshotChunk> for pb::RequestLoadSnapshotChunk {
-    fn from(load_snapshot_chunk: LoadSnapshotChunk) -> Self {
-        Self {
-            height: load_snapshot_chunk.height.into(),
-            format: load_snapshot_chunk.format,
-            chunk: load_snapshot_chunk.chunk,
+    impl From<LoadSnapshotChunk> for pb::abci::RequestLoadSnapshotChunk {
+        fn from(load_snapshot_chunk: LoadSnapshotChunk) -> Self {
+            Self {
+                height: load_snapshot_chunk.height.into(),
+                format: load_snapshot_chunk.format,
+                chunk: load_snapshot_chunk.chunk,
+            }
         }
     }
-}
 
-impl TryFrom<pb::RequestLoadSnapshotChunk> for LoadSnapshotChunk {
-    type Error = crate::Error;
+    impl TryFrom<pb::abci::RequestLoadSnapshotChunk> for LoadSnapshotChunk {
+        type Error = crate::Error;
 
-    fn try_from(load_snapshot_chunk: pb::RequestLoadSnapshotChunk) -> Result<Self, Self::Error> {
-        Ok(Self {
-            height: load_snapshot_chunk.height.try_into()?,
-            format: load_snapshot_chunk.format,
-            chunk: load_snapshot_chunk.chunk,
-        })
+        fn try_from(load_snapshot_chunk: pb::abci::RequestLoadSnapshotChunk) -> Result<Self, Self::Error> {
+            Ok(Self {
+                height: load_snapshot_chunk.height.try_into()?,
+                format: load_snapshot_chunk.format,
+                chunk: load_snapshot_chunk.chunk,
+            })
+        }
     }
-}
 
-impl Protobuf<pb::RequestLoadSnapshotChunk> for LoadSnapshotChunk {}
+    impl Protobuf<pb::abci::RequestLoadSnapshotChunk> for LoadSnapshotChunk {}
+}

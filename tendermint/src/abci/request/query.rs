@@ -32,32 +32,32 @@ pub struct Query {
 // Protobuf conversions
 // =============================================================================
 
-use core::convert::TryFrom;
+tendermint_pb_modules! {
+    use super::Query;
 
-use tendermint_proto::{abci as pb, Protobuf};
-
-impl From<Query> for pb::RequestQuery {
-    fn from(query: Query) -> Self {
-        Self {
-            data: query.data,
-            path: query.path,
-            height: query.height.into(),
-            prove: query.prove,
+    impl From<Query> for pb::abci::RequestQuery {
+        fn from(query: Query) -> Self {
+            Self {
+                data: query.data,
+                path: query.path,
+                height: query.height.into(),
+                prove: query.prove,
+            }
         }
     }
-}
 
-impl TryFrom<pb::RequestQuery> for Query {
-    type Error = crate::Error;
+    impl TryFrom<pb::abci::RequestQuery> for Query {
+        type Error = crate::Error;
 
-    fn try_from(query: pb::RequestQuery) -> Result<Self, Self::Error> {
-        Ok(Self {
-            data: query.data,
-            path: query.path,
-            height: query.height.try_into()?,
-            prove: query.prove,
-        })
+        fn try_from(query: pb::abci::RequestQuery) -> Result<Self, Self::Error> {
+            Ok(Self {
+                data: query.data,
+                path: query.path,
+                height: query.height.try_into()?,
+                prove: query.prove,
+            })
+        }
     }
-}
 
-impl Protobuf<pb::RequestQuery> for Query {}
+    impl Protobuf<pb::abci::RequestQuery> for Query {}
+}

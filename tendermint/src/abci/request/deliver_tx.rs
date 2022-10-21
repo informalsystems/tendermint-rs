@@ -13,22 +13,22 @@ pub struct DeliverTx {
 // Protobuf conversions
 // =============================================================================
 
-use core::convert::TryFrom;
+tendermint_pb_modules! {
+    use super::DeliverTx;
 
-use tendermint_proto::{abci as pb, Protobuf};
-
-impl From<DeliverTx> for pb::RequestDeliverTx {
-    fn from(deliver_tx: DeliverTx) -> Self {
-        Self { tx: deliver_tx.tx }
+    impl From<DeliverTx> for pb::abci::RequestDeliverTx {
+        fn from(deliver_tx: DeliverTx) -> Self {
+            Self { tx: deliver_tx.tx }
+        }
     }
-}
 
-impl TryFrom<pb::RequestDeliverTx> for DeliverTx {
-    type Error = crate::Error;
+    impl TryFrom<pb::abci::RequestDeliverTx> for DeliverTx {
+        type Error = crate::Error;
 
-    fn try_from(deliver_tx: pb::RequestDeliverTx) -> Result<Self, Self::Error> {
-        Ok(Self { tx: deliver_tx.tx })
+        fn try_from(deliver_tx: pb::abci::RequestDeliverTx) -> Result<Self, Self::Error> {
+            Ok(Self { tx: deliver_tx.tx })
+        }
     }
-}
 
-impl Protobuf<pb::RequestDeliverTx> for DeliverTx {}
+    impl Protobuf<pb::abci::RequestDeliverTx> for DeliverTx {}
+}

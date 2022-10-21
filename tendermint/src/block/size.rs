@@ -1,11 +1,8 @@
 //! Block size parameters
 
-use core::convert::{TryFrom, TryInto};
-
 use serde::{Deserialize, Serialize};
-use tendermint_proto::{abci::BlockParams as RawAbciSize, types::BlockParams as RawSize, Protobuf};
 
-use crate::{error::Error, serializers};
+use crate::serializers;
 
 /// Block size parameters
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
@@ -25,62 +22,105 @@ pub struct Size {
 
 impl Size {
     /// The default value for the `time_iota_ms` parameter.
-    pub fn default_time_iota_ms() -> i64 {
+    pub const fn default_time_iota_ms() -> i64 {
         1000
     }
 }
 
-impl Protobuf<RawSize> for Size {}
+mod v0_34 {
+    use super::Size;
+    use crate::error::Error;
+    use tendermint_proto::v0_34::{
+        abci::BlockParams as RawAbciSize, types::BlockParams as RawSize,
+    };
+    use tendermint_proto::Protobuf;
 
-impl TryFrom<RawSize> for Size {
-    type Error = Error;
+    impl Protobuf<RawSize> for Size {}
 
-    fn try_from(value: RawSize) -> Result<Self, Self::Error> {
-        Ok(Self {
-            max_bytes: value
-                .max_bytes
-                .try_into()
-                .map_err(Error::integer_overflow)?,
-            max_gas: value.max_gas,
-            time_iota_ms: value.time_iota_ms,
-        })
+    impl TryFrom<RawSize> for Size {
+        type Error = Error;
+
+        fn try_from(value: RawSize) -> Result<Self, Self::Error> {
+            Ok(Self {
+                max_bytes: value
+                    .max_bytes
+                    .try_into()
+                    .map_err(Error::integer_overflow)?,
+                max_gas: value.max_gas,
+                time_iota_ms: value.time_iota_ms,
+            })
+        }
     }
-}
 
-impl From<Size> for RawSize {
-    fn from(value: Size) -> Self {
-        // Todo: make the struct more robust so this can become infallible.
-        RawSize {
-            max_bytes: value.max_bytes as i64,
-            max_gas: value.max_gas,
-            time_iota_ms: value.time_iota_ms,
+    impl From<Size> for RawSize {
+        fn from(value: Size) -> Self {
+            // Todo: make the struct more robust so this can become infallible.
+            RawSize {
+                max_bytes: value.max_bytes as i64,
+                max_gas: value.max_gas,
+                time_iota_ms: value.time_iota_ms,
+            }
+        }
+    }
+
+    impl Protobuf<RawAbciSize> for Size {}
+
+    impl TryFrom<RawAbciSize> for Size {
+        type Error = Error;
+
+        fn try_from(value: RawAbciSize) -> Result<Self, Self::Error> {
+            Ok(Self {
+                max_bytes: value
+                    .max_bytes
+                    .try_into()
+                    .map_err(Error::integer_overflow)?,
+                max_gas: value.max_gas,
+                time_iota_ms: Self::default_time_iota_ms(),
+            })
+        }
+    }
+
+    impl From<Size> for RawAbciSize {
+        fn from(value: Size) -> Self {
+            // Todo: make the struct more robust so this can become infallible.
+            RawAbciSize {
+                max_bytes: value.max_bytes as i64,
+                max_gas: value.max_gas,
+            }
         }
     }
 }
 
-impl Protobuf<RawAbciSize> for Size {}
+mod v0_37 {
+    use super::Size;
+    use crate::error::Error;
+    use tendermint_proto::v0_37::types::BlockParams as RawSize;
+    use tendermint_proto::Protobuf;
 
-impl TryFrom<RawAbciSize> for Size {
-    type Error = Error;
+    impl Protobuf<RawSize> for Size {}
 
-    fn try_from(value: RawAbciSize) -> Result<Self, Self::Error> {
-        Ok(Self {
-            max_bytes: value
-                .max_bytes
-                .try_into()
-                .map_err(Error::integer_overflow)?,
-            max_gas: value.max_gas,
-            time_iota_ms: Self::default_time_iota_ms(),
-        })
+    impl TryFrom<RawSize> for Size {
+        type Error = Error;
+
+        fn try_from(value: RawSize) -> Result<Self, Self::Error> {
+            Ok(Self {
+                max_bytes: value
+                    .max_bytes
+                    .try_into()
+                    .map_err(Error::integer_overflow)?,
+                max_gas: value.max_gas,
+                time_iota_ms: Size::default_time_iota_ms(),
+            })
+        }
     }
-}
 
-impl From<Size> for RawAbciSize {
-    fn from(value: Size) -> Self {
-        // Todo: make the struct more robust so this can become infallible.
-        RawAbciSize {
-            max_bytes: value.max_bytes as i64,
-            max_gas: value.max_gas,
+    impl From<Size> for RawSize {
+        fn from(value: Size) -> Self {
+            // Todo: make the struct more robust so this can become infallible.
+            RawSize {
+                max_bytes: value.max_bytes as i64,
+                max_gas: value.max_gas,
+            }
         }
     }
 }

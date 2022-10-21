@@ -27,6 +27,8 @@ pub struct PrepareProposal {
 // Protobuf conversions
 // =============================================================================
 
+// The PrepareProposal request has been added in 0.37.
+
 use tendermint_proto::v0_37::abci as pb;
 use tendermint_proto::Protobuf;
 

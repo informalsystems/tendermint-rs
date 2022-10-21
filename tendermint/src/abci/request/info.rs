@@ -9,36 +9,73 @@ pub struct Info {
     pub block_version: u64,
     /// The Tendermint p2p protocol version.
     pub p2p_version: u64,
+    /// The ABCI protocol version.
+    pub abci_version: String,
 }
 
 // =============================================================================
 // Protobuf conversions
 // =============================================================================
 
-use core::convert::TryFrom;
+mod v0_34 {
+    use super::Info;
+    use tendermint_proto::v0_34::abci as pb;
+    use tendermint_proto::Protobuf;
 
-use tendermint_proto::{abci as pb, Protobuf};
-
-impl From<Info> for pb::RequestInfo {
-    fn from(info: Info) -> Self {
-        Self {
-            version: info.version,
-            block_version: info.block_version,
-            p2p_version: info.p2p_version,
+    impl From<Info> for pb::RequestInfo {
+        fn from(info: Info) -> Self {
+            Self {
+                version: info.version,
+                block_version: info.block_version,
+                p2p_version: info.p2p_version,
+            }
         }
     }
-}
 
-impl TryFrom<pb::RequestInfo> for Info {
-    type Error = crate::Error;
+    impl TryFrom<pb::RequestInfo> for Info {
+        type Error = crate::Error;
 
-    fn try_from(info: pb::RequestInfo) -> Result<Self, Self::Error> {
-        Ok(Self {
-            version: info.version,
-            block_version: info.block_version,
-            p2p_version: info.p2p_version,
-        })
+        fn try_from(info: pb::RequestInfo) -> Result<Self, Self::Error> {
+            Ok(Self {
+                version: info.version,
+                block_version: info.block_version,
+                p2p_version: info.p2p_version,
+                abci_version: Default::default(),
+            })
+        }
     }
+
+    impl Protobuf<pb::RequestInfo> for Info {}
 }
 
-impl Protobuf<pb::RequestInfo> for Info {}
+mod v0_37 {
+    use super::Info;
+    use tendermint_proto::v0_37::abci as pb;
+    use tendermint_proto::Protobuf;
+
+    impl From<Info> for pb::RequestInfo {
+        fn from(info: Info) -> Self {
+            Self {
+                version: info.version,
+                block_version: info.block_version,
+                p2p_version: info.p2p_version,
+                abci_version: info.abci_version,
+            }
+        }
+    }
+
+    impl TryFrom<pb::RequestInfo> for Info {
+        type Error = crate::Error;
+
+        fn try_from(info: pb::RequestInfo) -> Result<Self, Self::Error> {
+            Ok(Self {
+                version: info.version,
+                block_version: info.block_version,
+                p2p_version: info.p2p_version,
+                abci_version: info.abci_version,
+            })
+        }
+    }
+
+    impl Protobuf<pb::RequestInfo> for Info {}
+}

@@ -40,30 +40,30 @@ pub struct ApplySnapshotChunk {
 // Protobuf conversions
 // =============================================================================
 
-use core::convert::TryFrom;
+tendermint_pb_modules! {
+    use super::ApplySnapshotChunk;
 
-use tendermint_proto::{abci as pb, Protobuf};
-
-impl From<ApplySnapshotChunk> for pb::RequestApplySnapshotChunk {
-    fn from(apply_snapshot_chunk: ApplySnapshotChunk) -> Self {
-        Self {
-            index: apply_snapshot_chunk.index,
-            chunk: apply_snapshot_chunk.chunk,
-            sender: apply_snapshot_chunk.sender,
+    impl From<ApplySnapshotChunk> for pb::abci::RequestApplySnapshotChunk {
+        fn from(apply_snapshot_chunk: ApplySnapshotChunk) -> Self {
+            Self {
+                index: apply_snapshot_chunk.index,
+                chunk: apply_snapshot_chunk.chunk,
+                sender: apply_snapshot_chunk.sender,
+            }
         }
     }
-}
 
-impl TryFrom<pb::RequestApplySnapshotChunk> for ApplySnapshotChunk {
-    type Error = crate::Error;
+    impl TryFrom<pb::abci::RequestApplySnapshotChunk> for ApplySnapshotChunk {
+        type Error = crate::Error;
 
-    fn try_from(apply_snapshot_chunk: pb::RequestApplySnapshotChunk) -> Result<Self, Self::Error> {
-        Ok(Self {
-            index: apply_snapshot_chunk.index,
-            chunk: apply_snapshot_chunk.chunk,
-            sender: apply_snapshot_chunk.sender,
-        })
+        fn try_from(apply_snapshot_chunk: pb::abci::RequestApplySnapshotChunk) -> Result<Self, Self::Error> {
+            Ok(Self {
+                index: apply_snapshot_chunk.index,
+                chunk: apply_snapshot_chunk.chunk,
+                sender: apply_snapshot_chunk.sender,
+            })
+        }
     }
-}
 
-impl Protobuf<pb::RequestApplySnapshotChunk> for ApplySnapshotChunk {}
+    impl Protobuf<pb::abci::RequestApplySnapshotChunk> for ApplySnapshotChunk {}
+}

@@ -17,31 +17,31 @@ pub struct OfferSnapshot {
 // Protobuf conversions
 // =============================================================================
 
-use core::convert::{TryFrom, TryInto};
+tendermint_pb_modules! {
+    use super::OfferSnapshot;
 
-use tendermint_proto::{abci as pb, Protobuf};
-
-impl From<OfferSnapshot> for pb::RequestOfferSnapshot {
-    fn from(offer_snapshot: OfferSnapshot) -> Self {
-        Self {
-            snapshot: Some(offer_snapshot.snapshot.into()),
-            app_hash: offer_snapshot.app_hash.into(),
+    impl From<OfferSnapshot> for pb::abci::RequestOfferSnapshot {
+        fn from(offer_snapshot: OfferSnapshot) -> Self {
+            Self {
+                snapshot: Some(offer_snapshot.snapshot.into()),
+                app_hash: offer_snapshot.app_hash.into(),
+            }
         }
     }
-}
 
-impl TryFrom<pb::RequestOfferSnapshot> for OfferSnapshot {
-    type Error = crate::Error;
+    impl TryFrom<pb::abci::RequestOfferSnapshot> for OfferSnapshot {
+        type Error = crate::Error;
 
-    fn try_from(offer_snapshot: pb::RequestOfferSnapshot) -> Result<Self, Self::Error> {
-        Ok(Self {
-            snapshot: offer_snapshot
-                .snapshot
-                .ok_or_else(crate::Error::missing_data)?
-                .try_into()?,
-            app_hash: offer_snapshot.app_hash.try_into()?,
-        })
+        fn try_from(offer_snapshot: pb::abci::RequestOfferSnapshot) -> Result<Self, Self::Error> {
+            Ok(Self {
+                snapshot: offer_snapshot
+                    .snapshot
+                    .ok_or_else(crate::Error::missing_data)?
+                    .try_into()?,
+                app_hash: offer_snapshot.app_hash.try_into()?,
+            })
+        }
     }
-}
 
-impl Protobuf<pb::RequestOfferSnapshot> for OfferSnapshot {}
+    impl Protobuf<pb::abci::RequestOfferSnapshot> for OfferSnapshot {}
+}

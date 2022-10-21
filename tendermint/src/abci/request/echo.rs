@@ -11,13 +11,10 @@ pub struct Echo {
 // Protobuf conversions
 // =============================================================================
 
-mod v0_34 {
-    use tendermint_proto::v0_34::abci as pb;
-    use tendermint_proto::Protobuf;
-
+tendermint_pb_modules! {
     use super::Echo;
 
-    impl From<Echo> for pb::RequestEcho {
+    impl From<Echo> for pb::abci::RequestEcho {
         fn from(echo: Echo) -> Self {
             Self {
                 message: echo.message,
@@ -25,42 +22,15 @@ mod v0_34 {
         }
     }
 
-    impl TryFrom<pb::RequestEcho> for Echo {
+    impl TryFrom<pb::abci::RequestEcho> for Echo {
         type Error = crate::Error;
 
-        fn try_from(echo: pb::RequestEcho) -> Result<Self, Self::Error> {
+        fn try_from(echo: pb::abci::RequestEcho) -> Result<Self, Self::Error> {
             Ok(Self {
                 message: echo.message,
             })
         }
     }
 
-    impl Protobuf<pb::RequestEcho> for Echo {}
-}
-
-mod v0_37 {
-    use tendermint_proto::v0_37::abci as pb;
-    use tendermint_proto::Protobuf;
-
-    use super::Echo;
-
-    impl From<Echo> for pb::RequestEcho {
-        fn from(echo: Echo) -> Self {
-            Self {
-                message: echo.message,
-            }
-        }
-    }
-
-    impl TryFrom<pb::RequestEcho> for Echo {
-        type Error = crate::Error;
-
-        fn try_from(echo: pb::RequestEcho) -> Result<Self, Self::Error> {
-            Ok(Self {
-                message: echo.message,
-            })
-        }
-    }
-
-    impl Protobuf<pb::RequestEcho> for Echo {}
+    impl Protobuf<pb::abci::RequestEcho> for Echo {}
 }
