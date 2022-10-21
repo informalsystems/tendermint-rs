@@ -7,7 +7,7 @@ pub mod hexstring {
 
     use crate::prelude::*;
 
-    /// Deserialize hexstring into `Vec<u8>`
+    /// Deserialize a hex-encoded string into `Vec<u8>`
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where
         D: Deserializer<'de>,
@@ -18,7 +18,7 @@ pub mod hexstring {
             .map_err(serde::de::Error::custom)
     }
 
-    /// Serialize from `T` into hexstring
+    /// Serialize from a byte slice into a hex-encoded string.
     pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -68,7 +68,7 @@ pub mod base64string {
     }
 }
 
-/// Serialize into `Vec<base64string>`, deserialize from `Vec<base64string>`
+/// Serialize into and deserialize from a sequence of _base64string_.
 pub mod vec_base64string {
     use serde::{Deserialize, Deserializer, Serializer};
     use subtle_encoding::base64;
@@ -103,7 +103,7 @@ pub mod vec_base64string {
     }
 }
 
-/// Serialize into `Option<base64string>`, deserialize from `Option<base64string>`
+/// Serialize into and deserialize from an optional _base64string_.
 pub mod option_base64string {
     use serde::{Deserialize, Deserializer, Serializer};
     use subtle_encoding::base64;
