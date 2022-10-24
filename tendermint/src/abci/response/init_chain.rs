@@ -24,37 +24,37 @@ pub struct InitChain {
 // Protobuf conversions
 // =============================================================================
 
-use core::convert::{TryFrom, TryInto};
+tendermint_pb_modules! {
+    use super::InitChain;
 
-use tendermint_proto::{abci as pb, Protobuf};
-
-impl From<InitChain> for pb::ResponseInitChain {
-    fn from(init_chain: InitChain) -> Self {
-        Self {
-            consensus_params: init_chain.consensus_params.map(Into::into),
-            validators: init_chain.validators.into_iter().map(Into::into).collect(),
-            app_hash: init_chain.app_hash.into(),
+    impl From<InitChain> for pb::abci::ResponseInitChain {
+        fn from(init_chain: InitChain) -> Self {
+            Self {
+                consensus_params: init_chain.consensus_params.map(Into::into),
+                validators: init_chain.validators.into_iter().map(Into::into).collect(),
+                app_hash: init_chain.app_hash.into(),
+            }
         }
     }
-}
 
-impl TryFrom<pb::ResponseInitChain> for InitChain {
-    type Error = crate::Error;
+    impl TryFrom<pb::abci::ResponseInitChain> for InitChain {
+        type Error = crate::Error;
 
-    fn try_from(init_chain: pb::ResponseInitChain) -> Result<Self, Self::Error> {
-        Ok(Self {
-            consensus_params: init_chain
-                .consensus_params
-                .map(TryInto::try_into)
-                .transpose()?,
-            validators: init_chain
-                .validators
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<_, _>>()?,
-            app_hash: init_chain.app_hash.try_into()?,
-        })
+        fn try_from(init_chain: pb::abci::ResponseInitChain) -> Result<Self, Self::Error> {
+            Ok(Self {
+                consensus_params: init_chain
+                    .consensus_params
+                    .map(TryInto::try_into)
+                    .transpose()?,
+                validators: init_chain
+                    .validators
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<_, _>>()?,
+                app_hash: init_chain.app_hash.try_into()?,
+            })
+        }
     }
-}
 
-impl Protobuf<pb::ResponseInitChain> for InitChain {}
+    impl Protobuf<pb::abci::ResponseInitChain> for InitChain {}
+}

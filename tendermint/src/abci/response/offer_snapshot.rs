@@ -31,32 +31,32 @@ impl Default for OfferSnapshot {
 // Protobuf conversions
 // =============================================================================
 
-use core::convert::TryFrom;
+tendermint_pb_modules! {
+    use super::OfferSnapshot;
 
-use tendermint_proto::{abci as pb, Protobuf};
-
-impl From<OfferSnapshot> for pb::ResponseOfferSnapshot {
-    fn from(offer_snapshot: OfferSnapshot) -> Self {
-        Self {
-            result: offer_snapshot as i32,
+    impl From<OfferSnapshot> for pb::abci::ResponseOfferSnapshot {
+        fn from(offer_snapshot: OfferSnapshot) -> Self {
+            Self {
+                result: offer_snapshot as i32,
+            }
         }
     }
-}
 
-impl TryFrom<pb::ResponseOfferSnapshot> for OfferSnapshot {
-    type Error = crate::Error;
+    impl TryFrom<pb::abci::ResponseOfferSnapshot> for OfferSnapshot {
+        type Error = crate::Error;
 
-    fn try_from(offer_snapshot: pb::ResponseOfferSnapshot) -> Result<Self, Self::Error> {
-        Ok(match offer_snapshot.result {
-            0 => OfferSnapshot::Unknown,
-            1 => OfferSnapshot::Accept,
-            2 => OfferSnapshot::Abort,
-            3 => OfferSnapshot::Reject,
-            4 => OfferSnapshot::RejectFormat,
-            5 => OfferSnapshot::RejectSender,
-            _ => return Err(crate::Error::unsupported_offer_snapshot_chunk_result()),
-        })
+        fn try_from(offer_snapshot: pb::abci::ResponseOfferSnapshot) -> Result<Self, Self::Error> {
+            Ok(match offer_snapshot.result {
+                0 => OfferSnapshot::Unknown,
+                1 => OfferSnapshot::Accept,
+                2 => OfferSnapshot::Abort,
+                3 => OfferSnapshot::Reject,
+                4 => OfferSnapshot::RejectFormat,
+                5 => OfferSnapshot::RejectSender,
+                _ => return Err(crate::Error::unsupported_offer_snapshot_chunk_result()),
+            })
+        }
     }
-}
 
-impl Protobuf<pb::ResponseOfferSnapshot> for OfferSnapshot {}
+    impl Protobuf<pb::abci::ResponseOfferSnapshot> for OfferSnapshot {}
+}

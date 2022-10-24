@@ -40,42 +40,42 @@ pub struct Query {
 // Protobuf conversions
 // =============================================================================
 
-use core::convert::{TryFrom, TryInto};
+tendermint_pb_modules! {
+    use super::Query;
 
-use tendermint_proto::{abci as pb, Protobuf};
-
-impl From<Query> for pb::ResponseQuery {
-    fn from(query: Query) -> Self {
-        Self {
-            code: query.code.into(),
-            log: query.log,
-            info: query.info,
-            index: query.index,
-            key: query.key,
-            value: query.value,
-            proof_ops: query.proof.map(Into::into),
-            height: query.height.into(),
-            codespace: query.codespace,
+    impl From<Query> for pb::abci::ResponseQuery {
+        fn from(query: Query) -> Self {
+            Self {
+                code: query.code.into(),
+                log: query.log,
+                info: query.info,
+                index: query.index,
+                key: query.key,
+                value: query.value,
+                proof_ops: query.proof.map(Into::into),
+                height: query.height.into(),
+                codespace: query.codespace,
+            }
         }
     }
-}
 
-impl TryFrom<pb::ResponseQuery> for Query {
-    type Error = crate::Error;
+    impl TryFrom<pb::abci::ResponseQuery> for Query {
+        type Error = crate::Error;
 
-    fn try_from(query: pb::ResponseQuery) -> Result<Self, Self::Error> {
-        Ok(Self {
-            code: query.code.into(),
-            log: query.log,
-            info: query.info,
-            index: query.index,
-            key: query.key,
-            value: query.value,
-            proof: query.proof_ops.map(TryInto::try_into).transpose()?,
-            height: query.height.try_into()?,
-            codespace: query.codespace,
-        })
+        fn try_from(query: pb::abci::ResponseQuery) -> Result<Self, Self::Error> {
+            Ok(Self {
+                code: query.code.into(),
+                log: query.log,
+                info: query.info,
+                index: query.index,
+                key: query.key,
+                value: query.value,
+                proof: query.proof_ops.map(TryInto::try_into).transpose()?,
+                height: query.height.try_into()?,
+                codespace: query.codespace,
+            })
+        }
     }
-}
 
-impl Protobuf<pb::ResponseQuery> for Query {}
+    impl Protobuf<pb::abci::ResponseQuery> for Query {}
+}

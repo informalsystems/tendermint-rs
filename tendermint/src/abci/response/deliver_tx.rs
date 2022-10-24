@@ -42,44 +42,44 @@ pub struct DeliverTx {
 // Protobuf conversions
 // =============================================================================
 
-use core::convert::{TryFrom, TryInto};
+tendermint_pb_modules! {
+    use super::DeliverTx;
 
-use tendermint_proto::{abci as pb, Protobuf};
-
-impl From<DeliverTx> for pb::ResponseDeliverTx {
-    fn from(deliver_tx: DeliverTx) -> Self {
-        Self {
-            code: deliver_tx.code.into(),
-            data: deliver_tx.data,
-            log: deliver_tx.log,
-            info: deliver_tx.info,
-            gas_wanted: deliver_tx.gas_wanted,
-            gas_used: deliver_tx.gas_used,
-            events: deliver_tx.events.into_iter().map(Into::into).collect(),
-            codespace: deliver_tx.codespace,
+    impl From<DeliverTx> for pb::abci::ResponseDeliverTx {
+        fn from(deliver_tx: DeliverTx) -> Self {
+            Self {
+                code: deliver_tx.code.into(),
+                data: deliver_tx.data,
+                log: deliver_tx.log,
+                info: deliver_tx.info,
+                gas_wanted: deliver_tx.gas_wanted,
+                gas_used: deliver_tx.gas_used,
+                events: deliver_tx.events.into_iter().map(Into::into).collect(),
+                codespace: deliver_tx.codespace,
+            }
         }
     }
-}
 
-impl TryFrom<pb::ResponseDeliverTx> for DeliverTx {
-    type Error = crate::Error;
+    impl TryFrom<pb::abci::ResponseDeliverTx> for DeliverTx {
+        type Error = crate::Error;
 
-    fn try_from(deliver_tx: pb::ResponseDeliverTx) -> Result<Self, Self::Error> {
-        Ok(Self {
-            code: deliver_tx.code.into(),
-            data: deliver_tx.data,
-            log: deliver_tx.log,
-            info: deliver_tx.info,
-            gas_wanted: deliver_tx.gas_wanted,
-            gas_used: deliver_tx.gas_used,
-            events: deliver_tx
-                .events
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<_, _>>()?,
-            codespace: deliver_tx.codespace,
-        })
+        fn try_from(deliver_tx: pb::abci::ResponseDeliverTx) -> Result<Self, Self::Error> {
+            Ok(Self {
+                code: deliver_tx.code.into(),
+                data: deliver_tx.data,
+                log: deliver_tx.log,
+                info: deliver_tx.info,
+                gas_wanted: deliver_tx.gas_wanted,
+                gas_used: deliver_tx.gas_used,
+                events: deliver_tx
+                    .events
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<_, _>>()?,
+                codespace: deliver_tx.codespace,
+            })
+        }
     }
-}
 
-impl Protobuf<pb::ResponseDeliverTx> for DeliverTx {}
+    impl Protobuf<pb::abci::ResponseDeliverTx> for DeliverTx {}
+}
