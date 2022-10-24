@@ -62,7 +62,7 @@ impl TryFrom<Bytes> for Id {
 
 impl From<Id> for Bytes {
     fn from(value: Id) -> Self {
-        value.as_bytes().into()
+        Bytes::copy_from_slice(value.as_bytes())
     }
 }
 
