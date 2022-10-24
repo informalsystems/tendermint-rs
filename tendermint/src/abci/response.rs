@@ -341,7 +341,7 @@ mod v0_37 {
                 Response::ApplySnapshotChunk(x) => Some(Value::ApplySnapshotChunk(x.into())),
                 Response::PrepareProposal(x) => Some(Value::PrepareProposal(x.into())),
                 Response::ProcessProposal(x) => Some(Value::ProcessProposal(x.into())),
-                Response::SetOption(x) => {
+                Response::SetOption(_) => {
                     panic!("SetOption should not be used with Tendermint 0.37")
                 },
             };
