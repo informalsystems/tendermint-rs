@@ -24,7 +24,7 @@ pub use self::{
     round::*,
     size::Size,
 };
-use crate::{error::Error, evidence, prelude::*, serializers};
+use crate::{error::Error, evidence, prelude::*};
 
 /// Blocks consist of a header, transactions, votes (the commit), and a list of
 /// evidence of malfeasance (i.e. signing conflicting votes).
@@ -33,6 +33,7 @@ use crate::{error::Error, evidence, prelude::*, serializers};
 // Default serialization - all fields serialize; used by /block endpoint
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
+#[serde(try_from = "RawBlock", into = "RawBlock")]
 pub struct Block {
     /// Block header
     pub header: Header,
@@ -41,7 +42,6 @@ pub struct Block {
     pub data: Vec<Vec<u8>>,
 
     /// Evidence of malfeasance
-    #[serde(with = "serializers::allow_null")]
     pub evidence: evidence::Data,
 
     /// Last commit

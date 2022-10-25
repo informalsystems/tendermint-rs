@@ -7,7 +7,7 @@ use core::{
 
 use serde::{Deserialize, Serialize};
 use tendermint_proto::{
-    google::protobuf::Duration as RawDuration, types::evidence::Sum as RawSum, Protobuf,
+    google::protobuf::Duration as RawDuration, types::Evidence as RawEvidence, Protobuf,
 };
 
 use crate::{error::Error, prelude::*, serializers, vote::Power, Time, Vote};
@@ -18,7 +18,7 @@ use crate::{error::Error, prelude::*, serializers, vote::Power, Time, Vote};
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#evidence>
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(try_from = "RawSum", into = "Option<RawSum>")] // Used by RPC /broadcast_evidence endpoint
+#[serde(try_from = "RawEvidence", into = "RawEvidence")] // Used by RPC /broadcast_evidence endpoint
 pub enum Evidence {
     /// Duplicate vote evidence
     DuplicateVote(DuplicateVoteEvidence),
@@ -120,188 +120,35 @@ pub struct Params {
 // Protobuf conversions
 // =============================================================================
 
-mod v0_34 {
-    use tendermint_proto::v0_37::types::{
+tendermint_pb_modules! {
+    use pb::types::{
         evidence::Sum as RawSum, DuplicateVoteEvidence as RawDuplicateVoteEvidence,
         Evidence as RawEvidence, EvidenceList as RawEvidenceList,
         EvidenceParams as RawEvidenceParams,
     };
-    use tendermint_proto::Protobuf;
 
     use super::{Data, DuplicateVoteEvidence, Evidence, Params};
     use crate::{error::Error, prelude::*};
 
-    impl TryFrom<RawSum> for Evidence {
+    impl TryFrom<RawEvidence> for Evidence {
         type Error = Error;
 
-        fn try_from(value: RawSum) -> Result<Self, Self::Error> {
+        fn try_from(message: RawEvidence) -> Result<Self, Self::Error> {
             use RawSum::*;
-            match value {
+            match message.sum.ok_or_else(Error::invalid_evidence)? {
                 DuplicateVoteEvidence(ev) => Ok(Evidence::DuplicateVote(ev.try_into()?)),
                 LightClientAttackEvidence(_ev) => Ok(Evidence::LightClientAttackEvidence),
             }
         }
     }
 
-    impl TryFrom<RawEvidence> for Evidence {
-        type Error = Error;
-
-        fn try_from(value: RawEvidence) -> Result<Self, Self::Error> {
-            value
-                .sum
-                .ok_or_else(Error::invalid_evidence)
-                .and_then(TryInto::try_into)
-        }
-    }
-
-    impl From<Evidence> for Option<RawSum> {
-        fn from(value: Evidence) -> Self {
-            match value {
-                Evidence::DuplicateVote(ev) => Some(RawSum::DuplicateVoteEvidence(ev.into())),
-                Evidence::LightClientAttackEvidence => None,
-            }
-        }
-    }
-
     impl From<Evidence> for RawEvidence {
         fn from(value: Evidence) -> Self {
-            RawEvidence { sum: value.into() }
-        }
-    }
-
-    impl TryFrom<RawDuplicateVoteEvidence> for DuplicateVoteEvidence {
-        type Error = Error;
-
-        fn try_from(value: RawDuplicateVoteEvidence) -> Result<Self, Self::Error> {
-            Ok(Self {
-                vote_a: value
-                    .vote_a
-                    .ok_or_else(Error::missing_evidence)?
-                    .try_into()?,
-                vote_b: value
-                    .vote_b
-                    .ok_or_else(Error::missing_evidence)?
-                    .try_into()?,
-                total_voting_power: value.total_voting_power.try_into()?,
-                validator_power: value.validator_power.try_into()?,
-                timestamp: value
-                    .timestamp
-                    .ok_or_else(Error::missing_timestamp)?
-                    .try_into()?,
-            })
-        }
-    }
-
-    impl From<DuplicateVoteEvidence> for RawDuplicateVoteEvidence {
-        fn from(value: DuplicateVoteEvidence) -> Self {
-            RawDuplicateVoteEvidence {
-                vote_a: Some(value.vote_a.into()),
-                vote_b: Some(value.vote_b.into()),
-                total_voting_power: value.total_voting_power.into(),
-                validator_power: value.total_voting_power.into(),
-                timestamp: Some(value.timestamp.into()),
-            }
-        }
-    }
-
-    impl TryFrom<RawEvidenceList> for Data {
-        type Error = Error;
-        fn try_from(value: RawEvidenceList) -> Result<Self, Self::Error> {
-            let evidence = value
-                .evidence
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<Vec<_>, _>>()?;
-            Ok(Self(evidence))
-        }
-    }
-
-    impl From<Data> for RawEvidenceList {
-        fn from(value: Data) -> Self {
-            RawEvidenceList {
-                evidence: value.0.into_iter().map(Into::into).collect(),
-            }
-        }
-    }
-
-    impl Protobuf<RawEvidenceParams> for Params {}
-
-    impl TryFrom<RawEvidenceParams> for Params {
-        type Error = Error;
-
-        fn try_from(value: RawEvidenceParams) -> Result<Self, Self::Error> {
-            Ok(Self {
-                max_age_num_blocks: value
-                    .max_age_num_blocks
-                    .try_into()
-                    .map_err(Error::negative_max_age_num)?,
-                max_age_duration: value
-                    .max_age_duration
-                    .ok_or_else(Error::missing_max_age_duration)?
-                    .try_into()?,
-                max_bytes: value.max_bytes,
-            })
-        }
-    }
-
-    impl From<Params> for RawEvidenceParams {
-        fn from(value: Params) -> Self {
-            Self {
-                // Todo: Implement proper domain types so this becomes infallible
-                max_age_num_blocks: value.max_age_num_blocks.try_into().unwrap(),
-                max_age_duration: Some(value.max_age_duration.into()),
-                max_bytes: value.max_bytes,
-            }
-        }
-    }
-}
-
-mod v0_37 {
-    use tendermint_proto::v0_34::types::{
-        evidence::Sum as RawSum, DuplicateVoteEvidence as RawDuplicateVoteEvidence,
-        Evidence as RawEvidence, EvidenceList as RawEvidenceList,
-        EvidenceParams as RawEvidenceParams,
-    };
-    use tendermint_proto::Protobuf;
-
-    use super::{Data, DuplicateVoteEvidence, Evidence, Params};
-    use crate::{error::Error, prelude::*};
-
-    impl TryFrom<RawSum> for Evidence {
-        type Error = Error;
-
-        fn try_from(value: RawSum) -> Result<Self, Self::Error> {
-            use RawSum::*;
-            match value {
-                DuplicateVoteEvidence(ev) => Ok(Evidence::DuplicateVote(ev.try_into()?)),
-                LightClientAttackEvidence(_ev) => Ok(Evidence::LightClientAttackEvidence),
-            }
-        }
-    }
-
-    impl TryFrom<RawEvidence> for Evidence {
-        type Error = Error;
-
-        fn try_from(value: RawEvidence) -> Result<Self, Self::Error> {
-            value
-                .sum
-                .ok_or_else(Error::invalid_evidence)
-                .and_then(TryInto::try_into)
-        }
-    }
-
-    impl From<Evidence> for Option<RawSum> {
-        fn from(value: Evidence) -> Self {
-            match value {
+            let sum = match value {
                 Evidence::DuplicateVote(ev) => Some(RawSum::DuplicateVoteEvidence(ev.into())),
                 Evidence::LightClientAttackEvidence => None,
-            }
-        }
-    }
-
-    impl From<Evidence> for RawEvidence {
-        fn from(value: Evidence) -> Self {
-            RawEvidence { sum: value.into() }
+            };
+            RawEvidence { sum }
         }
     }
 

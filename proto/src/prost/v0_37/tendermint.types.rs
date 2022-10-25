@@ -383,8 +383,6 @@ pub struct EventDataRoundState {
     #[prost(string, tag="3")]
     pub step: ::prost::alloc::string::String,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(from = "crate::serializers::evidence::EvidenceVariant", into = "crate::serializers::evidence::EvidenceVariant")]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Evidence {
     #[prost(oneof="evidence::Sum", tags="1, 2")]
@@ -394,7 +392,6 @@ pub struct Evidence {
 pub mod evidence {
     #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[serde(tag = "type", content = "value")]
-    #[serde(from = "crate::serializers::evidence::EvidenceVariant", into = "crate::serializers::evidence::EvidenceVariant")]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Sum {
         #[prost(message, tag="1")]

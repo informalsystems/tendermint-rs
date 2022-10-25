@@ -53,7 +53,6 @@ const RENAME_SRPUBKEY: &str = r#"#[serde(rename = "tendermint/PubKeySr25519", wi
 const RENAME_DUPLICATEVOTE: &str = r#"#[serde(rename = "tendermint/DuplicateVoteEvidence")]"#;
 const RENAME_LIGHTCLIENTATTACK: &str =
     r#"#[serde(rename = "tendermint/LightClientAttackEvidence")]"#;
-const EVIDENCE_VARIANT: &str = r#"#[serde(from = "crate::serializers::evidence::EvidenceVariant", into = "crate::serializers::evidence::EvidenceVariant")]"#;
 const ALIAS_VALIDATOR_POWER_QUOTED: &str =
     r#"#[serde(alias = "ValidatorPower", with = "crate::serializers::from_str")]"#;
 const ALIAS_TOTAL_VOTING_POWER_QUOTED: &str =
@@ -72,8 +71,9 @@ pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.BlockIDFlag", PRIMITIVE_ENUM),
     (".tendermint.types.Block", SERIALIZED),
     (".tendermint.types.Data", SERIALIZED),
+    (".tendermint.types.Evidence.sum", SERIALIZED),
+    (".tendermint.types.Evidence.sum", TYPE_TAG),
     (".tendermint.types.EvidenceList", SERIALIZED),
-    (".tendermint.types.Evidence", SERIALIZED),
     (".tendermint.types.DuplicateVoteEvidence", SERIALIZED),
     (".tendermint.types.Vote", SERIALIZED),
     (".tendermint.types.BlockID", SERIALIZED),
@@ -88,14 +88,12 @@ pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.ValidatorSet", SERIALIZED),
     (".tendermint.crypto.PublicKey", SERIALIZED),
     (".tendermint.crypto.PublicKey.sum", TYPE_TAG),
-    (".tendermint.types.Evidence.sum", TYPE_TAG),
     (".tendermint.abci.ResponseInfo", SERIALIZED),
     (".tendermint.types.CanonicalBlockID", SERIALIZED),
     (".tendermint.types.CanonicalPartSetHeader", SERIALIZED),
     (".tendermint.types.Validator", SERIALIZED),
     (".tendermint.types.CanonicalVote", SERIALIZED),
     (".tendermint.types.BlockMeta", SERIALIZED),
-    (".tendermint.types.Evidence", EVIDENCE_VARIANT),
     (".tendermint.types.TxProof", SERIALIZED),
     (".tendermint.crypto.Proof", SERIALIZED),
 ];
