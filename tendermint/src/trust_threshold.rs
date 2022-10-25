@@ -51,10 +51,10 @@ impl TrustThresholdFraction {
     /// Instantiate a TrustThresholdFraction if the given denominator and
     /// numerator are valid.
     ///
-    /// The parameters are valid iff `1/3 <= numerator/denominator < 1`.
+    /// The parameters are valid iff `1/3 <= numerator/denominator <= 1`.
     /// In any other case we return an error.
     pub fn new(numerator: u64, denominator: u64) -> Result<Self, Error> {
-        if numerator >= denominator {
+        if numerator > denominator {
             return Err(Error::trust_threshold_too_large());
         }
         if denominator == 0 {
@@ -160,12 +160,6 @@ mod test {
         }
 
         #[test]
-        fn cannot_be_one(num in 1..1000u64) {
-            assert!(TrustThresholdFraction::new(num, num).is_err());
-            assert!(from_json(num, num).is_err());
-        }
-
-        #[test]
         fn undefined(num in 1..1000u64) {
             // Numerator should be irrelevant
             let denom = 0u64;
@@ -190,6 +184,12 @@ mod test {
             let frac = from_json(num, denom).unwrap();
             assert_eq!(frac.numerator(), num);
             assert_eq!(frac.denominator(), denom);
+        }
+
+        #[test]
+        fn can_be_one(num in 1..1000u64) {
+            assert!(TrustThresholdFraction::new(num, num).is_ok());
+            assert!(from_json(num, num).is_ok());
         }
     }
 }
