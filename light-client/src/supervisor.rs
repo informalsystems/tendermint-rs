@@ -283,6 +283,21 @@ impl Supervisor {
         Ok(forked)
     }
 
+    /// Report the given evidence of a fork.
+    // TODO: rework to supply LightClientAttackEvidence data
+    fn report_evidence(
+        &mut self,
+        provider: PeerId,
+        _primary: &LightBlock,
+        _witness: &LightBlock,
+    ) -> Result<(), Error> {
+        self.evidence_reporter
+            .report(Evidence::LightClientAttackEvidence, provider)
+            .map_err(Error::io)?;
+
+        Ok(())
+    }
+
     /// Perform fork detection with the given verified block and trusted block.
     fn detect_forks(
         &self,
