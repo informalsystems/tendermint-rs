@@ -1,5 +1,45 @@
 # CHANGELOG
 
+## v0.26.0
+
+*Oct 26, 2022*
+
+The highlight of this release is the addition of domain types specifically for
+ABCI. Previously, Rust-based Tendermint application developers would have had to
+exclusively rely on the generated Protobuf types. Many thanks to @hdevalence for
+the heavy lifting on this, and to @mzabaluev for the porting work after the
+Tendermint v0.35 retraction!
+
+While we will endeavour to keep this API as stable as possible, we know that we
+will have to evolve it over the coming months to reduce duplication of
+functionality and types across the ABCI module and RPC crate, so please expect
+further breaking changes in subsequent breaking releases.
+
+### BREAKING CHANGES
+
+- `[tendermint]` Added domain types for ABCI
+  ([#862](https://github.com/informalsystems/tendermint-rs/issues/862))
+- `[tendermint-proto]` Use `Bytes` for byte array fields of ABCI protobuf types.
+  ([#1203](https://github.com/informalsystems/tendermint-rs/pull/1203))
+
+### BUG FIXES
+
+- `[tendermint-rpc]` The encoding of the `hash` field for requests to the `/block_by_hash`
+  endpoint has been changed to base64 (from hex) to accommodate discrepancies in
+  how the Tendermint RPC encodes this field for different RPC interfaces
+  ([#942](https://github.com/informalsystems/tendermint-rs/issues/942))
+- Allow a `TrustThresholdFraction` of 1  
+  ([#1208](https://github.com/informalsystems/tendermint-rs/issues/1208))
+
+### ENHANCEMENTS
+
+- `[tendermint-abci]` Deprecate `Client::set_option`.
+  ([#1203](https://github.com/informalsystems/tendermint-rs/pull/1203))
+
+### FEATURES
+
+- `[tendermint-rpc]` Add support for the `/block_by_hash` RPC endpoint. See <https://docs.tendermint.com/master/rpc/#/Info/block_by_hash> for details ([#832](https://github.com/informalsystems/tendermint-rs/issues/832)).
+
 ## v0.25.0
 
 *Sep 23, 2022*
@@ -99,11 +139,11 @@ Pre-releases will continue along this line until v0.34.20 is released.
 
 ### FEATURES
 
-- `[tendermint-proto]` Regenerate protos from Tendermint
-  v0.34.20-rc0, including prioritized mempool fields in `ResponseCheckTx`
-  ([#1148](https://github.com/informalsystems/tendermint-rs/issues/1148))
 - `[tendermint-rpc]` Update `broadcast_tx_*` result to include
   prioritized new mempool fields available from v0.34.20-rc0
+  ([#1148](https://github.com/informalsystems/tendermint-rs/issues/1148))
+- `[tendermint-proto]` Regenerate protos from Tendermint
+  v0.34.20-rc0, including prioritized mempool fields in `ResponseCheckTx`
   ([#1148](https://github.com/informalsystems/tendermint-rs/issues/1148))
 
 ## v0.23.7
@@ -261,18 +301,18 @@ not yet support `no_std`.
 - Upgraded Prost to the official v0.9 release to finally resolve the security
   issue introduced by v0.7
   ([#925](https://github.com/informalsystems/tendermint-rs/issues/925))
-- `[tendermint]` The `tendermint::node::info::ListenAddress::to_net_address`
-  method was replaced with a simple `as_str` method toward facilitating
-  `no_std` compatibility ([#983](https://github.com/informalsystems/tendermint-
-  rs/issues/983))
-- `[tendermint]` The `tendermint::node::info::OtherInfo::rpc_address`
-  field type has been changed from `tendermint::net::Address`
-  to `String` toward facilitating `no_std` compatibility
-  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
 - `[tendermint, tendermint-config]` The `tendermint::config`
   module has now been broken out into its own crate (`tendermint-
   config`) to help towards facilitating `no_std` compatibility
   ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
+- `[tendermint]` The `tendermint::node::info::OtherInfo::rpc_address`
+  field type has been changed from `tendermint::net::Address`
+  to `String` toward facilitating `no_std` compatibility
+  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
+- `[tendermint]` The `tendermint::node::info::ListenAddress::to_net_address`
+  method was replaced with a simple `as_str` method toward facilitating
+  `no_std` compatibility ([#983](https://github.com/informalsystems/tendermint-
+  rs/issues/983))
 
 ### FEATURES
 
