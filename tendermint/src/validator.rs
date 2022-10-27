@@ -163,7 +163,7 @@ impl Info {
 /// nor the proposer priority, as that changes with every block even if the validator set didn't.
 /// It contains only the pubkey and the voting power.
 /// TODO: currently only works for Ed25519 pubkeys
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct SimpleValidator {
     /// Public key
     pub pub_key: PublicKey,

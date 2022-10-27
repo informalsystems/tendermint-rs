@@ -19,6 +19,7 @@ use crate::{error::Error, prelude::*, serializers, vote::Power, Time, Vote};
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#evidence>
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "RawEvidence", into = "RawEvidence")] // Used by RPC /broadcast_evidence endpoint
+#[allow(clippy::large_enum_variant)]
 pub enum Evidence {
     /// Duplicate vote evidence
     DuplicateVote(DuplicateVoteEvidence),

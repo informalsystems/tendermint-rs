@@ -212,8 +212,8 @@ mod v0_37 {
     impl From<EventAttribute> for pb::EventAttribute {
         fn from(event: EventAttribute) -> Self {
             Self {
-                key: event.key.into(),
-                value: event.value.into(),
+                key: event.key,
+                value: event.value,
                 index: event.index,
             }
         }
