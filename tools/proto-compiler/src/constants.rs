@@ -19,7 +19,7 @@ pub struct TendermintVersion {
 pub const TENDERMINT_VERSIONS: &[TendermintVersion] = &[
     TendermintVersion {
         ident: "v0_34",
-        commitish: "v0.34.21",
+        commitish: "v0.34.22",
     },
     TendermintVersion {
         ident: "v0_37",

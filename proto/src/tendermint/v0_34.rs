@@ -62,5 +62,5 @@ pub mod version {
 
 pub mod meta {
     pub const REPOSITORY: &str = "https://github.com/tendermint/tendermint";
-    pub const COMMITISH: &str = "v0.34.21";
+    pub const COMMITISH: &str = "v0.34.22";
 }
