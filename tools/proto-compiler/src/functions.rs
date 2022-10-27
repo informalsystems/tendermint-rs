@@ -166,20 +166,20 @@ pub fn copy_files(src_dir: &Path, target_dir: &Path) {
 
     // Copy new compiled files (prost does not use folder structures)
     let errors = WalkDir::new(src_dir)
+        .contents_first(true)
         .into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|e| e.file_type().is_file())
-        .map(|e| {
-            copy(
-                e.path(),
-                std::path::Path::new(&format!(
-                    "{}/{}",
-                    &target_dir.display(),
-                    &e.file_name().to_os_string().to_str().unwrap()
-                )),
-            )
+        .filter_entry(|e| {
+            e.file_type().is_file()
+                && e.file_name()
+                    .to_str()
+                    .map(|name| name.starts_with("tendermint."))
+                    .unwrap_or(false)
         })
-        .filter_map(|e| e.err())
+        .map(|res| {
+            let e = res?;
+            copy(e.path(), target_dir.join(e.file_name()))
+        })
+        .filter_map(|res| res.err())
         .collect::<Vec<_>>();
 
     if !errors.is_empty() {
