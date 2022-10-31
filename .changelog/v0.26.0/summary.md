@@ -1,4 +1,4 @@
-*Oct 26, 2022*
+*Oct 31, 2022*
 
 The highlight of this release is the addition of domain types specifically for
 ABCI. Previously, Rust-based Tendermint application developers would have had to
