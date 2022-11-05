@@ -1,7 +1,6 @@
 use bytes::Bytes;
 
-use super::super::types::ValidatorUpdate;
-use crate::{block, consensus, prelude::*, Time};
+use crate::{block, consensus, prelude::*, validator, Time};
 
 /// Called on genesis to initialize chain state.
 ///
@@ -15,7 +14,7 @@ pub struct InitChain {
     /// Initial consensus-critical parameters.
     pub consensus_params: consensus::Params,
     /// Initial genesis validators, sorted by voting power.
-    pub validators: Vec<ValidatorUpdate>,
+    pub validators: Vec<validator::Update>,
     /// Serialized JSON bytes containing the initial application state.
     pub app_state_bytes: Bytes,
     /// Height of the initial block (typically `1`).

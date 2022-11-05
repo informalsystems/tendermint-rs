@@ -1,18 +1,22 @@
 use bytes::Bytes;
+use serde::{Deserialize, Serialize};
 
-use super::super::Event;
+use super::super::{Code, Event};
 use crate::prelude::*;
+use crate::serializers;
 
 #[doc = include_str!("../doc/response-checktx.md")]
-#[derive(Clone, PartialEq, Eq, Debug, Default)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
+#[serde(default)]
 pub struct CheckTx {
     /// The response code.
     ///
     /// Transactions where `code != 0` will be rejected; these transactions will
     /// not be broadcast to other nodes or included in a proposal block.
     /// Tendermint attributes no other value to the response code.
-    pub code: u32,
+    pub code: Code,
     /// Result bytes, if any.
+    #[serde(with = "serializers::nullable")]
     pub data: Bytes,
     /// The output of the application's logger.
     ///
@@ -23,8 +27,10 @@ pub struct CheckTx {
     /// **May be non-deterministic**.
     pub info: String,
     /// Amount of gas requested for the transaction.
+    #[serde(with = "serializers::from_str")]
     pub gas_wanted: i64,
     /// Amount of gas consumed by the transaction.
+    #[serde(with = "serializers::from_str")]
     pub gas_used: i64,
     /// Events that occurred while checking the transaction.
     pub events: Vec<Event>,
@@ -33,10 +39,11 @@ pub struct CheckTx {
     /// The transaction's sender (e.g. the signer).
     pub sender: String,
     /// The transaction's priority (for mempool ordering).
+    #[serde(with = "serializers::from_str")]
     pub priority: i64,
-    // mempool_error is contained in the proto, but skipped here:
-    // > mempool_error is set by Tendermint.
-    // > ABCI applictions creating a ResponseCheckTX should not set mempool_error.
+    /// mempool_error is set by Tendermint.
+    /// ABCI applictions should not set mempool_error.
+    pub mempool_error: String,
 }
 
 // =============================================================================
@@ -50,7 +57,7 @@ use tendermint_proto::{abci as pb, Protobuf};
 impl From<CheckTx> for pb::ResponseCheckTx {
     fn from(check_tx: CheckTx) -> Self {
         Self {
-            code: check_tx.code,
+            code: check_tx.code.into(),
             data: check_tx.data,
             log: check_tx.log,
             info: check_tx.info,
@@ -60,7 +67,7 @@ impl From<CheckTx> for pb::ResponseCheckTx {
             codespace: check_tx.codespace,
             sender: check_tx.sender,
             priority: check_tx.priority,
-            mempool_error: String::default(),
+            mempool_error: check_tx.mempool_error,
         }
     }
 }
@@ -70,7 +77,7 @@ impl TryFrom<pb::ResponseCheckTx> for CheckTx {
 
     fn try_from(check_tx: pb::ResponseCheckTx) -> Result<Self, Self::Error> {
         Ok(Self {
-            code: check_tx.code,
+            code: check_tx.code.into(),
             data: check_tx.data,
             log: check_tx.log,
             info: check_tx.info,
@@ -84,6 +91,7 @@ impl TryFrom<pb::ResponseCheckTx> for CheckTx {
             codespace: check_tx.codespace,
             sender: check_tx.sender,
             priority: check_tx.priority,
+            mempool_error: check_tx.mempool_error,
         })
     }
 }

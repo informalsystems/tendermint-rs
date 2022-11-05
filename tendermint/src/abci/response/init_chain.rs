@@ -1,7 +1,6 @@
 use bytes::Bytes;
 
-use super::super::types::ValidatorUpdate;
-use crate::{consensus, prelude::*};
+use crate::{consensus, prelude::*, validator};
 
 #[doc = include_str!("../doc/response-initchain.md")]
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
@@ -16,7 +15,7 @@ pub struct InitChain {
     /// If this list is nonempty, it will be the initial validator set, instead
     /// of the one given in
     /// [`request::InitChain::validators`](super::super::request::InitChain::validators).
-    pub validators: Vec<ValidatorUpdate>,
+    pub validators: Vec<validator::Update>,
     /// Initial application hash.
     pub app_hash: Bytes,
 }

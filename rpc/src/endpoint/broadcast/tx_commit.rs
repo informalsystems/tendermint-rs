@@ -2,12 +2,9 @@
 //! if we timeout waiting for tx to commit.
 
 use serde::{Deserialize, Serialize};
-use tendermint::block;
+use tendermint::{abci, block, Hash};
 
-use crate::{
-    abci::{responses::Codespace, transaction, Code, Data, Event, Gas, Info, Log, Transaction},
-    prelude::*,
-};
+use crate::{prelude::*, serializers};
 
 /// `/broadcast_tx_commit`: only returns error if `mempool.CheckTx()` errs or
 /// if we timeout waiting for tx to commit.
@@ -17,13 +14,14 @@ use crate::{
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request {
     /// Transaction to broadcast
-    pub tx: Transaction,
+    #[serde(with = "serializers::bytes::base64string")]
+    pub tx: Vec<u8>,
 }
 
 impl Request {
     /// Create a new commit transaction broadcast RPC request
-    pub fn new(tx: Transaction) -> Request {
-        Request { tx }
+    pub fn new(tx: impl Into<Vec<u8>>) -> Request {
+        Request { tx: tx.into() }
     }
 }
 
@@ -41,64 +39,16 @@ impl crate::SimpleRequest for Request {}
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {
     /// `CheckTx` result
-    pub check_tx: TxResult,
+    pub check_tx: abci::response::CheckTx,
 
     /// `DeliverTx` result
-    pub deliver_tx: TxResult,
+    pub deliver_tx: abci::response::DeliverTx,
 
     /// Transaction
-    pub hash: transaction::Hash,
+    pub hash: Hash,
 
     /// Height
     pub height: block::Height,
 }
 
 impl crate::Response for Response {}
-
-/// Results from either `CheckTx` or `DeliverTx`.
-///
-/// Prioritized mempool-related fields are only relevant for `CheckTx` results.
-/// The results for `CheckTx` and `DeliverTx` are not separated in tendermint-rs
-/// v0.23.x to avoid breaking the API, as Tendermint v0.34.0-v0.34.19 returned
-/// the exact same result structure, and this changed in v0.34.20.
-#[derive(Clone, Debug, Deserialize, Serialize, Default)]
-#[serde(default)]
-pub struct TxResult {
-    /// Code
-    pub code: Code,
-
-    /// Data
-    #[serde(with = "tendermint_proto::serializers::optional")]
-    pub data: Option<Data>,
-
-    /// Log
-    pub log: Log,
-
-    /// ABCI info (nondeterministic)
-    pub info: Info,
-
-    /// Amount of gas wanted
-    pub gas_wanted: Gas,
-
-    /// Amount of gas used
-    pub gas_used: Gas,
-
-    /// Events
-    pub events: Vec<Event>,
-
-    /// Codespace
-    pub codespace: Codespace,
-
-    /// Only relevant for `CheckTx`.
-    pub sender: String,
-
-    /// If the prioritized mempool is enabled, this will give an indication as
-    /// to the priority assigned to the transaction.
-    ///
-    /// Only relevant for `CheckTx`.
-    #[serde(with = "tendermint_proto::serializers::from_str")]
-    pub priority: i64,
-
-    /// Only relevant for `CheckTx`.
-    pub mempool_error: String,
-}

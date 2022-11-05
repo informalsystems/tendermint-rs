@@ -4,6 +4,7 @@ use core::convert::{TryFrom, TryInto};
 
 use serde::{Deserialize, Serialize};
 use tendermint_proto::{
+    abci::ValidatorUpdate as RawValidatorUpdate,
     types::{
         SimpleValidator as RawSimpleValidator, Validator as RawValidator,
         ValidatorSet as RawValidatorSet,
@@ -318,7 +319,11 @@ impl ProposerPriority {
     }
 }
 
-/// Updates to the validator set
+/// A change to the validator set.
+///
+/// Used to inform Tendermint of changes to the validator set.
+///
+/// [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#validatorupdate)
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Update {
     /// Validator public key
@@ -328,6 +333,31 @@ pub struct Update {
     /// New voting power
     #[serde(default)]
     pub power: vote::Power,
+}
+
+impl Protobuf<RawValidatorUpdate> for Update {}
+
+impl From<Update> for RawValidatorUpdate {
+    fn from(vu: Update) -> Self {
+        Self {
+            pub_key: Some(vu.pub_key.into()),
+            power: vu.power.into(),
+        }
+    }
+}
+
+impl TryFrom<RawValidatorUpdate> for Update {
+    type Error = Error;
+
+    fn try_from(vu: RawValidatorUpdate) -> Result<Self, Self::Error> {
+        Ok(Self {
+            pub_key: vu
+                .pub_key
+                .ok_or_else(Error::missing_public_key)?
+                .try_into()?,
+            power: vu.power.try_into()?,
+        })
+    }
 }
 
 #[cfg(test)]

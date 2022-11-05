@@ -1,10 +1,10 @@
 //! `/tx` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
-use tendermint::block;
+use tendermint::{abci, block, Hash};
 use tendermint_proto::types::TxProof;
 
-use crate::{abci, Method};
+use crate::{prelude::*, serializers, Method};
 
 /// Request for finding a transaction by its hash.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -13,8 +13,8 @@ pub struct Request {
     ///
     /// Serialized internally into a base64-encoded string before sending to
     /// the RPC server.
-    #[serde(with = "crate::serializers::tx_hash_base64")]
-    pub hash: abci::transaction::Hash,
+    #[serde(with = "serializers::tx_hash_base64")]
+    pub hash: Hash,
     /// Whether or not to include the proofs of the transaction's inclusion in
     /// the block.
     pub prove: bool,
@@ -22,7 +22,7 @@ pub struct Request {
 
 impl Request {
     /// Constructor.
-    pub fn new(hash: abci::transaction::Hash, prove: bool) -> Self {
+    pub fn new(hash: Hash, prove: bool) -> Self {
         Self { hash, prove }
     }
 }
@@ -44,11 +44,12 @@ pub struct Response {
     /// Deserialized from a hex-encoded string (there is a discrepancy between
     /// the format used for the request and the format used for the response in
     /// the Tendermint RPC).
-    pub hash: abci::transaction::Hash,
+    pub hash: Hash,
     pub height: block::Height,
     pub index: u32,
-    pub tx_result: abci::DeliverTx,
-    pub tx: abci::Transaction,
+    pub tx_result: abci::response::DeliverTx,
+    #[serde(with = "serializers::bytes::base64string")]
+    pub tx: Vec<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proof: Option<TxProof>,
 }

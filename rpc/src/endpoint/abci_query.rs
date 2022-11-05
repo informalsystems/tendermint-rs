@@ -1,19 +1,16 @@
 //! `/abci_query` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
-use tendermint::{block, merkle::proof::Proof, serializers};
+use tendermint::{abci::Code, block, merkle::proof::Proof, serializers};
 
-use crate::{
-    abci::{Code, Log, Path},
-    prelude::*,
-};
+use crate::prelude::*;
 
 /// Query the ABCI application for information
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Request {
     /// Path to the data
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub path: Option<Path>,
+    pub path: Option<String>,
 
     /// Data to query
     #[serde(with = "serializers::bytes::hexstring")]
@@ -30,7 +27,7 @@ pub struct Request {
 
 impl Request {
     /// Create a new ABCI query request
-    pub fn new<D>(path: Option<Path>, data: D, height: Option<block::Height>, prove: bool) -> Self
+    pub fn new<D>(path: Option<String>, data: D, height: Option<block::Height>, prove: bool) -> Self
     where
         D: Into<Vec<u8>>,
     {
@@ -70,7 +67,7 @@ pub struct AbciQuery {
     pub code: Code,
 
     /// Log value
-    pub log: Log,
+    pub log: String,
 
     /// Info value
     #[serde(default = "String::new")]
