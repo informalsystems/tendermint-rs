@@ -126,7 +126,7 @@ impl Generator<block::Commit> for Commit {
 
         let vote_to_sig = |v: &Vote| -> Result<block::CommitSig, SimpleError> {
             let vote = v.generate()?;
-            if vote.block_id == None {
+            if vote.block_id.is_none() {
                 Ok(block::CommitSig::BlockIdFlagNil {
                     validator_address: vote.validator_address,
                     timestamp: vote.timestamp.unwrap(),

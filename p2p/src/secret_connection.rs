@@ -83,7 +83,7 @@ impl Handshake<AwaitingEphKey> {
         protocol_version: Version,
     ) -> (Self, EphemeralPublic) {
         // Generate an ephemeral key for perfect forward secrecy.
-        let local_eph_privkey = EphemeralSecret::new(&mut OsRng);
+        let local_eph_privkey = EphemeralSecret::new(OsRng);
         let local_eph_pubkey = EphemeralPublic::from(&local_eph_privkey);
 
         (

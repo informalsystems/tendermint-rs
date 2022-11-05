@@ -22,7 +22,7 @@ impl TryFrom<RawBlockId> for BlockId {
         Ok(BlockId {
             hash: String::from_utf8(value.hash)
                 .map_err(|_| "Could not convert vector to string")?,
-            part_set_header_exists: value.part_set_header != None,
+            part_set_header_exists: value.part_set_header.is_some(),
         })
     }
 }
