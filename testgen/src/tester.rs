@@ -300,7 +300,7 @@ impl Tester {
                 let output_dir = output_env.full_path(path);
                 let output_env = TestEnv::new(output_dir.to_str().unwrap()).unwrap();
                 test(test_case, &env, &test_env, &output_env);
-                fs::remove_dir_all(&env.current_dir()).unwrap();
+                fs::remove_dir_all(env.current_dir()).unwrap();
             }),
             Err(e) => ParseError(e),
         };
