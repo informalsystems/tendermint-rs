@@ -118,6 +118,16 @@ impl Time {
         timestamp::to_rfc3339_nanos(self.0.assume_utc())
     }
 
+    /// Return a Unix timestamp in seconds.
+    pub fn unix_timestamp(&self) -> i64 {
+        self.0.assume_utc().unix_timestamp()
+    }
+
+    /// Return a Unix timestamp in nanoseconds.
+    pub fn unix_timestamp_nanos(&self) -> i128 {
+        self.0.assume_utc().unix_timestamp_nanos()
+    }
+
     /// Computes `self + duration`, returning `None` if an overflow occurred.
     pub fn checked_add(self, duration: Duration) -> Option<Self> {
         let duration = duration.try_into().ok()?;
@@ -276,6 +286,19 @@ mod tests {
             let json_encoded_time = serde_json::to_value(time).unwrap();
             let decoded_time: Time = serde_json::from_value(json_encoded_time).unwrap();
             prop_assert_eq!(time, decoded_time);
+        }
+
+        #[test]
+        fn conversion_unix_timestamp_is_safe(
+            stamp in prop_oneof![
+                pbt::time::arb_protobuf_safe_rfc3339_timestamp(),
+                particular_rfc3339_timestamps(),
+            ]
+        ) {
+            let time: Time = stamp.parse().unwrap();
+            let timestamp = time.unix_timestamp();
+            let parsed = Time::from_unix_timestamp(timestamp, 0).unwrap();
+            prop_assert_eq!(timestamp, parsed.unix_timestamp());
         }
 
         #[test]
