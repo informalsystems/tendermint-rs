@@ -6,7 +6,7 @@ use std::{
 };
 
 use bytes::BytesMut;
-use tendermint_proto::abci::{
+use tendermint_proto::v0_37::abci::{
     Event, EventAttribute, RequestCheckTx, RequestDeliverTx, RequestInfo, RequestQuery,
     ResponseCheckTx, ResponseCommit, ResponseDeliverTx, ResponseInfo, ResponseQuery,
 };

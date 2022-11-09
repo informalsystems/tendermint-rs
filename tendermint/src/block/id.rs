@@ -4,7 +4,7 @@ use core::{
 };
 
 use serde::{Deserialize, Serialize};
-use tendermint_proto::types::BlockId as RawBlockId;
+use tendermint_proto::v0_37::types::BlockId as RawBlockId;
 
 use crate::{
     block::parts::Header as PartSetHeader,

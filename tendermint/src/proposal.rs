@@ -4,19 +4,17 @@ mod canonical_proposal;
 mod msg_type;
 mod sign_proposal;
 
-use core::convert::{TryFrom, TryInto};
-
 use bytes::BufMut;
 pub use msg_type::Type;
 pub use sign_proposal::{SignProposalRequest, SignedProposalResponse};
-use tendermint_proto::{types::Proposal as RawProposal, Error as ProtobufError, Protobuf};
+use tendermint_proto::v0_37::types::CanonicalProposal as RawCanonicalProposal;
+use tendermint_proto::{Error as ProtobufError, Protobuf};
 
 pub use self::canonical_proposal::CanonicalProposal;
 use crate::{
     block::{Height, Id as BlockId, Round},
     chain::Id as ChainId,
     consensus::State,
-    error::Error,
     prelude::*,
     Signature, Time,
 };
@@ -40,41 +38,47 @@ pub struct Proposal {
     pub signature: Option<Signature>,
 }
 
-impl Protobuf<RawProposal> for Proposal {}
+tendermint_pb_modules! {
+    use super::Proposal;
+    use crate::{Signature, Error, block::Round};
+    use pb::types::Proposal as RawProposal;
 
-impl TryFrom<RawProposal> for Proposal {
-    type Error = Error;
+    impl Protobuf<RawProposal> for Proposal {}
 
-    fn try_from(value: RawProposal) -> Result<Self, Self::Error> {
-        if value.pol_round < -1 {
-            return Err(Error::negative_pol_round());
+    impl TryFrom<RawProposal> for Proposal {
+        type Error = Error;
+
+        fn try_from(value: RawProposal) -> Result<Self, Self::Error> {
+            if value.pol_round < -1 {
+                return Err(Error::negative_pol_round());
+            }
+            let pol_round = match value.pol_round {
+                -1 => None,
+                n => Some(Round::try_from(n)?),
+            };
+            Ok(Proposal {
+                msg_type: value.r#type.try_into()?,
+                height: value.height.try_into()?,
+                round: value.round.try_into()?,
+                pol_round,
+                block_id: value.block_id.map(TryInto::try_into).transpose()?,
+                timestamp: value.timestamp.map(|t| t.try_into()).transpose()?,
+                signature: Signature::new(value.signature)?,
+            })
         }
-        let pol_round = match value.pol_round {
-            -1 => None,
-            n => Some(Round::try_from(n)?),
-        };
-        Ok(Proposal {
-            msg_type: value.r#type.try_into()?,
-            height: value.height.try_into()?,
-            round: value.round.try_into()?,
-            pol_round,
-            block_id: value.block_id.map(TryInto::try_into).transpose()?,
-            timestamp: value.timestamp.map(|t| t.try_into()).transpose()?,
-            signature: Signature::new(value.signature)?,
-        })
     }
-}
 
-impl From<Proposal> for RawProposal {
-    fn from(value: Proposal) -> Self {
-        RawProposal {
-            r#type: value.msg_type.into(),
-            height: value.height.into(),
-            round: value.round.into(),
-            pol_round: value.pol_round.map_or(-1, Into::into),
-            block_id: value.block_id.map(Into::into),
-            timestamp: value.timestamp.map(Into::into),
-            signature: value.signature.map(|s| s.to_bytes()).unwrap_or_default(),
+    impl From<Proposal> for RawProposal {
+        fn from(value: Proposal) -> Self {
+            RawProposal {
+                r#type: value.msg_type.into(),
+                height: value.height.into(),
+                round: value.round.into(),
+                pol_round: value.pol_round.map_or(-1, Into::into),
+                block_id: value.block_id.map(Into::into),
+                timestamp: value.timestamp.map(Into::into),
+                signature: value.signature.map(|s| s.to_bytes()).unwrap_or_default(),
+            }
         }
     }
 }
@@ -89,13 +93,15 @@ impl Proposal {
     where
         B: BufMut,
     {
-        CanonicalProposal::new(self.clone(), chain_id).encode_length_delimited(sign_bytes)?;
+        let canonical = CanonicalProposal::new(self.clone(), chain_id);
+        Protobuf::<RawCanonicalProposal>::encode_length_delimited(&canonical, sign_bytes)?;
         Ok(true)
     }
 
     /// Create signable vector from Proposal.
     pub fn to_signable_vec(&self, chain_id: ChainId) -> Result<Vec<u8>, ProtobufError> {
-        CanonicalProposal::new(self.clone(), chain_id).encode_length_delimited_vec()
+        let canonical = CanonicalProposal::new(self.clone(), chain_id);
+        Protobuf::<RawCanonicalProposal>::encode_length_delimited_vec(&canonical)
     }
 
     /// Consensus state from this proposal - This doesn't seem to be used anywhere.
@@ -115,9 +121,8 @@ impl Proposal {
 
 #[cfg(test)]
 mod tests {
-    use core::{convert::TryInto, str::FromStr};
+    use core::str::FromStr;
 
-    use tendermint_proto::Protobuf;
     use time::macros::datetime;
 
     use crate::{
@@ -294,53 +299,57 @@ mod tests {
         assert_eq!(got, want)
     }
 
-    #[test]
-    fn test_deserialization() {
-        let dt = datetime!(2018-02-11 07:09:22.765 UTC);
-        let proposal = Proposal {
-            msg_type: Type::Proposal,
-            height: Height::from(12345_u32),
-            round: Round::from(23456_u16),
-            timestamp: Some(dt.try_into().unwrap()),
+    tendermint_pb_modules! {
+        use super::*;
 
-            pol_round: None,
-            block_id: Some(BlockId {
-                hash: Hash::from_hex_upper(
-                    Algorithm::Sha256,
-                    "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFADEADBEEFDEADBEEFBAFBAFBAFBAFBAFA",
-                )
-                .unwrap(),
-                part_set_header: Header::new(
-                    65535,
-                    Hash::from_hex_upper(
+        #[test]
+        fn test_deserialization() {
+            let dt = datetime!(2018-02-11 07:09:22.765 UTC);
+            let proposal = Proposal {
+                msg_type: Type::Proposal,
+                height: Height::from(12345_u32),
+                round: Round::from(23456_u16),
+                timestamp: Some(dt.try_into().unwrap()),
+
+                pol_round: None,
+                block_id: Some(BlockId {
+                    hash: Hash::from_hex_upper(
                         Algorithm::Sha256,
-                        "0022446688AACCEE1133557799BBDDFF0022446688AACCEE1133557799BBDDFF",
+                        "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFADEADBEEFDEADBEEFBAFBAFBAFBAFBAFA",
                     )
                     .unwrap(),
-                )
-                .unwrap(),
-            }),
-            signature: Some(dummy_signature()),
-        };
-        let want = SignProposalRequest {
-            proposal,
-            chain_id: ChainId::from_str("test_chain_id").unwrap(),
-        };
+                    part_set_header: Header::new(
+                        65535,
+                        Hash::from_hex_upper(
+                            Algorithm::Sha256,
+                            "0022446688AACCEE1133557799BBDDFF0022446688AACCEE1133557799BBDDFF",
+                        )
+                        .unwrap(),
+                    )
+                    .unwrap(),
+                }),
+                signature: Some(dummy_signature()),
+            };
+            let want = SignProposalRequest {
+                proposal,
+                chain_id: ChainId::from_str("test_chain_id").unwrap(),
+            };
 
-        let data = vec![
-            10, 176, 1, 8, 32, 16, 185, 96, 24, 160, 183, 1, 32, 255, 255, 255, 255, 255, 255, 255,
-            255, 255, 1, 42, 74, 10, 32, 222, 173, 190, 239, 222, 173, 190, 239, 186, 251, 175,
-            186, 251, 175, 186, 250, 222, 173, 190, 239, 222, 173, 190, 239, 186, 251, 175, 186,
-            251, 175, 186, 250, 18, 38, 8, 255, 255, 3, 18, 32, 0, 34, 68, 102, 136, 170, 204, 238,
-            17, 51, 85, 119, 153, 187, 221, 255, 0, 34, 68, 102, 136, 170, 204, 238, 17, 51, 85,
-            119, 153, 187, 221, 255, 50, 12, 8, 162, 216, 255, 211, 5, 16, 192, 242, 227, 236, 2,
-            58, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 13, 116, 101, 115, 116, 95, 99, 104, 97, 105, 110, 95,
-            105, 100,
-        ];
+            let data = vec![
+                10, 176, 1, 8, 32, 16, 185, 96, 24, 160, 183, 1, 32, 255, 255, 255, 255, 255, 255, 255,
+                255, 255, 1, 42, 74, 10, 32, 222, 173, 190, 239, 222, 173, 190, 239, 186, 251, 175,
+                186, 251, 175, 186, 250, 222, 173, 190, 239, 222, 173, 190, 239, 186, 251, 175, 186,
+                251, 175, 186, 250, 18, 38, 8, 255, 255, 3, 18, 32, 0, 34, 68, 102, 136, 170, 204, 238,
+                17, 51, 85, 119, 153, 187, 221, 255, 0, 34, 68, 102, 136, 170, 204, 238, 17, 51, 85,
+                119, 153, 187, 221, 255, 50, 12, 8, 162, 216, 255, 211, 5, 16, 192, 242, 227, 236, 2,
+                58, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 13, 116, 101, 115, 116, 95, 99, 104, 97, 105, 110, 95,
+                105, 100,
+            ];
 
-        let have = SignProposalRequest::decode_vec(&data).unwrap();
-        assert_eq!(have, want);
+            let have = <SignProposalRequest as Protobuf<pb::privval::SignProposalRequest>>::decode_vec(&data).unwrap();
+            assert_eq!(have, want);
+        }
     }
 }

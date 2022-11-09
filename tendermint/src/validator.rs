@@ -1,7 +1,8 @@
 //! Tendermint validators
 
 use serde::{Deserialize, Serialize};
-use tendermint_proto::{types::SimpleValidator as RawSimpleValidator, Protobuf};
+use tendermint_proto::v0_37::types::SimpleValidator as RawSimpleValidator;
+use tendermint_proto::Protobuf;
 
 use crate::{
     account, hash::Hash, merkle, prelude::*, public_key::deserialize_public_key, vote, Error,

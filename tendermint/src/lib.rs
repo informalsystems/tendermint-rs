@@ -43,6 +43,7 @@ mod moniker;
 pub mod node;
 mod prelude;
 pub mod private_key;
+pub mod privval;
 pub mod proposal;
 pub mod public_key;
 pub mod serializers;

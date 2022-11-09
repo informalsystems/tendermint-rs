@@ -1,5 +1,5 @@
 use crate::{block, prelude::*, AppHash};
-use tendermint_proto::abci as pb;
+use tendermint_proto::v0_37::abci as pb;
 
 use serde::{Deserialize, Serialize};
 

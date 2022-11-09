@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use tendermint_proto::types::TxProof as RawTxProof;
+use tendermint_proto::v0_37::types::TxProof as RawTxProof;
 use tendermint_proto::Protobuf;
 
 use crate::{merkle, prelude::*, Error, Hash};

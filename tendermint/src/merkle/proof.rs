@@ -1,6 +1,7 @@
 //! Merkle proofs
 
 use serde::{Deserialize, Serialize};
+use tendermint_proto::v0_37::crypto::Proof as RawProof;
 
 use crate::{prelude::*, serializers, Hash};
 
@@ -93,7 +94,6 @@ tendermint_pb_modules! {
     }
 
     impl Protobuf<RawProofOp> for ProofOp {}
-        impl Protobuf<RawProofOp> for ProofOp {}
 
     impl TryFrom<RawProofOp> for ProofOp {
         type Error = Error;

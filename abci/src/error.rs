@@ -1,7 +1,7 @@
 //! tendermint-abci errors
 
 use flex_error::{define_error, DisplayError};
-use tendermint_proto::abci::response::Value;
+use tendermint_proto::v0_37::abci::response::Value;
 
 define_error! {
     Error {

@@ -1,7 +1,7 @@
 //! Block parts
 
 use serde::{Deserialize, Serialize};
-use tendermint_proto::types::PartSetHeader as RawPartSetHeader;
+use tendermint_proto::v0_37::types::PartSetHeader as RawPartSetHeader;
 
 use crate::{error::Error, prelude::*, Hash};
 

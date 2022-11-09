@@ -102,7 +102,6 @@ mod tests {
     };
     use std::println;
 
-    use tendermint_proto::Protobuf;
     use time::macros::datetime;
 
     use crate::{
@@ -276,76 +275,77 @@ mod tests {
         assert_eq!(got, want);
     }
 
-    #[test]
-    fn test_sign_bytes_compatibility() {
-        let cv = CanonicalVote::new(Vote::default(), ChainId::try_from("A").unwrap());
-        let mut got = vec![];
-        // SignBytes are encoded using MarshalBinary and not MarshalBinaryBare
-        cv.encode_length_delimited(&mut got).unwrap();
-        let want = vec![
-            0x10, 0x8, 0x1, 0x11, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x2a, 0x0, 0x32, 0x1,
-            0x41,
-        ]; // Todo: Get these bytes from Go. During protobuf upgrade we didn't get to generate them.
-        assert_eq!(got, want);
-
-        // with proper (fixed size) height and round (Precommit):
-        {
-            let vt_precommit = Vote {
-                height: Height::from(1_u32),
-                round: Round::from(1_u16),
-                vote_type: Type::Precommit,
-                ..Default::default()
-            };
-            println!("{:?}", vt_precommit);
-            let cv_precommit = CanonicalVote::new(vt_precommit, ChainId::try_from("A").unwrap());
-            let got = cv_precommit.encode_vec().unwrap();
-            let want = vec![
-                0x8,  // (field_number << 3) | wire_type
-                0x2,  // PrecommitType
-                0x11, // (field_number << 3) | wire_type
-                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
-                0x19, // (field_number << 3) | wire_type
-                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // round
-                0x2a, // (field_number << 3) | wire_type
-                0x0,  // timestamp
-                0x32, // (field_number << 3) | wire_type
-                // remaining fields (chain ID):
-                0x1, 0x41,
-            ];
-            assert_eq!(got, want);
-        }
-        // with proper (fixed size) height and round (Prevote):
-        {
-            let vt_prevote = Vote {
-                height: Height::from(1_u32),
-                round: Round::from(1_u16),
-                vote_type: Type::Prevote,
-                ..Default::default()
-            };
-
-            let cv_prevote = CanonicalVote::new(vt_prevote, ChainId::try_from("A").unwrap());
-
-            let got = cv_prevote.encode_vec().unwrap();
-
-            let want = vec![
-                0x8,  // (field_number << 3) | wire_type
-                0x1,  // PrevoteType
-                0x11, // (field_number << 3) | wire_type
-                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
-                0x19, // (field_number << 3) | wire_type
-                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // round
-                0x2a, // (field_number << 3) | wire_type
-                0x0,  // timestamp
-                0x32, // (field_number << 3) | wire_type
-                // remaining fields (chain ID):
-                0x1, 0x41,
-            ];
-            assert_eq!(got, want);
-        }
-    }
-
     tendermint_pb_modules! {
         use super::*;
+        use pb::types::CanonicalVote as RawCanonicalVote;
+
+        #[test]
+        fn test_sign_bytes_compatibility() {
+            let cv = CanonicalVote::new(Vote::default(), ChainId::try_from("A").unwrap());
+            let mut got = vec![];
+            // SignBytes are encoded using MarshalBinary and not MarshalBinaryBare
+            Protobuf::<RawCanonicalVote>::encode_length_delimited(&cv, &mut got).unwrap();
+            let want = vec![
+                0x10, 0x8, 0x1, 0x11, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x2a, 0x0, 0x32, 0x1,
+                0x41,
+            ]; // Todo: Get these bytes from Go. During protobuf upgrade we didn't get to generate them.
+            assert_eq!(got, want);
+
+            // with proper (fixed size) height and round (Precommit):
+            {
+                let vt_precommit = Vote {
+                    height: Height::from(1_u32),
+                    round: Round::from(1_u16),
+                    vote_type: Type::Precommit,
+                    ..Default::default()
+                };
+                println!("{:?}", vt_precommit);
+                let cv_precommit = CanonicalVote::new(vt_precommit, ChainId::try_from("A").unwrap());
+                let got = Protobuf::<RawCanonicalVote>::encode_vec(&cv_precommit).unwrap();
+                let want = vec![
+                    0x8,  // (field_number << 3) | wire_type
+                    0x2,  // PrecommitType
+                    0x11, // (field_number << 3) | wire_type
+                    0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
+                    0x19, // (field_number << 3) | wire_type
+                    0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // round
+                    0x2a, // (field_number << 3) | wire_type
+                    0x0,  // timestamp
+                    0x32, // (field_number << 3) | wire_type
+                    // remaining fields (chain ID):
+                    0x1, 0x41,
+                ];
+                assert_eq!(got, want);
+            }
+            // with proper (fixed size) height and round (Prevote):
+            {
+                let vt_prevote = Vote {
+                    height: Height::from(1_u32),
+                    round: Round::from(1_u16),
+                    vote_type: Type::Prevote,
+                    ..Default::default()
+                };
+
+                let cv_prevote = CanonicalVote::new(vt_prevote, ChainId::try_from("A").unwrap());
+
+                let got = Protobuf::<RawCanonicalVote>::encode_vec(&cv_prevote).unwrap();
+
+                let want = vec![
+                    0x8,  // (field_number << 3) | wire_type
+                    0x1,  // PrevoteType
+                    0x11, // (field_number << 3) | wire_type
+                    0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
+                    0x19, // (field_number << 3) | wire_type
+                    0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // round
+                    0x2a, // (field_number << 3) | wire_type
+                    0x0,  // timestamp
+                    0x32, // (field_number << 3) | wire_type
+                    // remaining fields (chain ID):
+                    0x1, 0x41,
+                ];
+                assert_eq!(got, want);
+            }
+        }
 
         #[test]
         fn test_deserialization() {

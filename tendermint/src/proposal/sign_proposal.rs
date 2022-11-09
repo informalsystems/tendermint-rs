@@ -47,7 +47,7 @@ tendermint_pb_modules! {
         SignProposalRequest as RawSignProposalRequest,
         SignedProposalResponse as RawSignedProposalResponse,
     };
-    use crate::{Error, chain::Id as ChainId, prelude::*};
+    use crate::{Error, Proposal, chain::Id as ChainId, prelude::*};
     use super::{SignProposalRequest, SignedProposalResponse};
 
     impl Protobuf<RawSignProposalRequest> for SignProposalRequest {}

@@ -1,11 +1,11 @@
 //! Block headers
 
 use serde::{Deserialize, Serialize};
-use tendermint_proto::{
+use tendermint_proto::v0_37::{
     types::{BlockId as RawBlockId, Header as RawHeader},
     version::Consensus as RawConsensusVersion,
-    Protobuf,
 };
+use tendermint_proto::Protobuf;
 
 use crate::{
     account, block, chain, merkle::simple_hash_from_byte_vectors, prelude::*, AppHash, Hash, Time,

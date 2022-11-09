@@ -5,7 +5,7 @@ pub mod echo;
 #[cfg(feature = "kvstore-app")]
 pub mod kvstore;
 
-use tendermint_proto::abci::{
+use tendermint_proto::v0_37::abci::{
     request::Value, response, Request, RequestApplySnapshotChunk, RequestBeginBlock,
     RequestCheckTx, RequestDeliverTx, RequestEcho, RequestEndBlock, RequestInfo, RequestInitChain,
     RequestLoadSnapshotChunk, RequestOfferSnapshot, RequestPrepareProposal, RequestProcessProposal,

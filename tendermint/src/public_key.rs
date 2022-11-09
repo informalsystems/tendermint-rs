@@ -445,7 +445,6 @@ mod tests {
     use core::convert::TryFrom;
 
     use subtle_encoding::hex;
-    use tendermint_proto::Protobuf;
 
     use super::{PublicKey, Signature, TendermintKey};
     use crate::{prelude::*, public_key::PubKeyResponse};
@@ -512,50 +511,58 @@ mod tests {
         assert_eq!(reserialized_json.as_str(), json_string);
     }
 
-    #[test]
-    fn test_ed25519_pubkey_msg() {
-        // test-vector generated from Go
-        // import (
-        // "fmt"
-        // "github.com/tendermint/tendermint/proto/tendermint/crypto"
-        // "github.com/tendermint/tendermint/proto/tendermint/privval"
-        // )
-        //
-        // func ed25519_key() {
-        // pkr := &privval.PubKeyResponse{
-        // PubKey: &crypto.PublicKey{
-        // Sum: &crypto.PublicKey_Ed25519{Ed25519: []byte{
-        // 215, 90, 152, 1, 130, 177, 10, 183, 213, 75, 254, 211, 201, 100, 7, 58,
-        // 14, 225, 114, 243, 218, 166, 35, 37, 175, 2, 26, 104, 247, 7, 81, 26,
-        // },
-        // },
-        // },
-        // Error: nil,
-        // }
-        // pbpk, _ := pkr.Marshal()
-        // fmt.Printf("%#v\n", pbpk)
-        //
-        // }
-        let encoded = vec![
-            0xa, 0x22, 0xa, 0x20, 0xd7, 0x5a, 0x98, 0x1, 0x82, 0xb1, 0xa, 0xb7, 0xd5, 0x4b, 0xfe,
-            0xd3, 0xc9, 0x64, 0x7, 0x3a, 0xe, 0xe1, 0x72, 0xf3, 0xda, 0xa6, 0x23, 0x25, 0xaf, 0x2,
-            0x1a, 0x68, 0xf7, 0x7, 0x51, 0x1a,
-        ];
+    tendermint_pb_modules! {
+        use super::*;
+        use pb::privval::PubKeyResponse as RawPubKeyResponse;
 
-        let msg = PubKeyResponse {
-            pub_key: Some(
-                PublicKey::from_raw_ed25519(&[
-                    215, 90, 152, 1, 130, 177, 10, 183, 213, 75, 254, 211, 201, 100, 7, 58, 14,
-                    225, 114, 243, 218, 166, 35, 37, 175, 2, 26, 104, 247, 7, 81, 26,
-                ])
-                .unwrap(),
-            ),
-            error: None,
-        };
-        let got = msg.encode_vec().unwrap();
+        #[test]
+        fn test_ed25519_pubkey_msg() {
+            // test-vector generated from Go
+            // import (
+            // "fmt"
+            // "github.com/tendermint/tendermint/proto/tendermint/crypto"
+            // "github.com/tendermint/tendermint/proto/tendermint/privval"
+            // )
+            //
+            // func ed25519_key() {
+            // pkr := &privval.PubKeyResponse{
+            // PubKey: &crypto.PublicKey{
+            // Sum: &crypto.PublicKey_Ed25519{Ed25519: []byte{
+            // 215, 90, 152, 1, 130, 177, 10, 183, 213, 75, 254, 211, 201, 100, 7, 58,
+            // 14, 225, 114, 243, 218, 166, 35, 37, 175, 2, 26, 104, 247, 7, 81, 26,
+            // },
+            // },
+            // },
+            // Error: nil,
+            // }
+            // pbpk, _ := pkr.Marshal()
+            // fmt.Printf("%#v\n", pbpk)
+            //
+            // }
+            let encoded = vec![
+                0xa, 0x22, 0xa, 0x20, 0xd7, 0x5a, 0x98, 0x1, 0x82, 0xb1, 0xa, 0xb7, 0xd5, 0x4b, 0xfe,
+                0xd3, 0xc9, 0x64, 0x7, 0x3a, 0xe, 0xe1, 0x72, 0xf3, 0xda, 0xa6, 0x23, 0x25, 0xaf, 0x2,
+                0x1a, 0x68, 0xf7, 0x7, 0x51, 0x1a,
+            ];
 
-        assert_eq!(got, encoded);
-        assert_eq!(PubKeyResponse::decode_vec(&encoded).unwrap(), msg);
+            let msg = PubKeyResponse {
+                pub_key: Some(
+                    PublicKey::from_raw_ed25519(&[
+                        215, 90, 152, 1, 130, 177, 10, 183, 213, 75, 254, 211, 201, 100, 7, 58, 14,
+                        225, 114, 243, 218, 166, 35, 37, 175, 2, 26, 104, 247, 7, 81, 26,
+                    ])
+                    .unwrap(),
+                ),
+                error: None,
+            };
+            let got = Protobuf::<RawPubKeyResponse>::encode_vec(&msg).unwrap();
+
+            assert_eq!(got, encoded);
+            let decoded = <PubKeyResponse as Protobuf<RawPubKeyResponse>>::decode_vec(
+                &encoded
+            ).unwrap();
+            assert_eq!(decoded, msg);
+        }
     }
 
     // From https://datatracker.ietf.org/doc/html/rfc8032#section-7.1

@@ -6,9 +6,9 @@ use core::{
 };
 
 use serde::{Deserialize, Serialize};
-use tendermint_proto::{
-    google::protobuf::Duration as RawDuration, types::Evidence as RawEvidence, Protobuf,
-};
+use tendermint_proto::google::protobuf::Duration as RawDuration;
+use tendermint_proto::v0_37::types::Evidence as RawEvidence;
+use tendermint_proto::Protobuf;
 
 use crate::{error::Error, prelude::*, serializers, vote::Power, Time, Vote};
 

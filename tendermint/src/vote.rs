@@ -9,7 +9,8 @@ use core::{fmt, str::FromStr};
 
 use bytes::BufMut;
 use serde::{Deserialize, Serialize};
-use tendermint_proto::{types::Vote as RawVote, Error as ProtobufError, Protobuf};
+use tendermint_proto::v0_37::types::{CanonicalVote as RawCanonicalVote, Vote as RawVote};
+use tendermint_proto::{Error as ProtobufError, Protobuf};
 
 pub use self::{
     canonical_vote::CanonicalVote, power::Power, sign_vote::*, validator_index::ValidatorIndex,
@@ -130,13 +131,15 @@ impl Vote {
     where
         B: BufMut,
     {
-        CanonicalVote::new(self.clone(), chain_id).encode_length_delimited(sign_bytes)?;
+        let canonical = CanonicalVote::new(self.clone(), chain_id);
+        Protobuf::<RawCanonicalVote>::encode_length_delimited(&canonical, sign_bytes)?;
         Ok(true)
     }
 
     /// Create signable vector from Vote.
     pub fn to_signable_vec(&self, chain_id: ChainId) -> Result<Vec<u8>, ProtobufError> {
-        CanonicalVote::new(self.clone(), chain_id).encode_length_delimited_vec()
+        let canonical = CanonicalVote::new(self.clone(), chain_id);
+        Protobuf::<RawCanonicalVote>::encode_length_delimited_vec(&canonical)
     }
 
     /// Consensus state from this vote - This doesn't seem to be used anywhere.
@@ -215,7 +218,7 @@ impl SignedVote {
 
     /// Return the bytes (of the canonicalized vote) that were signed.
     pub fn sign_bytes(&self) -> Vec<u8> {
-        self.vote.encode_length_delimited_vec().unwrap()
+        Protobuf::<RawCanonicalVote>::encode_length_delimited_vec(&self.vote).unwrap()
     }
 
     /// Return the actual signature on the canonicalized vote.
