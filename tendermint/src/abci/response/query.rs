@@ -2,13 +2,13 @@ use bytes::Bytes;
 
 /// XXX(hdevalence): hide merkle::proof and re-export its contents from merkle?
 use crate::merkle::proof as merkle;
-use crate::{block, prelude::*};
+use crate::{abci::Code, block, prelude::*};
 
 #[doc = include_str!("../doc/response-query.md")]
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct Query {
     /// The response code for the query.
-    pub code: u32,
+    pub code: Code,
     /// The output of the application's logger.
     ///
     /// **May be non-deterministic**.
@@ -47,7 +47,7 @@ use tendermint_proto::{abci as pb, Protobuf};
 impl From<Query> for pb::ResponseQuery {
     fn from(query: Query) -> Self {
         Self {
-            code: query.code,
+            code: query.code.into(),
             log: query.log,
             info: query.info,
             index: query.index,
@@ -65,7 +65,7 @@ impl TryFrom<pb::ResponseQuery> for Query {
 
     fn try_from(query: pb::ResponseQuery) -> Result<Self, Self::Error> {
         Ok(Self {
-            code: query.code,
+            code: query.code.into(),
             log: query.log,
             info: query.info,
             index: query.index,

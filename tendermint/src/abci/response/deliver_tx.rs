@@ -1,18 +1,22 @@
 use bytes::Bytes;
+use serde::{Deserialize, Serialize};
 
-use super::super::Event;
+use super::super::{Code, Event};
 use crate::prelude::*;
+use crate::serializers;
 
 #[doc = include_str!("../doc/response-delivertx.md")]
-#[derive(Clone, PartialEq, Eq, Debug, Default)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
+#[serde(default)]
 pub struct DeliverTx {
     /// The response code.
     ///
     /// This code should be `0` only if the transaction is fully valid. However,
     /// invalid transactions included in a block will still be executed against
     /// the application state.
-    pub code: u32,
+    pub code: Code,
     /// Result bytes, if any.
+    #[serde(with = "serializers::nullable")]
     pub data: Bytes,
     /// The output of the application's logger.
     ///
@@ -23,8 +27,10 @@ pub struct DeliverTx {
     /// **May be non-deterministic**.
     pub info: String,
     /// Amount of gas requested for the transaction.
+    #[serde(with = "serializers::from_str")]
     pub gas_wanted: i64,
     /// Amount of gas consumed by the transaction.
+    #[serde(with = "serializers::from_str")]
     pub gas_used: i64,
     /// Events that occurred while executing the transaction.
     pub events: Vec<Event>,
@@ -43,7 +49,7 @@ use tendermint_proto::{abci as pb, Protobuf};
 impl From<DeliverTx> for pb::ResponseDeliverTx {
     fn from(deliver_tx: DeliverTx) -> Self {
         Self {
-            code: deliver_tx.code,
+            code: deliver_tx.code.into(),
             data: deliver_tx.data,
             log: deliver_tx.log,
             info: deliver_tx.info,
@@ -60,7 +66,7 @@ impl TryFrom<pb::ResponseDeliverTx> for DeliverTx {
 
     fn try_from(deliver_tx: pb::ResponseDeliverTx) -> Result<Self, Self::Error> {
         Ok(Self {
-            code: deliver_tx.code,
+            code: deliver_tx.code.into(),
             data: deliver_tx.data,
             log: deliver_tx.log,
             info: deliver_tx.info,

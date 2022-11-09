@@ -1,9 +1,9 @@
 //! `/broadcast_evidence`: broadcast an evidence.
 
 use serde::{Deserialize, Serialize};
-use tendermint::evidence::Evidence;
+use tendermint::{evidence::Evidence, Hash};
 
-use crate::{abci::transaction, Method};
+use crate::Method;
 
 /// `/broadcast_evidence`: broadcast an evidence.
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
@@ -33,8 +33,7 @@ impl crate::SimpleRequest for Request {}
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {
     /// Evidence hash
-    /// TODO: transaction::Hash should be tmhash (github.com/tendermint/tendermint/crypto/tmhash)
-    pub hash: transaction::Hash,
+    pub hash: Hash,
 }
 
 impl crate::Response for Response {}

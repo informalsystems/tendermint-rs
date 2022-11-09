@@ -23,11 +23,12 @@ mod rpc {
 
     use futures::StreamExt;
     use tendermint::{
+        abci::Code,
+        Hash,
         block::Height,
         merkle::simple_hash_from_byte_vectors,
     };
     use tendermint_rpc::{
-        abci::{Code, Log, Transaction},
         endpoint::tx::Response as ResultTx,
         event::{Event, EventData, TxInfo},
         query::{EventType, Query},
@@ -84,7 +85,7 @@ mod rpc {
             .unwrap();
 
         assert_eq!(abci_query.code, Code::Ok);
-        assert_eq!(abci_query.log, Log::from("does not exist"));
+        assert_eq!(abci_query.log, "does not exist");
         assert_eq!(abci_query.info, String::new());
         assert_eq!(abci_query.index, 0);
         assert_eq!(&abci_query.key, &Vec::<u8>::new());
@@ -290,7 +291,7 @@ mod rpc {
         let (mut subs_client, driver) = localhost_websocket_client().await;
         let driver_handle = tokio::spawn(async move { driver.run().await });
 
-        let tx = Transaction::from(String::from("txtest=value").into_bytes());
+        let tx = "txtest=value".as_bytes().to_vec();
         let (hash, _) = broadcast_tx(&rpc_client, &mut subs_client, tx.clone())
             .await
             .unwrap();
@@ -320,7 +321,7 @@ mod rpc {
             for (tx_count, val) in broadcast_tx_values.into_iter().enumerate() {
                 let tx = format!("tx{}={}", tx_count, val);
                 inner_client
-                    .broadcast_tx_async(Transaction::from(tx.into_bytes()))
+                    .broadcast_tx_async(tx)
                     .await
                     .unwrap();
             }
@@ -388,7 +389,7 @@ mod rpc {
             for (tx_count, val) in broadcast_tx_values.into_iter().enumerate() {
                 let tx = format!("tx{}={}", tx_count, val);
                 inner_client
-                    .broadcast_tx_async(Transaction::from(tx.into_bytes()))
+                    .broadcast_tx_async(tx)
                     .await
                     .unwrap();
                 tokio::time::sleep(Duration::from_millis(100)).await;
@@ -436,11 +437,11 @@ mod rpc {
         let (mut subs_client, driver) = localhost_websocket_client().await;
         let driver_handle = tokio::spawn(async move { driver.run().await });
 
-        let tx = "tx_search_key=tx_search_value".to_string();
+        let tx = "tx_search_key=tx_search_value";
         let (_, tx_info) = broadcast_tx(
             &rpc_client,
             &mut subs_client,
-            Transaction::from(tx.into_bytes()),
+            tx,
         )
         .await
         .unwrap();
@@ -469,7 +470,7 @@ mod rpc {
             .filter(|tx| tx.height.value() == (tx_info.height as u64))
             .collect::<Vec<&ResultTx>>();
         assert_eq!(1, txs.len());
-        assert_eq!(tx_info.tx, txs[0].tx.as_bytes());
+        assert_eq!(tx_info.tx, txs[0].tx);
 
         subs_client.close().unwrap();
         driver_handle.await.unwrap().unwrap();
@@ -478,7 +479,7 @@ mod rpc {
     async fn tx_search_by_hash() {
         let client = localhost_http_client();
 
-        let tx = Transaction::from(String::from("tx_search_by=hash").into_bytes());
+        let tx = "tx_search_by=hash";
         let r = client.broadcast_tx_commit(tx).await.unwrap();
         let hash = r.hash;
 
@@ -500,8 +501,9 @@ mod rpc {
     async fn broadcast_tx(
         http_client: &HttpClient,
         websocket_client: &mut WebSocketClient,
-        tx: Transaction,
-    ) -> Result<(tendermint_rpc::abci::transaction::Hash, TxInfo), tendermint_rpc::Error> {
+        tx: impl Into<Vec<u8>>,
+    ) -> Result<(Hash, TxInfo), tendermint_rpc::Error> {
+        let tx = tx.into();
         let mut subs = websocket_client.subscribe(EventType::Tx.into()).await?;
         let r = http_client.broadcast_tx_async(tx.clone()).await?;
 
@@ -515,7 +517,7 @@ mod rpc {
                     EventData::Tx { tx_result } => {
                         let tx_result_bytes: &[u8] = tx_result.tx.as_ref();
                         // Make sure we have the right transaction here
-                        assert_eq!(tx.as_bytes(), tx_result_bytes);
+                        assert_eq!(tx, tx_result_bytes);
                         Ok((r.hash, tx_result))
                     },
                     _ => panic!("Unexpected event: {:?}", ev),

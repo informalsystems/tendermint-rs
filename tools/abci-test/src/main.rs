@@ -3,7 +3,6 @@
 use futures::StreamExt;
 use structopt::StructOpt;
 use tendermint_config::net::Address;
-use tendermint_rpc::abci::Transaction;
 use tendermint_rpc::event::EventData;
 use tendermint_rpc::query::EventType;
 use tendermint_rpc::{Client, SubscriptionClient, WebSocketClient};
@@ -80,7 +79,7 @@ async fn run_tests(client: &mut WebSocketClient) -> Result<(), Box<dyn std::erro
     raw_tx.extend(raw_tx_value.clone());
 
     let _ = client
-        .broadcast_tx_async(Transaction::from(raw_tx.clone()))
+        .broadcast_tx_async(raw_tx.clone())
         .await?;
 
     info!("Checking for transaction events");

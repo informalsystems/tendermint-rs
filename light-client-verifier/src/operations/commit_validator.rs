@@ -64,7 +64,7 @@ impl<C> CommitValidator<C> {
                 } => validator_address,
             };
 
-            if validator_set.validator(*validator_address) == None {
+            if validator_set.validator(*validator_address).is_none() {
                 return Err(VerificationError::faulty_signer(
                     *validator_address,
                     self.hasher.hash_validator_set(validator_set),
