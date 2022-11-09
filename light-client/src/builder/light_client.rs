@@ -1,6 +1,6 @@
 //! DSL for building a light client [`Instance`]
 
-use tendermint::{block::Height, Hash};
+use tendermint::{block::Height, crypto::DefaultHostFunctionsManager, Hash};
 #[cfg(feature = "rpc-client")]
 use {
     crate::components::clock::SystemClock,
@@ -47,7 +47,7 @@ pub struct LightClientBuilder<State> {
     hasher: Box<dyn Hasher>,
     verifier: Box<dyn Verifier>,
     scheduler: Box<dyn Scheduler>,
-    predicates: Box<dyn VerificationPredicates>,
+    predicates: Box<dyn VerificationPredicates<CryptoProvider = DefaultHostFunctionsManager>>,
     light_store: Box<dyn LightStore>,
 
     #[allow(dead_code)]
@@ -106,7 +106,7 @@ impl LightClientBuilder<NoTrustedState> {
         clock: Box<dyn Clock>,
         verifier: Box<dyn Verifier>,
         scheduler: Box<dyn Scheduler>,
-        predicates: Box<dyn VerificationPredicates>,
+        predicates: Box<dyn VerificationPredicates<CryptoProvider = DefaultHostFunctionsManager>>,
     ) -> Self {
         Self {
             peer_id,

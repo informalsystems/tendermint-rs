@@ -2,11 +2,12 @@
 
 use preds::{ProdPredicates, VerificationPredicates};
 use serde::{Deserialize, Serialize};
+use tendermint::crypto::{CryptoProvider, DefaultHostFunctionsManager};
 
 use crate::{
     errors::{ErrorExt, VerificationError, VerificationErrorDetail},
     operations::{
-        voting_power::VotingPowerTally, CommitValidator, Hasher, ProdCommitValidator, ProdHasher,
+        voting_power::VotingPowerTally, Hasher, ProdCommitValidator, ProdHasher,
         ProdVotingPowerCalculator, VotingPowerCalculator,
     },
     options::Options,
@@ -71,54 +72,59 @@ macro_rules! verdict {
 /// Predicate verifier encapsulating components necessary to facilitate
 /// verification.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PredicateVerifier<P, C, V, H> {
+pub struct PredicateVerifier<P, C, H, CP> {
     predicates: P,
     voting_power_calculator: C,
-    commit_validator: V,
+    commit_validator: ProdCommitValidator<CP>,
     hasher: H,
 }
 
-impl<P, C, V, H> Default for PredicateVerifier<P, C, V, H>
+impl<P, C, H, CP> Default for PredicateVerifier<P, C, H, CP>
 where
     P: Default,
     C: Default,
-    V: Default,
     H: Default,
+    CP: CryptoProvider,
 {
     fn default() -> Self {
         Self {
             predicates: P::default(),
             voting_power_calculator: C::default(),
-            commit_validator: V::default(),
+            commit_validator: ProdCommitValidator::default(),
             hasher: H::default(),
         }
     }
 }
 
-impl<P, C, V, H> PredicateVerifier<P, C, V, H>
+impl<P, C, H, CP> PredicateVerifier<P, C, H, CP>
 where
     P: VerificationPredicates,
     C: VotingPowerCalculator,
-    V: CommitValidator,
     H: Hasher,
+    CP: CryptoProvider,
 {
     /// Constructor.
-    pub fn new(predicates: P, voting_power_calculator: C, commit_validator: V, hasher: H) -> Self {
+    pub fn new(
+        predicates: P,
+        voting_power_calculator: C,
+        commit_validator: ProdCommitValidator<CP>,
+        hasher: H,
+    ) -> Self {
         Self {
             predicates,
             voting_power_calculator,
-            commit_validator,
             hasher,
+            commit_validator,
         }
     }
 }
 
-impl<P, C, V, H> Verifier for PredicateVerifier<P, C, V, H>
+impl<P, C, H, CP> Verifier for PredicateVerifier<P, C, H, CP>
 where
-    P: VerificationPredicates,
+    P: VerificationPredicates + VerificationPredicates<CryptoProvider = CP>,
     C: VotingPowerCalculator,
-    V: CommitValidator,
     H: Hasher,
+    CP: CryptoProvider + Sync + Send,
 {
     /// Validate the given light block state.
     ///
@@ -183,7 +189,7 @@ where
         verdict!(self.predicates.valid_commit(
             untrusted.signed_header,
             untrusted.validators,
-            &self.commit_validator,
+            self.commit_validator.as_ref(),
         ));
 
         // Check that the untrusted block is more recent than the trusted state
@@ -229,5 +235,9 @@ where
 }
 
 /// The default production implementation of the [`PredicateVerifier`].
-pub type ProdVerifier =
-    PredicateVerifier<ProdPredicates, ProdVotingPowerCalculator, ProdCommitValidator, ProdHasher>;
+pub type ProdVerifier = PredicateVerifier<
+    ProdPredicates,
+    ProdVotingPowerCalculator,
+    ProdHasher,
+    DefaultHostFunctionsManager,
+>;

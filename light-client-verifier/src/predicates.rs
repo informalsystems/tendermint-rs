@@ -2,7 +2,11 @@
 
 use core::time::Duration;
 
-use tendermint::{block::Height, hash::Hash};
+use tendermint::{
+    block::Height,
+    crypto::{CryptoProvider, DefaultHostFunctionsManager},
+    hash::Hash,
+};
 
 use crate::{
     errors::VerificationError,
@@ -15,7 +19,9 @@ use crate::{
 /// of the `VerificationPredicates` trait.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct ProdPredicates;
-impl VerificationPredicates for ProdPredicates {}
+impl VerificationPredicates for ProdPredicates {
+    type CryptoProvider = DefaultHostFunctionsManager;
+}
 
 /// Defines the various predicates used to validate and verify light blocks.
 ///
@@ -24,6 +30,7 @@ impl VerificationPredicates for ProdPredicates {}
 /// This enables test implementations to only override a single method rather than
 /// have to re-define every predicate.
 pub trait VerificationPredicates: Send + Sync {
+    type CryptoProvider: CryptoProvider;
     /// Compare the provided validator_set_hash against the hash produced from hashing the validator
     /// set.
     fn validator_sets_match(
@@ -84,7 +91,7 @@ pub trait VerificationPredicates: Send + Sync {
         &self,
         signed_header: &SignedHeader,
         validators: &ValidatorSet,
-        commit_validator: &dyn CommitValidator,
+        commit_validator: &CommitValidator<Self::CryptoProvider>,
     ) -> Result<(), VerificationError> {
         commit_validator.validate(signed_header, validators)?;
         commit_validator.validate_full(signed_header, validators)?;
@@ -471,7 +478,7 @@ mod tests {
 
         // Test scenarios -->
         // 1. valid commit - must result "Ok"
-        let mut result_ok = vp.valid_commit(&signed_header, &val_set, &commit_validator);
+        let mut result_ok = vp.valid_commit(&signed_header, &val_set, commit_validator.as_ref());
 
         assert!(result_ok.is_ok());
 
@@ -479,7 +486,7 @@ mod tests {
         let signatures = signed_header.commit.signatures.clone();
         signed_header.commit.signatures = vec![];
 
-        let mut result_err = vp.valid_commit(&signed_header, &val_set, &commit_validator);
+        let mut result_err = vp.valid_commit(&signed_header, &val_set, commit_validator.as_ref());
 
         match result_err {
             Err(VerificationError(VerificationErrorDetail::NoSignatureForCommit(_), _)) => {},
@@ -491,7 +498,7 @@ mod tests {
         let mut bad_sigs = vec![signatures.clone().swap_remove(1)];
         signed_header.commit.signatures = bad_sigs.clone();
 
-        result_err = vp.valid_commit(&signed_header, &val_set, &commit_validator);
+        result_err = vp.valid_commit(&signed_header, &val_set, commit_validator.as_ref());
 
         match result_err {
             Err(VerificationError(VerificationErrorDetail::MismatchPreCommitLength(e), _)) => {
@@ -504,7 +511,7 @@ mod tests {
         // 4. commit.BlockIdFlagAbsent - should be "Ok"
         bad_sigs.push(CommitSig::BlockIdFlagAbsent);
         signed_header.commit.signatures = bad_sigs;
-        result_ok = vp.valid_commit(&signed_header, &val_set, &commit_validator);
+        result_ok = vp.valid_commit(&signed_header, &val_set, commit_validator.as_ref());
         assert!(result_ok.is_ok());
 
         // 5. faulty signer - must return error
@@ -523,7 +530,7 @@ mod tests {
         result_err = vp.valid_commit(
             &signed_header,
             &val_set_with_faulty_signer,
-            &commit_validator,
+            commit_validator.as_ref(),
         );
 
         match result_err {

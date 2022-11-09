@@ -1,5 +1,7 @@
 //! Provides an interface and default implementation for the `CommitValidator` operation
 
+use core::marker::PhantomData;
+
 use tendermint::block::CommitSig;
 
 use crate::{
@@ -8,45 +10,14 @@ use crate::{
     types::{SignedHeader, ValidatorSet},
 };
 
-/// Validates the commit associated with a header against a validator set
-pub trait CommitValidator: Send + Sync {
-    /// Perform basic validation
-    fn validate(
-        &self,
-        signed_header: &SignedHeader,
-        validators: &ValidatorSet,
-    ) -> Result<(), VerificationError>;
-
-    /// Perform full validation, only necessary if we do full verification (2/3)
-    fn validate_full(
-        &self,
-        signed_header: &SignedHeader,
-        validator_set: &ValidatorSet,
-    ) -> Result<(), VerificationError>;
-}
-
-/// Production-ready implementation of a commit validator
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ProdCommitValidator {
+pub struct CommitValidator<C> {
     hasher: ProdHasher,
+    _c: PhantomData<C>,
 }
 
-impl ProdCommitValidator {
-    /// Create a new commit validator using the given [`Hasher`]
-    /// to compute the hash of headers and validator sets.
-    pub fn new(hasher: ProdHasher) -> Self {
-        Self { hasher }
-    }
-}
-
-impl Default for ProdCommitValidator {
-    fn default() -> Self {
-        Self::new(ProdHasher::default())
-    }
-}
-
-impl CommitValidator for ProdCommitValidator {
-    fn validate(
+impl<C> CommitValidator<C> {
+    pub fn validate(
         &self,
         signed_header: &SignedHeader,
         validator_set: &ValidatorSet,
@@ -77,7 +48,7 @@ impl CommitValidator for ProdCommitValidator {
     //
     // It returns `ImplementationSpecific` error if it detects a signer
     // that is not present in the validator set
-    fn validate_full(
+    pub fn validate_full(
         &self,
         signed_header: &SignedHeader,
         validator_set: &ValidatorSet,
@@ -102,5 +73,41 @@ impl CommitValidator for ProdCommitValidator {
         }
 
         Ok(())
+    }
+}
+
+/// The batteries-included validator, for when you don't mind the dependencies on
+/// the full rust-crypto stack.
+#[cfg(feature = "rust-crypto")]
+pub type ProdCommitValidator = CommitValidator<RustCryptoProvider>;
+
+#[cfg(not(feature = "rust-crypto"))]
+/// Production-ready implementation of a commit validator
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProdCommitValidator<C> {
+    inner: CommitValidator<C>,
+}
+
+impl<C> AsRef<CommitValidator<C>> for ProdCommitValidator<C> {
+    fn as_ref(&self) -> &CommitValidator<C> {
+        &self.inner
+    }
+}
+impl<C> ProdCommitValidator<C> {
+    /// Create a new commit validator using the given [`Hasher`]
+    /// to compute the hash of headers and validator sets.
+    pub fn new(hasher: ProdHasher) -> Self {
+        Self {
+            inner: CommitValidator {
+                hasher,
+                _c: PhantomData::default(),
+            },
+        }
+    }
+}
+
+impl<C> Default for ProdCommitValidator<C> {
+    fn default() -> Self {
+        Self::new(ProdHasher::default())
     }
 }
