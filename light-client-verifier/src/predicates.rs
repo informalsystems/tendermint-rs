@@ -185,6 +185,23 @@ pub trait VerificationPredicates: Send + Sync {
         Ok(())
     }
 
+    /// Check that there is enough signers overlap between the given, untrusted validator set
+    /// and the untrusted signed header based on the specified trust threshold.
+    fn has_specified_signers_overlap(
+        &self,
+        untrusted_sh: &SignedHeader,
+        untrusted_validators: &ValidatorSet,
+        calculator: &dyn VotingPowerCalculator,
+        trust_threshold: TrustThreshold,
+    ) -> Result<(), VerificationError> {
+        calculator.check_signers_overlap_level(
+            untrusted_sh,
+            untrusted_validators,
+            trust_threshold,
+        )?;
+        Ok(())
+    }
+
     /// Check that the hash of the next validator set in the trusted block matches
     /// the hash of the validator set in the untrusted one.
     fn valid_next_validator_set(

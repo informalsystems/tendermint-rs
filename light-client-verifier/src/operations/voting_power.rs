@@ -69,12 +69,12 @@ pub trait VotingPowerCalculator: Send + Sync {
 
     /// Check against the given threshold that there is enough signers
     /// overlap between an untrusted header and untrusted validator set
-    fn check_signers_overlap(
+    fn check_enough_signers_overlap(
         &self,
         untrusted_header: &SignedHeader,
         untrusted_validators: &ValidatorSet,
+        trust_threshold: TrustThreshold,
     ) -> Result<(), VerificationError> {
-        let trust_threshold = TrustThreshold::TWO_THIRDS;
         let voting_power =
             self.voting_power_in(untrusted_header, untrusted_validators, trust_threshold)?;
 
@@ -85,6 +85,19 @@ pub trait VotingPowerCalculator: Send + Sync {
                 voting_power,
             ))
         }
+    }
+
+    /// Check if there is 2/3rd overlap between an untrusted header and untrusted validator set
+    fn check_signers_overlap(
+        &self,
+        untrusted_header: &SignedHeader,
+        untrusted_validators: &ValidatorSet,
+    ) -> Result<(), VerificationError> {
+        self.check_signers_overlap_level(
+            untrusted_header,
+            untrusted_validators,
+            TrustThreshold::TWO_THIRDS,
+        )
     }
 
     /// Compute the voting power in a header and its commit against a validator set.

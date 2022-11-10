@@ -11,7 +11,7 @@ use crate::{
     },
     options::Options,
     predicates as preds,
-    types::{Time, TrustedBlockState, UntrustedBlockState},
+    types::{Time, TrustThreshold, TrustedBlockState, UntrustedBlockState},
 };
 
 /// Represents the result of the verification performed by the
@@ -56,6 +56,16 @@ pub trait Verifier: Send + Sync {
         trusted: TrustedBlockState<'_>,
         options: &Options,
         now: Time,
+    ) -> Verdict;
+
+    /// Perform light verification.
+    fn verify_light(&self, untrusted: UntrustedBlockState<'_>) -> Verdict;
+
+    /// Perform light verification with specified trust level.
+    fn verify_light_trusting(
+        &self,
+        untrusted: UntrustedBlockState<'_>,
+        trust_threshold: TrustThreshold,
     ) -> Verdict;
 }
 
@@ -222,6 +232,61 @@ where
             untrusted.signed_header,
             untrusted.validators,
             &self.voting_power_calculator,
+        ));
+
+        Verdict::Success
+    }
+
+    fn verify_light(&self, untrusted: UntrustedBlockState<'_>) -> Verdict {
+        // Ensure the header matches the commit
+        verdict!(self.predicates.header_matches_commit(
+            &untrusted.signed_header.header,
+            untrusted.signed_header.commit.block_id.hash,
+            &self.hasher,
+        ));
+
+        // Additional implementation specific validation
+        verdict!(self.predicates.valid_commit(
+            untrusted.signed_header,
+            untrusted.validators,
+            &self.commit_validator,
+        ));
+
+        // Verify that more than 2/3 of the validators correctly committed the block.
+        verdict!(self.predicates.has_sufficient_signers_overlap(
+            untrusted.signed_header,
+            untrusted.validators,
+            &self.voting_power_calculator,
+        ));
+
+        Verdict::Success
+    }
+
+    fn verify_light_trusting(
+        &self,
+        untrusted: UntrustedBlockState<'_>,
+        trust_threshold: TrustThreshold,
+    ) -> Verdict {
+        // Ensure the header matches the commit
+        verdict!(self.predicates.header_matches_commit(
+            &untrusted.signed_header.header,
+            untrusted.signed_header.commit.block_id.hash,
+            &self.hasher,
+        ));
+
+        // Additional implementation specific validation
+        verdict!(self.predicates.valid_commit(
+            untrusted.signed_header,
+            untrusted.validators,
+            &self.commit_validator,
+        ));
+
+        // Verify that more than 2/3 of the validators correctly committed the block.
+        verdict!(self.predicates.has_specified_signers_overlap(
+            untrusted.signed_header,
+            untrusted.validators,
+            &self.voting_power_calculator,
+            trust_threshold
         ));
 
         Verdict::Success
