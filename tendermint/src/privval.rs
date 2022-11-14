@@ -4,7 +4,7 @@
 
 use crate::prelude::*;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RemoteSignerError {
     pub code: i32,
     pub description: String,
