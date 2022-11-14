@@ -20,7 +20,7 @@ use ed25519_dalek::{self as ed25519, Signer, Verifier};
 use merlin::Transcript;
 use rand_core::OsRng;
 use subtle::ConstantTimeEq;
-use tendermint_proto as proto;
+use tendermint_proto::v0_37 as proto;
 use tendermint_std_ext::TryClone;
 use x25519_dalek::{EphemeralSecret, PublicKey as EphemeralPublic};
 

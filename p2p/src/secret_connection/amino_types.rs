@@ -4,7 +4,7 @@ use core::convert::TryFrom;
 
 use ed25519_dalek as ed25519;
 use prost_derive::Message;
-use tendermint_proto as proto;
+use tendermint_proto::v0_37 as proto;
 
 use crate::error::Error;
 
@@ -35,7 +35,7 @@ impl AuthSigMessage {
     }
 }
 
-impl TryFrom<AuthSigMessage> for tendermint_proto::p2p::AuthSigMessage {
+impl TryFrom<AuthSigMessage> for proto::p2p::AuthSigMessage {
     type Error = Error;
 
     fn try_from(amino_msg: AuthSigMessage) -> Result<Self, Error> {

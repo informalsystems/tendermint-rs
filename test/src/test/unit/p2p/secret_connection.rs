@@ -7,7 +7,7 @@ use std::{
 use ed25519_dalek::{self as ed25519};
 use rand_core::OsRng;
 use tendermint_p2p::secret_connection::{sort32, Handshake, SecretConnection, Version};
-use tendermint_proto as proto;
+use tendermint_proto::v0_37 as proto;
 use x25519_dalek::PublicKey as EphemeralPublic;
 
 use crate::pipe;
