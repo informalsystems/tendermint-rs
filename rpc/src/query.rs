@@ -442,16 +442,31 @@ pub enum Condition {
     Exists(String),
 }
 
+impl Condition {
+    /// Return the key that this condition applies to
+    pub fn key(&self) -> &str {
+        match self {
+            Self::Eq(key, _) => key,
+            Self::Lt(key, _) => key,
+            Self::Lte(key, _) => key,
+            Self::Gt(key, _) => key,
+            Self::Gte(key, _) => key,
+            Self::Contains(key, _) => key,
+            Self::Exists(key) => key,
+        }
+    }
+}
+
 impl fmt::Display for Condition {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Condition::Eq(key, op) => write!(f, "{} = {}", key, op),
-            Condition::Lt(key, op) => write!(f, "{} < {}", key, op),
-            Condition::Lte(key, op) => write!(f, "{} <= {}", key, op),
-            Condition::Gt(key, op) => write!(f, "{} > {}", key, op),
-            Condition::Gte(key, op) => write!(f, "{} >= {}", key, op),
-            Condition::Contains(key, op) => write!(f, "{} CONTAINS {}", key, escape(op)),
-            Condition::Exists(key) => write!(f, "{} EXISTS", key),
+            Self::Eq(key, op) => write!(f, "{} = {}", key, op),
+            Self::Lt(key, op) => write!(f, "{} < {}", key, op),
+            Self::Lte(key, op) => write!(f, "{} <= {}", key, op),
+            Self::Gt(key, op) => write!(f, "{} > {}", key, op),
+            Self::Gte(key, op) => write!(f, "{} >= {}", key, op),
+            Self::Contains(key, op) => write!(f, "{} CONTAINS {}", key, escape(op)),
+            Self::Exists(key) => write!(f, "{} EXISTS", key),
         }
     }
 }
