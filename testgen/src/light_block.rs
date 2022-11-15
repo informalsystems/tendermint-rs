@@ -107,10 +107,10 @@ impl LightBlock {
     }
 
     pub fn new_default_with_validators(height: u64, validators: &[Validator]) -> Self {
-        let header = Header::new(&validators)
+        let header = Header::new(validators)
             .height(height)
             .chain_id("test-chain")
-            .next_validators(&validators)
+            .next_validators(validators)
             .time(Time::from_unix_timestamp(height as i64, 0).unwrap()); // just wanted to initialize time with some value
 
         let commit = Commit::new(header.clone(), 1);
