@@ -93,7 +93,7 @@ pub trait VotingPowerCalculator: Send + Sync {
         untrusted_header: &SignedHeader,
         untrusted_validators: &ValidatorSet,
     ) -> Result<(), VerificationError> {
-        self.check_signers_overlap_level(
+        self.check_enough_signers_overlap(
             untrusted_header,
             untrusted_validators,
             TrustThreshold::TWO_THIRDS,

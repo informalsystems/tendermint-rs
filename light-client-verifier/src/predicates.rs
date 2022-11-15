@@ -194,7 +194,7 @@ pub trait VerificationPredicates: Send + Sync {
         calculator: &dyn VotingPowerCalculator,
         trust_threshold: TrustThreshold,
     ) -> Result<(), VerificationError> {
-        calculator.check_signers_overlap_level(
+        calculator.check_enough_signers_overlap(
             untrusted_sh,
             untrusted_validators,
             trust_threshold,
