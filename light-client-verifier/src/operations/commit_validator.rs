@@ -3,6 +3,8 @@
 use core::marker::PhantomData;
 
 use tendermint::block::CommitSig;
+#[cfg(feature = "rust-crypto")]
+use tendermint::crypto::DefaultHostFunctionsManager;
 
 use crate::{
     errors::VerificationError,
@@ -79,7 +81,7 @@ impl<C> CommitValidator<C> {
 /// The batteries-included validator, for when you don't mind the dependencies on
 /// the full rust-crypto stack.
 #[cfg(feature = "rust-crypto")]
-pub type ProdCommitValidator = CommitValidator<RustCryptoProvider>;
+pub type ProdCommitValidator = CommitValidator<DefaultHostFunctionsManager>;
 
 #[cfg(not(feature = "rust-crypto"))]
 /// Production-ready implementation of a commit validator
@@ -88,11 +90,21 @@ pub struct ProdCommitValidator<C> {
     inner: CommitValidator<C>,
 }
 
+#[cfg(not(feature = "rust-crypto"))]
 impl<C> AsRef<CommitValidator<C>> for ProdCommitValidator<C> {
     fn as_ref(&self) -> &CommitValidator<C> {
         &self.inner
     }
 }
+
+#[cfg(feature = "rust-crypto")]
+impl AsRef<CommitValidator<DefaultHostFunctionsManager>> for ProdCommitValidator {
+    fn as_ref(&self) -> &CommitValidator<DefaultHostFunctionsManager> {
+        self
+    }
+}
+
+#[cfg(not(feature = "rust-crypto"))]
 impl<C> ProdCommitValidator<C> {
     /// Create a new commit validator using the given [`Hasher`]
     /// to compute the hash of headers and validator sets.
@@ -106,7 +118,27 @@ impl<C> ProdCommitValidator<C> {
     }
 }
 
+#[cfg(feature = "rust-crypto")]
+impl ProdCommitValidator {
+    /// Create a new commit validator using the given [`Hasher`]
+    /// to compute the hash of headers and validator sets.
+    pub fn new(hasher: ProdHasher) -> Self {
+        CommitValidator {
+            hasher,
+            _c: PhantomData::default(),
+        }
+    }
+}
+
+#[cfg(not(feature = "rust-crypto"))]
 impl<C> Default for ProdCommitValidator<C> {
+    fn default() -> Self {
+        Self::new(ProdHasher::default())
+    }
+}
+
+#[cfg(feature = "rust-crypto")]
+impl Default for ProdCommitValidator {
     fn default() -> Self {
         Self::new(ProdHasher::default())
     }

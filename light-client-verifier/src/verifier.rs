@@ -1,5 +1,8 @@
 //! Provides an interface and default implementation of the `Verifier` component
 
+#[cfg(feature = "rust-crypto")]
+use core::marker::PhantomData;
+
 use preds::{ProdPredicates, VerificationPredicates};
 use serde::{Deserialize, Serialize};
 use tendermint::crypto::{CryptoProvider, DefaultHostFunctionsManager};
@@ -69,6 +72,7 @@ macro_rules! verdict {
     };
 }
 
+#[cfg(not(feature = "rust-crypto"))]
 /// Predicate verifier encapsulating components necessary to facilitate
 /// verification.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -78,7 +82,19 @@ pub struct PredicateVerifier<P, C, H, CP> {
     commit_validator: ProdCommitValidator<CP>,
     hasher: H,
 }
+#[cfg(feature = "rust-crypto")]
+/// Predicate verifier encapsulating components necessary to facilitate
+/// verification.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PredicateVerifier<P, C, H, CP> {
+    predicates: P,
+    voting_power_calculator: C,
+    commit_validator: ProdCommitValidator,
+    hasher: H,
+    _p: PhantomData<CP>,
+}
 
+#[cfg(not(feature = "rust-crypto"))]
 impl<P, C, H, CP> Default for PredicateVerifier<P, C, H, CP>
 where
     P: Default,
@@ -96,6 +112,25 @@ where
     }
 }
 
+#[cfg(feature = "rust-crypto")]
+impl<P, C, H, CP> Default for PredicateVerifier<P, C, H, CP>
+where
+    P: Default,
+    C: Default,
+    H: Default,
+{
+    fn default() -> Self {
+        Self {
+            predicates: P::default(),
+            voting_power_calculator: C::default(),
+            commit_validator: ProdCommitValidator::default(),
+            hasher: H::default(),
+            _p: PhantomData::default(),
+        }
+    }
+}
+
+#[cfg(not(feature = "rust-crypto"))]
 impl<P, C, H, CP> PredicateVerifier<P, C, H, CP>
 where
     P: VerificationPredicates,
@@ -115,6 +150,31 @@ where
             voting_power_calculator,
             hasher,
             commit_validator,
+        }
+    }
+}
+
+#[cfg(feature = "rust-crypto")]
+impl<P, C, H, CP> PredicateVerifier<P, C, H, CP>
+where
+    P: VerificationPredicates,
+    C: VotingPowerCalculator,
+    H: Hasher,
+    CP: CryptoProvider,
+{
+    /// Constructor.
+    pub fn new(
+        predicates: P,
+        voting_power_calculator: C,
+        commit_validator: ProdCommitValidator,
+        hasher: H,
+    ) -> Self {
+        Self {
+            predicates,
+            voting_power_calculator,
+            hasher,
+            commit_validator,
+            _p: PhantomData::default(),
         }
     }
 }

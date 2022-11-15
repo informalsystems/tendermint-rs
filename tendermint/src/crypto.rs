@@ -15,6 +15,7 @@ pub trait CryptoProvider {
 /// A default implementation of the HostFunctionManager that uses the [`CryptoProvider`] trait
 use core::marker::PhantomData;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DefaultHostFunctionsManager;
 use k256::ecdsa::{SigningKey, VerifyingKey};
 

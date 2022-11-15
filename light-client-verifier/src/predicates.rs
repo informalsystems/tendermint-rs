@@ -86,12 +86,27 @@ pub trait VerificationPredicates: Send + Sync {
         }
     }
 
+    #[cfg(not(feature = "rust-crypto"))]
     /// Validate the commit using the given commit validator.
     fn valid_commit(
         &self,
         signed_header: &SignedHeader,
         validators: &ValidatorSet,
         commit_validator: &CommitValidator<Self::CryptoProvider>,
+    ) -> Result<(), VerificationError> {
+        commit_validator.validate(signed_header, validators)?;
+        commit_validator.validate_full(signed_header, validators)?;
+
+        Ok(())
+    }
+
+    #[cfg(feature = "rust-crypto")]
+    /// Validate the commit using the given commit validator.
+    fn valid_commit(
+        &self,
+        signed_header: &SignedHeader,
+        validators: &ValidatorSet,
+        commit_validator: &CommitValidator<DefaultHostFunctionsManager>,
     ) -> Result<(), VerificationError> {
         commit_validator.validate(signed_header, validators)?;
         commit_validator.validate_full(signed_header, validators)?;
