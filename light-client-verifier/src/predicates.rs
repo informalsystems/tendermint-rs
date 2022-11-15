@@ -712,4 +712,72 @@ mod tests {
             _ => panic!("expected InsufficientSignersOverlap error"),
         }
     }
+
+    #[test]
+    fn test_has_specified_signers_overlap() {
+        let validators = [
+            Validator::new("1").voting_power(25),
+            Validator::new("2").voting_power(25),
+            Validator::new("3").voting_power(25),
+            Validator::new("4").voting_power(25),
+        ];
+
+        let mut light_block: LightBlock =
+            TestgenLightBlock::new_default_with_validators(2, &validators)
+                .generate()
+                .unwrap()
+                .into();
+
+        let vp = ProdPredicates::default();
+        let voting_power_calculator = ProdVotingPowerCalculator::default();
+
+        // Test scenarios -->
+        // 1. >3/4 validators sign
+        let result_ok = vp.has_specified_signers_overlap(
+            &light_block.signed_header,
+            &light_block.validators,
+            &voting_power_calculator,
+            TrustThreshold::new(3, 4).unwrap(),
+        );
+
+        assert!(result_ok.is_ok());
+
+        // 2. >2/3 validators sign
+        light_block.signed_header.commit.signatures.pop();
+
+        let result_ok = vp.has_specified_signers_overlap(
+            &light_block.signed_header,
+            &light_block.validators,
+            &voting_power_calculator,
+            TrustThreshold::TWO_THIRDS,
+        );
+
+        assert!(result_ok.is_ok());
+
+        // 3. <1/3 validators sign (i.e. 1/4)
+        light_block.signed_header.commit.signatures.truncate(1);
+
+        let result_err = vp.has_specified_signers_overlap(
+            &light_block.signed_header,
+            &light_block.validators,
+            &voting_power_calculator,
+            TrustThreshold::ONE_THIRD,
+        );
+
+        let trust_threshold = TrustThreshold::ONE_THIRD;
+
+        match result_err {
+            Err(VerificationError(VerificationErrorDetail::InsufficientSignersOverlap(e), _)) => {
+                assert_eq!(
+                    e.tally,
+                    VotingPowerTally {
+                        total: 100,
+                        tallied: 25,
+                        trust_threshold,
+                    }
+                );
+            },
+            _ => panic!("expected InsufficientSignersOverlap error"),
+        }
+    }
 }
