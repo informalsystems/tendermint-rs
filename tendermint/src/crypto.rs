@@ -1,16 +1,15 @@
+use digest::{consts::U32, Digest, FixedOutput};
+use signature::{DigestSigner, DigestVerifier, Signature, Signer};
+
 use crate::signature::Verifier;
-use digest::FixedOutput;
-use digest::{consts::U32, Digest};
-use signature::{DigestSigner, DigestVerifier, Signer};
 
 pub trait CryptoProvider {
+    type S: Signature;
+
     type Sha256: Digest + FixedOutput<OutputSize = U32>;
 
-    type EcdsaSecp256k1Signer: Signer<k256::ecdsa::Signature>;
-    type EcdsaSecp256k1Verifier: Verifier<k256::ecdsa::Signature>;
-
-    // type Ed25519Signer: Signer<ed25519::Signature>;
-    // type Ed25519Verifier: Verifier<ed25519::Signature>;
+    type EcdsaSecp256k1Signer: Signer<Self::S>;
+    type EcdsaSecp256k1Verifier: Verifier<Self::S>;
 }
 
 /// A default implementation of the HostFunctionManager that uses the [`CryptoProvider`] trait
@@ -32,16 +31,7 @@ pub struct DefaultSignatureVerifier<D> {
     _d: PhantomData<D>,
 }
 
-impl<D: Digest + FixedOutput<OutputSize = U32>> DefaultSignatureVerifier<D> {
-    fn from_bytes(public_key: &[u8]) -> Result<Self, ed25519::Error> {
-        Ok(Self {
-            inner: VerifyingKey::from_sec1_bytes(public_key)?,
-            _d: PhantomData::default(),
-        })
-    }
-}
-
-impl<D: Digest + FixedOutput<OutputSize = U32>, S: signature::Signature> DigestVerifier<D, S>
+impl<D: Digest + FixedOutput<OutputSize = U32>, S: Signature> DigestVerifier<D, S>
     for DefaultSignatureVerifier<D>
 where
     VerifyingKey: DigestVerifier<D, S>,
@@ -83,7 +73,7 @@ impl FixedOutput for DefaultSha256 {
     }
 }
 
-impl<D: Digest, S: signature::Signature> Signer<S> for DefaultSigner<D>
+impl<D: Digest, S: Signature> Signer<S> for DefaultSigner<D>
 where
     SigningKey: DigestSigner<D, S>,
 {
@@ -94,34 +84,10 @@ where
     }
 }
 
-trait DefaultHostFunctions: CryptoProvider {
-    fn sha2_256(preimage: &[u8]) -> [u8; 32];
-    fn ed25519_verify(sig: &[u8], msg: &[u8], pub_key: &[u8]) -> Result<(), ()>;
-    fn secp256k1_verify(sig: &[u8], message: &[u8], public: &[u8]) -> Result<(), ()>;
-}
-
 impl CryptoProvider for DefaultHostFunctionsManager {
+    type S = k256::ecdsa::Signature;
     type Sha256 = DefaultSha256;
 
     type EcdsaSecp256k1Signer = DefaultSigner<Self::Sha256>;
     type EcdsaSecp256k1Verifier = DefaultSignatureVerifier<Self::Sha256>;
-}
-
-impl DefaultHostFunctions for DefaultHostFunctionsManager {
-    fn sha2_256(preimage: &[u8]) -> [u8; 32] {
-        let mut hasher = Self::Sha256::new();
-        hasher.update(preimage);
-        hasher.finalize().try_into().unwrap()
-    }
-
-    fn ed25519_verify(sig: &[u8], msg: &[u8], pub_key: &[u8]) -> Result<(), ()> {
-        let verifier =
-            <<Self as CryptoProvider>::EcdsaSecp256k1Verifier>::from_bytes(pub_key).unwrap();
-        let signature = k256::ecdsa::Signature::from_der(sig).unwrap();
-        Ok(verifier.verify(msg, &signature).unwrap())
-    }
-
-    fn secp256k1_verify(_sig: &[u8], _message: &[u8], _public: &[u8]) -> Result<(), ()> {
-        unimplemented!()
-    }
 }
