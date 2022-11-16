@@ -1396,8 +1396,9 @@ fn incoming_fixtures() {
                     assert!(tx.tx_result.log.is_empty());
                     let proof = tx.proof.unwrap();
                     assert_eq!(proof.data, tx.tx);
-                    assert!(proof.proof.is_some());
-                    assert_ne!(proof.root_hash, [0; 32]);
+                    assert_eq!(proof.proof.total, 1);
+                    assert_eq!(proof.proof.index, 0);
+                    assert_ne!(proof.root_hash.as_bytes(), [0; 32]);
                 }
             },
             _ => {

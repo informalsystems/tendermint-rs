@@ -6,14 +6,13 @@
 
 use core::{fmt, str::FromStr};
 
-use tendermint_proto::serializers::timestamp;
 use time::{
     format_description::well_known::Rfc3339,
     macros::{format_description, offset},
     Date, OffsetDateTime,
 };
 
-use crate::{prelude::*, Error};
+use crate::{prelude::*, serializers::timestamp, Error};
 
 /// A structured query for use in interacting with the Tendermint RPC event
 /// subscription system.

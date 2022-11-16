@@ -5,7 +5,7 @@ use alloc::collections::BTreeMap as HashMap;
 use serde::{Deserialize, Serialize};
 use tendermint::{abci, Block};
 
-use crate::{prelude::*, query::EventType, response::Wrapper, Response};
+use crate::{prelude::*, query::EventType, response::Wrapper, serializers, Response};
 
 /// An incoming event produced by a [`Subscription`].
 ///
@@ -59,10 +59,10 @@ pub enum EventData {
 /// Transaction result info.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct TxInfo {
-    #[serde(with = "tendermint_proto::serializers::from_str")]
+    #[serde(with = "serializers::from_str")]
     pub height: i64,
     pub index: Option<i64>,
-    #[serde(with = "tendermint_proto::serializers::bytes::base64string")]
+    #[serde(with = "serializers::bytes::base64string")]
     pub tx: Vec<u8>,
     pub result: TxResult,
 }

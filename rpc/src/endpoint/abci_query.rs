@@ -1,7 +1,7 @@
 //! `/abci_query` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
-use tendermint::{abci::Code, block, merkle::proof::Proof, serializers};
+use tendermint::{abci::Code, block, merkle::proof::ProofOps, serializers};
 
 use crate::prelude::*;
 
@@ -87,7 +87,7 @@ pub struct AbciQuery {
 
     /// Proof (might be explicit null)
     #[serde(alias = "proofOps")]
-    pub proof: Option<Proof>,
+    pub proof: Option<ProofOps>,
 
     /// Block height
     pub height: block::Height,
