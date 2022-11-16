@@ -71,7 +71,6 @@ serde_bytes = { version = "0.11", default-features = false }
 serde_json = { version = "1", default-features = false, features = ["std"] }
 tendermint-config = { version = "0.26.0", path = "../config", default-features = false }
 tendermint = { version = "0.26.0", default-features = false, path = "../tendermint" }
-tendermint-proto = { version = "0.26.0", default-features = false, path = "../proto" }
 thiserror = { version = "1", default-features = false }
 time = { version = "0.3", default-features = false, features = ["macros", "parsing"] }
 uuid = { version = "0.8", default-features = false }
