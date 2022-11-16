@@ -172,12 +172,12 @@ impl FromStr for Hash {
 // Serialization is used in light-client config
 impl<'de> Deserialize<'de> for Hash {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let hex = String::deserialize(deserializer)?;
+        let hex = <&str>::deserialize(deserializer)?;
 
         if hex.is_empty() {
             Err(D::Error::custom("empty hash"))
         } else {
-            Ok(Self::from_str(&hex).map_err(|e| D::Error::custom(format!("{}", e)))?)
+            Ok(Self::from_str(hex).map_err(|e| D::Error::custom(format!("{}", e)))?)
         }
     }
 }
@@ -206,13 +206,13 @@ pub mod allow_empty {
     where
         D: Deserializer<'de>,
     {
-        let hex = String::deserialize(deserializer)?;
-        Hash::from_str(&hex).map_err(serde::de::Error::custom)
+        let hex = <&str>::deserialize(deserializer)?;
+        Hash::from_str(hex).map_err(serde::de::Error::custom)
     }
 }
 
 /// AppHash is usually a SHA256 hash, but in reality it can be any kind of data
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Default)]
 pub struct AppHash(Vec<u8>);
 
 impl Protobuf<Vec<u8>> for AppHash {}
@@ -230,10 +230,23 @@ impl From<AppHash> for Vec<u8> {
     }
 }
 
+impl TryFrom<Bytes> for AppHash {
+    type Error = Error;
+
+    fn try_from(value: Bytes) -> Result<Self, Self::Error> {
+        Ok(AppHash(value.into()))
+    }
+}
+impl From<AppHash> for Bytes {
+    fn from(value: AppHash) -> Self {
+        value.0.into()
+    }
+}
+
 impl AppHash {
-    /// Return AppHash value as `Vec<u8>`
-    pub fn value(&self) -> Vec<u8> {
-        self.0.clone()
+    /// Return the hash bytes as a byte slice.
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.0
     }
 
     /// Decode a `Hash` from upper-case hexadecimal

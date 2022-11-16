@@ -1,10 +1,8 @@
-use bytes::Bytes;
-
 use super::super::types::Snapshot;
 // bring into scope for doc links
 #[allow(unused)]
 use super::ApplySnapshotChunk;
-use crate::prelude::*;
+use crate::{prelude::*, AppHash};
 
 #[doc = include_str!("../doc/request-offersnapshot.md")]
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -12,8 +10,7 @@ pub struct OfferSnapshot {
     /// The snapshot offered for restoration.
     pub snapshot: Snapshot,
     /// The light client verified app hash for this height.
-    // XXX(hdevalence): replace with apphash
-    pub app_hash: Bytes,
+    pub app_hash: AppHash,
 }
 
 // =============================================================================
@@ -28,7 +25,7 @@ impl From<OfferSnapshot> for pb::RequestOfferSnapshot {
     fn from(offer_snapshot: OfferSnapshot) -> Self {
         Self {
             snapshot: Some(offer_snapshot.snapshot.into()),
-            app_hash: offer_snapshot.app_hash,
+            app_hash: offer_snapshot.app_hash.into(),
         }
     }
 }
@@ -42,7 +39,7 @@ impl TryFrom<pb::RequestOfferSnapshot> for OfferSnapshot {
                 .snapshot
                 .ok_or_else(crate::Error::missing_data)?
                 .try_into()?,
-            app_hash: offer_snapshot.app_hash,
+            app_hash: offer_snapshot.app_hash.try_into()?,
         })
     }
 }
