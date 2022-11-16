@@ -4,6 +4,7 @@ use tendermint_proto::Protobuf;
 
 use crate::{merkle, prelude::*, Error, Hash};
 
+/// Merkle proof of the presence of a transaction in the Merkle tree.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "RawTxProof", into = "RawTxProof")]
 pub struct Proof {
