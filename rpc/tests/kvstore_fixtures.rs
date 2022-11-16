@@ -656,7 +656,7 @@ fn incoming_fixtures() {
                 let result =
                     endpoint::genesis::Response::<Option<serde_json::Value>>::from_string(content)
                         .unwrap();
-                assert!(result.genesis.app_hash.is_empty());
+                assert!(result.genesis.app_hash.as_bytes().is_empty());
                 assert_eq!(result.genesis.chain_id.as_str(), CHAIN_ID);
                 assert_eq!(result.genesis.consensus_params.block.max_bytes, 22020096);
                 assert_eq!(result.genesis.consensus_params.block.max_gas, -1);
