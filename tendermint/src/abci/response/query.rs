@@ -25,7 +25,7 @@ pub struct Query {
     pub value: Bytes,
     /// Serialized proof for the value data, if requested, to be verified against
     /// the app hash for the given `height`.
-    pub proof: Option<merkle::Proof>,
+    pub proof: Option<merkle::ProofOps>,
     /// The block height from which data was derived.
     ///
     /// Note that this is the height of the block containing the application's

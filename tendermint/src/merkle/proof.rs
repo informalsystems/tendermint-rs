@@ -9,10 +9,10 @@ use tendermint_proto::{
 
 use crate::{prelude::*, serializers, Error};
 
-/// Proof is Merkle proof defined by the list of ProofOps
+/// Merkle proof defined by the list of ProofOps
 /// <https://github.com/tendermint/tendermint/blob/c8483531d8e756f7fbb812db1dd16d841cdf298a/crypto/merkle/merkle.proto#L26>
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
-pub struct Proof {
+pub struct ProofOps {
     /// The list of ProofOps
     pub ops: Vec<ProofOp>,
 }
@@ -58,9 +58,9 @@ impl From<ProofOp> for RawProofOp {
     }
 }
 
-impl Protobuf<RawProofOps> for Proof {}
+impl Protobuf<RawProofOps> for ProofOps {}
 
-impl TryFrom<RawProofOps> for Proof {
+impl TryFrom<RawProofOps> for ProofOps {
     type Error = Error;
 
     fn try_from(value: RawProofOps) -> Result<Self, Self::Error> {
@@ -70,8 +70,8 @@ impl TryFrom<RawProofOps> for Proof {
     }
 }
 
-impl From<Proof> for RawProofOps {
-    fn from(value: Proof) -> Self {
+impl From<ProofOps> for RawProofOps {
+    fn from(value: ProofOps) -> Self {
         let ops: Vec<RawProofOp> = value.ops.into_iter().map(RawProofOp::from).collect();
 
         RawProofOps { ops }
@@ -80,7 +80,7 @@ impl From<Proof> for RawProofOps {
 
 #[cfg(test)]
 mod test {
-    use super::Proof;
+    use super::ProofOps;
     use crate::test::test_serialization_roundtrip;
 
     #[test]
@@ -100,6 +100,6 @@ mod test {
                 }
             ]
         }"#;
-        test_serialization_roundtrip::<Proof>(payload);
+        test_serialization_roundtrip::<ProofOps>(payload);
     }
 }
