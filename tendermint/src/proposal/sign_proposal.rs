@@ -30,7 +30,7 @@ impl SignProposalRequest {
 }
 
 /// SignedProposalResponse is response containing a signed proposal or an error
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct SignedProposalResponse {
     /// Proposal
     pub proposal: Option<Proposal>,

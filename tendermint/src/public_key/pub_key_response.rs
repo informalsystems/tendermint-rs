@@ -1,7 +1,7 @@
 use crate::{privval::RemoteSignerError, PublicKey};
 
 /// PubKeyResponse
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 // Todo: either pub_key OR error is present
 pub struct PubKeyResponse {
     /// Public key
