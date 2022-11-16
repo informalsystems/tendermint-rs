@@ -172,12 +172,12 @@ impl FromStr for Hash {
 // Serialization is used in light-client config
 impl<'de> Deserialize<'de> for Hash {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let hex = String::deserialize(deserializer)?;
+        let hex = <&str>::deserialize(deserializer)?;
 
         if hex.is_empty() {
             Err(D::Error::custom("empty hash"))
         } else {
-            Ok(Self::from_str(&hex).map_err(|e| D::Error::custom(format!("{}", e)))?)
+            Ok(Self::from_str(hex).map_err(|e| D::Error::custom(format!("{}", e)))?)
         }
     }
 }
@@ -206,8 +206,8 @@ pub mod allow_empty {
     where
         D: Deserializer<'de>,
     {
-        let hex = String::deserialize(deserializer)?;
-        Hash::from_str(&hex).map_err(serde::de::Error::custom)
+        let hex = <&str>::deserialize(deserializer)?;
+        Hash::from_str(hex).map_err(serde::de::Error::custom)
     }
 }
 
