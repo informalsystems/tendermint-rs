@@ -48,6 +48,7 @@ pub mod signature;
 pub mod time;
 mod timeout;
 pub mod trust_threshold;
+pub mod tx;
 pub mod validator;
 mod version;
 pub mod vote;
