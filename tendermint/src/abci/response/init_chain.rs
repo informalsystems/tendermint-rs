@@ -1,4 +1,4 @@
-use bytes::Bytes;
+use crate::AppHash;
 
 use crate::{consensus, prelude::*, validator};
 
@@ -17,7 +17,7 @@ pub struct InitChain {
     /// [`request::InitChain::validators`](super::super::request::InitChain::validators).
     pub validators: Vec<validator::Update>,
     /// Initial application hash.
-    pub app_hash: Bytes,
+    pub app_hash: AppHash,
 }
 
 // =============================================================================
@@ -33,7 +33,7 @@ impl From<InitChain> for pb::ResponseInitChain {
         Self {
             consensus_params: init_chain.consensus_params.map(Into::into),
             validators: init_chain.validators.into_iter().map(Into::into).collect(),
-            app_hash: init_chain.app_hash,
+            app_hash: init_chain.app_hash.into(),
         }
     }
 }
@@ -52,7 +52,7 @@ impl TryFrom<pb::ResponseInitChain> for InitChain {
                 .into_iter()
                 .map(TryInto::try_into)
                 .collect::<Result<_, _>>()?,
-            app_hash: init_chain.app_hash,
+            app_hash: init_chain.app_hash.try_into()?,
         })
     }
 }
