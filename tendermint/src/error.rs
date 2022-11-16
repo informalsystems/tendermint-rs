@@ -220,6 +220,14 @@ define_error! {
 
         TrustThresholdTooSmall
             |_| { "trust threshold too small (must be >= 1/3)" },
+
+        NegativeProofTotal
+            [ DisplayOnly<TryFromIntError> ]
+            |_| { "negative number of items in proof" },
+
+        NegativeProofIndex
+            [ DisplayOnly<TryFromIntError> ]
+            |_| { "negative item index in proof" },
     }
 }
 

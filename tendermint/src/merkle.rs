@@ -2,6 +2,8 @@
 
 pub mod proof;
 
+pub use proof::Proof;
+
 use sha2::{Digest, Sha256};
 
 use crate::prelude::*;

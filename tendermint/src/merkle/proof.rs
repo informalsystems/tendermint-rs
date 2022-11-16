@@ -3,11 +3,24 @@ use core::convert::TryFrom;
 
 use serde::{Deserialize, Serialize};
 use tendermint_proto::{
-    crypto::{ProofOp as RawProofOp, ProofOps as RawProofOps},
+    crypto::{Proof as RawProof, ProofOp as RawProofOp, ProofOps as RawProofOps},
     Protobuf,
 };
 
-use crate::{prelude::*, serializers, Error};
+use crate::{prelude::*, serializers, Error, Hash};
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "RawProof", into = "RawProof")]
+pub struct Proof {
+    // Total number of items.
+    pub total: u64,
+    // Index of the item to prove.
+    pub index: u64,
+    // Hash of item value.
+    pub leaf_hash: Hash,
+    // Hashes from leaf's sibling to a root's child.
+    pub aunts: Vec<Hash>,
+}
 
 /// Merkle proof defined by the list of ProofOps
 /// <https://github.com/tendermint/tendermint/blob/c8483531d8e756f7fbb812db1dd16d841cdf298a/crypto/merkle/merkle.proto#L26>
@@ -32,6 +45,45 @@ pub struct ProofOp {
     /// Actual data
     #[serde(default, with = "serializers::bytes::base64string")]
     pub data: Vec<u8>,
+}
+
+impl Protobuf<RawProof> for Proof {}
+
+impl TryFrom<RawProof> for Proof {
+    type Error = Error;
+
+    fn try_from(message: RawProof) -> Result<Self, Self::Error> {
+        Ok(Self {
+            total: message
+                .total
+                .try_into()
+                .map_err(Error::negative_proof_total)?,
+            index: message
+                .index
+                .try_into()
+                .map_err(Error::negative_proof_index)?,
+            leaf_hash: message.leaf_hash.try_into()?,
+            aunts: message
+                .aunts
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()?,
+        })
+    }
+}
+
+impl From<Proof> for RawProof {
+    fn from(value: Proof) -> Self {
+        Self {
+            total: value
+                .total
+                .try_into()
+                .expect("number of items is too large"),
+            index: value.index.try_into().expect("index is too large"),
+            leaf_hash: value.leaf_hash.into(),
+            aunts: value.aunts.into_iter().map(Into::into).collect(),
+        }
+    }
 }
 
 impl Protobuf<RawProofOp> for ProofOp {}
