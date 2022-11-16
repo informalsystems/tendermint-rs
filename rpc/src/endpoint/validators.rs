@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use tendermint::{block, validator};
 
-use crate::{prelude::*, PageNumber, PerPage};
+use crate::{prelude::*, serializers, PageNumber, PerPage};
 
 /// The default number of validators to return per page.
 pub const DEFAULT_VALIDATORS_PER_PAGE: u8 = 30;
@@ -16,10 +16,10 @@ pub struct Request {
     /// defaults to the latest height.
     pub height: Option<block::Height>,
     /// The number of the page to fetch.
-    #[serde(with = "tendermint_proto::serializers::optional_from_str")]
+    #[serde(with = "serializers::optional_from_str")]
     pub page: Option<PageNumber>,
     /// The number of validators to fetch per page.
-    #[serde(with = "tendermint_proto::serializers::optional_from_str")]
+    #[serde(with = "serializers::optional_from_str")]
     pub per_page: Option<PerPage>,
 }
 
@@ -64,7 +64,7 @@ pub struct Response {
     pub validators: Vec<validator::Info>,
 
     /// Total number of validators for this block height.
-    #[serde(with = "tendermint_proto::serializers::from_str")]
+    #[serde(with = "serializers::from_str")]
     pub total: i32,
 }
 
