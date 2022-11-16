@@ -69,7 +69,7 @@ impl Query {
     pub fn eq(key: impl ToString, value: impl Into<Operand>) -> Self {
         Self {
             event_type: None,
-            conditions: vec![Condition::Eq(key.to_string(), value.into())],
+            conditions: vec![Condition::eq(key.to_string(), value.into())],
         }
     }
 
@@ -77,7 +77,7 @@ impl Query {
     pub fn lt(key: impl ToString, value: impl Into<Operand>) -> Self {
         Self {
             event_type: None,
-            conditions: vec![Condition::Lt(key.to_string(), value.into())],
+            conditions: vec![Condition::lt(key.to_string(), value.into())],
         }
     }
 
@@ -85,7 +85,7 @@ impl Query {
     pub fn lte(key: impl ToString, value: impl Into<Operand>) -> Self {
         Self {
             event_type: None,
-            conditions: vec![Condition::Lte(key.to_string(), value.into())],
+            conditions: vec![Condition::lte(key.to_string(), value.into())],
         }
     }
 
@@ -93,7 +93,7 @@ impl Query {
     pub fn gt(key: impl ToString, value: impl Into<Operand>) -> Self {
         Self {
             event_type: None,
-            conditions: vec![Condition::Gt(key.to_string(), value.into())],
+            conditions: vec![Condition::gt(key.to_string(), value.into())],
         }
     }
 
@@ -101,7 +101,7 @@ impl Query {
     pub fn gte(key: impl ToString, value: impl Into<Operand>) -> Self {
         Self {
             event_type: None,
-            conditions: vec![Condition::Gte(key.to_string(), value.into())],
+            conditions: vec![Condition::gte(key.to_string(), value.into())],
         }
     }
 
@@ -111,7 +111,7 @@ impl Query {
     pub fn contains(key: impl ToString, value: impl ToString) -> Self {
         Self {
             event_type: None,
-            conditions: vec![Condition::Contains(key.to_string(), value.to_string())],
+            conditions: vec![Condition::contains(key.to_string(), value.to_string())],
         }
     }
 
@@ -119,55 +119,55 @@ impl Query {
     pub fn exists(key: impl ToString) -> Self {
         Self {
             event_type: None,
-            conditions: vec![Condition::Exists(key.to_string())],
+            conditions: vec![Condition::exists(key.to_string())],
         }
     }
 
     /// Add the condition `<key> = <value>` to the query.
     pub fn and_eq(mut self, key: impl ToString, value: impl Into<Operand>) -> Self {
         self.conditions
-            .push(Condition::Eq(key.to_string(), value.into()));
+            .push(Condition::eq(key.to_string(), value.into()));
         self
     }
 
     /// Add the condition `<key> < <value>` to the query.
     pub fn and_lt(mut self, key: impl ToString, value: impl Into<Operand>) -> Self {
         self.conditions
-            .push(Condition::Lt(key.to_string(), value.into()));
+            .push(Condition::lt(key.to_string(), value.into()));
         self
     }
 
     /// Add the condition `<key> <= <value>` to the query.
     pub fn and_lte(mut self, key: impl ToString, value: impl Into<Operand>) -> Self {
         self.conditions
-            .push(Condition::Lte(key.to_string(), value.into()));
+            .push(Condition::lte(key.to_string(), value.into()));
         self
     }
 
     /// Add the condition `<key> > <value>` to the query.
     pub fn and_gt(mut self, key: impl ToString, value: impl Into<Operand>) -> Self {
         self.conditions
-            .push(Condition::Gt(key.to_string(), value.into()));
+            .push(Condition::gt(key.to_string(), value.into()));
         self
     }
 
     /// Add the condition `<key> >= <value>` to the query.
     pub fn and_gte(mut self, key: impl ToString, value: impl Into<Operand>) -> Self {
         self.conditions
-            .push(Condition::Gte(key.to_string(), value.into()));
+            .push(Condition::gte(key.to_string(), value.into()));
         self
     }
 
     /// Add the condition `<key> CONTAINS <value>` to the query.
     pub fn and_contains(mut self, key: impl ToString, value: impl ToString) -> Self {
         self.conditions
-            .push(Condition::Contains(key.to_string(), value.to_string()));
+            .push(Condition::contains(key.to_string(), value.to_string()));
         self
     }
 
     /// Add the condition `<key> EXISTS` to the query.
     pub fn and_exists(mut self, key: impl ToString) -> Self {
-        self.conditions.push(Condition::Exists(key.to_string()));
+        self.conditions.push(Condition::exists(key.to_string()));
         self
     }
 }
@@ -298,25 +298,25 @@ peg::parser! {
             = datetime_op() / date_op() / string_op() / float_op() / signed_op() / unsigned_op()
 
         rule eq() -> Condition
-            = t:tag() _ "=" _ op:operand() { Condition::Eq(t.to_owned(), op) }
+            = t:tag() _ "=" _ op:operand() { Condition::eq(t.to_owned(), op) }
 
         rule lte() -> Condition
-            = t:tag() _ "<=" _ op:operand() { Condition::Lte(t.to_owned(), op) }
+            = t:tag() _ "<=" _ op:operand() { Condition::lte(t.to_owned(), op) }
 
         rule lt() -> Condition
-            = t:tag() _ "<" _ op:operand() { Condition::Lt(t.to_owned(), op) }
+            = t:tag() _ "<" _ op:operand() { Condition::lt(t.to_owned(), op) }
 
         rule gte() -> Condition
-            = t:tag() _ ">=" _ op:operand() { Condition::Gte(t.to_owned(), op) }
+            = t:tag() _ ">=" _ op:operand() { Condition::gte(t.to_owned(), op) }
 
         rule gt() -> Condition
-            = t:tag() _ ">" _ op:operand() { Condition::Gt(t.to_owned(), op) }
+            = t:tag() _ ">" _ op:operand() { Condition::gt(t.to_owned(), op) }
 
         rule contains() -> Condition
-            = t:tag() __ "CONTAINS" __ op:string() { Condition::Contains(t.to_owned(), op.to_owned()) }
+            = t:tag() __ "CONTAINS" __ op:string() { Condition::contains(t.to_owned(), op.to_owned()) }
 
         rule exists() -> Condition
-            = t:tag() __ "EXISTS" { Condition::Exists(t.to_owned()) }
+            = t:tag() __ "EXISTS" { Condition::exists(t.to_owned()) }
 
         rule event_type() -> Term
             = "tm.event" _ "=" _ "'" et:$("NewBlock" / "Tx") "'" {
@@ -421,54 +421,92 @@ impl FromStr for EventType {
     }
 }
 
-/// The different types of conditions supported by a [`Query`].
-///
-/// [`Query`]: struct.Query.html
+/// A condition which is part of a [`Query`].
 #[derive(Debug, Clone, PartialEq)]
-pub enum Condition {
-    /// Equals
-    Eq(String, Operand),
-    /// Less than
-    Lt(String, Operand),
-    /// Less than or equal to
-    Lte(String, Operand),
-    /// Greater than
-    Gt(String, Operand),
-    /// Greater than or equal to
-    Gte(String, Operand),
-    /// Contains (to check if a key contains a certain sub-string)
-    Contains(String, String),
-    /// Exists (to check if a key exists)
-    Exists(String),
+pub struct Condition {
+    /// The key this condition applies to.
+    pub key: String,
+    /// The operation to apply to the key or its value,
+    /// depending on the type of operation.
+    pub operation: Operation,
 }
 
 impl Condition {
-    /// Return the key that this condition applies to
-    pub fn key(&self) -> &str {
-        match self {
-            Self::Eq(key, _) => key,
-            Self::Lt(key, _) => key,
-            Self::Lte(key, _) => key,
-            Self::Gt(key, _) => key,
-            Self::Gte(key, _) => key,
-            Self::Contains(key, _) => key,
-            Self::Exists(key) => key,
-        }
+    /// Create a new condition that apllies the given `operation` to the `key`
+    pub fn new(key: String, operation: Operation) -> Self {
+        Self { key, operation }
+    }
+
+    /// Check if the value for the key is equal to this operand
+    pub fn eq(key: String, op: Operand) -> Self {
+        Self::new(key, Operation::Eq(op))
+    }
+
+    /// Check if the value for the key is less than this operand
+    pub fn lt(key: String, op: Operand) -> Self {
+        Self::new(key, Operation::Lt(op))
+    }
+
+    /// Check if the value for the key is less than or equal to this operand
+    pub fn lte(key: String, op: Operand) -> Self {
+        Self::new(key, Operation::Lte(op))
+    }
+
+    /// Check if the value for the key is greater than this operand
+    pub fn gt(key: String, op: Operand) -> Self {
+        Self::new(key, Operation::Gt(op))
+    }
+
+    /// Check if the value for the key is greater than or equal to this operand
+    pub fn gte(key: String, op: Operand) -> Self {
+        Self::new(key, Operation::Gte(op))
+    }
+
+    /// Check if the value for the key contains a certain sub-string
+    pub fn contains(key: String, op: String) -> Self {
+        Self::new(key, Operation::Contains(op))
+    }
+
+    /// Check if the key exists
+    pub fn exists(key: String) -> Self {
+        Self::new(key, Operation::Exists)
     }
 }
 
 impl fmt::Display for Condition {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Eq(key, op) => write!(f, "{} = {}", key, op),
-            Self::Lt(key, op) => write!(f, "{} < {}", key, op),
-            Self::Lte(key, op) => write!(f, "{} <= {}", key, op),
-            Self::Gt(key, op) => write!(f, "{} > {}", key, op),
-            Self::Gte(key, op) => write!(f, "{} >= {}", key, op),
-            Self::Contains(key, op) => write!(f, "{} CONTAINS {}", key, escape(op)),
-            Self::Exists(key) => write!(f, "{} EXISTS", key),
+        match &self.operation {
+            Operation::Eq(op) => write!(f, "{} = {}", self.key, op),
+            Operation::Lt(op) => write!(f, "{} < {}", self.key, op),
+            Operation::Lte(op) => write!(f, "{} <= {}", self.key, op),
+            Operation::Gt(op) => write!(f, "{} > {}", self.key, op),
+            Operation::Gte(op) => write!(f, "{} >= {}", self.key, op),
+            Operation::Contains(op) => write!(f, "{} CONTAINS {}", self.key, escape(op)),
+            Operation::Exists => write!(f, "{} EXISTS", self.key),
         }
     }
+}
+
+/// The different types of operations supported by a [`Query`].
+///
+/// Those operations apply to a given `key`, which is part of
+/// the enclosing [`Condition`].
+#[derive(Debug, Clone, PartialEq)]
+pub enum Operation {
+    /// Check if the value for the key is equal to this operand
+    Eq(Operand),
+    /// Check if the value for the key is less than this operand
+    Lt(Operand),
+    /// Check if the value for the key is less than or equal to this operand
+    Lte(Operand),
+    /// Check if the value for the key is greater than this operand
+    Gt(Operand),
+    /// Check if the value for the key is greater than or equal to this operand
+    Gte(Operand),
+    /// Check if the value for the key contains a certain sub-string
+    Contains(String),
+    /// Check if the key exists
+    Exists,
 }
 
 /// A typed operand for use in an [`Condition`].
@@ -749,7 +787,7 @@ mod test {
         assert_eq!(query.event_type, Some(EventType::Tx));
         assert_eq!(
             query.conditions,
-            vec![Condition::Eq(
+            vec![Condition::eq(
                 "transfer.sender".to_owned(),
                 Operand::String("AddrA".to_owned()),
             )]
@@ -759,7 +797,7 @@ mod test {
         assert_eq!(query.event_type, Some(EventType::Tx));
         assert_eq!(
             query.conditions,
-            vec![Condition::Eq(
+            vec![Condition::eq(
                 "transfer.sender".to_owned(),
                 Operand::String("AddrA".to_owned()),
             )]
@@ -772,14 +810,14 @@ mod test {
         assert_eq!(query.event_type, Some(EventType::Tx));
         assert_eq!(
             query.conditions,
-            vec![Condition::Eq("tx.height".to_owned(), Operand::Unsigned(10))]
+            vec![Condition::eq("tx.height".to_owned(), Operand::Unsigned(10))]
         );
 
         let query = Query::from_str("tm.event = 'Tx' AND tx.height <= 100").unwrap();
         assert_eq!(query.event_type, Some(EventType::Tx));
         assert_eq!(
             query.conditions,
-            vec![Condition::Lte(
+            vec![Condition::lte(
                 "tx.height".to_owned(),
                 Operand::Unsigned(100)
             )]
@@ -792,14 +830,14 @@ mod test {
         assert_eq!(query.event_type, Some(EventType::Tx));
         assert_eq!(
             query.conditions,
-            vec![Condition::Eq("some.value".to_owned(), Operand::Signed(-1))]
+            vec![Condition::eq("some.value".to_owned(), Operand::Signed(-1))]
         );
 
         let query = Query::from_str("tm.event = 'Tx' AND some.value <= -100").unwrap();
         assert_eq!(query.event_type, Some(EventType::Tx));
         assert_eq!(
             query.conditions,
-            vec![Condition::Lte(
+            vec![Condition::lte(
                 "some.value".to_owned(),
                 Operand::Signed(-100)
             )]
@@ -812,7 +850,7 @@ mod test {
         assert_eq!(query.event_type, Some(EventType::Tx));
         assert_eq!(
             query.conditions,
-            vec![Condition::Lte(
+            vec![Condition::lte(
                 "some.date".to_owned(),
                 Operand::Date(date!(2022 - 2 - 3))
             )]
@@ -827,7 +865,7 @@ mod test {
         assert_eq!(query.event_type, Some(EventType::Tx));
         assert_eq!(
             query.conditions,
-            vec![Condition::Eq(
+            vec![Condition::eq(
                 "some.datetime".to_owned(),
                 Operand::DateTime(datetime!(2021-2-26 17:05:02.149500000 UTC))
             )]
@@ -840,7 +878,10 @@ mod test {
         let query = Query::from_str("short.pi = 3.14159").unwrap();
         assert_eq!(query.conditions.len(), 1);
         match &query.conditions[0] {
-            Condition::Eq(tag, op) => {
+            Condition {
+                key: tag,
+                operation: Operation::Eq(op),
+            } => {
                 assert_eq!(tag, "short.pi");
                 match op {
                     Operand::Float(f) => {
@@ -856,7 +897,10 @@ mod test {
         let query = Query::from_str("short.pi = -3.14159").unwrap();
         assert_eq!(query.conditions.len(), 1);
         match &query.conditions[0] {
-            Condition::Eq(tag, op) => {
+            Condition {
+                key: tag,
+                operation: Operation::Eq(op),
+            } => {
                 assert_eq!(tag, "short.pi");
                 match op {
                     Operand::Float(f) => {
@@ -884,7 +928,7 @@ mod test {
             query,
             Query {
                 event_type: None,
-                conditions: vec![Condition::Eq(
+                conditions: vec![Condition::eq(
                     "some.field".to_owned(),
                     Operand::String("string".to_owned())
                 )]
@@ -896,7 +940,7 @@ mod test {
             query,
             Query {
                 event_type: None,
-                conditions: vec![Condition::Lt("some.field".to_owned(), Operand::Unsigned(5),)]
+                conditions: vec![Condition::lt("some.field".to_owned(), Operand::Unsigned(5),)]
             }
         );
 
@@ -905,7 +949,7 @@ mod test {
             query,
             Query {
                 event_type: None,
-                conditions: vec![Condition::Lte(
+                conditions: vec![Condition::lte(
                     "some.field".to_owned(),
                     Operand::Unsigned(5),
                 )]
@@ -917,7 +961,7 @@ mod test {
             query,
             Query {
                 event_type: None,
-                conditions: vec![Condition::Gt("some.field".to_owned(), Operand::Unsigned(5),)]
+                conditions: vec![Condition::gt("some.field".to_owned(), Operand::Unsigned(5),)]
             }
         );
 
@@ -926,7 +970,7 @@ mod test {
             query,
             Query {
                 event_type: None,
-                conditions: vec![Condition::Gte(
+                conditions: vec![Condition::gte(
                     "some.field".to_owned(),
                     Operand::Unsigned(5),
                 )]
@@ -938,7 +982,7 @@ mod test {
             query,
             Query {
                 event_type: None,
-                conditions: vec![Condition::Contains(
+                conditions: vec![Condition::contains(
                     "some.field".to_owned(),
                     "inner".to_owned()
                 )]
@@ -950,7 +994,7 @@ mod test {
             query,
             Query {
                 event_type: None,
-                conditions: vec![Condition::Exists("some.field".to_owned())]
+                conditions: vec![Condition::exists("some.field".to_owned())]
             }
         );
     }
