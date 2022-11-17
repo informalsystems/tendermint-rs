@@ -31,11 +31,11 @@ chacha20poly1305 = { version = "0.8", default-features = false, features = ["red
 ed25519-dalek = { version = "1", default-features = false }
 eyre = { version = "0.6", default-features = false }
 flume = { version = "0.10.7", default-features = false }
-hkdf = { version = "0.10.0", default-features = false }
+hkdf = { version = "0.12.3", default-features = false }
 merlin = { version = "2", default-features = false }
 prost = { version = "0.11", default-features = false }
 rand_core = { version = "0.5", default-features = false, features = ["std"] }
-sha2 = { version = "0.9", default-features = false }
+sha2 = { version = "0.10", default-features = false }
 subtle = { version = "2", default-features = false }
 x25519-dalek = { version = "1.1", default-features = false }
 zeroize = { version = "1", default-features = false }

@@ -1,5 +1,10 @@
-use digest::FixedOutput;
-use digest::{consts::U32, Digest};
+#[cfg(feature = "rust-crypto")]
+mod default_provider;
+
+#[cfg(feature = "rust-crypto")]
+pub use default_provider::DefaultCryptoProvider;
+
+use digest::{consts::U32, Digest, FixedOutput};
 use signature::{Signature, Signer, Verifier};
 
 pub trait CryptoProvider {
@@ -18,7 +23,11 @@ mod tests {
     use core::marker::PhantomData;
     use signature::{DigestSigner, DigestVerifier};
 
-    use super::*;
+    use digest::{consts::U32, Digest, FixedOutput};
+    use signature::{Signature, Signer, Verifier};
+
+    use super::CryptoProvider;
+
     struct SubstrateHostFunctionsManager;
     use k256::ecdsa::{SigningKey, VerifyingKey};
 
@@ -74,14 +83,12 @@ mod tests {
 
     impl digest::Update for SubstrateSha256 {
         fn update(&mut self, data: &[u8]) {
-            use sha2::Digest;
-            self.0.update(data);
+            digest::Update::update(&mut self.0, data)
         }
     }
 
     impl FixedOutput for SubstrateSha256 {
         fn finalize_into(self, out: &mut digest::Output<Self>) {
-            use sha2::Digest;
             *out = self.0.finalize();
         }
     }
