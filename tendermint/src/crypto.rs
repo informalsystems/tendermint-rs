@@ -1,12 +1,13 @@
-use crate::signature::{Signer, Verifier};
 use digest::FixedOutput;
 use digest::{consts::U32, Digest};
+use signature::{Signature, Signer, Verifier};
 
 pub trait CryptoProvider {
     type Sha256: Digest + FixedOutput<OutputSize = U32>;
 
-    type EcdsaSecp256k1Signer: Signer<k256::ecdsa::Signature>;
-    type EcdsaSecp256k1Verifier: Verifier<k256::ecdsa::Signature>;
+    type EcdsaSecp256k1Signature: Signature;
+    type EcdsaSecp256k1Signer: Signer<Self::EcdsaSecp256k1Signature>;
+    type EcdsaSecp256k1Verifier: Verifier<Self::EcdsaSecp256k1Signature>;
 }
 
 #[cfg(test)]
@@ -43,7 +44,7 @@ mod tests {
         }
     }
 
-    impl<D: Digest + FixedOutput<OutputSize = U32>, S: signature::Signature> DigestVerifier<D, S>
+    impl<D: Digest + FixedOutput<OutputSize = U32>, S: Signature> DigestVerifier<D, S>
         for SubstrateSignatureVerifier<D>
     where
         VerifyingKey: DigestVerifier<D, S>,
@@ -85,7 +86,7 @@ mod tests {
         }
     }
 
-    impl<D: Digest, S: signature::Signature> Signer<S> for SubstrateSigner<D>
+    impl<D: Digest, S: Signature> Signer<S> for SubstrateSigner<D>
     where
         SigningKey: DigestSigner<D, S>,
     {
@@ -105,6 +106,7 @@ mod tests {
     impl CryptoProvider for SubstrateHostFunctionsManager {
         type Sha256 = SubstrateSha256;
 
+        type EcdsaSecp256k1Signature = k256::ecdsa::Signature;
         type EcdsaSecp256k1Signer = SubstrateSigner<Self::Sha256>;
         type EcdsaSecp256k1Verifier = SubstrateSignatureVerifier<Self::Sha256>;
     }
