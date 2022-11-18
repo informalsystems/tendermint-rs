@@ -8,8 +8,7 @@ use tendermint_proto::{
 };
 
 use crate::{
-    account, block, chain, merkle::simple_hash_from_byte_vectors, prelude::*, AppHash, Error, Hash,
-    Time,
+    account, block, chain, crypto::CryptoProvider, merkle, prelude::*, AppHash, Error, Hash, Time,
 };
 
 /// Block `Header` values contain metadata about the block and about the
@@ -164,8 +163,14 @@ impl From<Header> for RawHeader {
 }
 
 impl Header {
-    /// Hash this header
+    /// Computes the hash of this header.
+    #[cfg(feature = "rust-crypto")]
     pub fn hash(&self) -> Hash {
+        self.hash_with::<crate::crypto::DefaultCryptoProvider>()
+    }
+
+    /// Hash this header with a SHA256 hasher provided by a crypto provider.
+    pub fn hash_with<C: CryptoProvider>(&self) -> Hash {
         // Note that if there is an encoding problem this will
         // panic (as the golang code would):
         // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/block.go#L393
@@ -194,7 +199,9 @@ impl Header {
             self.proposer_address.encode_vec().unwrap(),
         ];
 
-        Hash::Sha256(simple_hash_from_byte_vectors(fields_bytes))
+        Hash::Sha256(merkle::simple_hash_from_byte_vectors::<C::Sha256>(
+            &fields_bytes,
+        ))
     }
 }
 

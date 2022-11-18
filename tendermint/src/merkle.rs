@@ -4,7 +4,7 @@ pub mod proof;
 
 pub use proof::Proof;
 
-use sha2::{Digest, Sha256};
+use digest::{consts::U32, Digest, FixedOutputReset};
 
 use crate::prelude::*;
 
@@ -17,21 +17,28 @@ pub type Hash = [u8; HASH_SIZE];
 /// Compute a simple Merkle root from vectors of arbitrary byte vectors.
 /// The leaves of the tree are the bytes of the given byte vectors in
 /// the given order.
-pub fn simple_hash_from_byte_vectors(byte_vecs: Vec<Vec<u8>>) -> Hash {
-    simple_hash_from_byte_slices_inner(byte_vecs.as_slice())
+pub fn simple_hash_from_byte_vectors<H: Digest<OutputSize = U32> + FixedOutputReset>(
+    byte_vecs: &[Vec<u8>],
+) -> Hash {
+    let mut hasher = H::new();
+    simple_hash_from_byte_vectors_inner(&mut hasher, byte_vecs)
 }
 
-// recurse into subtrees
-fn simple_hash_from_byte_slices_inner(byte_slices: &[Vec<u8>]) -> Hash {
-    let length = byte_slices.len();
+// Recurse into subtrees.
+// Pre and post-conditions: the hasher is in the reset state before and after calling this function.
+fn simple_hash_from_byte_vectors_inner<H: Digest<OutputSize = U32> + FixedOutputReset>(
+    hasher: &mut H,
+    byte_vecs: &[Vec<u8>],
+) -> Hash {
+    let length = byte_vecs.len();
     match length {
-        0 => empty_hash(),
-        1 => leaf_hash(byte_slices[0].as_slice()),
+        0 => empty_hash(hasher),
+        1 => leaf_hash(hasher, &byte_vecs[0]),
         _ => {
             let k = get_split_point(length);
-            let left = simple_hash_from_byte_slices_inner(&byte_slices[..k]);
-            let right = simple_hash_from_byte_slices_inner(&byte_slices[k..]);
-            inner_hash(&left, &right)
+            let left = simple_hash_from_byte_vectors_inner(hasher, &byte_vecs[..k]);
+            let right = simple_hash_from_byte_vectors_inner(hasher, &byte_vecs[k..]);
+            inner_hash(hasher, &left, &right)
         },
     }
 }
@@ -47,12 +54,10 @@ fn get_split_point(length: usize) -> usize {
 }
 
 // tmhash({})
-fn empty_hash() -> Hash {
-    // the empty string / byte slice
-    let empty = Vec::with_capacity(0);
-
-    // hash it !
-    let digest = Sha256::digest(&empty);
+// Pre and post-conditions: the hasher is in the reset state before and after calling this function.
+fn empty_hash<H: Digest<OutputSize = U32> + FixedOutputReset>(hasher: &mut H) -> Hash {
+    // Get the hash of an empty digest state
+    let digest = hasher.finalize_reset();
 
     // copy the GenericArray out
     let mut hash_bytes = [0u8; HASH_SIZE];
@@ -61,14 +66,14 @@ fn empty_hash() -> Hash {
 }
 
 // tmhash(0x00 || leaf)
-fn leaf_hash(bytes: &[u8]) -> Hash {
-    // make a new array starting with 0 and copy in the bytes
-    let mut leaf_bytes = Vec::with_capacity(bytes.len() + 1);
-    leaf_bytes.push(0x00);
-    leaf_bytes.extend_from_slice(bytes);
+// Pre and post-conditions: the hasher is in the reset state before and after calling this function.
+fn leaf_hash<H: Digest<OutputSize = U32> + FixedOutputReset>(hasher: &mut H, bytes: &[u8]) -> Hash {
+    // Feed the data to the hasher, prepended with 0x00
+    Digest::update(hasher, &[0x00]);
+    Digest::update(hasher, bytes);
 
-    // hash it !
-    let digest = Sha256::digest(&leaf_bytes);
+    // Finalize the digest, reset the hasher state
+    let digest = hasher.finalize_reset();
 
     // copy the GenericArray out
     let mut hash_bytes = [0u8; HASH_SIZE];
@@ -77,15 +82,19 @@ fn leaf_hash(bytes: &[u8]) -> Hash {
 }
 
 // tmhash(0x01 || left || right)
-fn inner_hash(left: &[u8], right: &[u8]) -> Hash {
-    // make a new array starting with 0x1 and copy in the bytes
-    let mut inner_bytes = Vec::with_capacity(left.len() + right.len() + 1);
-    inner_bytes.push(0x01);
-    inner_bytes.extend_from_slice(left);
-    inner_bytes.extend_from_slice(right);
+// Pre and post-conditions: the hasher is in the reset state before and after calling this function.
+fn inner_hash<H: Digest<OutputSize = U32> + FixedOutputReset>(
+    hasher: &mut H,
+    left: &[u8],
+    right: &[u8],
+) -> Hash {
+    // Feed the data to the hasher 0x1, then left and right data.
+    Digest::update(hasher, &[0x01]);
+    Digest::update(hasher, left);
+    Digest::update(hasher, right);
 
-    // hash it !
-    let digest = Sha256::digest(&inner_bytes);
+    // Finalize the digest, reset the hasher state
+    let digest = hasher.finalize_reset();
 
     // copy the GenericArray out
     let mut hash_bytes = [0u8; HASH_SIZE];
@@ -95,6 +104,7 @@ fn inner_hash(left: &[u8], right: &[u8]) -> Hash {
 
 #[cfg(test)]
 mod tests {
+    use sha2::Sha256;
     use subtle_encoding::hex;
 
     use super::*; // TODO: use non-subtle ?
@@ -120,7 +130,7 @@ mod tests {
         let empty_tree_root = &hex::decode(empty_tree_root_hex).unwrap();
         let empty_tree: Vec<Vec<u8>> = vec![vec![]; 0];
 
-        let root = simple_hash_from_byte_vectors(empty_tree);
+        let root = simple_hash_from_byte_vectors::<Sha256>(&empty_tree);
         assert_eq!(empty_tree_root, &root);
     }
 
@@ -131,7 +141,7 @@ mod tests {
         let empty_leaf_root = &hex::decode(empty_leaf_root_hex).unwrap();
         let one_empty_leaf: Vec<Vec<u8>> = vec![vec![]; 1];
 
-        let root = simple_hash_from_byte_vectors(one_empty_leaf);
+        let root = simple_hash_from_byte_vectors::<Sha256>(&one_empty_leaf);
         assert_eq!(empty_leaf_root, &root);
     }
 
@@ -143,7 +153,7 @@ mod tests {
         let leaf_root = &hex::decode(leaf_root_hex).unwrap();
         let leaf_tree: Vec<Vec<u8>> = vec![leaf_string.as_bytes().to_vec(); 1];
 
-        let root = simple_hash_from_byte_vectors(leaf_tree);
+        let root = simple_hash_from_byte_vectors::<Sha256>(&leaf_tree);
         assert_eq!(leaf_root, &root);
     }
 
@@ -154,7 +164,8 @@ mod tests {
         let right_string = "N456";
 
         let node_hash = &hex::decode(node_hash_hex).unwrap();
-        let hash = inner_hash(left_string.as_bytes(), right_string.as_bytes());
+        let mut hasher = Sha256::new();
+        let hash = inner_hash(&mut hasher, left_string.as_bytes(), right_string.as_bytes());
         assert_eq!(node_hash, &hash);
     }
 }

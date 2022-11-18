@@ -1,8 +1,8 @@
-use digest::{consts::U32, Digest, FixedOutput};
+use digest::{consts::U32, Digest, FixedOutputReset};
 use signature::{Signature, Signer, Verifier};
 
 pub trait CryptoProvider {
-    type Sha256: Digest + FixedOutput<OutputSize = U32>;
+    type Sha256: Digest<OutputSize = U32> + FixedOutputReset;
 
     type EcdsaSecp256k1Signature: Signature;
     type EcdsaSecp256k1Signer: Signer<Self::EcdsaSecp256k1Signature>;
@@ -17,7 +17,7 @@ mod tests {
     use core::marker::PhantomData;
     use signature::{DigestSigner, DigestVerifier};
 
-    use digest::{consts::U32, Digest, FixedOutput};
+    use digest::{consts::U32, Digest, FixedOutput, FixedOutputReset, Reset};
     use signature::{Signature, Signer, Verifier};
 
     use super::CryptoProvider;
@@ -84,6 +84,18 @@ mod tests {
     impl FixedOutput for SubstrateSha256 {
         fn finalize_into(self, out: &mut digest::Output<Self>) {
             *out = self.0.finalize();
+        }
+    }
+
+    impl Reset for SubstrateSha256 {
+        fn reset(&mut self) {
+            Reset::reset(&mut self.0)
+        }
+    }
+
+    impl FixedOutputReset for SubstrateSha256 {
+        fn finalize_into_reset(&mut self, out: &mut digest::Output<Self>) {
+            *out = self.0.finalize_reset();
         }
     }
 
