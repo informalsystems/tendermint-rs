@@ -35,21 +35,11 @@ fn simple_hash_from_byte_vectors_inner<H: Digest<OutputSize = U32> + FixedOutput
         0 => empty_hash(hasher),
         1 => leaf_hash(hasher, &byte_vecs[0]),
         _ => {
-            let k = get_split_point(length);
-            let left = simple_hash_from_byte_vectors_inner(hasher, &byte_vecs[..k]);
-            let right = simple_hash_from_byte_vectors_inner(hasher, &byte_vecs[k..]);
+            let split = length.next_power_of_two() / 2;
+            let left = simple_hash_from_byte_vectors_inner(hasher, &byte_vecs[..split]);
+            let right = simple_hash_from_byte_vectors_inner(hasher, &byte_vecs[split..]);
             inner_hash(hasher, &left, &right)
         },
-    }
-}
-
-// returns the largest power of 2 less than length
-fn get_split_point(length: usize) -> usize {
-    match length {
-        0 => panic!("tree is empty!"),
-        1 => panic!("tree has only one element!"),
-        2 => 1,
-        _ => length.next_power_of_two() / 2,
     }
 }
 
@@ -110,20 +100,6 @@ mod tests {
     use super::*; // TODO: use non-subtle ?
 
     #[test]
-    fn test_get_split_point() {
-        assert_eq!(get_split_point(2), 1);
-        assert_eq!(get_split_point(3), 2);
-        assert_eq!(get_split_point(4), 2);
-        assert_eq!(get_split_point(5), 4);
-        assert_eq!(get_split_point(10), 8);
-        assert_eq!(get_split_point(20), 16);
-        assert_eq!(get_split_point(100), 64);
-        assert_eq!(get_split_point(255), 128);
-        assert_eq!(get_split_point(256), 128);
-        assert_eq!(get_split_point(257), 256);
-    }
-
-    #[test]
     fn test_rfc6962_empty_tree() {
         let empty_tree_root_hex =
             "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
@@ -166,6 +142,17 @@ mod tests {
         let node_hash = &hex::decode(node_hash_hex).unwrap();
         let mut hasher = Sha256::new();
         let hash = inner_hash(&mut hasher, left_string.as_bytes(), right_string.as_bytes());
+        assert_eq!(node_hash, &hash);
+    }
+
+    #[test]
+    fn test_rfc6962_tree_of_2() {
+        let node_hash_hex = "dc9a0536ff2e196d5a628a5bf377ab247bbddf83342be39699461c1e766e6646";
+        let left = b"N123".to_vec();
+        let right = b"N456".to_vec();
+
+        let node_hash = &hex::decode(node_hash_hex).unwrap();
+        let hash = simple_hash_from_byte_vectors::<Sha256>(&[left, right]);
         assert_eq!(node_hash, &hash);
     }
 }
