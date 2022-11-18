@@ -152,19 +152,6 @@ pub fn verify_single(
     clock_drift: Duration,
     now: Time,
 ) -> Result<LightBlock, Verdict> {
-    trait IntoResult<T, E> {
-        fn into_result(self, ok: T) -> Result<T, E>;
-    }
-
-    impl<T> IntoResult<T, Verdict> for Verdict {
-        fn into_result(self, ok: T) -> Result<T, Verdict> {
-            match self {
-                Verdict::Success => Ok(ok),
-                error => Err(error),
-            }
-        }
-    }
-
     let verifier = ProdVerifier::default();
     let options = Options {
         trust_threshold,
@@ -172,14 +159,17 @@ pub fn verify_single(
         clock_drift,
     };
 
-    verifier
-        .verify(
-            input.as_untrusted_state(),
-            trusted_block.as_trusted_state(),
-            &options,
-            now,
-        )
-        .into_result(input)
+    let result = verifier.verify(
+        input.as_untrusted_state(),
+        trusted_block.as_trusted_state(),
+        &options,
+        now,
+    );
+
+    match result {
+        Verdict::Success => Ok(input),
+        error => Err(error),
+    }
 }
 
 pub fn verify_bisection(
