@@ -1,0 +1,2 @@
+- `[light-client]` Added `validate_untrusted`, `validate_trusting`, `verify_commit` and `verify_commit_trusting` methods to `PredicateVerifier`.
+  ([#1222](https://github.com/informalsystems/tendermint-rs/issues/1222))
