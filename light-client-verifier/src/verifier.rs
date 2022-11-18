@@ -11,7 +11,7 @@ use crate::{
     },
     options::Options,
     predicates as preds,
-    types::{Time, TrustThreshold, TrustedBlockState, UntrustedBlockState},
+    types::{Time, TrustedBlockState, UntrustedBlockState},
 };
 
 /// Represents the result of the verification performed by the
@@ -58,14 +58,23 @@ pub trait Verifier: Send + Sync {
         now: Time,
     ) -> Verdict;
 
-    /// Perform light verification.
-    fn verify_light(&self, untrusted: UntrustedBlockState<'_>) -> Verdict;
+    fn validate_untrusted(&self, untrusted: UntrustedBlockState<'_>) -> Verdict;
 
-    /// Perform light verification with specified trust level.
-    fn verify_light_trusting(
+    fn verify_commit(&self, untrusted: UntrustedBlockState<'_>) -> Verdict;
+
+    fn validate_trusting(
         &self,
         untrusted: UntrustedBlockState<'_>,
-        trust_threshold: TrustThreshold,
+        trusted: TrustedBlockState<'_>,
+        options: &Options,
+        now: Time,
+    ) -> Verdict;
+
+    fn verify_commit_trusting(
+        &self,
+        untrusted: UntrustedBlockState<'_>,
+        trusted: TrustedBlockState<'_>,
+        options: &Options,
     ) -> Verdict;
 }
 
@@ -237,7 +246,24 @@ where
         Verdict::Success
     }
 
-    fn verify_light(&self, untrusted: UntrustedBlockState<'_>) -> Verdict {
+    fn validate_untrusted(&self, untrusted: UntrustedBlockState<'_>) -> Verdict {
+        // Ensure the header validator hashes match the given validators
+        verdict!(self.predicates.validator_sets_match(
+            untrusted.validators,
+            untrusted.signed_header.header.validators_hash,
+            &self.hasher,
+        ));
+
+        // TODO(thane): Is this check necessary for IBC?
+        if let Some(untrusted_next_validators) = untrusted.next_validators {
+            // Ensure the header next validator hashes match the given next validators
+            verdict!(self.predicates.next_validators_match(
+                untrusted_next_validators,
+                untrusted.signed_header.header.next_validators_hash,
+                &self.hasher,
+            ));
+        }
+
         // Ensure the header matches the commit
         verdict!(self.predicates.header_matches_commit(
             &untrusted.signed_header.header,
@@ -252,6 +278,10 @@ where
             &self.commit_validator,
         ));
 
+        Verdict::Success
+    }
+
+    fn verify_commit(&self, untrusted: UntrustedBlockState<'_>) -> Verdict {
         // Verify that more than 2/3 of the validators correctly committed the block.
         verdict!(self.predicates.has_sufficient_signers_overlap(
             untrusted.signed_header,
@@ -262,32 +292,70 @@ where
         Verdict::Success
     }
 
-    fn verify_light_trusting(
+    fn validate_trusting(
         &self,
         untrusted: UntrustedBlockState<'_>,
-        trust_threshold: TrustThreshold,
+        trusted: TrustedBlockState<'_>,
+        options: &Options,
+        now: Time,
     ) -> Verdict {
-        // Ensure the header matches the commit
-        verdict!(self.predicates.header_matches_commit(
-            &untrusted.signed_header.header,
-            untrusted.signed_header.commit.block_id.hash,
-            &self.hasher,
+        // Ensure the latest trusted header hasn't expired
+        verdict!(self.predicates.is_within_trust_period(
+            trusted.header_time,
+            options.trusting_period,
+            now,
         ));
 
-        // Additional implementation specific validation
-        verdict!(self.predicates.valid_commit(
-            untrusted.signed_header,
-            untrusted.validators,
-            &self.commit_validator,
+        // Ensure the header isn't from a future time
+        verdict!(self.predicates.is_header_from_past(
+            untrusted.signed_header.header.time,
+            options.clock_drift,
+            now,
         ));
 
-        // Verify that more than 2/3 of the validators correctly committed the block.
-        verdict!(self.predicates.has_specified_signers_overlap(
-            untrusted.signed_header,
-            untrusted.validators,
-            &self.voting_power_calculator,
-            trust_threshold
-        ));
+        // Check that the untrusted block is more recent than the trusted state
+        verdict!(self
+            .predicates
+            .is_monotonic_bft_time(untrusted.signed_header.header.time, trusted.header_time,));
+
+        let trusted_next_height = trusted.height.increment();
+
+        if untrusted.height() == trusted_next_height {
+            // If the untrusted block is the very next block after the trusted block,
+            // check that their (next) validator sets hashes match.
+            verdict!(self.predicates.valid_next_validator_set(
+                untrusted.signed_header.header.validators_hash,
+                trusted.next_validators_hash,
+            ));
+        } else {
+            // Otherwise, ensure that the untrusted block has a greater height than
+            // the trusted block.
+            verdict!(self
+                .predicates
+                .is_monotonic_height(untrusted.signed_header.header.height, trusted.height));
+        }
+
+        Verdict::Success
+    }
+
+    fn verify_commit_trusting(
+        &self,
+        untrusted: UntrustedBlockState<'_>,
+        trusted: TrustedBlockState<'_>,
+        options: &Options,
+    ) -> Verdict {
+        let trusted_next_height = trusted.height.increment();
+
+        if untrusted.height() != trusted_next_height {
+            // Check there is enough overlap between the validator sets of
+            // the trusted and untrusted blocks.
+            verdict!(self.predicates.has_sufficient_validators_overlap(
+                untrusted.signed_header,
+                trusted.next_validators,
+                &options.trust_threshold,
+                &self.voting_power_calculator,
+            ));
+        }
 
         Verdict::Success
     }

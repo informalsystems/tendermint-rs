@@ -168,10 +168,11 @@ pub fn verify_single(
     let verifier = ProdVerifier::default();
 
     verifier
-        .verify_light(input.as_untrusted_state())
+        .validate_untrusted(input.as_untrusted_state())
         .into_result(())?;
+
     verifier
-        .verify_light_trusting(input.as_untrusted_state(), trust_threshold)
+        .verify_commit(input.as_untrusted_state())
         .into_result(())?;
 
     let options = Options {
@@ -179,6 +180,23 @@ pub fn verify_single(
         trusting_period,
         clock_drift,
     };
+
+    verifier
+        .validate_trusting(
+            input.as_untrusted_state(),
+            trusted_block.as_trusted_state(),
+            &options,
+            now,
+        )
+        .into_result(())?;
+
+    verifier
+        .verify_commit_trusting(
+            input.as_untrusted_state(),
+            trusted_block.as_trusted_state(),
+            &options,
+        )
+        .into_result(())?;
 
     verifier
         .verify(
