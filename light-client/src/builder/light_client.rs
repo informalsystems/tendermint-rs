@@ -1,13 +1,15 @@
 //! DSL for building a light client [`Instance`]
 
-use tendermint::{block::Height, Hash};
+use tendermint::{block::Height, crypto::CryptoProvider, Hash};
+
 #[cfg(feature = "rpc-client")]
 use {
     crate::components::clock::SystemClock,
     crate::components::io::ProdIo,
     crate::components::scheduler,
-    crate::verifier::{operations::ProdHasher, predicates::ProdPredicates, ProdVerifier},
+    crate::verifier::{predicates::ProdPredicates, ProdVerifier},
     core::time::Duration,
+    tendermint::crypto::DefaultCryptoProvider,
     tendermint_rpc as rpc,
 };
 
@@ -23,7 +25,6 @@ use crate::{
     store::LightStore,
     supervisor::Instance,
     verifier::{
-        operations::Hasher,
         options::Options,
         predicates::VerificationPredicates,
         types::{LightBlock, PeerId, Status},
@@ -39,30 +40,28 @@ pub struct HasTrustedState;
 
 /// Builder for a light client [`Instance`]
 #[must_use]
-pub struct LightClientBuilder<State> {
+pub struct LightClientBuilder<State, C: CryptoProvider> {
     peer_id: PeerId,
     options: Options,
     io: Box<dyn Io>,
     clock: Box<dyn Clock>,
-    hasher: Box<dyn Hasher>,
     verifier: Box<dyn Verifier>,
     scheduler: Box<dyn Scheduler>,
-    predicates: Box<dyn VerificationPredicates>,
+    predicates: Box<dyn VerificationPredicates<C>>,
     light_store: Box<dyn LightStore>,
 
     #[allow(dead_code)]
     state: State,
 }
 
-impl<Current> LightClientBuilder<Current> {
+impl<Current, C: CryptoProvider> LightClientBuilder<Current, C> {
     /// Private method to move from one state to another
-    fn with_state<Next>(self, state: Next) -> LightClientBuilder<Next> {
+    fn with_state<Next>(self, state: Next) -> LightClientBuilder<Next, C> {
         LightClientBuilder {
             peer_id: self.peer_id,
             options: self.options,
             io: self.io,
             clock: self.clock,
-            hasher: self.hasher,
             verifier: self.verifier,
             scheduler: self.scheduler,
             predicates: self.predicates,
@@ -72,9 +71,9 @@ impl<Current> LightClientBuilder<Current> {
     }
 }
 
-impl LightClientBuilder<NoTrustedState> {
+#[cfg(feature = "rpc-client")]
+impl LightClientBuilder<NoTrustedState, DefaultCryptoProvider> {
     /// Initialize a builder for a production (non-mock) light client.
-    #[cfg(feature = "rpc-client")]
     pub fn prod(
         peer_id: PeerId,
         rpc_client: rpc::HttpClient,
@@ -87,30 +86,30 @@ impl LightClientBuilder<NoTrustedState> {
             options,
             light_store,
             Box::new(ProdIo::new(peer_id, rpc_client, timeout)),
-            Box::new(ProdHasher),
             Box::new(SystemClock),
             Box::new(ProdVerifier::default()),
             Box::new(scheduler::basic_bisecting_schedule),
             Box::new(ProdPredicates),
         )
     }
+}
 
+impl<C: CryptoProvider> LightClientBuilder<NoTrustedState, C> {
     /// Initialize a builder for a custom light client, by providing all dependencies upfront.
+    // TODO: redesign this, it's a builder API!
     #[allow(clippy::too_many_arguments)]
     pub fn custom(
         peer_id: PeerId,
         options: Options,
         light_store: Box<dyn LightStore>,
         io: Box<dyn Io>,
-        hasher: Box<dyn Hasher>,
         clock: Box<dyn Clock>,
         verifier: Box<dyn Verifier>,
         scheduler: Box<dyn Scheduler>,
-        predicates: Box<dyn VerificationPredicates>,
+        predicates: Box<dyn VerificationPredicates<C>>,
     ) -> Self {
         Self {
             peer_id,
-            hasher,
             io,
             verifier,
             light_store,
@@ -126,7 +125,7 @@ impl LightClientBuilder<NoTrustedState> {
     fn trust_light_block(
         mut self,
         trusted_state: LightBlock,
-    ) -> Result<LightClientBuilder<HasTrustedState>, Error> {
+    ) -> Result<LightClientBuilder<HasTrustedState, C>, Error> {
         self.validate(&trusted_state)?;
 
         // TODO(liamsi, romac): it is unclear if this should be Trusted or only Verified
@@ -137,7 +136,7 @@ impl LightClientBuilder<NoTrustedState> {
 
     /// Keep using the latest verified or trusted block in the light store.
     /// Such a block must exists otherwise this will fail.
-    pub fn trust_from_store(self) -> Result<LightClientBuilder<HasTrustedState>, Error> {
+    pub fn trust_from_store(self) -> Result<LightClientBuilder<HasTrustedState, C>, Error> {
         let trusted_state = self
             .light_store
             .highest_trusted_or_verified()
@@ -151,7 +150,7 @@ impl LightClientBuilder<NoTrustedState> {
         self,
         trusted_height: Height,
         trusted_hash: Hash,
-    ) -> Result<LightClientBuilder<HasTrustedState>, Error> {
+    ) -> Result<LightClientBuilder<HasTrustedState, C>, Error> {
         let trusted_state = self
             .io
             .fetch_light_block(AtHeight::At(trusted_height))
@@ -164,7 +163,7 @@ impl LightClientBuilder<NoTrustedState> {
             ));
         }
 
-        let header_hash = self.hasher.hash_header(&trusted_state.signed_header.header);
+        let header_hash = trusted_state.signed_header.header.hash_with::<C>();
 
         if header_hash != trusted_hash {
             return Err(Error::hash_mismatch(trusted_hash, header_hash));
@@ -189,7 +188,6 @@ impl LightClientBuilder<NoTrustedState> {
             .validator_sets_match(
                 &light_block.validators,
                 light_block.signed_header.header.validators_hash,
-                &*self.hasher,
             )
             .map_err(Error::invalid_light_block)?;
 
@@ -197,7 +195,6 @@ impl LightClientBuilder<NoTrustedState> {
             .next_validators_match(
                 &light_block.next_validators,
                 light_block.signed_header.header.next_validators_hash,
-                &*self.hasher,
             )
             .map_err(Error::invalid_light_block)?;
 
@@ -205,7 +202,7 @@ impl LightClientBuilder<NoTrustedState> {
     }
 }
 
-impl LightClientBuilder<HasTrustedState> {
+impl<C: CryptoProvider> LightClientBuilder<HasTrustedState, C> {
     /// Build the light client [`Instance`].
     #[must_use]
     pub fn build(self) -> Instance {
@@ -220,7 +217,6 @@ impl LightClientBuilder<HasTrustedState> {
             self.clock,
             self.scheduler,
             self.verifier,
-            self.hasher,
             self.io,
         );
 

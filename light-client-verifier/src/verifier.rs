@@ -2,11 +2,12 @@
 
 use preds::{ProdPredicates, VerificationPredicates};
 use serde::{Deserialize, Serialize};
+use tendermint::crypto::CryptoProvider;
 
 use crate::{
     errors::{ErrorExt, VerificationError, VerificationErrorDetail},
     operations::{
-        voting_power::VotingPowerTally, CommitValidator, Hasher, ProdCommitValidator, ProdHasher,
+        voting_power::VotingPowerTally, CommitValidator, ProdCommitValidator,
         ProdVotingPowerCalculator, VotingPowerCalculator,
     },
     options::Options,
@@ -70,55 +71,38 @@ macro_rules! verdict {
 
 /// Predicate verifier encapsulating components necessary to facilitate
 /// verification.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct PredicateVerifier<P, C, V, H> {
     predicates: P,
     voting_power_calculator: C,
     commit_validator: V,
-    hasher: H,
-}
-
-impl<P, C, V, H> Default for PredicateVerifier<P, C, V, H>
-where
-    P: Default,
-    C: Default,
-    V: Default,
-    H: Default,
-{
-    fn default() -> Self {
-        Self {
-            predicates: P::default(),
-            voting_power_calculator: C::default(),
-            commit_validator: V::default(),
-            hasher: H::default(),
-        }
-    }
+    crypto_provider: H,
 }
 
 impl<P, C, V, H> PredicateVerifier<P, C, V, H>
 where
-    P: VerificationPredicates,
+    P: VerificationPredicates<H>,
     C: VotingPowerCalculator,
     V: CommitValidator,
-    H: Hasher,
+    H: CryptoProvider,
 {
     /// Constructor.
-    pub fn new(predicates: P, voting_power_calculator: C, commit_validator: V, hasher: H) -> Self {
+    pub fn new(predicates: P, voting_power_calculator: C, commit_validator: V) -> Self {
         Self {
             predicates,
             voting_power_calculator,
             commit_validator,
-            hasher,
+            crypto_provider: Default::default(),
         }
     }
 }
 
 impl<P, C, V, H> Verifier for PredicateVerifier<P, C, V, H>
 where
-    P: VerificationPredicates,
+    P: VerificationPredicates<H>,
     C: VotingPowerCalculator,
     V: CommitValidator,
-    H: Hasher,
+    H: CryptoProvider,
 {
     /// Validate the given light block state.
     ///
@@ -159,7 +143,6 @@ where
         verdict!(self.predicates.validator_sets_match(
             untrusted.validators,
             untrusted.signed_header.header.validators_hash,
-            &self.hasher,
         ));
 
         // TODO(thane): Is this check necessary for IBC?
@@ -168,7 +151,6 @@ where
             verdict!(self.predicates.next_validators_match(
                 untrusted_next_validators,
                 untrusted.signed_header.header.next_validators_hash,
-                &self.hasher,
             ));
         }
 
@@ -176,7 +158,6 @@ where
         verdict!(self.predicates.header_matches_commit(
             &untrusted.signed_header.header,
             untrusted.signed_header.commit.block_id.hash,
-            &self.hasher,
         ));
 
         // Additional implementation specific validation
@@ -228,6 +209,11 @@ where
     }
 }
 
+#[cfg(feature = "rust-crypto")]
 /// The default production implementation of the [`PredicateVerifier`].
-pub type ProdVerifier =
-    PredicateVerifier<ProdPredicates, ProdVotingPowerCalculator, ProdCommitValidator, ProdHasher>;
+pub type ProdVerifier = PredicateVerifier<
+    ProdPredicates,
+    ProdVotingPowerCalculator,
+    ProdCommitValidator,
+    tendermint::crypto::DefaultCryptoProvider,
+>;

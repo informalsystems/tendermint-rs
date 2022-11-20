@@ -1,7 +1,7 @@
 use digest::{consts::U32, Digest, FixedOutputReset};
 use signature::{Signature, Signer, Verifier};
 
-pub trait CryptoProvider {
+pub trait CryptoProvider: Default + Send + Sync {
     type Sha256: Digest<OutputSize = U32> + FixedOutputReset;
 
     type EcdsaSecp256k1Signature: Signature;
@@ -22,8 +22,10 @@ mod tests {
 
     use super::CryptoProvider;
 
-    struct SubstrateHostFunctionsManager;
     use k256::ecdsa::{SigningKey, VerifyingKey};
+
+    #[derive(Default)]
+    struct SubstrateHostFunctionsManager;
 
     #[derive(Debug, Default)]
     struct SubstrateSha256(sha2::Sha256);

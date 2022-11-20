@@ -1,10 +1,9 @@
 //! Provides an interface and default implementation for the `CommitValidator` operation
 
-use tendermint::block::CommitSig;
+use tendermint::{block::CommitSig, crypto::CryptoProvider};
 
 use crate::{
     errors::VerificationError,
-    operations::{Hasher, ProdHasher},
     types::{SignedHeader, ValidatorSet},
 };
 
@@ -25,27 +24,43 @@ pub trait CommitValidator: Send + Sync {
     ) -> Result<(), VerificationError>;
 }
 
-/// Production-ready implementation of a commit validator
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ProdCommitValidator {
-    hasher: ProdHasher,
+/// Generic implementation of a commit validator, with cryptographic primitives
+/// provided via the [`CryptoProvider`] trait.
+#[derive(Copy, Clone, Debug)]
+pub struct ProvidedCommitValidator<C> {
+    _provider: C,
 }
 
-impl ProdCommitValidator {
+/// Production-ready implementation of a commit validator.
+#[cfg(feature = "rust-crypto")]
+pub type ProdCommitValidator = ProvidedCommitValidator<tendermint::crypto::DefaultCryptoProvider>;
+
+impl<C> ProvidedCommitValidator<C>
+where
+    C: CryptoProvider + Default,
+{
     /// Create a new commit validator using the given [`Hasher`]
     /// to compute the hash of headers and validator sets.
-    pub fn new(hasher: ProdHasher) -> Self {
-        Self { hasher }
+    pub fn new() -> Self {
+        Self {
+            _provider: Default::default(),
+        }
     }
 }
 
-impl Default for ProdCommitValidator {
+impl<C> Default for ProvidedCommitValidator<C>
+where
+    C: CryptoProvider + Default,
+{
     fn default() -> Self {
-        Self::new(ProdHasher::default())
+        Self::new()
     }
 }
 
-impl CommitValidator for ProdCommitValidator {
+impl<C> CommitValidator for ProvidedCommitValidator<C>
+where
+    C: CryptoProvider + Send + Sync,
+{
     fn validate(
         &self,
         signed_header: &SignedHeader,
@@ -96,7 +111,7 @@ impl CommitValidator for ProdCommitValidator {
             if validator_set.validator(*validator_address).is_none() {
                 return Err(VerificationError::faulty_signer(
                     *validator_address,
-                    self.hasher.hash_validator_set(validator_set),
+                    validator_set.hash_with::<C>(),
                 ));
             }
         }

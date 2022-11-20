@@ -2,20 +2,23 @@
 
 use core::time::Duration;
 
-use tendermint::{block::Height, hash::Hash};
+use tendermint::{block::Height, crypto::CryptoProvider, hash::Hash};
 
 use crate::{
     errors::VerificationError,
-    operations::{CommitValidator, Hasher, VotingPowerCalculator},
+    operations::{CommitValidator, VotingPowerCalculator},
     prelude::*,
     types::{Header, SignedHeader, Time, TrustThreshold, ValidatorSet},
 };
 
 /// Production predicates, using the default implementation
 /// of the `VerificationPredicates` trait.
+#[cfg(feature = "rust-crypto")]
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct ProdPredicates;
-impl VerificationPredicates for ProdPredicates {}
+
+#[cfg(feature = "rust-crypto")]
+impl VerificationPredicates<tendermint::crypto::DefaultCryptoProvider> for ProdPredicates {}
 
 /// Defines the various predicates used to validate and verify light blocks.
 ///
@@ -23,16 +26,15 @@ impl VerificationPredicates for ProdPredicates {}
 ///
 /// This enables test implementations to only override a single method rather than
 /// have to re-define every predicate.
-pub trait VerificationPredicates: Send + Sync {
+pub trait VerificationPredicates<C: CryptoProvider>: Send + Sync {
     /// Compare the provided validator_set_hash against the hash produced from hashing the validator
     /// set.
     fn validator_sets_match(
         &self,
         validators: &ValidatorSet,
         header_validators_hash: Hash,
-        hasher: &dyn Hasher,
     ) -> Result<(), VerificationError> {
-        let validators_hash = hasher.hash_validator_set(validators);
+        let validators_hash = validators.hash_with::<C>();
         if header_validators_hash == validators_hash {
             Ok(())
         } else {
@@ -48,9 +50,8 @@ pub trait VerificationPredicates: Send + Sync {
         &self,
         next_validators: &ValidatorSet,
         header_next_validators_hash: Hash,
-        hasher: &dyn Hasher,
     ) -> Result<(), VerificationError> {
-        let next_validators_hash = hasher.hash_validator_set(next_validators);
+        let next_validators_hash = next_validators.hash_with::<C>();
         if header_next_validators_hash == next_validators_hash {
             Ok(())
         } else {
@@ -66,9 +67,8 @@ pub trait VerificationPredicates: Send + Sync {
         &self,
         header: &Header,
         commit_hash: Hash,
-        hasher: &dyn Hasher,
     ) -> Result<(), VerificationError> {
-        let header_hash = hasher.hash_header(header);
+        let header_hash = header.hash_with::<C>();
         if header_hash == commit_hash {
             Ok(())
         } else {
@@ -203,7 +203,7 @@ pub trait VerificationPredicates: Send + Sync {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "rust-crypto"))]
 mod tests {
     use core::{convert::TryInto, time::Duration};
 
@@ -216,9 +216,7 @@ mod tests {
 
     use crate::{
         errors::{VerificationError, VerificationErrorDetail},
-        operations::{
-            Hasher, ProdCommitValidator, ProdHasher, ProdVotingPowerCalculator, VotingPowerTally,
-        },
+        operations::{ProdCommitValidator, ProdVotingPowerCalculator, VotingPowerTally},
         predicates::{ProdPredicates, VerificationPredicates},
         prelude::*,
         types::{LightBlock, TrustThreshold},
@@ -348,14 +346,12 @@ mod tests {
         let bad_validator_set = ValidatorSet::new(vec!["bad-val"]).generate().unwrap();
 
         let vp = ProdPredicates::default();
-        let hasher = ProdHasher::default();
 
         // Test positive case
         // 1. For predicate: validator_sets_match
         let val_sets_match_ok = vp.validator_sets_match(
             &light_block.validators,
             light_block.signed_header.header.validators_hash,
-            &hasher,
         );
 
         assert!(val_sets_match_ok.is_ok());
@@ -364,7 +360,6 @@ mod tests {
         let next_val_sets_match_ok = vp.next_validators_match(
             &light_block.next_validators,
             light_block.signed_header.header.next_validators_hash,
-            &hasher,
         );
 
         assert!(next_val_sets_match_ok.is_ok());
@@ -376,7 +371,6 @@ mod tests {
         let val_sets_match_err = vp.validator_sets_match(
             &light_block.validators,
             light_block.signed_header.header.validators_hash,
-            &hasher,
         );
 
         match val_sets_match_err {
@@ -385,10 +379,7 @@ mod tests {
                     e.header_validators_hash,
                     light_block.signed_header.header.validators_hash
                 );
-                assert_eq!(
-                    e.validators_hash,
-                    hasher.hash_validator_set(&light_block.validators)
-                );
+                assert_eq!(e.validators_hash, light_block.validators.hash());
             },
             _ => panic!("expected InvalidValidatorSet error"),
         }
@@ -398,7 +389,6 @@ mod tests {
         let next_val_sets_match_err = vp.next_validators_match(
             &light_block.next_validators,
             light_block.signed_header.header.next_validators_hash,
-            &hasher,
         );
 
         match next_val_sets_match_err {
@@ -407,10 +397,7 @@ mod tests {
                     e.header_next_validators_hash,
                     light_block.signed_header.header.next_validators_hash
                 );
-                assert_eq!(
-                    e.next_validators_hash,
-                    hasher.hash_validator_set(&light_block.next_validators)
-                );
+                assert_eq!(e.next_validators_hash, light_block.next_validators.hash());
             },
             _ => panic!("expected InvalidNextValidatorSet error"),
         }
@@ -424,14 +411,10 @@ mod tests {
             .signed_header;
 
         let vp = ProdPredicates::default();
-        let hasher = ProdHasher::default();
 
         // 1. ensure valid signed header verifies
-        let result_ok = vp.header_matches_commit(
-            &signed_header.header,
-            signed_header.commit.block_id.hash,
-            &hasher,
-        );
+        let result_ok =
+            vp.header_matches_commit(&signed_header.header, signed_header.commit.block_id.hash);
 
         assert!(result_ok.is_ok());
 
@@ -440,14 +423,11 @@ mod tests {
             "15F15EF50BDE2018F4B129A827F90C18222C757770C8295EB8EE7BF50E761BC0"
                 .parse()
                 .unwrap();
-        let result_err = vp.header_matches_commit(
-            &signed_header.header,
-            signed_header.commit.block_id.hash,
-            &hasher,
-        );
+        let result_err =
+            vp.header_matches_commit(&signed_header.header, signed_header.commit.block_id.hash);
 
         // 3. ensure it fails with: VerificationVerificationError::InvalidCommitValue
-        let header_hash = hasher.hash_header(&signed_header.header);
+        let header_hash = signed_header.header.hash();
 
         match result_err {
             Err(VerificationError(VerificationErrorDetail::InvalidCommitValue(e), _)) => {
@@ -466,8 +446,7 @@ mod tests {
         let val_set = light_block.validators;
 
         let vp = ProdPredicates::default();
-        let hasher = ProdHasher::default();
-        let commit_validator = ProdCommitValidator::new(hasher);
+        let commit_validator = ProdCommitValidator::new();
 
         // Test scenarios -->
         // 1. valid commit - must result "Ok"
@@ -540,10 +519,7 @@ mod tests {
                         .unwrap()
                 );
 
-                assert_eq!(
-                    e.validator_set,
-                    hasher.hash_validator_set(&val_set_with_faulty_signer)
-                );
+                assert_eq!(e.validator_set, val_set_with_faulty_signer.hash());
             },
             _ => panic!("expected FaultySigner error"),
         }

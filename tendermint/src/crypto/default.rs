@@ -3,7 +3,8 @@ use sha2::Sha256;
 use super::CryptoProvider;
 
 /// A batteries-included provider of cryptograpic functions.
-pub struct DefaultCryptoProvider {}
+#[derive(Copy, Clone, Debug, Default)]
+pub struct DefaultCryptoProvider;
 
 impl CryptoProvider for DefaultCryptoProvider {
     type Sha256 = Sha256;

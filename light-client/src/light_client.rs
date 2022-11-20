@@ -14,7 +14,6 @@ use crate::{
     errors::Error,
     state::State,
     verifier::{
-        operations::Hasher,
         types::{Height, LightBlock, PeerId, Status},
         Verdict, Verifier,
     },
@@ -40,10 +39,6 @@ pub struct LightClient {
     scheduler: Box<dyn Scheduler>,
     verifier: Box<dyn Verifier>,
     io: Box<dyn Io>,
-
-    // Only used in verify_backwards when "unstable" feature is enabled
-    #[allow(dead_code)]
-    hasher: Box<dyn Hasher>,
 }
 
 impl fmt::Debug for LightClient {
@@ -63,7 +58,6 @@ impl LightClient {
         clock: impl Clock + 'static,
         scheduler: impl Scheduler + 'static,
         verifier: impl Verifier + 'static,
-        hasher: impl Hasher + 'static,
         io: impl Io + 'static,
     ) -> Self {
         Self {
@@ -72,7 +66,6 @@ impl LightClient {
             clock: Box::new(clock),
             scheduler: Box::new(scheduler),
             verifier: Box::new(verifier),
-            hasher: Box::new(hasher),
             io: Box::new(io),
         }
     }
@@ -84,7 +77,6 @@ impl LightClient {
         clock: Box<dyn Clock>,
         scheduler: Box<dyn Scheduler>,
         verifier: Box<dyn Verifier>,
-        hasher: Box<dyn Hasher>,
         io: Box<dyn Io>,
     ) -> Self {
         Self {
@@ -94,7 +86,6 @@ impl LightClient {
             scheduler,
             verifier,
             io,
-            hasher,
         }
     }
 
@@ -326,13 +317,14 @@ impl LightClient {
         for height in heights {
             let (current, _status) = self.get_or_fetch_block(height, state)?;
 
+            /*
             let latest_last_block_id = latest
                 .signed_header
                 .header
                 .last_block_id
                 .ok_or_else(|| Error::missing_last_block_id(latest.height()))?;
 
-            let current_hash = self.hasher.hash_header(&current.signed_header.header);
+            let current_hash = current.signed_header.header.hash_with::<H>();
 
             if current_hash != latest_last_block_id.hash {
                 return Err(Error::invalid_adjacent_headers(
@@ -340,6 +332,7 @@ impl LightClient {
                     latest_last_block_id.hash,
                 ));
             }
+            */
 
             // `latest` and `current` are linked together by `last_block_id`,
             // therefore it is not relevant which we verified first.

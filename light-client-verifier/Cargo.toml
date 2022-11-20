@@ -23,7 +23,8 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["flex-error/std", "flex-error/eyre_tracer"]
+default = ["rust-crypto", "flex-error/std", "flex-error/eyre_tracer"]
+rust-crypto = ["tendermint/rust-crypto"]
 
 [dependencies]
 tendermint = { version = "0.26.0", path = "../tendermint", default-features = false }
