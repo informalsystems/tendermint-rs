@@ -1,18 +1,20 @@
 //! Provides an interface and default implementation of the `Verifier` component
 
-use preds::{ProdPredicates, VerificationPredicates};
 use serde::{Deserialize, Serialize};
 use tendermint::crypto::CryptoProvider;
 
 use crate::{
     errors::{ErrorExt, VerificationError, VerificationErrorDetail},
-    operations::{
-        voting_power::VotingPowerTally, CommitValidator, ProdCommitValidator,
-        ProdVotingPowerCalculator, VotingPowerCalculator,
-    },
+    operations::{voting_power::VotingPowerTally, CommitValidator, VotingPowerCalculator},
     options::Options,
-    predicates as preds,
+    predicates::VerificationPredicates,
     types::{Time, TrustedBlockState, UntrustedBlockState},
+};
+
+#[cfg(feature = "rust-crypto")]
+use crate::{
+    operations::{ProdCommitValidator, ProdVotingPowerCalculator},
+    predicates::ProdPredicates,
 };
 
 /// Represents the result of the verification performed by the
