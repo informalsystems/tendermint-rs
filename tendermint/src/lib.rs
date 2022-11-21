@@ -56,6 +56,9 @@ pub mod validator;
 mod version;
 pub mod vote;
 
+pub mod v0_34;
+pub mod v0_37;
+
 #[cfg(test)]
 mod test;
 
