@@ -113,10 +113,7 @@ where
     }
 
     /// Validates an `UntrustedBlockState`.
-    pub fn validate_untrusted(
-        &self,
-        untrusted: &UntrustedBlockState<'_>,
-    ) -> Result<(), VerificationError> {
+    pub fn validate(&self, untrusted: &UntrustedBlockState<'_>) -> Result<(), VerificationError> {
         // Ensure the header validator hashes match the given validators
         self.predicates.validator_sets_match(
             untrusted.validators,
@@ -167,7 +164,7 @@ where
 
     /// Validate an `UntrustedBlockState`, based on the given `TrustedBlockState`, `Options` and
     /// current time.
-    pub fn validate_trusting(
+    pub fn validate_against_trusted(
         &self,
         untrusted: &UntrustedBlockState<'_>,
         trusted: &TrustedBlockState<'_>,
@@ -213,7 +210,7 @@ where
 
     /// Check there is enough overlap between the validator sets of the trusted and untrusted
     /// blocks.
-    pub fn verify_commit_trusting(
+    pub fn verify_commit_against_trusted(
         &self,
         untrusted: &UntrustedBlockState<'_>,
         trusted: &TrustedBlockState<'_>,
@@ -264,9 +261,9 @@ where
         options: &Options,
         now: Time,
     ) -> Verdict {
-        verdict!(self.validate_untrusted(&untrusted));
-        verdict!(self.validate_trusting(&untrusted, &trusted, options, now));
-        verdict!(self.verify_commit_trusting(&untrusted, &trusted, options));
+        verdict!(self.validate(&untrusted));
+        verdict!(self.validate_against_trusted(&untrusted, &trusted, options, now));
+        verdict!(self.verify_commit_against_trusted(&untrusted, &trusted, options));
         verdict!(self.verify_commit(&untrusted));
         Verdict::Success
     }
