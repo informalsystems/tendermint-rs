@@ -165,7 +165,7 @@ where
         Ok(())
     }
 
-    /// Validate a `UntrustedBlockState`, based on the given `TrustedBlockState`, `Options` and
+    /// Validate an `UntrustedBlockState`, based on the given `TrustedBlockState`, `Options` and
     /// current time.
     pub fn validate_trusting(
         &self,
@@ -266,8 +266,8 @@ where
     ) -> Verdict {
         verdict!(self.validate_untrusted(&untrusted));
         verdict!(self.validate_trusting(&untrusted, &trusted, options, now));
-        verdict!(self.verify_commit(&untrusted));
         verdict!(self.verify_commit_trusting(&untrusted, &trusted, options));
+        verdict!(self.verify_commit(&untrusted));
         Verdict::Success
     }
 }
