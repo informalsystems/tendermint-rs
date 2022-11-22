@@ -121,9 +121,8 @@ where
             &self.hasher,
         )?;
 
-        // TODO(thane): Is this check necessary for IBC?
+        // Ensure the header next validator hashes match the given next validators
         if let Some(untrusted_next_validators) = untrusted.next_validators {
-            // Ensure the header next validator hashes match the given next validators
             self.predicates.next_validators_match(
                 untrusted_next_validators,
                 untrusted.signed_header.header.next_validators_hash,
