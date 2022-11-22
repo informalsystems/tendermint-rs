@@ -68,6 +68,15 @@ macro_rules! verdict {
     };
 }
 
+macro_rules! ensure_verdict_success {
+    ($e:expr) => {
+        let verdict = $e;
+        if !matches!(verdict, Verdict::Success) {
+            return verdict;
+        }
+    };
+}
+
 /// Predicate verifier encapsulating components necessary to facilitate
 /// verification.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -113,52 +122,49 @@ where
     }
 
     /// Validates an `UntrustedBlockState`.
-    pub fn validate(&self, untrusted: &UntrustedBlockState<'_>) -> Result<(), VerificationError> {
+    pub fn validate(&self, untrusted: &UntrustedBlockState<'_>) -> Verdict {
         // Ensure the header validator hashes match the given validators
-        self.predicates.validator_sets_match(
+        verdict!(self.predicates.validator_sets_match(
             untrusted.validators,
             untrusted.signed_header.header.validators_hash,
             &self.hasher,
-        )?;
+        ));
 
         // Ensure the header next validator hashes match the given next validators
         if let Some(untrusted_next_validators) = untrusted.next_validators {
-            self.predicates.next_validators_match(
+            verdict!(self.predicates.next_validators_match(
                 untrusted_next_validators,
                 untrusted.signed_header.header.next_validators_hash,
                 &self.hasher,
-            )?;
+            ));
         }
 
         // Ensure the header matches the commit
-        self.predicates.header_matches_commit(
+        verdict!(self.predicates.header_matches_commit(
             &untrusted.signed_header.header,
             untrusted.signed_header.commit.block_id.hash,
             &self.hasher,
-        )?;
+        ));
 
         // Additional implementation specific validation
-        self.predicates.valid_commit(
+        verdict!(self.predicates.valid_commit(
             untrusted.signed_header,
             untrusted.validators,
             &self.commit_validator,
-        )?;
+        ));
 
-        Ok(())
+        Verdict::Success
     }
 
     /// Verify that more than 2/3 of the validators correctly committed the block.
-    pub fn verify_commit(
-        &self,
-        untrusted: &UntrustedBlockState<'_>,
-    ) -> Result<(), VerificationError> {
-        self.predicates.has_sufficient_signers_overlap(
+    pub fn verify_commit(&self, untrusted: &UntrustedBlockState<'_>) -> Verdict {
+        verdict!(self.predicates.has_sufficient_signers_overlap(
             untrusted.signed_header,
             untrusted.validators,
             &self.voting_power_calculator,
-        )?;
+        ));
 
-        Ok(())
+        Verdict::Success
     }
 
     /// Validate an `UntrustedBlockState`, based on the given `TrustedBlockState`, `Options` and
@@ -169,42 +175,44 @@ where
         trusted: &TrustedBlockState<'_>,
         options: &Options,
         now: Time,
-    ) -> Result<(), VerificationError> {
+    ) -> Verdict {
         // Ensure the latest trusted header hasn't expired
-        self.predicates.is_within_trust_period(
+        verdict!(self.predicates.is_within_trust_period(
             trusted.header_time,
             options.trusting_period,
             now,
-        )?;
+        ));
 
         // Ensure the header isn't from a future time
-        self.predicates.is_header_from_past(
+        verdict!(self.predicates.is_header_from_past(
             untrusted.signed_header.header.time,
             options.clock_drift,
             now,
-        )?;
+        ));
 
         // Check that the untrusted block is more recent than the trusted state
-        self.predicates
-            .is_monotonic_bft_time(untrusted.signed_header.header.time, trusted.header_time)?;
+        verdict!(self
+            .predicates
+            .is_monotonic_bft_time(untrusted.signed_header.header.time, trusted.header_time));
 
         let trusted_next_height = trusted.height.increment();
 
         if untrusted.height() == trusted_next_height {
             // If the untrusted block is the very next block after the trusted block,
             // check that their (next) validator sets hashes match.
-            self.predicates.valid_next_validator_set(
+            verdict!(self.predicates.valid_next_validator_set(
                 untrusted.signed_header.header.validators_hash,
                 trusted.next_validators_hash,
-            )?;
+            ));
         } else {
             // Otherwise, ensure that the untrusted block has a greater height than
             // the trusted block.
-            self.predicates
-                .is_monotonic_height(untrusted.signed_header.header.height, trusted.height)?;
+            verdict!(self
+                .predicates
+                .is_monotonic_height(untrusted.signed_header.header.height, trusted.height));
         }
 
-        Ok(())
+        Verdict::Success
     }
 
     /// Check there is enough overlap between the validator sets of the trusted and untrusted
@@ -214,21 +222,21 @@ where
         untrusted: &UntrustedBlockState<'_>,
         trusted: &TrustedBlockState<'_>,
         options: &Options,
-    ) -> Result<(), VerificationError> {
+    ) -> Verdict {
         let trusted_next_height = trusted.height.increment();
 
         if untrusted.height() != trusted_next_height {
             // Check there is enough overlap between the validator sets of
             // the trusted and untrusted blocks.
-            self.predicates.has_sufficient_validators_overlap(
+            verdict!(self.predicates.has_sufficient_validators_overlap(
                 untrusted.signed_header,
                 trusted.next_validators,
                 &options.trust_threshold,
                 &self.voting_power_calculator,
-            )?;
+            ));
         }
 
-        Ok(())
+        Verdict::Success
     }
 }
 
@@ -260,10 +268,10 @@ where
         options: &Options,
         now: Time,
     ) -> Verdict {
-        verdict!(self.validate(&untrusted));
-        verdict!(self.validate_against_trusted(&untrusted, &trusted, options, now));
-        verdict!(self.verify_commit_against_trusted(&untrusted, &trusted, options));
-        verdict!(self.verify_commit(&untrusted));
+        ensure_verdict_success!(self.validate(&untrusted));
+        ensure_verdict_success!(self.validate_against_trusted(&untrusted, &trusted, options, now));
+        ensure_verdict_success!(self.verify_commit_against_trusted(&untrusted, &trusted, options));
+        ensure_verdict_success!(self.verify_commit(&untrusted));
         Verdict::Success
     }
 }
