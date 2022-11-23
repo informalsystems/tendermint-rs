@@ -32,7 +32,7 @@ secp256k1 = ["tendermint/secp256k1", "tendermint-rpc/secp256k1"]
 lightstore-sled = ["sled"]
 unstable = []
 # Enable to execute long-running model-based tests
-mbt = []
+mbt = ["rust-crypto"]
 
 [dependencies]
 tendermint = { version = "0.26.0", path = "../tendermint", default-features = false }

@@ -1,6 +1,9 @@
 //! Utilities and datatypes for use in tests.
 
-use std::{collections::HashMap, time::Duration};
+use std::collections::HashMap;
+
+#[cfg(feature = "rust-crypto")]
+use std::time::Duration;
 
 use contracts::contract_trait;
 use serde::{Deserialize, Serialize};
@@ -21,12 +24,13 @@ use crate::{
     evidence::EvidenceReporter,
     light_client::LightClient,
     state::State,
-    verifier::{
-        options::Options,
-        types::{Height, LightBlock, PeerId, SignedHeader, Time, TrustThreshold, ValidatorSet},
-        ProdVerifier, Verdict, Verifier,
+    verifier::types::{
+        Height, LightBlock, PeerId, SignedHeader, Time, TrustThreshold, ValidatorSet,
     },
 };
+
+#[cfg(feature = "rust-crypto")]
+use crate::verifier::{Verdict, Verifier};
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct TestCases<LB> {
@@ -144,6 +148,7 @@ impl MockEvidenceReporter {
     }
 }
 
+#[cfg(feature = "rust-crypto")]
 pub fn verify_single(
     trusted_block: LightBlock,
     input: LightBlock,
@@ -152,7 +157,9 @@ pub fn verify_single(
     clock_drift: Duration,
     now: Time,
 ) -> Result<LightBlock, Verdict> {
-    let verifier = ProdVerifier::default();
+    use crate::verifier::options::Options;
+
+    let verifier = crate::verifier::ProdVerifier::default();
 
     let options = Options {
         trust_threshold,
