@@ -74,13 +74,13 @@ repo. For instance, to create a fork and work on a branch of it:
 
 Now `origin` refers to your fork and `upstream` refers to this version.
 
-`git push -u origin master` to update the fork, and make pull requests against
+`git push -u origin main` to update the fork, and make pull requests against
 this repo.
 
 To pull in updates from the origin repo, run
 
 - `git fetch upstream`
-- `git rebase upstream/master` (or whatever branch you want)
+- `git rebase upstream/main` (or whatever branch you want)
 
 ## Changelog
 
@@ -138,7 +138,7 @@ core data structures are exposed.
 Pull requests are squash-merged into one of the following primary development
 branches:
 
-- `master` - targeting compatibility with the [latest official release of
+- `main` - targeting compatibility with the [latest official release of
   Tendermint](https://github.com/tendermint/tendermint/releases).
 - tendermint-rs version-specific branches, e.g. `v0.23.x` - targeting patches to
   older versions of tendermint-rs.
@@ -163,7 +163,7 @@ squashed into a single commit for the PR with all the commit messages.
 When the problem as well as proposed solution are well understood, changes
 should start with a [draft pull
 request](https://github.blog/2019-02-14-introducing-draft-pull-requests/)
-against master. The draft signals that work is underway. When the work is ready
+against main. The draft signals that work is underway. When the work is ready
 for feedback, hitting "Ready for Review" will signal to the maintainers to take
 a look. Maintainers will not review draft PRs.
 
@@ -192,7 +192,7 @@ Our release process is as follows:
 6. Once approved, run the [`release.sh`] script. Fix any problems that may arise
    during this process and push the changes to the release PR.  This step
    requires the appropriate privileges to push crates to [crates.io].
-7. Once all crates have been successfully released, merge the PR to `master` and
+7. Once all crates have been successfully released, merge the PR to `main` and
    tag the repo at the new version (e.g. `v0.17.0`).
 
 [CHANGELOG.md]: https://github.com/informalsystems/tendermint-rs/blob/main/CHANGELOG.md
