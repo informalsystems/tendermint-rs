@@ -249,12 +249,12 @@ where
 {
     /// Validate the given light block state by performing the following checks ->
     ///
-    /// - Validate latest untrusted header
+    /// - Validate the untrusted header
     ///     - Ensure the header validator hashes match the given validators
     ///     - Ensure the header next validator hashes match the given next validators
     ///     - Ensure the header matches the commit
     ///     - Ensure commit is valid
-    /// - Validate latest untrusted header
+    /// - Validate the untrusted header against the trusted header
     ///     - Ensure the latest trusted header hasn't expired
     ///     - Ensure the header isn't from a future time
     ///     - Check that the untrusted block is more recent than the trusted state
