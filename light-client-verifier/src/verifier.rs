@@ -122,7 +122,7 @@ where
     }
 
     /// Validates an `UntrustedBlockState`.
-    pub fn validate(&self, untrusted: &UntrustedBlockState<'_>) -> Verdict {
+    pub fn verify_validator_sets(&self, untrusted: &UntrustedBlockState<'_>) -> Verdict {
         // Ensure the header validator hashes match the given validators
         verdict!(self.predicates.validator_sets_match(
             untrusted.validators,
@@ -276,7 +276,7 @@ where
         options: &Options,
         now: Time,
     ) -> Verdict {
-        ensure_verdict_success!(self.validate(&untrusted));
+        ensure_verdict_success!(self.verify_validator_sets(&untrusted));
         ensure_verdict_success!(self.validate_against_trusted(&untrusted, &trusted, options, now));
         ensure_verdict_success!(self.verify_commit_against_trusted(&untrusted, &trusted, options));
         ensure_verdict_success!(self.verify_commit(&untrusted));
