@@ -153,7 +153,6 @@ pub fn verify_single(
     now: Time,
 ) -> Result<LightBlock, Verdict> {
     let verifier = ProdVerifier::default();
-
     let options = Options {
         trust_threshold,
         trusting_period,
