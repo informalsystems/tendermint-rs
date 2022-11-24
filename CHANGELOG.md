@@ -1,5 +1,65 @@
 # CHANGELOG
 
+## v0.27.0
+
+*Nov 25, 2022*
+
+Following on from the ABCI domain type-related work in v0.26.0, this release
+deduplicates types across the `tendermint` and `tendermint-rpc` crates, and
+makes better use of our domain types across the crates (a big thanks to
+@mzabaluev here!).
+
+@romac helped make the RPC query interface more ergonomic, and @hu55a1n1
+implemented Rust equivalents for Tendermint Go's
+[VerifyCommitLight](https://github.com/tendermint/tendermint/blob/a6dd0d270abc3c01f223eedee44d8b285ae273f6/types/validator_set.go#L722)
+and
+[VerifyCommitLightTrusting](https://github.com/tendermint/tendermint/blob/a6dd0d270abc3c01f223eedee44d8b285ae273f6/types/validator_set.go#L775)
+methods for the light client.
+
+Some additional convenience methods for the `Time` type were provided by
+@scalalang2.
+
+### BREAKING CHANGES
+
+- `[tendermint]` Change hash fields' type from `Bytes`
+  ([#1095](https://github.com/informalsystems/tendermint-rs/issues/1095)):
+
+  | Struct                         | Field                 | Type      |
+  | ------------------------------ | --------------------- | --------- |
+  | `abci::request::OfferSnapshot` | `app_hash`            | `AppHash` |
+  | `abci::response::Info`         | `last_block_app_hash` | `AppHash` |
+  | `abci::response::InitChain`    | `app_hash`            | `AppHash` |
+  | `Genesis`                      | `app_hash`            | `AppHash` |
+
+- `[tendermint]` Remove method `AppHash::value`,
+  replaced with non-allocating `AppHash::as_bytes`
+  [#1232](https://github.com/informalsystems/tendermint-rs/pull/1232).
+- `[tendermint-rpc]` Remove ABCI-related types, change the affected field types
+  to standard Rust types or ABCI domain types in `[tendermint]`.
+  ([#1090](https://github.com/informalsystems/tendermint-rs/issues/1090))
+- `[tendermint-rpc]` Extract the `key` field from `query::Condition` and
+  structure a `query::Condition` to have `key` and `operation` fields, since the
+  `key` field is common to all conditions
+  ([#1230](https://github.com/informalsystems/tendermint-rs/issues/1230))
+- `[tendermint]` Rename `merkle::proof::Proof` to `ProofOps`
+  ([#1234](https://github.com/informalsystems/tendermint-rs/pull/1234))
+- `[tendermint-rpc]` Change the type of `/tx` response field `proof`
+  to `tendermint::tx::Proof`
+  ([#1233](https://github.com/informalsystems/tendermint-rs/issues/1233))
+
+### IMPROVEMENTS
+
+- `[tendermint]` Added `Time` methods `unix_timestamp` and `unix_timestamp_nanos`.
+  ([#1175](https://github.com/informalsystems/tendermint-rs/issues/1175))
+- `[light-client]` Added `validate`, `validate_against_trusted`, `verify_commit` and `verify_commit_against_trusted` methods to `PredicateVerifier`.
+  ([#1222](https://github.com/informalsystems/tendermint-rs/issues/1222))
+- `[tendermint-rpc]` Make `tendermint_rpc::Query`'s fields
+  public and add a `Condition::key(&self) -> &str` method
+  ([#1230](https://github.com/informalsystems/tendermint-rs/issues/1230))
+- `[tendermint]` Add domain types `merkle::Proof` and `tx::Proof`,
+  to represent protobuf messages `crypto.Proof` and `types.TxProof` respectively
+  ([#1234](https://github.com/informalsystems/tendermint-rs/pull/1234))
+
 ## v0.26.0
 
 *Oct 31, 2022*
