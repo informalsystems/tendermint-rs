@@ -141,6 +141,11 @@ impl AsRef<str> for Codespace {
     }
 }
 
+impl Codespace {
+    pub fn new(codespace: String) -> Self {
+        Self(codespace)
+    }
+}
 impl Display for Codespace {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)

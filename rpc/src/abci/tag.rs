@@ -27,9 +27,21 @@ pub struct Key(
     String,
 );
 
+impl Key {
+    pub fn new(key: String) -> Self {
+        Self(key)
+    }
+}
+
 impl AsRef<str> for Key {
     fn as_ref(&self) -> &str {
         self.0.as_ref()
+    }
+}
+
+impl From<String> for Key {
+    fn from(s: String) -> Self {
+        Self(s)
     }
 }
 
@@ -37,7 +49,7 @@ impl FromStr for Key {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        Ok(Key(s.into()))
+        Ok(Self(s.to_string()))
     }
 }
 
@@ -57,9 +69,21 @@ pub struct Value(
     String,
 );
 
+impl Value {
+    pub fn new(value: String) -> Self {
+        Self(value)
+    }
+}
+
 impl AsRef<str> for Value {
     fn as_ref(&self) -> &str {
         self.0.as_ref()
+    }
+}
+
+impl From<String> for Value {
+    fn from(s: String) -> Self {
+        Self(s)
     }
 }
 
@@ -67,7 +91,7 @@ impl FromStr for Value {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        Ok(Value(s.into()))
+        Ok(Self(s.to_string()))
     }
 }
 

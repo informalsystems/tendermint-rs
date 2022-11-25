@@ -14,6 +14,10 @@ impl Log {
     pub fn value(&self) -> &String {
         &self.0
     }
+
+    pub fn new(log: String) -> Self {
+        Self(log)
+    }
 }
 
 impl From<&str> for Log {
