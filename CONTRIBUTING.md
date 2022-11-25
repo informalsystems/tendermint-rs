@@ -163,7 +163,7 @@ squashed into a single commit for the PR with all the commit messages.
 When the problem as well as proposed solution are well understood, changes
 should start with a [draft pull
 request](https://github.blog/2019-02-14-introducing-draft-pull-requests/)
-against main. The draft signals that work is underway. When the work is ready
+against `main`. The draft signals that work is underway. When the work is ready
 for feedback, hitting "Ready for Review" will signal to the maintainers to take
 a look. Maintainers will not review draft PRs.
 
