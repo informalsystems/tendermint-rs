@@ -2,7 +2,7 @@
 
 ## v0.27.0
 
-*Nov 25, 2022*
+*Nov 28, 2022*
 
 Following on from the ABCI domain type-related work in v0.26.0, this release
 deduplicates types across the `tendermint` and `tendermint-rpc` crates, and
