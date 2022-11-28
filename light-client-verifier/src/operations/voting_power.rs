@@ -67,8 +67,7 @@ pub trait VotingPowerCalculator: Send + Sync {
         }
     }
 
-    /// Check against the given threshold that there is enough signers
-    /// overlap between an untrusted header and untrusted validator set
+    /// Check if there is 2/3rd overlap between an untrusted header and untrusted validator set
     fn check_signers_overlap(
         &self,
         untrusted_header: &SignedHeader,

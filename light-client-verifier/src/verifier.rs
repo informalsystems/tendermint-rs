@@ -71,6 +71,15 @@ macro_rules! verdict {
     };
 }
 
+macro_rules! ensure_verdict_success {
+    ($e:expr) => {
+        let verdict = $e;
+        if !matches!(verdict, Verdict::Success) {
+            return verdict;
+        }
+    };
+}
+
 /// Predicate verifier encapsulating components necessary to facilitate
 /// verification.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -97,59 +106,17 @@ where
             crypto_provider: Default::default(),
         }
     }
-}
 
-impl<P, C, V, H> Verifier for PredicateVerifier<P, C, V, H>
-where
-    P: VerificationPredicates<H>,
-    C: VotingPowerCalculator,
-    V: CommitValidator,
-    H: CryptoProvider,
-{
-    /// Validate the given light block state.
-    ///
-    /// - Ensure the latest trusted header hasn't expired
-    /// - Ensure the header validator hashes match the given validators
-    /// - Ensure the header next validator hashes match the given next validators
-    /// - Additional implementation specific validation via `commit_validator`
-    /// - Check that the untrusted block is more recent than the trusted state
-    /// - If the untrusted block is the very next block after the trusted block, check that their
-    ///   (next) validator sets hashes match.
-    /// - Otherwise, ensure that the untrusted block has a greater height than the trusted block.
-    ///
-    /// **NOTE**: If the untrusted state's `next_validators` field is `None`,
-    /// this will not (and will not be able to) check whether the untrusted
-    /// state's `next_validators_hash` field is valid.
-    fn verify(
-        &self,
-        untrusted: UntrustedBlockState<'_>,
-        trusted: TrustedBlockState<'_>,
-        options: &Options,
-        now: Time,
-    ) -> Verdict {
-        // Ensure the latest trusted header hasn't expired
-        verdict!(self.predicates.is_within_trust_period(
-            trusted.header_time,
-            options.trusting_period,
-            now,
-        ));
-
-        // Ensure the header isn't from a future time
-        verdict!(self.predicates.is_header_from_past(
-            untrusted.signed_header.header.time,
-            options.clock_drift,
-            now,
-        ));
-
+    /// Validates an `UntrustedBlockState`.
+    pub fn verify_validator_sets(&self, untrusted: &UntrustedBlockState<'_>) -> Verdict {
         // Ensure the header validator hashes match the given validators
         verdict!(self.predicates.validator_sets_match(
             untrusted.validators,
             untrusted.signed_header.header.validators_hash,
         ));
 
-        // TODO(thane): Is this check necessary for IBC?
+        // Ensure the header next validator hashes match the given next validators
         if let Some(untrusted_next_validators) = untrusted.next_validators {
-            // Ensure the header next validator hashes match the given next validators
             verdict!(self.predicates.next_validators_match(
                 untrusted_next_validators,
                 untrusted.signed_header.header.next_validators_hash,
@@ -169,10 +136,47 @@ where
             &self.commit_validator,
         ));
 
+        Verdict::Success
+    }
+
+    /// Verify that more than 2/3 of the validators correctly committed the block.
+    pub fn verify_commit(&self, untrusted: &UntrustedBlockState<'_>) -> Verdict {
+        verdict!(self.predicates.has_sufficient_signers_overlap(
+            untrusted.signed_header,
+            untrusted.validators,
+            &self.voting_power_calculator,
+        ));
+
+        Verdict::Success
+    }
+
+    /// Validate an `UntrustedBlockState`, based on the given `TrustedBlockState`, `Options` and
+    /// current time.
+    pub fn validate_against_trusted(
+        &self,
+        untrusted: &UntrustedBlockState<'_>,
+        trusted: &TrustedBlockState<'_>,
+        options: &Options,
+        now: Time,
+    ) -> Verdict {
+        // Ensure the latest trusted header hasn't expired
+        verdict!(self.predicates.is_within_trust_period(
+            trusted.header_time,
+            options.trusting_period,
+            now,
+        ));
+
+        // Ensure the header isn't from a future time
+        verdict!(self.predicates.is_header_from_past(
+            untrusted.signed_header.header.time,
+            options.clock_drift,
+            now,
+        ));
+
         // Check that the untrusted block is more recent than the trusted state
         verdict!(self
             .predicates
-            .is_monotonic_bft_time(untrusted.signed_header.header.time, trusted.header_time,));
+            .is_monotonic_bft_time(untrusted.signed_header.header.time, trusted.header_time));
 
         let trusted_next_height = trusted.height.increment();
 
@@ -189,7 +193,22 @@ where
             verdict!(self
                 .predicates
                 .is_monotonic_height(untrusted.signed_header.header.height, trusted.height));
+        }
 
+        Verdict::Success
+    }
+
+    /// Check there is enough overlap between the validator sets of the trusted and untrusted
+    /// blocks.
+    pub fn verify_commit_against_trusted(
+        &self,
+        untrusted: &UntrustedBlockState<'_>,
+        trusted: &TrustedBlockState<'_>,
+        options: &Options,
+    ) -> Verdict {
+        let trusted_next_height = trusted.height.increment();
+
+        if untrusted.height() != trusted_next_height {
             // Check there is enough overlap between the validator sets of
             // the trusted and untrusted blocks.
             verdict!(self.predicates.has_sufficient_validators_overlap(
@@ -200,13 +219,50 @@ where
             ));
         }
 
-        // Verify that more than 2/3 of the validators correctly committed the block.
-        verdict!(self.predicates.has_sufficient_signers_overlap(
-            untrusted.signed_header,
-            untrusted.validators,
-            &self.voting_power_calculator,
-        ));
+        Verdict::Success
+    }
+}
 
+impl<P, C, V, H> Verifier for PredicateVerifier<P, C, V, H>
+where
+    P: VerificationPredicates<H>,
+    C: VotingPowerCalculator,
+    V: CommitValidator,
+    H: CryptoProvider,
+{
+    /// Validate the given light block state by performing the following checks ->
+    ///
+    /// - Validate the untrusted header
+    ///     - Ensure the header validator hashes match the given validators
+    ///     - Ensure the header next validator hashes match the given next validators
+    ///     - Ensure the header matches the commit
+    ///     - Ensure commit is valid
+    /// - Validate the untrusted header against the trusted header
+    ///     - Ensure the latest trusted header hasn't expired
+    ///     - Ensure the header isn't from a future time
+    ///     - Check that the untrusted block is more recent than the trusted state
+    ///     - If the untrusted block is the very next block after the trusted block, check that
+    ///       their (next) validator sets hashes match.
+    ///     - Otherwise, ensure that the untrusted block has a greater height than the trusted
+    ///       block.
+    /// - Check there is enough overlap between the validator sets of the trusted and untrusted
+    ///   blocks.
+    /// - Verify that more than 2/3 of the validators correctly committed the block.
+    ///
+    /// **NOTE**: If the untrusted state's `next_validators` field is `None`,
+    /// this will not (and will not be able to) check whether the untrusted
+    /// state's `next_validators_hash` field is valid.
+    fn verify(
+        &self,
+        untrusted: UntrustedBlockState<'_>,
+        trusted: TrustedBlockState<'_>,
+        options: &Options,
+        now: Time,
+    ) -> Verdict {
+        ensure_verdict_success!(self.verify_validator_sets(&untrusted));
+        ensure_verdict_success!(self.validate_against_trusted(&untrusted, &trusted, options, now));
+        ensure_verdict_success!(self.verify_commit_against_trusted(&untrusted, &trusted, options));
+        ensure_verdict_success!(self.verify_commit(&untrusted));
         Verdict::Success
     }
 }
