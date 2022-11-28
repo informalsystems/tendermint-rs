@@ -44,8 +44,8 @@ pub mod request;
 pub mod response;
 pub mod types;
 
-pub use crate::v0_37::abci::request::Request;
-pub use crate::v0_37::abci::response::Response;
+// pub use crate::v0_37::abci::request::Request;
+// pub use crate::v0_37::abci::response::Response;
 
 pub use event::{Event, EventAttribute, EventAttributeIndexExt};
 
