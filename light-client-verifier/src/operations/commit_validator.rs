@@ -1,6 +1,8 @@
 //! Provides an interface and default implementation for the `CommitValidator` operation
 
-use tendermint::{block::CommitSig, crypto::CryptoProvider};
+use core::marker::PhantomData;
+
+use tendermint::{block::CommitSig, crypto::Sha256};
 
 use crate::{
     errors::VerificationError,
@@ -27,39 +29,39 @@ pub trait CommitValidator: Send + Sync {
 /// Generic implementation of a commit validator, with cryptographic primitives
 /// provided via the [`CryptoProvider`] trait.
 #[derive(Copy, Clone, Debug)]
-pub struct ProvidedCommitValidator<C> {
-    _provider: C,
+pub struct ProvidedCommitValidator<H> {
+    _crypto: PhantomData<H>,
 }
 
 /// Production-ready implementation of a commit validator.
 #[cfg(feature = "rust-crypto")]
-pub type ProdCommitValidator = ProvidedCommitValidator<tendermint::crypto::DefaultCryptoProvider>;
+pub type ProdCommitValidator = ProvidedCommitValidator<tendermint::crypto::default::Sha256>;
 
-impl<C> ProvidedCommitValidator<C>
+impl<H> ProvidedCommitValidator<H>
 where
-    C: CryptoProvider + Default,
+    H: Sha256,
 {
     /// Create a new commit validator using the given [`Hasher`]
     /// to compute the hash of headers and validator sets.
     pub fn new() -> Self {
         Self {
-            _provider: Default::default(),
+            _crypto: PhantomData,
         }
     }
 }
 
-impl<C> Default for ProvidedCommitValidator<C>
+impl<H> Default for ProvidedCommitValidator<H>
 where
-    C: CryptoProvider + Default,
+    H: Sha256,
 {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<C> CommitValidator for ProvidedCommitValidator<C>
+impl<H> CommitValidator for ProvidedCommitValidator<H>
 where
-    C: CryptoProvider + Send + Sync,
+    H: Sha256,
 {
     fn validate(
         &self,
@@ -111,7 +113,7 @@ where
             if validator_set.validator(*validator_address).is_none() {
                 return Err(VerificationError::faulty_signer(
                     *validator_address,
-                    validator_set.hash_with::<C>(),
+                    validator_set.hash_with::<H>(),
                 ));
             }
         }

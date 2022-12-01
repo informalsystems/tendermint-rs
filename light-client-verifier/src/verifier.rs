@@ -1,7 +1,6 @@
 //! Provides an interface and default implementation of the `Verifier` component
 
 use serde::{Deserialize, Serialize};
-use tendermint::crypto::CryptoProvider;
 
 use crate::{
     errors::{ErrorExt, VerificationError, VerificationErrorDetail},
@@ -83,19 +82,17 @@ macro_rules! ensure_verdict_success {
 /// Predicate verifier encapsulating components necessary to facilitate
 /// verification.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct PredicateVerifier<P, C, V, H> {
+pub struct PredicateVerifier<P, C, V> {
     predicates: P,
     voting_power_calculator: C,
     commit_validator: V,
-    crypto_provider: H,
 }
 
-impl<P, C, V, H> PredicateVerifier<P, C, V, H>
+impl<P, C, V> PredicateVerifier<P, C, V>
 where
-    P: VerificationPredicates<H>,
+    P: VerificationPredicates,
     C: VotingPowerCalculator,
     V: CommitValidator,
-    H: CryptoProvider,
 {
     /// Constructor.
     pub fn new(predicates: P, voting_power_calculator: C, commit_validator: V) -> Self {
@@ -103,7 +100,6 @@ where
             predicates,
             voting_power_calculator,
             commit_validator,
-            crypto_provider: Default::default(),
         }
     }
 
@@ -223,12 +219,11 @@ where
     }
 }
 
-impl<P, C, V, H> Verifier for PredicateVerifier<P, C, V, H>
+impl<P, C, V> Verifier for PredicateVerifier<P, C, V>
 where
-    P: VerificationPredicates<H>,
+    P: VerificationPredicates,
     C: VotingPowerCalculator,
     V: CommitValidator,
-    H: CryptoProvider,
 {
     /// Validate the given light block state by performing the following checks ->
     ///
@@ -269,9 +264,5 @@ where
 
 #[cfg(feature = "rust-crypto")]
 /// The default production implementation of the [`PredicateVerifier`].
-pub type ProdVerifier = PredicateVerifier<
-    ProdPredicates,
-    ProdVotingPowerCalculator,
-    ProdCommitValidator,
-    tendermint::crypto::DefaultCryptoProvider,
->;
+pub type ProdVerifier =
+    PredicateVerifier<ProdPredicates, ProdVotingPowerCalculator, ProdCommitValidator>;

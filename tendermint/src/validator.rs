@@ -13,8 +13,8 @@ use tendermint_proto::{
 };
 
 use crate::{
-    account, crypto::CryptoProvider, hash::Hash, merkle, prelude::*,
-    public_key::deserialize_public_key, vote, Error, PublicKey, Signature,
+    account, crypto::Sha256, hash::Hash, merkle, prelude::*, public_key::deserialize_public_key,
+    vote, Error, PublicKey, Signature,
 };
 
 /// Validator set contains a vector of validators
@@ -137,20 +137,18 @@ impl Set {
     /// Compute the hash of this validator set.
     #[cfg(feature = "rust-crypto")]
     pub fn hash(&self) -> Hash {
-        self.hash_with::<crate::crypto::DefaultCryptoProvider>()
+        self.hash_with::<crate::crypto::default::Sha256>()
     }
 
     /// Hash this header with a SHA256 hasher provided by a crypto provider.
-    pub fn hash_with<C: CryptoProvider>(&self) -> Hash {
+    pub fn hash_with<H: Sha256>(&self) -> Hash {
         let validator_bytes: Vec<Vec<u8>> = self
             .validators()
             .iter()
             .map(|validator| validator.hash_bytes())
             .collect();
 
-        Hash::Sha256(merkle::simple_hash_from_byte_vectors::<C::Sha256>(
-            &validator_bytes,
-        ))
+        Hash::Sha256(merkle::simple_hash_from_byte_vectors::<H>(&validator_bytes))
     }
 }
 

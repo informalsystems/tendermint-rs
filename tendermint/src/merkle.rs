@@ -4,12 +4,11 @@ pub mod proof;
 
 pub use proof::Proof;
 
-use digest::{consts::U32, Digest, FixedOutputReset};
-
+use crate::crypto::Sha256;
 use crate::prelude::*;
 
 /// Size of Merkle root hash
-pub const HASH_SIZE: usize = 32;
+pub use crate::crypto::sha256::HASH_SIZE;
 
 /// Hash is the output of the cryptographic digest function
 pub type Hash = [u8; HASH_SIZE];
@@ -17,19 +16,14 @@ pub type Hash = [u8; HASH_SIZE];
 /// Compute a simple Merkle root from vectors of arbitrary byte vectors.
 /// The leaves of the tree are the bytes of the given byte vectors in
 /// the given order.
-pub fn simple_hash_from_byte_vectors<H: Digest<OutputSize = U32> + FixedOutputReset>(
-    byte_vecs: &[Vec<u8>],
-) -> Hash {
+pub fn simple_hash_from_byte_vectors<H: Sha256>(byte_vecs: &[Vec<u8>]) -> Hash {
     let mut hasher = H::new();
     simple_hash_from_byte_vectors_inner(&mut hasher, byte_vecs)
 }
 
 // Recurse into subtrees.
 // Pre and post-conditions: the hasher is in the reset state before and after calling this function.
-fn simple_hash_from_byte_vectors_inner<H: Digest<OutputSize = U32> + FixedOutputReset>(
-    hasher: &mut H,
-    byte_vecs: &[Vec<u8>],
-) -> Hash {
+fn simple_hash_from_byte_vectors_inner<H: Sha256>(hasher: &mut H, byte_vecs: &[Vec<u8>]) -> Hash {
     let length = byte_vecs.len();
     match length {
         0 => empty_hash(hasher),
@@ -45,7 +39,7 @@ fn simple_hash_from_byte_vectors_inner<H: Digest<OutputSize = U32> + FixedOutput
 
 // tmhash({})
 // Pre and post-conditions: the hasher is in the reset state before and after calling this function.
-fn empty_hash<H: Digest<OutputSize = U32> + FixedOutputReset>(hasher: &mut H) -> Hash {
+fn empty_hash<H: Sha256>(hasher: &mut H) -> Hash {
     // Get the hash of an empty digest state
     let digest = hasher.finalize_reset();
 
@@ -57,10 +51,10 @@ fn empty_hash<H: Digest<OutputSize = U32> + FixedOutputReset>(hasher: &mut H) ->
 
 // tmhash(0x00 || leaf)
 // Pre and post-conditions: the hasher is in the reset state before and after calling this function.
-fn leaf_hash<H: Digest<OutputSize = U32> + FixedOutputReset>(hasher: &mut H, bytes: &[u8]) -> Hash {
+fn leaf_hash<H: Sha256>(hasher: &mut H, bytes: &[u8]) -> Hash {
     // Feed the data to the hasher, prepended with 0x00
-    Digest::update(hasher, &[0x00]);
-    Digest::update(hasher, bytes);
+    hasher.update([0x00]);
+    hasher.update(bytes);
 
     // Finalize the digest, reset the hasher state
     let digest = hasher.finalize_reset();
@@ -73,15 +67,11 @@ fn leaf_hash<H: Digest<OutputSize = U32> + FixedOutputReset>(hasher: &mut H, byt
 
 // tmhash(0x01 || left || right)
 // Pre and post-conditions: the hasher is in the reset state before and after calling this function.
-fn inner_hash<H: Digest<OutputSize = U32> + FixedOutputReset>(
-    hasher: &mut H,
-    left: &[u8],
-    right: &[u8],
-) -> Hash {
-    // Feed the data to the hasher 0x1, then left and right data.
-    Digest::update(hasher, &[0x01]);
-    Digest::update(hasher, left);
-    Digest::update(hasher, right);
+fn inner_hash<H: Sha256>(hasher: &mut H, left: &[u8], right: &[u8]) -> Hash {
+    // Feed the data to the hasher: 0x1, then left and right data.
+    hasher.update([0x01]);
+    hasher.update(left);
+    hasher.update(right);
 
     // Finalize the digest, reset the hasher state
     let digest = hasher.finalize_reset();
@@ -98,6 +88,7 @@ mod tests {
     use subtle_encoding::hex;
 
     use super::*; // TODO: use non-subtle ?
+    use crate::crypto::Sha256 as _;
 
     #[test]
     fn test_rfc6962_empty_tree() {

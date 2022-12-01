@@ -1,6 +1,8 @@
 //! Fork detection data structures and implementation.
 
-use tendermint::crypto::CryptoProvider;
+use core::marker::PhantomData;
+
+use tendermint::crypto::Sha256;
 
 use crate::{
     errors::{Error, ErrorDetail},
@@ -63,17 +65,17 @@ pub trait ForkDetector: Send + Sync {
 /// - If verification fails because of lack of trust, we have a potential fork.
 /// - If verification fails for any other reason, the witness is deemed faulty.
 pub struct ProvidedForkDetector<H> {
-    _crypto: H,
+    _crypto: PhantomData<H>,
 }
 
 #[cfg(feature = "rust-crypto")]
-pub type ProdForkDetector = ProvidedForkDetector<tendermint::crypto::DefaultCryptoProvider>;
+pub type ProdForkDetector = ProvidedForkDetector<tendermint::crypto::default::Sha256>;
 
-impl<H: Default> ProvidedForkDetector<H> {
+impl<H> ProvidedForkDetector<H> {
     /// Construct a new fork detector that will use the given header hasher.
     pub fn new() -> Self {
         Self {
-            _crypto: Default::default(),
+            _crypto: PhantomData,
         }
     }
 }
@@ -84,7 +86,7 @@ impl<H: Default> Default for ProvidedForkDetector<H> {
     }
 }
 
-impl<H: CryptoProvider> ForkDetector for ProvidedForkDetector<H> {
+impl<H: Sha256> ForkDetector for ProvidedForkDetector<H> {
     /// Perform fork detection. See the documentation `ProdForkDetector` for details.
     fn detect_forks(
         &self,

@@ -1,17 +1,16 @@
-use sha2::Sha256;
+//! Pure Rust implementations of the cryptographic traits.
+//!
+//! Most applications using this crate should use these implementations.
+//! Alternative implementations can be useful on targets like wasm and
+//! on-chain environments, where code size is at a premium and a faster
+//! platform-native cryptographic API is available.
 
-use super::CryptoProvider;
+/// The default implementation of the [`Sha256`][sha256trait] trait.
+///
+/// [sha256trait]: super::Sha256
+pub use sha2::Sha256;
 
-/// A batteries-included provider of cryptograpic functions.
-#[derive(Copy, Clone, Debug, Default)]
-pub struct DefaultCryptoProvider;
-
-impl CryptoProvider for DefaultCryptoProvider {
-    type Sha256 = Sha256;
-
-    type EcdsaSecp256k1Signature = k256::ecdsa::Signature;
-
-    type EcdsaSecp256k1Signer = k256::ecdsa::SigningKey;
-
-    type EcdsaSecp256k1Verifier = k256::ecdsa::VerifyingKey;
+/// Types implementing the ECDSA algorithm using the Secp256k1 elliptic curve.
+pub mod ecdsa_secp256 {
+    pub use k256::ecdsa::{Signature, SigningKey, VerifyingKey};
 }

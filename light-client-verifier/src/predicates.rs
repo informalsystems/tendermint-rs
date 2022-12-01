@@ -2,7 +2,7 @@
 
 use core::time::Duration;
 
-use tendermint::{block::Height, crypto::CryptoProvider, hash::Hash};
+use tendermint::{block::Height, crypto::Sha256, hash::Hash};
 
 use crate::{
     errors::VerificationError,
@@ -18,7 +18,9 @@ use crate::{
 pub struct ProdPredicates;
 
 #[cfg(feature = "rust-crypto")]
-impl VerificationPredicates<tendermint::crypto::DefaultCryptoProvider> for ProdPredicates {}
+impl VerificationPredicates for ProdPredicates {
+    type Sha256 = tendermint::crypto::default::Sha256;
+}
 
 /// Defines the various predicates used to validate and verify light blocks.
 ///
@@ -26,7 +28,10 @@ impl VerificationPredicates<tendermint::crypto::DefaultCryptoProvider> for ProdP
 ///
 /// This enables test implementations to only override a single method rather than
 /// have to re-define every predicate.
-pub trait VerificationPredicates<C: CryptoProvider>: Send + Sync {
+pub trait VerificationPredicates: Send + Sync {
+    /// The implementation of SHA256 digest
+    type Sha256: Sha256;
+
     /// Compare the provided validator_set_hash against the hash produced from hashing the validator
     /// set.
     fn validator_sets_match(
@@ -34,7 +39,7 @@ pub trait VerificationPredicates<C: CryptoProvider>: Send + Sync {
         validators: &ValidatorSet,
         header_validators_hash: Hash,
     ) -> Result<(), VerificationError> {
-        let validators_hash = validators.hash_with::<C>();
+        let validators_hash = validators.hash_with::<Self::Sha256>();
         if header_validators_hash == validators_hash {
             Ok(())
         } else {
@@ -51,7 +56,7 @@ pub trait VerificationPredicates<C: CryptoProvider>: Send + Sync {
         next_validators: &ValidatorSet,
         header_next_validators_hash: Hash,
     ) -> Result<(), VerificationError> {
-        let next_validators_hash = next_validators.hash_with::<C>();
+        let next_validators_hash = next_validators.hash_with::<Self::Sha256>();
         if header_next_validators_hash == next_validators_hash {
             Ok(())
         } else {
@@ -68,7 +73,7 @@ pub trait VerificationPredicates<C: CryptoProvider>: Send + Sync {
         header: &Header,
         commit_hash: Hash,
     ) -> Result<(), VerificationError> {
-        let header_hash = header.hash_with::<C>();
+        let header_hash = header.hash_with::<Self::Sha256>();
         if header_hash == commit_hash {
             Ok(())
         } else {

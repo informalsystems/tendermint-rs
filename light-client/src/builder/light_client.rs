@@ -1,6 +1,6 @@
 //! DSL for building a light client [`Instance`]
 
-use tendermint::{block::Height, crypto::CryptoProvider, Hash};
+use tendermint::{block::Height, crypto::Sha256, Hash};
 
 #[cfg(feature = "rpc-client")]
 use {
@@ -9,7 +9,6 @@ use {
     crate::components::scheduler,
     crate::verifier::{predicates::ProdPredicates, ProdVerifier},
     core::time::Duration,
-    tendermint::crypto::DefaultCryptoProvider,
     tendermint_rpc as rpc,
 };
 
@@ -40,21 +39,21 @@ pub struct HasTrustedState;
 
 /// Builder for a light client [`Instance`]
 #[must_use]
-pub struct LightClientBuilder<State, C: CryptoProvider> {
+pub struct LightClientBuilder<State, H: Sha256> {
     peer_id: PeerId,
     options: Options,
     io: Box<dyn Io>,
     clock: Box<dyn Clock>,
     verifier: Box<dyn Verifier>,
     scheduler: Box<dyn Scheduler>,
-    predicates: Box<dyn VerificationPredicates<C>>,
+    predicates: Box<dyn VerificationPredicates<Sha256 = H>>,
     light_store: Box<dyn LightStore>,
 
     #[allow(dead_code)]
     state: State,
 }
 
-impl<Current, C: CryptoProvider> LightClientBuilder<Current, C> {
+impl<Current, C: Sha256> LightClientBuilder<Current, C> {
     /// Private method to move from one state to another
     fn with_state<Next>(self, state: Next) -> LightClientBuilder<Next, C> {
         LightClientBuilder {
@@ -72,7 +71,7 @@ impl<Current, C: CryptoProvider> LightClientBuilder<Current, C> {
 }
 
 #[cfg(feature = "rpc-client")]
-impl LightClientBuilder<NoTrustedState, DefaultCryptoProvider> {
+impl LightClientBuilder<NoTrustedState, tendermint::crypto::default::Sha256> {
     /// Initialize a builder for a production (non-mock) light client.
     pub fn prod(
         peer_id: PeerId,
@@ -94,7 +93,7 @@ impl LightClientBuilder<NoTrustedState, DefaultCryptoProvider> {
     }
 }
 
-impl<C: CryptoProvider> LightClientBuilder<NoTrustedState, C> {
+impl<H: Sha256> LightClientBuilder<NoTrustedState, H> {
     /// Initialize a builder for a custom light client, by providing all dependencies upfront.
     // TODO: redesign this, it's a builder API!
     #[allow(clippy::too_many_arguments)]
@@ -106,7 +105,7 @@ impl<C: CryptoProvider> LightClientBuilder<NoTrustedState, C> {
         clock: Box<dyn Clock>,
         verifier: Box<dyn Verifier>,
         scheduler: Box<dyn Scheduler>,
-        predicates: Box<dyn VerificationPredicates<C>>,
+        predicates: Box<dyn VerificationPredicates<Sha256 = H>>,
     ) -> Self {
         Self {
             peer_id,
@@ -125,7 +124,7 @@ impl<C: CryptoProvider> LightClientBuilder<NoTrustedState, C> {
     fn trust_light_block(
         mut self,
         trusted_state: LightBlock,
-    ) -> Result<LightClientBuilder<HasTrustedState, C>, Error> {
+    ) -> Result<LightClientBuilder<HasTrustedState, H>, Error> {
         self.validate(&trusted_state)?;
 
         // TODO(liamsi, romac): it is unclear if this should be Trusted or only Verified
@@ -136,7 +135,7 @@ impl<C: CryptoProvider> LightClientBuilder<NoTrustedState, C> {
 
     /// Keep using the latest verified or trusted block in the light store.
     /// Such a block must exists otherwise this will fail.
-    pub fn trust_from_store(self) -> Result<LightClientBuilder<HasTrustedState, C>, Error> {
+    pub fn trust_from_store(self) -> Result<LightClientBuilder<HasTrustedState, H>, Error> {
         let trusted_state = self
             .light_store
             .highest_trusted_or_verified()
@@ -150,7 +149,7 @@ impl<C: CryptoProvider> LightClientBuilder<NoTrustedState, C> {
         self,
         trusted_height: Height,
         trusted_hash: Hash,
-    ) -> Result<LightClientBuilder<HasTrustedState, C>, Error> {
+    ) -> Result<LightClientBuilder<HasTrustedState, H>, Error> {
         let trusted_state = self
             .io
             .fetch_light_block(AtHeight::At(trusted_height))
@@ -163,7 +162,7 @@ impl<C: CryptoProvider> LightClientBuilder<NoTrustedState, C> {
             ));
         }
 
-        let header_hash = trusted_state.signed_header.header.hash_with::<C>();
+        let header_hash = trusted_state.signed_header.header.hash_with::<H>();
 
         if header_hash != trusted_hash {
             return Err(Error::hash_mismatch(trusted_hash, header_hash));
@@ -202,7 +201,7 @@ impl<C: CryptoProvider> LightClientBuilder<NoTrustedState, C> {
     }
 }
 
-impl<C: CryptoProvider> LightClientBuilder<HasTrustedState, C> {
+impl<H: Sha256> LightClientBuilder<HasTrustedState, H> {
     /// Build the light client [`Instance`].
     #[must_use]
     pub fn build(self) -> Instance {
