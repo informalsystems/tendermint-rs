@@ -90,7 +90,7 @@ impl Debug for Id {
 #[cfg(feature = "secp256k1")]
 impl From<Secp256k1> for Id {
     fn from(pk: Secp256k1) -> Id {
-        let sha_digest = Sha256::digest(&pk.to_bytes());
+        let sha_digest = Sha256::digest(pk.to_bytes());
         let ripemd_digest = Ripemd160::digest(&sha_digest[..]);
         let mut bytes = [0u8; LENGTH];
         bytes.copy_from_slice(&ripemd_digest[..LENGTH]);
