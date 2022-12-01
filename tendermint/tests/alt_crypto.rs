@@ -2,14 +2,28 @@
 //! for a chain environment that provides its own cryptographic API.
 
 use digest::{consts::U32, Digest, FixedOutput, FixedOutputReset, Reset};
-use signature::{self, DigestSigner, DigestVerifier, Signer, Verifier};
+use signature::{self, DigestSigner, DigestVerifier, Signature, Signer, Verifier};
 
 use k256::ecdsa::{SigningKey, VerifyingKey};
 
 #[derive(Debug, Default)]
 struct SubstrateSha256(sha2::Sha256);
 
-pub use k256::ecdsa::Signature;
+#[derive(Debug)]
+struct SubstrateSignature(k256::ecdsa::Signature);
+
+impl AsRef<[u8]> for SubstrateSignature {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+}
+
+impl Signature for SubstrateSignature {
+    fn from_bytes(bytes: &[u8]) -> Result<Self, signature::Error> {
+        let inner = k256::ecdsa::Signature::from_bytes(bytes)?;
+        Ok(Self(inner))
+    }
+}
 
 struct SubstrateSigner {
     inner: SigningKey,
@@ -22,11 +36,12 @@ impl SubstrateSigner {
     }
 }
 
-impl Signer<Signature> for SubstrateSigner {
-    fn try_sign(&self, msg: &[u8]) -> Result<Signature, signature::Error> {
+impl Signer<SubstrateSignature> for SubstrateSigner {
+    fn try_sign(&self, msg: &[u8]) -> Result<SubstrateSignature, signature::Error> {
         let mut hasher = SubstrateSha256::new();
         hasher.update(msg);
-        self.inner.try_sign_digest(hasher)
+        let signature = self.inner.try_sign_digest(hasher)?;
+        Ok(SubstrateSignature(signature))
     }
 }
 
@@ -43,18 +58,18 @@ impl SubstrateSignatureVerifier {
     }
 }
 
-impl DigestVerifier<SubstrateSha256, Signature> for SubstrateSignatureVerifier {
+impl DigestVerifier<SubstrateSha256, SubstrateSignature> for SubstrateSignatureVerifier {
     fn verify_digest(
         &self,
         digest: SubstrateSha256,
-        signature: &Signature,
+        signature: &SubstrateSignature,
     ) -> Result<(), signature::Error> {
-        self.inner.verify_digest(digest, signature)
+        self.inner.verify_digest(digest, &signature.0)
     }
 }
 
-impl Verifier<Signature> for SubstrateSignatureVerifier {
-    fn verify(&self, msg: &[u8], signature: &Signature) -> Result<(), signature::Error> {
+impl Verifier<SubstrateSignature> for SubstrateSignatureVerifier {
+    fn verify(&self, msg: &[u8], signature: &SubstrateSignature) -> Result<(), signature::Error> {
         let mut hasher = SubstrateSha256::new();
         Digest::update(&mut hasher, msg);
         self.verify_digest(hasher, signature)
