@@ -291,6 +291,8 @@ impl LightClient {
         target_height: Height,
         state: &mut State,
     ) -> Result<LightBlock, Error> {
+        use tendermint::crypto::default::Sha256;
+
         let root = state
             .light_store
             .highest_trusted_or_verified()
@@ -315,14 +317,13 @@ impl LightClient {
         for height in heights {
             let (current, _status) = self.get_or_fetch_block(height, state)?;
 
-            /*
             let latest_last_block_id = latest
                 .signed_header
                 .header
                 .last_block_id
                 .ok_or_else(|| Error::missing_last_block_id(latest.height()))?;
 
-            let current_hash = current.signed_header.header.hash_with::<H>();
+            let current_hash = current.signed_header.header.hash_with::<Sha256>();
 
             if current_hash != latest_last_block_id.hash {
                 return Err(Error::invalid_adjacent_headers(
@@ -330,7 +331,6 @@ impl LightClient {
                     latest_last_block_id.hash,
                 ));
             }
-            */
 
             // `latest` and `current` are linked together by `last_block_id`,
             // therefore it is not relevant which we verified first.
