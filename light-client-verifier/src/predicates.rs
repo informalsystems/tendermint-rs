@@ -451,7 +451,7 @@ mod tests {
         let val_set = light_block.validators;
 
         let vp = ProdPredicates::default();
-        let commit_validator = ProdCommitValidator::new();
+        let commit_validator = ProdCommitValidator::default();
 
         // Test scenarios -->
         // 1. valid commit - must result "Ok"
@@ -524,7 +524,7 @@ mod tests {
                         .unwrap()
                 );
 
-                assert_eq!(e.validator_set, val_set_with_faulty_signer.hash());
+                assert_eq!(e.validator_set, val_set_with_faulty_signer);
             },
             _ => panic!("expected FaultySigner error"),
         }

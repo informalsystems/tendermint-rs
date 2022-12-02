@@ -9,7 +9,7 @@ use tendermint::{account::Id, Error as TendermintError};
 use crate::{
     operations::voting_power::VotingPowerTally,
     prelude::*,
-    types::{Hash, Height, Time, Validator, ValidatorAddress},
+    types::{Hash, Height, Time, Validator, ValidatorAddress, ValidatorSet},
 };
 
 define_error! {
@@ -151,13 +151,12 @@ define_error! {
         FaultySigner
             {
                 signer: Id,
-                validator_set: Hash
+                validator_set: ValidatorSet
             }
             | e | {
                 format_args!(
-                    "Found a faulty signer ({}) not present in the validator set ({})",
+                    "Found a faulty signer ({}) not present in the validator set",
                     e.signer,
-                    e.validator_set
                 )
             },
 
