@@ -77,6 +77,8 @@ pub struct Provider<LB> {
 pub struct TrustOptions {
     pub period: DurationStr,
     pub height: HeightStr,
+    #[serde(default)]
+    pub extra_heights: Vec<HeightStr>,
     pub trust_level: TrustThreshold,
 }
 
