@@ -163,7 +163,7 @@ fn successful_verification() {
     let now =
         serde_wasm_bindgen::to_value(&Time::parse_from_rfc3339("1970-01-07T00:00:00Z").unwrap())
             .unwrap();
-    let js_result = verify(&untrusted_block, &trusted_block, &options, &now);
+    let js_result = verify(untrusted_block, trusted_block, options, now);
     console_log!("js_result = {:?}", js_result);
     let verdict = serde_wasm_bindgen::from_value::<Result<Verdict, Error>>(js_result)
         .unwrap()
@@ -179,7 +179,7 @@ fn failed_verification_outside_trusting_period() {
     let now =
         serde_wasm_bindgen::to_value(&Time::parse_from_rfc3339("1970-01-16T00:00:00Z").unwrap())
             .unwrap();
-    let js_result = verify(&untrusted_block, &trusted_block, &options, &now);
+    let js_result = verify(untrusted_block, trusted_block, options, now);
     console_log!("js_result = {:?}", js_result);
     // The result is Ok because we successfully obtained a verdict, even if the
     // verdict isn't Verdict::Success.

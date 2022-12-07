@@ -24,22 +24,18 @@ use wasm_bindgen::{prelude::*, JsValue};
 
 /// Check whether a given untrusted block can be trusted.
 #[wasm_bindgen]
-pub fn verify(untrusted: &JsValue, trusted: &JsValue, options: &JsValue, now: &JsValue) -> JsValue {
-    let result = deserialize_params(
-        untrusted.clone(),
-        trusted.clone(),
-        options.clone(),
-        now.clone(),
-    )
-    .map(|(untrusted, trusted, options, now)| {
-        let verifier = ProdVerifier::default();
-        verifier.verify(
-            untrusted.as_untrusted_state(),
-            trusted.as_trusted_state(),
-            &options,
-            now,
-        )
-    });
+pub fn verify(untrusted: JsValue, trusted: JsValue, options: JsValue, now: JsValue) -> JsValue {
+    let result = deserialize_params(untrusted, trusted, options, now).map(
+        |(untrusted, trusted, options, now)| {
+            let verifier = ProdVerifier::default();
+            verifier.verify(
+                untrusted.as_untrusted_state(),
+                trusted.as_trusted_state(),
+                &options,
+                now,
+            )
+        },
+    );
     serde_wasm_bindgen::to_value(&result).unwrap()
 }
 
