@@ -62,7 +62,7 @@ fn test_read_write_single_message() {
 
 #[test]
 fn test_evil_peer_shares_invalid_eph_key() {
-    let mut csprng = OsRng {};
+    let csprng = OsRng {};
     let local_privkey = ed25519_consensus::SigningKey::new(csprng);
     let (mut h, _) = Handshake::new(local_privkey, Version::V0_34);
     let bytes: [u8; 32] = [0; 32];
@@ -72,7 +72,7 @@ fn test_evil_peer_shares_invalid_eph_key() {
 
 #[test]
 fn test_evil_peer_shares_invalid_auth_sig() {
-    let mut csprng = OsRng {};
+    let csprng = OsRng {};
     let local_privkey = ed25519_consensus::SigningKey::new(csprng);
     let (mut h, _) = Handshake::new(local_privkey, Version::V0_34);
     let res = h.got_key(EphemeralPublic::from(x25519_dalek::X25519_BASEPOINT_BYTES));
@@ -184,7 +184,7 @@ fn new_peer_conn<IoHandler>(
 where
     IoHandler: std::io::Read + std::io::Write + Send + Sync,
 {
-    let mut csprng = OsRng {};
+    let csprng = OsRng {};
     let privkey1 = ed25519_consensus::SigningKey::new(csprng);
     SecretConnection::new(io_handler, privkey1, Version::V0_34)
 }
