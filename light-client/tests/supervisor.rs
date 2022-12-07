@@ -1,3 +1,5 @@
+#![cfg(feature = "rust-crypto")]
+
 use std::{collections::HashMap, time::Duration};
 
 use tendermint_light_client::{

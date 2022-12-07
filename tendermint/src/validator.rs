@@ -214,19 +214,8 @@ impl Info {
     pub fn verify_signature(&self, sign_bytes: &[u8], signature: &Signature) -> Result<(), Error> {
         self.pub_key.verify(sign_bytes, signature)
     }
-}
 
-impl From<PublicKey> for account::Id {
-    fn from(pub_key: PublicKey) -> account::Id {
-        match pub_key {
-            PublicKey::Ed25519(pk) => account::Id::from(pk),
-            #[cfg(feature = "secp256k1")]
-            PublicKey::Secp256k1(pk) => account::Id::from(pk),
-        }
-    }
-}
-
-impl Info {
+    #[cfg(feature = "rust-crypto")]
     /// Create a new validator.
     pub fn new(pk: PublicKey, vp: vote::Power) -> Info {
         Info {
