@@ -183,6 +183,7 @@ impl Handshake<AwaitingAuthSig> {
             .and_then(|key| key.sum)
             .ok_or_else(Error::missing_key)?;
 
+        #[allow(clippy::match_wildcard_for_single_variants)]
         let remote_pubkey = match pk_sum {
             proto::crypto::public_key::Sum::Ed25519(ref bytes) => {
                 ed25519_consensus::VerificationKey::try_from(&bytes[..])
