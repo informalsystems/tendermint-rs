@@ -22,11 +22,10 @@ default = ["console_error_panic_hook"]
 [dependencies]
 serde = { version = "1.0", default-features = false, features = [ "derive" ] }
 serde_json = { version = "1.0", default-features = false }
-# TODO(thane): Remove once https://github.com/rustwasm/wasm-bindgen/issues/2508 is resolved
-syn = { version = "=1.0.65", default-features = false }
 tendermint = { version = "0.27.0", default-features = false, path = "../tendermint" }
 tendermint-light-client-verifier = { version = "0.27.0", default-features = false, path = "../light-client-verifier" }
 wasm-bindgen = { version = "0.2.63", default-features = false, features = [ "serde-serialize" ] }
+serde-wasm-bindgen = { version = "0.4.5", default-features = false }
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires

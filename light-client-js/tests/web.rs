@@ -161,10 +161,11 @@ fn successful_verification() {
     let options = test_options();
     // Choose a "now" value within the trusting period
     let now =
-        JsValue::from_serde(&Time::parse_from_rfc3339("1970-01-07T00:00:00Z").unwrap()).unwrap();
-    let js_result = verify(&untrusted_block, &trusted_block, &options, &now);
+        serde_wasm_bindgen::to_value(&Time::parse_from_rfc3339("1970-01-07T00:00:00Z").unwrap())
+            .unwrap();
+    let js_result = verify(untrusted_block, trusted_block, options, now);
     console_log!("js_result = {:?}", js_result);
-    let verdict = JsValue::into_serde::<Result<Verdict, Error>>(&js_result)
+    let verdict = serde_wasm_bindgen::from_value::<Result<Verdict, Error>>(js_result)
         .unwrap()
         .unwrap();
     assert_eq!(verdict, Verdict::Success);
@@ -176,12 +177,13 @@ fn failed_verification_outside_trusting_period() {
     let options = test_options();
     // Choose a "now" value outside the trusting period
     let now =
-        JsValue::from_serde(&Time::parse_from_rfc3339("1970-01-16T00:00:00Z").unwrap()).unwrap();
-    let js_result = verify(&untrusted_block, &trusted_block, &options, &now);
+        serde_wasm_bindgen::to_value(&Time::parse_from_rfc3339("1970-01-16T00:00:00Z").unwrap())
+            .unwrap();
+    let js_result = verify(untrusted_block, trusted_block, options, now);
     console_log!("js_result = {:?}", js_result);
     // The result is Ok because we successfully obtained a verdict, even if the
     // verdict isn't Verdict::Success.
-    let verdict = JsValue::into_serde::<Result<Verdict, Error>>(&js_result)
+    let verdict = serde_wasm_bindgen::from_value::<Result<Verdict, Error>>(js_result)
         .unwrap()
         .unwrap();
     match verdict {
@@ -192,14 +194,16 @@ fn failed_verification_outside_trusting_period() {
 
 fn test_blocks() -> (JsValue, JsValue) {
     let untrusted_block =
-        JsValue::from_serde(&serde_json::from_str::<LightBlock>(UNTRUSTED_BLOCK).unwrap()).unwrap();
+        serde_wasm_bindgen::to_value(&serde_json::from_str::<LightBlock>(UNTRUSTED_BLOCK).unwrap())
+            .unwrap();
     let trusted_block =
-        JsValue::from_serde(&serde_json::from_str::<LightBlock>(TRUSTED_BLOCK).unwrap()).unwrap();
+        serde_wasm_bindgen::to_value(&serde_json::from_str::<LightBlock>(TRUSTED_BLOCK).unwrap())
+            .unwrap();
     (untrusted_block, trusted_block)
 }
 
 fn test_options() -> JsValue {
-    JsValue::from_serde(&JsOptions {
+    serde_wasm_bindgen::to_value(&JsOptions {
         trust_threshold: (1, 3),
         trusting_period: 1209600, // 2 weeks
         clock_drift: 5,           // 5 seconds

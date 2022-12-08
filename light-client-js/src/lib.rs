@@ -24,7 +24,7 @@ use wasm_bindgen::{prelude::*, JsValue};
 
 /// Check whether a given untrusted block can be trusted.
 #[wasm_bindgen]
-pub fn verify(untrusted: &JsValue, trusted: &JsValue, options: &JsValue, now: &JsValue) -> JsValue {
+pub fn verify(untrusted: JsValue, trusted: JsValue, options: JsValue, now: JsValue) -> JsValue {
     let result = deserialize_params(untrusted, trusted, options, now).map(
         |(untrusted, trusted, options, now)| {
             let verifier = ProdVerifier::default();
@@ -36,35 +36,35 @@ pub fn verify(untrusted: &JsValue, trusted: &JsValue, options: &JsValue, now: &J
             )
         },
     );
-    JsValue::from_serde(&result).unwrap()
+    serde_wasm_bindgen::to_value(&result).unwrap()
 }
 
 fn deserialize_params(
-    untrusted: &JsValue,
-    trusted: &JsValue,
-    options: &JsValue,
-    now: &JsValue,
+    untrusted: JsValue,
+    trusted: JsValue,
+    options: JsValue,
+    now: JsValue,
 ) -> Result<(LightBlock, LightBlock, Options, Time), Error> {
-    let untrusted = untrusted.into_serde().map_err(|e| Error::Serialization {
-        param: "untrusted".to_string(),
-        msg: e.to_string(),
-    })?;
-
-    let trusted = trusted.into_serde().map_err(|e| Error::Serialization {
-        param: "trusted".to_string(),
-        msg: e.to_string(),
-    })?;
-
-    let options = options
-        .into_serde::<JsOptions>()
-        .map(Into::into)
-        .map_err(|e| Error::Serialization {
-            param: "options".to_string(),
+    let untrusted =
+        serde_wasm_bindgen::from_value(untrusted).map_err(|e| Error::Serialization {
+            param: "untrusted".into(),
             msg: e.to_string(),
         })?;
 
-    let now = now.into_serde().map_err(|e| Error::Serialization {
-        param: "now".to_string(),
+    let trusted = serde_wasm_bindgen::from_value(trusted).map_err(|e| Error::Serialization {
+        param: "trusted".into(),
+        msg: e.to_string(),
+    })?;
+
+    let options = serde_wasm_bindgen::from_value::<JsOptions>(options)
+        .map(Into::into)
+        .map_err(|e| Error::Serialization {
+            param: "options".into(),
+            msg: e.to_string(),
+        })?;
+
+    let now = serde_wasm_bindgen::from_value(now).map_err(|e| Error::Serialization {
+        param: "now".into(),
         msg: e.to_string(),
     })?;
 
