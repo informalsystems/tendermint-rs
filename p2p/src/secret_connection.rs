@@ -183,13 +183,12 @@ impl Handshake<AwaitingAuthSig> {
             .and_then(|key| key.sum)
             .ok_or_else(Error::missing_key)?;
 
-        #[allow(clippy::match_wildcard_for_single_variants)]
         let remote_pubkey = match pk_sum {
             proto::crypto::public_key::Sum::Ed25519(ref bytes) => {
                 ed25519_consensus::VerificationKey::try_from(&bytes[..])
                     .map_err(|_| Error::signature())
             },
-            _ => Err(Error::unsupported_key()),
+            proto::crypto::public_key::Sum::Secp256k1(_) => Err(Error::unsupported_key()),
         }?;
 
         let remote_sig = ed25519_consensus::Signature::try_from(auth_sig_msg.sig.as_slice())
