@@ -1,7 +1,9 @@
 //! An imitation of alternative cryptographic function implementations
 //! for a chain environment that provides its own cryptographic API.
 
-use digest::{consts::U32, Digest, FixedOutput, FixedOutputReset, Reset};
+use tendermint::crypto::{sha256::HASH_SIZE, Sha256};
+
+use digest::Digest;
 use signature::{self, DigestSigner, DigestVerifier, Signature, Signer, Verifier};
 
 use k256::ecdsa::{SigningKey, VerifyingKey};
@@ -38,7 +40,7 @@ impl SubstrateSigner {
 
 impl Signer<SubstrateSignature> for SubstrateSigner {
     fn try_sign(&self, msg: &[u8]) -> Result<SubstrateSignature, signature::Error> {
-        let mut hasher = SubstrateSha256::new();
+        let mut hasher = sha2::Sha256::new();
         hasher.update(msg);
         let signature = self.inner.try_sign_digest(hasher)?;
         Ok(SubstrateSignature(signature))
@@ -58,51 +60,17 @@ impl SubstrateSignatureVerifier {
     }
 }
 
-impl DigestVerifier<SubstrateSha256, SubstrateSignature> for SubstrateSignatureVerifier {
-    fn verify_digest(
-        &self,
-        digest: SubstrateSha256,
-        signature: &SubstrateSignature,
-    ) -> Result<(), signature::Error> {
-        self.inner.verify_digest(digest, &signature.0)
-    }
-}
-
 impl Verifier<SubstrateSignature> for SubstrateSignatureVerifier {
     fn verify(&self, msg: &[u8], signature: &SubstrateSignature) -> Result<(), signature::Error> {
-        let mut hasher = SubstrateSha256::new();
+        let mut hasher = sha2::Sha256::new();
         Digest::update(&mut hasher, msg);
-        self.verify_digest(hasher, signature)
+        self.inner.verify_digest(hasher, &signature.0)
     }
 }
 
-impl digest::OutputSizeUser for SubstrateSha256 {
-    type OutputSize = U32;
-}
-
-impl digest::HashMarker for SubstrateSha256 {}
-
-impl digest::Update for SubstrateSha256 {
-    fn update(&mut self, data: &[u8]) {
-        digest::Update::update(&mut self.0, data)
-    }
-}
-
-impl FixedOutput for SubstrateSha256 {
-    fn finalize_into(self, out: &mut digest::Output<Self>) {
-        *out = self.0.finalize();
-    }
-}
-
-impl Reset for SubstrateSha256 {
-    fn reset(&mut self) {
-        Reset::reset(&mut self.0)
-    }
-}
-
-impl FixedOutputReset for SubstrateSha256 {
-    fn finalize_into_reset(&mut self, out: &mut digest::Output<Self>) {
-        *out = self.0.finalize_reset();
+impl Sha256 for SubstrateSha256 {
+    fn digest(data: impl AsRef<[u8]>) -> [u8; HASH_SIZE] {
+        <sha2::Sha256 as Sha256>::digest(data)
     }
 }
 
@@ -115,9 +83,7 @@ mod tests {
 
     #[test]
     fn sha256_can_hash() {
-        let mut hasher = SubstrateSha256::new();
-        hasher.update(b"hello world");
-        let hash = hasher.finalize();
+        let hash = SubstrateSha256::digest(b"hello world");
 
         let hash = String::from_utf8(hex::encode(hash)).unwrap();
         assert_eq!(

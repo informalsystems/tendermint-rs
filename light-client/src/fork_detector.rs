@@ -2,7 +2,7 @@
 
 use core::marker::PhantomData;
 
-use tendermint::crypto::Sha256;
+use tendermint::{crypto::Sha256, merkle::MerkleHash};
 
 use crate::{
     errors::{Error, ErrorDetail},
@@ -86,7 +86,11 @@ impl<H: Default> Default for ProvidedForkDetector<H> {
     }
 }
 
-impl<H: Sha256> ForkDetector for ProvidedForkDetector<H> {
+impl<H> ForkDetector for ProvidedForkDetector<H>
+where
+    // Sync + Send have to be added only because of forbid(unsafe_code)
+    H: MerkleHash + Sha256 + Default + Sync + Send,
+{
     /// Perform fork detection. See the documentation `ProdForkDetector` for details.
     fn detect_forks(
         &self,

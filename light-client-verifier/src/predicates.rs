@@ -2,7 +2,7 @@
 
 use core::time::Duration;
 
-use tendermint::{block::Height, crypto::Sha256, hash::Hash};
+use tendermint::{block::Height, crypto::Sha256, hash::Hash, merkle::MerkleHash};
 
 use crate::{
     errors::VerificationError,
@@ -30,7 +30,7 @@ impl VerificationPredicates for ProdPredicates {
 /// have to re-define every predicate.
 pub trait VerificationPredicates: Send + Sync {
     /// The implementation of SHA256 digest
-    type Sha256: Sha256;
+    type Sha256: MerkleHash + Sha256 + Default;
 
     /// Compare the provided validator_set_hash against the hash produced from hashing the validator
     /// set.

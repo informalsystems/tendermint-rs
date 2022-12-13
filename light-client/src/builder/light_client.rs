@@ -1,6 +1,6 @@
 //! DSL for building a light client [`Instance`]
 
-use tendermint::{block::Height, crypto::Sha256, Hash};
+use tendermint::{block::Height, crypto::Sha256, merkle::MerkleHash, Hash};
 
 #[cfg(feature = "rpc-client")]
 use {
@@ -39,7 +39,7 @@ pub struct HasTrustedState;
 
 /// Builder for a light client [`Instance`]
 #[must_use]
-pub struct LightClientBuilder<State, H: Sha256> {
+pub struct LightClientBuilder<State, H: MerkleHash + Sha256 + Default> {
     peer_id: PeerId,
     options: Options,
     io: Box<dyn Io>,
@@ -53,9 +53,12 @@ pub struct LightClientBuilder<State, H: Sha256> {
     state: State,
 }
 
-impl<Current, C: Sha256> LightClientBuilder<Current, C> {
+impl<Current, H> LightClientBuilder<Current, H>
+where
+    H: MerkleHash + Sha256 + Default,
+{
     /// Private method to move from one state to another
-    fn with_state<Next>(self, state: Next) -> LightClientBuilder<Next, C> {
+    fn with_state<Next>(self, state: Next) -> LightClientBuilder<Next, H> {
         LightClientBuilder {
             peer_id: self.peer_id,
             options: self.options,
@@ -93,7 +96,10 @@ impl LightClientBuilder<NoTrustedState, tendermint::crypto::default::Sha256> {
     }
 }
 
-impl<H: Sha256> LightClientBuilder<NoTrustedState, H> {
+impl<H> LightClientBuilder<NoTrustedState, H>
+where
+    H: MerkleHash + Sha256 + Default,
+{
     /// Initialize a builder for a custom light client, by providing all dependencies upfront.
     // TODO: redesign this, it's a builder API!
     #[allow(clippy::too_many_arguments)]
@@ -201,7 +207,10 @@ impl<H: Sha256> LightClientBuilder<NoTrustedState, H> {
     }
 }
 
-impl<H: Sha256> LightClientBuilder<HasTrustedState, H> {
+impl<H> LightClientBuilder<HasTrustedState, H>
+where
+    H: MerkleHash + Sha256 + Default,
+{
     /// Build the light client [`Instance`].
     #[must_use]
     pub fn build(self) -> Instance {
