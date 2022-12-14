@@ -12,12 +12,10 @@ this version immediately.
 
 ### BREAKING
 
-- `[tendermint-light-client-verifier]` Add a
-  `chain_id` field to the `TrustedBlockState` struct
-  ([#1249](https://github.com/informalsystems/tendermint-rs/pull/1249))
 - `[tendermint-light-client-verifier]` Add `is_matching_chain_id`
   method to the `VerificationPredicates` trait
-  ([#1249](https://github.com/informalsystems/tendermint-rs/pull/1249))
+- `[tendermint-light-client-verifier]` Add a
+  `chain_id` field to the `TrustedBlockState` struct
 
 ### IMPROVEMENTS
 
@@ -28,7 +26,6 @@ this version immediately.
 
 - `[tendermint-light-client]` Fix an issue where the light client was not
   checking that the chain ID of the trusted and untrusted headers match
-  ([#1249](https://github.com/informalsystems/tendermint-rs/pull/1249))
 
 ## v0.27.0
 
