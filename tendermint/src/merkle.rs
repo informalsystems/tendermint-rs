@@ -77,7 +77,7 @@ where
     fn empty_hash(&mut self) -> Hash {
         // Get the output of an empty digest state.
         let digest = self.finalize_reset();
-        copy_to_hash(&digest)
+        copy_to_hash(digest)
     }
 
     fn leaf_hash(&mut self, bytes: &[u8]) -> Hash {
@@ -116,7 +116,7 @@ impl<H> Default for NonIncremental<H> {
 
 impl<H: Sha256> MerkleHash for NonIncremental<H> {
     fn empty_hash(&mut self) -> Hash {
-        let digest = H::digest(&[]);
+        let digest = H::digest([]);
         copy_to_hash(digest)
     }
 
