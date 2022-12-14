@@ -112,6 +112,16 @@ define_error! {
                     e.got, e.expected)
             },
 
+        ChainIdMismatch
+            {
+                got: String,
+                expected: String,
+            }
+            | e | {
+                format_args!("chain-id mismatch: got={0} expected={1}",
+                    e.got, e.expected)
+            },
+
         NonMonotonicBftTime
             {
                 header_bft_time: Time,

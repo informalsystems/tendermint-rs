@@ -8,6 +8,7 @@ use tendermint::{
         header::Header as TMHeader, signed_header::SignedHeader as TMSignedHeader,
         Commit as TMCommit,
     },
+    chain::Id as ChainId,
     trust_threshold::TrustThresholdFraction,
     validator::{Info as TMValidatorInfo, Set as TMValidatorSet},
 };
@@ -78,6 +79,7 @@ impl Status {
 
 /// Trusted block parameters needed for light client verification.
 pub struct TrustedBlockState<'a> {
+    pub chain_id: &'a ChainId,
     pub header_time: Time,
     pub height: Height,
     pub next_validators: &'a ValidatorSet,
@@ -143,6 +145,7 @@ impl LightBlock {
     /// trusted state.
     pub fn as_trusted_state(&self) -> TrustedBlockState<'_> {
         TrustedBlockState {
+            chain_id: &self.signed_header.header.chain_id,
             header_time: self.signed_header.header.time,
             height: self.signed_header.header.height,
             next_validators: &self.next_validators,

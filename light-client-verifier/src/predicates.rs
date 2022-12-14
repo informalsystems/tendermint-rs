@@ -2,7 +2,7 @@
 
 use core::time::Duration;
 
-use tendermint::{block::Height, hash::Hash};
+use tendermint::{block::Height, chain::Id as ChainId, hash::Hash};
 
 use crate::{
     errors::VerificationError,
@@ -160,6 +160,22 @@ pub trait VerificationPredicates: Send + Sync {
         }
     }
 
+    /// Check that the chain-ids of the trusted header and the untrusted one are the same
+    fn is_matching_chain_id(
+        &self,
+        untrusted_chain_id: &ChainId,
+        trusted_chain_id: &ChainId,
+    ) -> Result<(), VerificationError> {
+        if untrusted_chain_id == trusted_chain_id {
+            Ok(())
+        } else {
+            Err(VerificationError::chain_id_mismatch(
+                untrusted_chain_id.to_string(),
+                trusted_chain_id.to_string(),
+            ))
+        }
+    }
+
     /// Check that there is enough validators overlap between the trusted validator set
     /// and the untrusted signed header.
     fn has_sufficient_validators_overlap(
@@ -279,6 +295,30 @@ mod tests {
                 assert_eq!(e.expected, header_two.height.increment());
             },
             _ => panic!("expected NonIncreasingHeight error"),
+        }
+    }
+
+    #[test]
+    fn test_is_matching_chain_id() {
+        let val = vec![Validator::new("val-1")];
+        let header_one = Header::new(&val).chain_id("chaina-1").generate().unwrap();
+        let header_two = Header::new(&val).chain_id("chainb-1").generate().unwrap();
+
+        let vp = ProdPredicates::default();
+
+        // 1. ensure valid header verifies
+        let result_ok = vp.is_matching_chain_id(&header_one.chain_id, &header_one.chain_id);
+        assert!(result_ok.is_ok());
+
+        // 2. ensure header with different chain-id fails
+        let result_err = vp.is_matching_chain_id(&header_one.chain_id, &header_two.chain_id);
+
+        match result_err {
+            Err(VerificationError(VerificationErrorDetail::ChainIdMismatch(e), _)) => {
+                assert_eq!(e.got, header_one.chain_id.to_string());
+                assert_eq!(e.expected, header_two.chain_id.to_string());
+            },
+            _ => panic!("expected ChainIdMismatch error"),
         }
     }
 
