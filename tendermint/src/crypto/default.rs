@@ -24,6 +24,7 @@ impl super::Sha256 for Sha256 {
 }
 
 /// Types implementing the ECDSA algorithm using the Secp256k1 elliptic curve.
-pub mod ecdsa_secp256 {
+#[cfg(feature = "secp256k1")]
+pub mod ecdsa_secp256k1 {
     pub use k256::ecdsa::{Signature, SigningKey, VerifyingKey};
 }

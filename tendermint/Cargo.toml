@@ -59,7 +59,7 @@ default = ["std", "rust-crypto"]
 std = ["flex-error/std", "flex-error/eyre_tracer", "clock"]
 clock = ["time/std"]
 secp256k1 = ["k256", "ripemd"]
-rust-crypto = ["sha2", "k256"]
+rust-crypto = ["sha2"]
 
 [dev-dependencies]
 k256 = { version = "0.11", default-features = false, features = ["ecdsa"] }
