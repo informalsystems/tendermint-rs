@@ -6,8 +6,6 @@ use core::{
     str::FromStr,
 };
 
-#[cfg(feature = "secp256k1")]
-use ripemd::Ripemd160;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
@@ -96,6 +94,8 @@ mod key_conversions {
     #[cfg(feature = "secp256k1")]
     impl From<Secp256k1> for Id {
         fn from(pk: Secp256k1) -> Id {
+            use ripemd::Ripemd160;
+
             let sha_digest = Sha256::digest(pk.to_bytes());
             let ripemd_digest = Ripemd160::digest(&sha_digest[..]);
             let mut bytes = [0u8; LENGTH];
@@ -117,7 +117,7 @@ mod key_conversions {
             match pub_key {
                 PublicKey::Ed25519(pk) => Id::from(pk),
                 #[cfg(feature = "secp256k1")]
-                PublicKey::Secp256k1(pk) => account::Id::from(pk),
+                PublicKey::Secp256k1(pk) => Id::from(pk),
             }
         }
     }
@@ -188,6 +188,8 @@ mod tests {
     #[test]
     #[cfg(feature = "secp256k1")]
     fn test_secp_id() {
+        use crate::public_key::Secp256k1;
+
         // test vector for pubkey and id (address)
         let pubkey_hex = "02950E1CDFCB133D6024109FD489F734EEB4502418E538C28481F22BCE276F248C";
         // SHA256: 034f706ac824dbb0d227c2ca30439e5be3766cfddc90f00bd530951d638b43a4
