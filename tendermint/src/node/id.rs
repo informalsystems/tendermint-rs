@@ -11,8 +11,6 @@ use subtle_encoding::hex;
 
 use crate::{error::Error, prelude::*};
 
-#[allow(unused_imports)]
-
 /// Length of a Node ID in bytes
 pub const LENGTH: usize = 20;
 
