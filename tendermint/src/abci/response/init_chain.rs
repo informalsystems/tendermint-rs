@@ -1,6 +1,4 @@
-use crate::AppHash;
-
-use crate::{consensus, prelude::*, validator};
+use crate::{consensus, prelude::*, validator, AppHash};
 
 #[doc = include_str!("../doc/response-initchain.md")]
 #[derive(Clone, PartialEq, Eq, Debug, Default)]

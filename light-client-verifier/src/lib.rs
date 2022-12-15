@@ -11,7 +11,4 @@ pub mod predicates;
 pub mod types;
 mod verifier;
 
-pub use verifier::{PredicateVerifier, Verdict, Verifier};
-
-#[cfg(feature = "rust-crypto")]
-pub use verifier::ProdVerifier;
+pub use verifier::{PredicateVerifier, ProdVerifier, Verdict, Verifier};

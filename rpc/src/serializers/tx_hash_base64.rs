@@ -2,9 +2,9 @@
 
 use serde::{Deserialize, Deserializer, Serializer};
 use subtle_encoding::base64;
+use tendermint::{hash::Algorithm, Hash};
 
 use crate::prelude::*;
-use tendermint::{hash::Algorithm, Hash};
 
 /// Deserialize a base64-encoded string into an abci::transaction::Hash
 pub fn deserialize<'de, D>(deserializer: D) -> Result<Hash, D::Error>

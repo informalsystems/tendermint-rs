@@ -81,21 +81,20 @@ impl Debug for Id {
     }
 }
 
-#[cfg(feature = "rust-crypto")]
 mod key_conversions {
+    use digest::Digest;
+    use sha2::Sha256;
+
     use super::{Id, LENGTH};
-    use crate::crypto::default::Sha256;
     #[cfg(feature = "secp256k1")]
     use crate::public_key::Secp256k1;
     use crate::public_key::{Ed25519, PublicKey};
-    use digest::Digest;
 
     // RIPEMD160(SHA256(pk))
     #[cfg(feature = "secp256k1")]
     impl From<Secp256k1> for Id {
         fn from(pk: Secp256k1) -> Id {
             use ripemd::Ripemd160;
-
             let sha_digest = Sha256::digest(pk.to_bytes());
             let ripemd_digest = Ripemd160::digest(&sha_digest[..]);
             let mut bytes = [0u8; LENGTH];

@@ -23,7 +23,7 @@ default = ["console_error_panic_hook"]
 serde = { version = "1.0", default-features = false, features = [ "derive" ] }
 serde_json = { version = "1.0", default-features = false }
 tendermint = { version = "0.28.0", default-features = false, path = "../tendermint" }
-tendermint-light-client-verifier = { version = "0.28.0", features = ["rust-crypto"], default-features = false, path = "../light-client-verifier" }
+tendermint-light-client-verifier = { version = "0.28.0", default-features = false, path = "../light-client-verifier" }
 wasm-bindgen = { version = "0.2.63", default-features = false, features = [ "serde-serialize" ] }
 serde-wasm-bindgen = { version = "0.4.5", default-features = false }
 

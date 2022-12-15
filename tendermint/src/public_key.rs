@@ -1,9 +1,8 @@
 //! Public keys used in Tendermint networks
 
-pub use ed25519_dalek::PublicKey as Ed25519;
+pub use ed25519_dalek::{PublicKey as Ed25519, Verifier};
 #[cfg(feature = "secp256k1")]
-pub use k256::ecdsa::VerifyingKey as Secp256k1;
-
+pub use k256::ecdsa::{VerifyingKey as Secp256k1, VerifyingKey};
 mod pub_key_request;
 mod pub_key_response;
 use core::{cmp::Ordering, convert::TryFrom, fmt, ops::Deref, str::FromStr};
@@ -12,14 +11,13 @@ pub use pub_key_request::PubKeyRequest;
 pub use pub_key_response::PubKeyResponse;
 use serde::{de, ser, Deserialize, Deserializer, Serialize};
 use serde_json::Value;
-use signature::Verifier as _;
 use subtle_encoding::{base64, bech32, hex};
 use tendermint_proto::{
     crypto::{public_key::Sum, PublicKey as RawPublicKey},
     Protobuf,
 };
 
-use crate::{error::Error, prelude::*, signature::Signature};
+use crate::{crypto::SignatureVerifier, error::Error, prelude::*, Signature};
 
 // Note:On the golang side this is generic in the sense that it could everything that implements
 // github.com/tendermint/tendermint/crypto.PubKey
@@ -192,39 +190,6 @@ impl PublicKey {
         }
     }
 
-    /// Verify the given [`Signature`] using this public key
-    pub fn verify(&self, msg: &[u8], signature: &Signature) -> Result<(), Error> {
-        match self {
-            PublicKey::Ed25519(pk) => {
-                match ed25519_dalek::Signature::try_from(signature.as_bytes()) {
-                    Ok(sig) => pk.verify(msg, &sig).map_err(|_| {
-                        Error::signature_invalid(
-                            "Ed25519 signature verification failed".to_string(),
-                        )
-                    }),
-                    Err(e) => Err(Error::signature_invalid(format!(
-                        "invalid Ed25519 signature: {}",
-                        e
-                    ))),
-                }
-            },
-            #[cfg(feature = "secp256k1")]
-            PublicKey::Secp256k1(pk) => {
-                match k256::ecdsa::Signature::try_from(signature.as_bytes()) {
-                    Ok(sig) => pk.verify(msg, &sig).map_err(|_| {
-                        Error::signature_invalid(
-                            "Secp256k1 signature verification failed".to_string(),
-                        )
-                    }),
-                    Err(e) => Err(Error::signature_invalid(format!(
-                        "invalid Secp256k1 signature: {}",
-                        e
-                    ))),
-                }
-            },
-        }
-    }
-
     /// Serialize this key as a byte vector.
     pub fn to_bytes(self) -> Vec<u8> {
         match self {
@@ -255,6 +220,41 @@ impl PublicKey {
     /// Serialize this key as hexadecimal
     pub fn to_hex(self) -> String {
         String::from_utf8(hex::encode_upper(self.to_bytes())).unwrap()
+    }
+}
+
+impl SignatureVerifier for PublicKey {
+    /// Verify the given [`Signature`] using this public key
+    fn verify(&self, sign_bytes: &[u8], signature: &Signature) -> Result<(), Error> {
+        match self {
+            PublicKey::Ed25519(pk) => {
+                match ed25519_dalek::Signature::try_from(signature.as_bytes()) {
+                    Ok(sig) => pk.verify(sign_bytes, &sig).map_err(|_| {
+                        Error::signature_invalid(
+                            "Ed25519 signature verification failed".to_string(),
+                        )
+                    }),
+                    Err(e) => Err(Error::signature_invalid(format!(
+                        "invalid Ed25519 signature: {}",
+                        e
+                    ))),
+                }
+            },
+            #[cfg(feature = "secp256k1")]
+            PublicKey::Secp256k1(pk) => {
+                match k256::ecdsa::Signature::try_from(signature.as_bytes()) {
+                    Ok(sig) => pk.verify(sign_bytes, &sig).map_err(|_| {
+                        Error::signature_invalid(
+                            "Secp256k1 signature verification failed".to_string(),
+                        )
+                    }),
+                    Err(e) => Err(Error::signature_invalid(format!(
+                        "invalid Secp256k1 signature: {}",
+                        e
+                    ))),
+                }
+            },
+        }
     }
 }
 
@@ -440,13 +440,13 @@ where
 
 #[cfg(test)]
 mod tests {
-    use core::convert::TryFrom;
-
     use subtle_encoding::hex;
     use tendermint_proto::Protobuf;
 
-    use super::{PublicKey, Signature, TendermintKey};
-    use crate::{prelude::*, public_key::PubKeyResponse};
+    use super::{PublicKey, TendermintKey};
+    use crate::{
+        crypto::SignatureVerifier, prelude::*, public_key::PubKeyResponse, signature::Signature,
+    };
 
     const EXAMPLE_CONSENSUS_KEY: &str =
         "4A25C6640A1F72B9C975338294EF51B6D1C33158BB6ECBA69FBC3FB5A33C9DCE";

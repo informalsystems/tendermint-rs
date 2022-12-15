@@ -8,11 +8,8 @@ use tendermint_proto::{
 };
 
 use crate::{
-    account, block, chain,
-    crypto::Sha256,
-    merkle::{self, MerkleHash},
-    prelude::*,
-    AppHash, Error, Hash, Time,
+    account, block, chain, crypto::Sha256, merkle::MerkleHash, prelude::*, AppHash, Error, Hash,
+    Time,
 };
 
 /// Block `Header` values contain metadata about the block and about the
@@ -168,15 +165,14 @@ impl From<Header> for RawHeader {
 
 impl Header {
     /// Computes the hash of this header.
-    #[cfg(feature = "rust-crypto")]
     pub fn hash(&self) -> Hash {
-        self.hash_with::<crate::crypto::default::Sha256>()
+        self.hash_with::<Sha256>()
     }
 
     /// Hash this header with a Merkle hasher provided by a crypto provider.
     pub fn hash_with<H>(&self) -> Hash
     where
-        H: MerkleHash + Sha256 + Default,
+        H: MerkleHash + Default,
     {
         // Note that if there is an encoding problem this will
         // panic (as the golang code would):
@@ -206,7 +202,7 @@ impl Header {
             self.proposer_address.encode_vec().unwrap(),
         ];
 
-        Hash::Sha256(merkle::simple_hash_from_byte_vectors::<H>(&fields_bytes))
+        Hash::Sha256(H::hash_byte_vectors(&mut H::default(), &fields_bytes))
     }
 }
 
@@ -254,23 +250,20 @@ mod tests {
         test_serialization_roundtrip::<Header>(json_data);
     }
 
-    #[cfg(feature = "rust-crypto")]
-    mod crypto {
-        use super::*;
-        use crate::{hash::Algorithm, Hash};
+    use super::*;
+    use crate::{hash::Algorithm, Hash};
 
-        #[test]
-        fn header_hashing() {
-            let expected_hash = Hash::from_hex_upper(
-                Algorithm::Sha256,
-                "F30A71F2409FB15AACAEDB6CC122DFA2525BEE9CAE521721B06BFDCA291B8D56",
-            )
-            .unwrap();
-            let header: Header = serde_json::from_str(include_str!(
-                "../../tests/support/serialization/block/header_with_known_hash.json"
-            ))
-            .unwrap();
-            assert_eq!(expected_hash, header.hash());
-        }
+    #[test]
+    fn header_hashing() {
+        let expected_hash = Hash::from_hex_upper(
+            Algorithm::Sha256,
+            "F30A71F2409FB15AACAEDB6CC122DFA2525BEE9CAE521721B06BFDCA291B8D56",
+        )
+        .unwrap();
+        let header: Header = serde_json::from_str(include_str!(
+            "../../tests/support/serialization/block/header_with_known_hash.json"
+        ))
+        .unwrap();
+        assert_eq!(expected_hash, header.hash());
     }
 }

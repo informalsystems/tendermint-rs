@@ -4,16 +4,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{ErrorExt, VerificationError, VerificationErrorDetail},
-    operations::{voting_power::VotingPowerTally, CommitValidator, VotingPowerCalculator},
+    operations::{
+        voting_power::VotingPowerTally, CommitValidator, ProdCommitValidator,
+        ProdVotingPowerCalculator, VotingPowerCalculator,
+    },
     options::Options,
-    predicates::VerificationPredicates,
+    predicates::{ProdPredicates, VerificationPredicates},
     types::{Time, TrustedBlockState, UntrustedBlockState},
-};
-
-#[cfg(feature = "rust-crypto")]
-use crate::{
-    operations::{ProdCommitValidator, ProdVotingPowerCalculator},
-    predicates::ProdPredicates,
 };
 
 /// Represents the result of the verification performed by the
@@ -267,7 +264,6 @@ where
     }
 }
 
-#[cfg(feature = "rust-crypto")]
 /// The default production implementation of the [`PredicateVerifier`].
 pub type ProdVerifier =
     PredicateVerifier<ProdPredicates, ProdVotingPowerCalculator, ProdCommitValidator>;

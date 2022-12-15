@@ -421,7 +421,7 @@ impl Handle for SupervisorHandle {
     }
 }
 
-#[cfg(all(test, feature = "rust-crypto"))]
+#[cfg(test)]
 mod tests {
     use core::{
         convert::{Into, TryFrom},

@@ -2,6 +2,9 @@
 
 use core::convert::{TryFrom, TryInto};
 
+pub use ed25519_dalek::PublicKey as Ed25519;
+#[cfg(feature = "secp256k1")]
+pub use k256::ecdsa::VerifyingKey as Secp256k1;
 use serde::{Deserialize, Serialize};
 use tendermint_proto::{
     abci::ValidatorUpdate as RawValidatorUpdate,
@@ -13,13 +16,8 @@ use tendermint_proto::{
 };
 
 use crate::{
-    account,
-    crypto::Sha256,
-    hash::Hash,
-    merkle::{self, MerkleHash},
-    prelude::*,
-    public_key::deserialize_public_key,
-    vote, Error, PublicKey, Signature,
+    account, crypto::SignatureVerifier, hash::Hash, merkle::MerkleHash, prelude::*,
+    public_key::deserialize_public_key, vote, Error, PublicKey, Signature,
 };
 
 /// Validator set contains a vector of validators
@@ -140,15 +138,14 @@ impl Set {
     }
 
     /// Compute the hash of this validator set.
-    #[cfg(feature = "rust-crypto")]
     pub fn hash(&self) -> Hash {
-        self.hash_with::<crate::crypto::default::Sha256>()
+        self.hash_with::<sha2::Sha256>()
     }
 
     /// Hash this header with a SHA256 hasher provided by a crypto provider.
     pub fn hash_with<H>(&self) -> Hash
     where
-        H: MerkleHash + Sha256 + Default,
+        H: MerkleHash + Default,
     {
         let validator_bytes: Vec<Vec<u8>> = self
             .validators()
@@ -156,7 +153,7 @@ impl Set {
             .map(|validator| validator.hash_bytes())
             .collect();
 
-        Hash::Sha256(merkle::simple_hash_from_byte_vectors::<H>(&validator_bytes))
+        Hash::Sha256(H::hash_byte_vectors(&mut H::default(), &validator_bytes))
     }
 }
 
@@ -212,18 +209,6 @@ impl From<Info> for RawValidator {
 }
 
 impl Info {
-    /// Return the voting power of the validator.
-    pub fn power(&self) -> u64 {
-        self.power.value()
-    }
-
-    /// Verify the given signature against the given sign_bytes using the validators
-    /// public key.
-    pub fn verify_signature(&self, sign_bytes: &[u8], signature: &Signature) -> Result<(), Error> {
-        self.pub_key.verify(sign_bytes, signature)
-    }
-
-    #[cfg(feature = "rust-crypto")]
     /// Create a new validator.
     pub fn new(pk: PublicKey, vp: vote::Power) -> Info {
         Info {
@@ -233,6 +218,26 @@ impl Info {
             name: None,
             proposer_priority: ProposerPriority::default(),
         }
+    }
+
+    /// Return the voting power of the validator.
+    pub fn power(&self) -> u64 {
+        self.power.value()
+    }
+
+    pub fn verify(&self, sign_bytes: &[u8], signature: &Signature) -> Result<(), Error> {
+        Self::verify_with::<PublicKey>(&self.pub_key, sign_bytes, signature)
+    }
+
+    pub fn verify_with<S>(
+        pub_key: &S,
+        sign_bytes: &[u8],
+        signature: &Signature,
+    ) -> Result<(), Error>
+    where
+        S: SignatureVerifier,
+    {
+        S::verify(&pub_key, sign_bytes, signature)
     }
 }
 
@@ -367,7 +372,6 @@ impl TryFrom<RawValidatorUpdate> for Update {
 mod tests {
     use super::*;
 
-    #[cfg(feature = "rust-crypto")]
     mod crypto {
         use super::*;
 
@@ -387,27 +391,29 @@ mod tests {
             // "strings"
             // )
             // func testValSet() {
-            // pk1 := ed25519.GenPrivKeyFromSecret([]byte{4, 211, 14, 157, 10, 0, 205, 9, 10, 116, 207,
-            // 161, 4, 211, 190, 37, 108, 88, 202, 168, 63, 135, 0, 141, 53, 55, 254, 57, 40, 184, 20,
-            // 242}) pk2 := ed25519.GenPrivKeyFromSecret([]byte{99, 231, 126, 151, 159, 236, 2,
-            // 229, 33, 44, 200, 248, 147, 176, 13, 127, 105, 76, 49, 83, 25, 101, 44, 57, 20, 215, 166,
-            // 188, 134, 94, 56, 165}) pk3 := ed25519.GenPrivKeyFromSecret([]byte{54, 253, 151,
-            // 16, 182, 114, 125, 12, 74, 101, 54, 253, 174, 153, 121, 74, 145, 180, 111, 16, 214, 48,
+            // pk1 := ed25519.GenPrivKeyFromSecret([]byte{4, 211, 14, 157, 10, 0, 205, 9, 10, 116,
+            // 207, 161, 4, 211, 190, 37, 108, 88, 202, 168, 63, 135, 0, 141, 53, 55,
+            // 254, 57, 40, 184, 20, 242}) pk2 :=
+            // ed25519.GenPrivKeyFromSecret([]byte{99, 231, 126, 151, 159, 236, 2,
+            // 229, 33, 44, 200, 248, 147, 176, 13, 127, 105, 76, 49, 83, 25, 101, 44, 57, 20, 215,
+            // 166, 188, 134, 94, 56, 165}) pk3 :=
+            // ed25519.GenPrivKeyFromSecret([]byte{54, 253, 151, 16, 182, 114, 125, 12,
+            // 74, 101, 54, 253, 174, 153, 121, 74, 145, 180, 111, 16, 214, 48,
             // 193, 109, 104, 134, 55, 162, 151, 16, 182, 114}) not_in_set :=
-            // ed25519.GenPrivKeyFromSecret([]byte{121, 74, 145, 180, 111, 16, 214, 48, 193, 109, 35,
-            // 68, 19, 27, 173, 69, 92, 204, 127, 218, 234, 81, 232, 75, 204, 199, 48, 163, 55, 132,
-            // 231, 147}) fmt.Println("pk1: ", strings.Join(strings.Split(fmt.Sprintf("%v",
-            // pk1.PubKey().Bytes()), " "), ", ")) fmt.Println("pk2:",
-            // strings.Join(strings.Split(fmt.Sprintf("%v", pk2.PubKey().Bytes()), " "), ", "))
-            // fmt.Println("pk3: ", strings.Join(strings.Split(fmt.Sprintf("%v", pk3.PubKey().Bytes()),
-            // " "), ", ")) fmt.Println("not_in_set: ",
-            // strings.Join(strings.Split(fmt.Sprintf("%v", not_in_set.PubKey().Bytes()), " "), ", "))
-            // v1 := types.NewValidator(pk1.PubKey(), 148151478422287875)
-            // v2 := types.NewValidator(pk2.PubKey(), 158095448483785107)
-            // v3 := types.NewValidator(pk3.PubKey(), 770561664770006272)
-            // set := types.NewValidatorSet([]*types.Validator{v1, v2, v3})
-            // fmt.Println("Hash:", strings.Join(strings.Split(fmt.Sprintf("%v", set.Hash()), " "), ",
-            // ")) }
+            // ed25519.GenPrivKeyFromSecret([]byte{121, 74, 145, 180, 111, 16, 214, 48, 193, 109,
+            // 35, 68, 19, 27, 173, 69, 92, 204, 127, 218, 234, 81, 232, 75, 204, 199,
+            // 48, 163, 55, 132, 231, 147}) fmt.Println("pk1: ",
+            // strings.Join(strings.Split(fmt.Sprintf("%v", pk1.PubKey().Bytes()), " "),
+            // ", ")) fmt.Println("pk2:", strings.Join(strings.Split(fmt.Sprintf("%v",
+            // pk2.PubKey().Bytes()), " "), ", ")) fmt.Println("pk3: ",
+            // strings.Join(strings.Split(fmt.Sprintf("%v", pk3.PubKey().Bytes()), " "),
+            // ", ")) fmt.Println("not_in_set: ", strings.Join(strings.Split(fmt.
+            // Sprintf("%v", not_in_set.PubKey().Bytes()), " "), ", ")) v1 := types.
+            // NewValidator(pk1.PubKey(), 148151478422287875) v2 := types.
+            // NewValidator(pk2.PubKey(), 158095448483785107) v3 := types.
+            // NewValidator(pk3.PubKey(), 770561664770006272) set := types.
+            // NewValidatorSet([]*types.Validator{v1, v2, v3}) fmt.Println("Hash:",
+            // strings.Join(strings.Split(fmt.Sprintf("%v", set.Hash()), " "), ", ")) }
             let v1 = make_validator(
                 vec![
                     48, 163, 55, 132, 231, 147, 230, 163, 56, 158, 127, 218, 179, 139, 212, 103,

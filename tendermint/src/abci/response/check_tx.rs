@@ -2,8 +2,7 @@ use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
 use super::super::{Code, Event};
-use crate::prelude::*;
-use crate::serializers;
+use crate::{prelude::*, serializers};
 
 #[doc = include_str!("../doc/response-checktx.md")]
 #[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]

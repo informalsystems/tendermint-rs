@@ -146,7 +146,7 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
             // Check vote is valid
             let sign_bytes = signed_vote.sign_bytes();
             if validator
-                .verify_signature(&sign_bytes, signed_vote.signature())
+                .verify(&sign_bytes, signed_vote.signature())
                 .is_err()
             {
                 return Err(VerificationError::invalid_signature(

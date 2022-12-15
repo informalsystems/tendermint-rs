@@ -1,5 +1,4 @@
-use crate::abci::Code;
-use crate::prelude::*;
+use crate::{abci::Code, prelude::*};
 
 #[doc = include_str!("../doc/response-setoption.md")]
 #[derive(Clone, PartialEq, Eq, Debug)]

@@ -15,16 +15,15 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use tendermint::Time;
+// TODO: Use Web Crypto API for cryptographic routines.
+// https://github.com/informalsystems/tendermint-rs/issues/1241
+use tendermint_light_client_verifier::ProdVerifier;
 use tendermint_light_client_verifier::{
     options::Options,
     types::{LightBlock, TrustThreshold},
     Verifier,
 };
 use wasm_bindgen::{prelude::*, JsValue};
-
-// TODO: Use Web Crypto API for cryptographic routines.
-// https://github.com/informalsystems/tendermint-rs/issues/1241
-use tendermint_light_client_verifier::ProdVerifier;
 
 /// Check whether a given untrusted block can be trusted.
 #[wasm_bindgen]

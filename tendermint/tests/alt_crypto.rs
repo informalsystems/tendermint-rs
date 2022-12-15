@@ -1,12 +1,10 @@
 //! An imitation of alternative cryptographic function implementations
 //! for a chain environment that provides its own cryptographic API.
 
-use tendermint::crypto::{sha256::HASH_SIZE, Sha256};
-
 use digest::Digest;
-use signature::{self, DigestSigner, DigestVerifier, Signature, Signer, Verifier};
-
 use k256::ecdsa::{SigningKey, VerifyingKey};
+use signature::{self, DigestSigner, DigestVerifier, Signature, Signer, Verifier};
+use tendermint::crypto::{Hasher, Sha256, HASH_SIZE};
 
 #[derive(Debug, Default)]
 struct SubstrateSha256(sha2::Sha256);
@@ -68,18 +66,21 @@ impl Verifier<SubstrateSignature> for SubstrateSignatureVerifier {
     }
 }
 
-impl Sha256 for SubstrateSha256 {
+impl Hasher for SubstrateSha256 {
     fn digest(data: impl AsRef<[u8]>) -> [u8; HASH_SIZE] {
-        <sha2::Sha256 as Sha256>::digest(data)
+        let digest = <Sha256 as Digest>::digest(data);
+        let mut hash_bytes = [0u8; HASH_SIZE];
+        hash_bytes.copy_from_slice(&digest);
+        hash_bytes
     }
 }
 
 mod tests {
-    use super::{SubstrateSha256, SubstrateSignatureVerifier, SubstrateSigner};
     use signature::{Signature, Signer, Verifier};
-    use tendermint::crypto::Sha256;
-
     use subtle_encoding::hex;
+    use tendermint::crypto::Hasher;
+
+    use super::{SubstrateSha256, SubstrateSignatureVerifier, SubstrateSigner};
 
     #[test]
     fn sha256_can_hash() {

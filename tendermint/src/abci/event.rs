@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::prelude::*;
-use crate::serializers::bytes::base64string;
+use crate::{prelude::*, serializers::bytes::base64string};
 
 /// An event that occurred while processing a request.
 ///

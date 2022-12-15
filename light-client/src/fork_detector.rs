@@ -68,8 +68,7 @@ pub struct ProvidedForkDetector<H> {
     _crypto: PhantomData<H>,
 }
 
-#[cfg(feature = "rust-crypto")]
-pub type ProdForkDetector = ProvidedForkDetector<tendermint::crypto::default::Sha256>;
+pub type ProdForkDetector = ProvidedForkDetector<Sha256>;
 
 impl<H> ProvidedForkDetector<H> {
     /// Construct a new fork detector that will use the given header hasher.
@@ -88,8 +87,9 @@ impl<H: Default> Default for ProvidedForkDetector<H> {
 
 impl<H> ForkDetector for ProvidedForkDetector<H>
 where
-    // Sync + Send have to be added only because of forbid(unsafe_code)
-    H: MerkleHash + Sha256 + Default + Sync + Send,
+    // Sync + Send have to be added only because of
+    // forbid(unsafe_code)
+    H: MerkleHash + Default + Sync + Send,
 {
     /// Perform fork detection. See the documentation `ProdForkDetector` for details.
     fn detect_forks(

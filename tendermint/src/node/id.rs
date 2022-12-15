@@ -58,13 +58,15 @@ impl Debug for Id {
     }
 }
 
-#[cfg(feature = "rust-crypto")]
 mod key_conversions {
-    use super::{Id, LENGTH};
-    use crate::crypto::default::Sha256;
-    use crate::public_key::{Ed25519, PublicKey};
-    use crate::Error;
     use digest::Digest;
+    use sha2::Sha256;
+
+    use super::{Id, LENGTH};
+    use crate::{
+        public_key::{Ed25519, PublicKey},
+        Error,
+    };
 
     impl From<Ed25519> for Id {
         fn from(pk: Ed25519) -> Id {

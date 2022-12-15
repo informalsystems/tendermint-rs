@@ -3,7 +3,12 @@
 use core::time::Duration;
 
 use tendermint::{
-    block::Height, chain::Id as ChainId, crypto::Sha256, hash::Hash, merkle::MerkleHash,
+    block::Height,
+    chain::Id as ChainId,
+    crypto::{Sha256, SignatureVerifier},
+    hash::Hash,
+    merkle::MerkleHash,
+    PublicKey,
 };
 
 use crate::{
@@ -15,13 +20,12 @@ use crate::{
 
 /// Production predicates, using the default implementation
 /// of the `VerificationPredicates` trait.
-#[cfg(feature = "rust-crypto")]
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct ProdPredicates;
 
-#[cfg(feature = "rust-crypto")]
 impl VerificationPredicates for ProdPredicates {
-    type Sha256 = tendermint::crypto::default::Sha256;
+    type Hasher = Sha256;
+    type SignatureVerifier = PublicKey;
 }
 
 /// Defines the various predicates used to validate and verify light blocks.
@@ -32,7 +36,8 @@ impl VerificationPredicates for ProdPredicates {
 /// have to re-define every predicate.
 pub trait VerificationPredicates: Send + Sync {
     /// The implementation of SHA256 digest
-    type Sha256: MerkleHash + Sha256 + Default;
+    type Hasher: MerkleHash + Default;
+    type SignatureVerifier: SignatureVerifier;
 
     /// Compare the provided validator_set_hash against the hash produced from hashing the validator
     /// set.
@@ -41,7 +46,7 @@ pub trait VerificationPredicates: Send + Sync {
         validators: &ValidatorSet,
         header_validators_hash: Hash,
     ) -> Result<(), VerificationError> {
-        let validators_hash = validators.hash_with::<Self::Sha256>();
+        let validators_hash = validators.hash_with::<Self::Hasher>();
         if header_validators_hash == validators_hash {
             Ok(())
         } else {
@@ -58,7 +63,7 @@ pub trait VerificationPredicates: Send + Sync {
         next_validators: &ValidatorSet,
         header_next_validators_hash: Hash,
     ) -> Result<(), VerificationError> {
-        let next_validators_hash = next_validators.hash_with::<Self::Sha256>();
+        let next_validators_hash = next_validators.hash_with::<Self::Hasher>();
         if header_next_validators_hash == next_validators_hash {
             Ok(())
         } else {
@@ -75,7 +80,7 @@ pub trait VerificationPredicates: Send + Sync {
         header: &Header,
         commit_hash: Hash,
     ) -> Result<(), VerificationError> {
-        let header_hash = header.hash_with::<Self::Sha256>();
+        let header_hash = header.hash_with::<Self::Hasher>();
         if header_hash == commit_hash {
             Ok(())
         } else {
@@ -226,7 +231,7 @@ pub trait VerificationPredicates: Send + Sync {
     }
 }
 
-#[cfg(all(test, feature = "rust-crypto"))]
+#[cfg(test)]
 mod tests {
     use core::{convert::TryInto, time::Duration};
 

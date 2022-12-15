@@ -1,9 +1,9 @@
-use crate::{block, prelude::*, AppHash, Error};
 use core::convert::TryFrom;
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
 
 use serde::{Deserialize, Serialize};
+use tendermint_proto::{abci as pb, Protobuf};
+
+use crate::{block, prelude::*, AppHash, Error};
 
 #[doc = include_str!("../doc/response-info.md")]
 #[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
