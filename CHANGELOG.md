@@ -1,5 +1,32 @@
 # CHANGELOG
 
+## v0.28.0
+
+*Dec 13, 2022*
+
+This is primarily a security-related release, and although it's a breaking
+release, the breaking changes are relatively minor.
+
+It is highly recommended that all tendermint-rs light client users upgrade to
+this version immediately.
+
+### BREAKING
+
+- `[tendermint-light-client-verifier]` Add `is_matching_chain_id`
+  method to the `VerificationPredicates` trait
+- `[tendermint-light-client-verifier]` Add a
+  `chain_id` field to the `TrustedBlockState` struct
+
+### IMPROVEMENTS
+
+- `[tendermint-light-client-js]` Switch to serde-wasm-bindgen for marshalling
+  JS values ([#1242](https://github.com/informalsystems/tendermint-rs/pull/1242))
+
+### SECURITY
+
+- `[tendermint-light-client]` Fix an issue where the light client was not
+  checking that the chain ID of the trusted and untrusted headers match
+
 ## v0.27.0
 
 *Nov 28, 2022*

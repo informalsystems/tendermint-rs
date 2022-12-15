@@ -174,6 +174,11 @@ where
             .predicates
             .is_monotonic_bft_time(untrusted.signed_header.header.time, trusted.header_time));
 
+        // Check that the chain-id of the untrusted block matches that of the trusted state
+        verdict!(self
+            .predicates
+            .is_matching_chain_id(&untrusted.signed_header.header.chain_id, trusted.chain_id));
+
         let trusted_next_height = trusted.height.increment();
 
         if untrusted.height() == trusted_next_height {
@@ -266,3 +271,68 @@ where
 /// The default production implementation of the [`PredicateVerifier`].
 pub type ProdVerifier =
     PredicateVerifier<ProdPredicates, ProdVotingPowerCalculator, ProdCommitValidator>;
+
+#[cfg(test)]
+mod tests {
+    use alloc::{borrow::ToOwned, string::ToString};
+    use core::{ops::Sub, time::Duration};
+
+    use tendermint::Time;
+    use tendermint_testgen::{light_block::LightBlock as TestgenLightBlock, Generator};
+
+    use crate::{
+        errors::VerificationErrorDetail, options::Options, types::LightBlock, ProdVerifier,
+        Verdict, Verifier,
+    };
+
+    #[test]
+    fn test_verification_failure_on_chain_id_mismatch() {
+        let now = Time::now();
+
+        // Create a default light block with a valid chain-id for height `1` with a timestamp 20
+        // secs before now (to be treated as trusted state)
+        let light_block_1: LightBlock = TestgenLightBlock::new_default_with_time_and_chain_id(
+            "chain-1".to_owned(),
+            now.sub(Duration::from_secs(20)).unwrap(),
+            1u64,
+        )
+        .generate()
+        .unwrap()
+        .into();
+
+        // Create another default block with a different chain-id for height `2` with a timestamp 10
+        // secs before now (to be treated as untrusted state)
+        let light_block_2: LightBlock = TestgenLightBlock::new_default_with_time_and_chain_id(
+            "forged-chain".to_owned(),
+            now.sub(Duration::from_secs(10)).unwrap(),
+            2u64,
+        )
+        .generate()
+        .unwrap()
+        .into();
+
+        let vp = ProdVerifier::default();
+        let opt = Options {
+            trust_threshold: Default::default(),
+            trusting_period: Duration::from_secs(60),
+            clock_drift: Default::default(),
+        };
+
+        let verdict = vp.verify(
+            light_block_2.as_untrusted_state(),
+            light_block_1.as_trusted_state(),
+            &opt,
+            Time::now(),
+        );
+
+        match verdict {
+            Verdict::Invalid(VerificationErrorDetail::ChainIdMismatch(e)) => {
+                let chain_id_1 = light_block_1.signed_header.header.chain_id;
+                let chain_id_2 = light_block_2.signed_header.header.chain_id;
+                assert_eq!(e.got, chain_id_2.to_string());
+                assert_eq!(e.expected, chain_id_1.to_string());
+            },
+            v => panic!("expected ChainIdMismatch error, got: {:?}", v),
+        }
+    }
+}
