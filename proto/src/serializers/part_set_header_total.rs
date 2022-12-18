@@ -36,10 +36,17 @@ impl<'de> Visitor<'de> for PartSetHeaderTotalStringOrU32 {
     type Value = u32;
 
     fn expecting(&self, formatter: &mut Formatter<'_>) -> core::fmt::Result {
-        formatter.write_str("an u32 integer or string between 0 and 2^32")
+        formatter.write_str("an integer or string between 0 and 2^32")
     }
 
     fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        u32::try_from(v).map_err(|e| E::custom(format!("part_set_header.total {}", e)))
+    }
+
+    fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
     where
         E: Error,
     {
