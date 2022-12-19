@@ -14,8 +14,9 @@ use crate::{
     prelude::*,
     query::Query,
     utils::uuid_str,
-    Client, Error, Method, Request, Response, Subscription, SubscriptionClient,
+    Error, Method, Request, Response, Subscription, SubscriptionClient,
 };
+use crate::{v0_34, v0_37};
 
 /// A mock client implementation for use in testing.
 ///
@@ -59,7 +60,19 @@ pub struct MockClient<M: MockRequestMatcher> {
 }
 
 #[async_trait]
-impl<M: MockRequestMatcher> Client for MockClient<M> {
+impl<M: MockRequestMatcher> v0_34::Client for MockClient<M> {
+    async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
+    where
+        R: Request,
+    {
+        self.matcher
+            .response_for(request)
+            .ok_or_else(Error::mismatch_response)?
+    }
+}
+
+#[async_trait]
+impl<M: MockRequestMatcher> v0_37::Client for MockClient<M> {
     async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
     where
         R: Request,
@@ -257,25 +270,54 @@ mod test {
         Event::from_string(&read_json_fixture(name).await).unwrap()
     }
 
-    #[tokio::test]
-    async fn mock_client() {
-        let abci_info_fixture = read_json_fixture("abci_info").await;
-        let block_fixture = read_json_fixture("block_at_height_10").await;
-        let matcher = MockRequestMethodMatcher::default()
-            .map(Method::AbciInfo, Ok(abci_info_fixture))
-            .map(Method::Block, Ok(block_fixture));
-        let (client, driver) = MockClient::new(matcher);
-        let driver_hdl = tokio::spawn(async move { driver.run().await });
+    mod v0_34 {
+        use super::*;
+        use crate::v0_34::Client;
+        #[tokio::test]
+        async fn mock_client() {
+            let abci_info_fixture = read_json_fixture("abci_info").await;
+            let block_fixture = read_json_fixture("block_at_height_10").await;
+            let matcher = MockRequestMethodMatcher::default()
+                .map(Method::AbciInfo, Ok(abci_info_fixture))
+                .map(Method::Block, Ok(block_fixture));
+            let (client, driver) = MockClient::new(matcher);
+            let driver_hdl = tokio::spawn(async move { driver.run().await });
 
-        let abci_info = client.abci_info().await.unwrap();
-        assert_eq!("{\"size\":0}".to_string(), abci_info.data);
+            let abci_info = client.abci_info().await.unwrap();
+            assert_eq!("{\"size\":0}".to_string(), abci_info.data);
 
-        let block = client.block(Height::from(10_u32)).await.unwrap().block;
-        assert_eq!(Height::from(10_u32), block.header.height);
-        assert_eq!("dockerchain".parse::<Id>().unwrap(), block.header.chain_id);
+            let block = client.block(Height::from(10_u32)).await.unwrap().block;
+            assert_eq!(Height::from(10_u32), block.header.height);
+            assert_eq!("dockerchain".parse::<Id>().unwrap(), block.header.chain_id);
 
-        client.close();
-        driver_hdl.await.unwrap().unwrap();
+            client.close();
+            driver_hdl.await.unwrap().unwrap();
+        }
+    }
+
+    mod v0_37 {
+        use super::*;
+        use crate::v0_37::Client;
+        #[tokio::test]
+        async fn mock_client() {
+            let abci_info_fixture = read_json_fixture("abci_info").await;
+            let block_fixture = read_json_fixture("block_at_height_10").await;
+            let matcher = MockRequestMethodMatcher::default()
+                .map(Method::AbciInfo, Ok(abci_info_fixture))
+                .map(Method::Block, Ok(block_fixture));
+            let (client, driver) = MockClient::new(matcher);
+            let driver_hdl = tokio::spawn(async move { driver.run().await });
+
+            let abci_info = client.abci_info().await.unwrap();
+            assert_eq!("{\"size\":0}".to_string(), abci_info.data);
+
+            let block = client.block(Height::from(10_u32)).await.unwrap().block;
+            assert_eq!(Height::from(10_u32), block.header.height);
+            assert_eq!("dockerchain".parse::<Id>().unwrap(), block.header.chain_id);
+
+            client.close();
+            driver_hdl.await.unwrap().unwrap();
+        }
     }
 
     #[tokio::test]

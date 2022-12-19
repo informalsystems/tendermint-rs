@@ -8,7 +8,8 @@ use core::{
 use async_trait::async_trait;
 use tendermint_config::net;
 
-use crate::{client::Client, prelude::*, Error, Scheme, SimpleRequest, Url};
+use crate::{prelude::*, Error, Scheme, SimpleRequest, Url};
+use crate::{v0_34, v0_37};
 
 /// A JSON-RPC/HTTP Tendermint RPC client (implements [`crate::Client`]).
 ///
@@ -83,7 +84,17 @@ impl HttpClient {
 }
 
 #[async_trait]
-impl Client for HttpClient {
+impl v0_34::Client for HttpClient {
+    async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
+    where
+        R: SimpleRequest,
+    {
+        self.inner.perform(request).await
+    }
+}
+
+#[async_trait]
+impl v0_37::Client for HttpClient {
     async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
     where
         R: SimpleRequest,
