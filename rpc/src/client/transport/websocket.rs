@@ -1155,7 +1155,7 @@ mod test {
     }
 
     async fn read_event(name: &str) -> Event {
-        Event::from_string(&read_json_fixture(name).await).unwrap()
+        Event::from_string(read_json_fixture(name).await).unwrap()
     }
 
     #[tokio::test]
