@@ -423,7 +423,7 @@ where
 {
     use de::Error;
     let encoded = String::deserialize(deserializer)?;
-    let bytes = base64::decode(&encoded).map_err(D::Error::custom)?;
+    let bytes = base64::decode(encoded).map_err(D::Error::custom)?;
     Ed25519::from_bytes(&bytes).map_err(D::Error::custom)
 }
 
@@ -434,7 +434,7 @@ where
 {
     use de::Error;
     let encoded = String::deserialize(deserializer)?;
-    let bytes = base64::decode(&encoded).map_err(D::Error::custom)?;
+    let bytes = base64::decode(encoded).map_err(D::Error::custom)?;
     Secp256k1::from_sec1_bytes(&bytes).map_err(|_| D::Error::custom("invalid secp256k1 key"))
 }
 

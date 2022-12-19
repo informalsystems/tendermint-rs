@@ -12,7 +12,7 @@ where
     D: Deserializer<'de>,
 {
     let s = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
-    let decoded = base64::decode(&s).map_err(serde::de::Error::custom)?;
+    let decoded = base64::decode(s).map_err(serde::de::Error::custom)?;
     let hash = Hash::from_bytes(Algorithm::Sha256, &decoded).map_err(serde::de::Error::custom)?;
     Ok(hash)
 }

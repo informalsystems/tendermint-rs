@@ -462,7 +462,7 @@ impl Tester {
                         }
                         if let Ok(kind) = entry.file_type() {
                             let path = format!("{}", entry.path().display());
-                            let rel_path = self.env().unwrap().rel_path(&path).unwrap();
+                            let rel_path = self.env().unwrap().rel_path(path).unwrap();
                             if kind.is_file() || kind.is_symlink() {
                                 if rel_path.ends_with(".json") {
                                     self.run_for_file(&rel_path);
@@ -499,7 +499,7 @@ impl Tester {
                 print("  Successful tests:  ");
                 for path in tests {
                     print(&format!("    {}", path));
-                    if let Some(logs) = env.read_file(&(path + "/log")) {
+                    if let Some(logs) = env.read_file(path + "/log") {
                         print(&logs)
                     }
                 }
@@ -510,7 +510,7 @@ impl Tester {
                 print("  Failed tests:  ");
                 for (path, message, location) in tests {
                     print(&format!("    {}, '{}', {}", path, message, location));
-                    if let Some(logs) = env.read_file(&(path + "/log")) {
+                    if let Some(logs) = env.read_file(path + "/log") {
                         print(&logs)
                     }
                 }
