@@ -56,6 +56,12 @@ pub enum Method {
     /// Get genesis file
     Genesis,
 
+    /// Get block header
+    Header,
+
+    /// Get block header by hash
+    HeaderByHash,
+
     /// Get health info
     Health,
 
@@ -103,6 +109,8 @@ impl Method {
             Method::ConsensusParams => "consensus_params",
             Method::ConsensusState => "consensus_state",
             Method::Genesis => "genesis",
+            Method::Header => "header",
+            Method::HeaderByHash => "header_by_hash",
             Method::Health => "health",
             Method::NetInfo => "net_info",
             Method::Status => "status",
@@ -125,6 +133,8 @@ impl FromStr for Method {
             "block" => Method::Block,
             "block_by_hash" => Method::BlockByHash,
             "block_results" => Method::BlockResults,
+            "header" => Method::Header,
+            "header_by_hash" => Method::HeaderByHash,
             "block_search" => Method::BlockSearch,
             "blockchain" => Method::Blockchain,
             "broadcast_evidence" => Method::BroadcastEvidence,
