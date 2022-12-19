@@ -62,6 +62,7 @@ mod version;
 pub mod v0_34;
 pub mod v0_37;
 
+#[cfg(any(feature = "http-client", feature = "websocket-client"))]
 pub use v0_37::Client;
 
 pub use error::Error;
