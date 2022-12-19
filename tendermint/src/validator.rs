@@ -2,10 +2,11 @@
 
 use core::convert::{TryFrom, TryInto};
 
-pub use ed25519_dalek::PublicKey as Ed25519;
+pub use ed25519_dalek::{PublicKey as Ed25519, Verifier};
 #[cfg(feature = "secp256k1")]
-pub use k256::ecdsa::VerifyingKey as Secp256k1;
+pub use k256::ecdsa::{VerifyingKey as Secp256k1, VerifyingKey};
 use serde::{Deserialize, Serialize};
+use signature::Signature as Sig;
 use tendermint_proto::{
     abci::ValidatorUpdate as RawValidatorUpdate,
     types::{
@@ -16,8 +17,8 @@ use tendermint_proto::{
 };
 
 use crate::{
-    account, crypto::SignatureVerifier, hash::Hash, merkle::MerkleHash, prelude::*,
-    public_key::deserialize_public_key, vote, Error, PublicKey, Signature,
+    account, hash::Hash, merkle::MerkleHash, prelude::*, public_key::deserialize_public_key, vote,
+    Error, PublicKey, Signature,
 };
 
 /// Validator set contains a vector of validators
@@ -226,18 +227,45 @@ impl Info {
     }
 
     pub fn verify(&self, sign_bytes: &[u8], signature: &Signature) -> Result<(), Error> {
-        Self::verify_with::<PublicKey>(&self.pub_key, sign_bytes, signature)
+        match self.pub_key {
+            PublicKey::Ed25519(pk) => {
+                let sig = match ed25519_dalek::Signature::try_from(signature.as_bytes()) {
+                    Ok(sig) => sig,
+                    Err(e) => {
+                        return Err(Error::signature_invalid(format!(
+                            "invalid Ed25519 signature: {}",
+                            e
+                        )))
+                    },
+                };
+                Self::verify_with::<Ed25519, ed25519_dalek::Signature>(&pk, sign_bytes, &sig)
+            },
+            #[cfg(feature = "secp256k1")]
+            PublicKey::Secp256k1(pk) => {
+                let sig = match k256::ecdsa::Signature::try_from(signature.as_bytes()) {
+                    Ok(sig) => sig,
+                    Err(e) => {
+                        return Err(Error::signature_invalid(format!(
+                            "invalid Secp256k1 signature: {}",
+                            e
+                        )))
+                    },
+                };
+                Self::verify_with::<k256::ecdsa::VerifyingKey, k256::ecdsa::Signature>(
+                    &pk, sign_bytes, &sig,
+                )
+            },
+        }
     }
 
-    pub fn verify_with<S>(
-        pub_key: &S,
-        sign_bytes: &[u8],
-        signature: &Signature,
-    ) -> Result<(), Error>
+    pub fn verify_with<P, S>(pub_key: &P, sign_bytes: &[u8], signature: &S) -> Result<(), Error>
     where
-        S: SignatureVerifier,
+        P: Verifier<S>,
+        S: Sig,
     {
-        S::verify(&pub_key, sign_bytes, signature)
+        pub_key
+            .verify(sign_bytes, signature)
+            .map_err(|_| Error::signature_invalid("Signature verification failed".to_string()))
     }
 }
 

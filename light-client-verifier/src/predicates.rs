@@ -3,12 +3,7 @@
 use core::time::Duration;
 
 use tendermint::{
-    block::Height,
-    chain::Id as ChainId,
-    crypto::{Sha256, SignatureVerifier},
-    hash::Hash,
-    merkle::MerkleHash,
-    PublicKey,
+    block::Height, chain::Id as ChainId, crypto::Sha256, hash::Hash, merkle::MerkleHash, PublicKey,
 };
 
 use crate::{
@@ -25,7 +20,7 @@ pub struct ProdPredicates;
 
 impl VerificationPredicates for ProdPredicates {
     type Hasher = Sha256;
-    type SignatureVerifier = PublicKey;
+    type Verifier = PublicKey;
 }
 
 /// Defines the various predicates used to validate and verify light blocks.
@@ -37,7 +32,7 @@ impl VerificationPredicates for ProdPredicates {
 pub trait VerificationPredicates: Send + Sync {
     /// The implementation of SHA256 digest
     type Hasher: MerkleHash + Default;
-    type SignatureVerifier: SignatureVerifier;
+    type Verifier;
 
     /// Compare the provided validator_set_hash against the hash produced from hashing the validator
     /// set.

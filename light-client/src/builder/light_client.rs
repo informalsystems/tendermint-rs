@@ -1,11 +1,6 @@
 //! DSL for building a light client [`Instance`]
 
-use tendermint::{
-    block::Height,
-    crypto::{Sha256, SignatureVerifier},
-    merkle::MerkleHash,
-    Hash, PublicKey,
-};
+use tendermint::{block::Height, crypto::Sha256, merkle::MerkleHash, Hash, PublicKey};
 #[cfg(feature = "rpc-client")]
 use {
     crate::components::clock::SystemClock,
@@ -43,14 +38,14 @@ pub struct HasTrustedState;
 
 /// Builder for a light client [`Instance`]
 #[must_use]
-pub struct LightClientBuilder<State, H: MerkleHash + Default, S: SignatureVerifier> {
+pub struct LightClientBuilder<State, H: MerkleHash + Default, S> {
     peer_id: PeerId,
     options: Options,
     io: Box<dyn Io>,
     clock: Box<dyn Clock>,
     verifier: Box<dyn Verifier>,
     scheduler: Box<dyn Scheduler>,
-    predicates: Box<dyn VerificationPredicates<Hasher = H, SignatureVerifier = S>>,
+    predicates: Box<dyn VerificationPredicates<Hasher = H, Verifier = S>>,
     light_store: Box<dyn LightStore>,
 
     #[allow(dead_code)]
@@ -60,7 +55,6 @@ pub struct LightClientBuilder<State, H: MerkleHash + Default, S: SignatureVerifi
 impl<Current, H, S> LightClientBuilder<Current, H, S>
 where
     H: MerkleHash + Default,
-    S: SignatureVerifier,
 {
     /// Private method to move from one state to another
     fn with_state<Next>(self, state: Next) -> LightClientBuilder<Next, H, S> {
@@ -103,7 +97,6 @@ impl LightClientBuilder<NoTrustedState, Sha256, PublicKey> {
 impl<H, S> LightClientBuilder<NoTrustedState, H, S>
 where
     H: MerkleHash + Default,
-    S: SignatureVerifier,
 {
     /// Initialize a builder for a custom light client, by providing all dependencies upfront.
     // TODO: redesign this, it's a builder API!
@@ -116,7 +109,7 @@ where
         clock: Box<dyn Clock>,
         verifier: Box<dyn Verifier>,
         scheduler: Box<dyn Scheduler>,
-        predicates: Box<dyn VerificationPredicates<Hasher = H, SignatureVerifier = S>>,
+        predicates: Box<dyn VerificationPredicates<Hasher = H, Verifier = S>>,
     ) -> Self {
         Self {
             peer_id,
@@ -215,7 +208,6 @@ where
 impl<H, S> LightClientBuilder<HasTrustedState, H, S>
 where
     H: MerkleHash + Default,
-    S: SignatureVerifier,
 {
     /// Build the light client [`Instance`].
     #[must_use]

@@ -7,7 +7,6 @@
 //! The abstract framework enabling this extensibility is provided by the
 //! `digest` and `signature` crates.
 
-use crate::{Error, Signature};
 /// Length of a SHA256 hash in bytes.
 pub const HASH_SIZE: usize = 32;
 
@@ -32,9 +31,4 @@ impl Hasher for Sha256 {
         hash_bytes.copy_from_slice(&data.as_ref());
         hash_bytes
     }
-}
-
-/// An interface to allow verifying signatures.
-pub trait SignatureVerifier: Send + Sync {
-    fn verify(&self, sign_bytes: &[u8], signature: &Signature) -> Result<(), Error>;
 }
