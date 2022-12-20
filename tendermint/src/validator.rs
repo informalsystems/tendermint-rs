@@ -227,35 +227,20 @@ impl Info {
     }
 
     pub fn verify(&self, sign_bytes: &[u8], signature: &Signature) -> Result<(), Error> {
-        match self.pub_key {
-            PublicKey::Ed25519(pk) => {
-                let sig = match ed25519_dalek::Signature::try_from(signature.as_bytes()) {
-                    Ok(sig) => sig,
-                    Err(e) => {
-                        return Err(Error::signature_invalid(format!(
-                            "invalid Ed25519 signature: {}",
-                            e
-                        )))
-                    },
-                };
-                Self::verify_with::<Ed25519, ed25519_dalek::Signature>(&pk, sign_bytes, &sig)
-            },
+        let (pk, parse_sig, sig_type) = match self.pub_key {
+            PublicKey::Ed25519(ref pk) => (pk, ed25519_dalek::Signature::try_from, "Ed25519"),
             #[cfg(feature = "secp256k1")]
-            PublicKey::Secp256k1(pk) => {
-                let sig = match k256::ecdsa::Signature::try_from(signature.as_bytes()) {
-                    Ok(sig) => sig,
-                    Err(e) => {
-                        return Err(Error::signature_invalid(format!(
-                            "invalid Secp256k1 signature: {}",
-                            e
-                        )))
-                    },
-                };
-                Self::verify_with::<k256::ecdsa::VerifyingKey, k256::ecdsa::Signature>(
-                    &pk, sign_bytes, &sig,
-                )
+            PublicKey::Secp256k1(ref pk) => (pk, k256::ecdsa::Signature::try_from, "Secp256k1"),
+        };
+        let sig = match parse_sig(signature.as_bytes()) {
+            Ok(sig) => sig,
+            Err(e) => {
+                return Err(Error::signature_invalid(format!(
+                    "Invalid {sig_type} signature: {e}"
+                )))
             },
-        }
+        };
+        Self::verify_with(pk, sign_bytes, &sig)
     }
 
     pub fn verify_with<P, S>(pub_key: &P, sign_bytes: &[u8], signature: &S) -> Result<(), Error>
