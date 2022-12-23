@@ -5,7 +5,7 @@ appropriate. Tendermint will not do this unless instructed by the
 application.
 
 The application may want to verify each chunk, e.g., by attaching chunk
-hashes in [`Snapshot::metadata`] and/or incrementally verifying contents
+hashes in `Snapshot::metadata` and/or incrementally verifying contents
 against `app_hash`.
 
 When all chunks have been accepted, Tendermint will make an ABCI [`Info`]

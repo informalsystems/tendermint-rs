@@ -1,8 +1,4 @@
 //! ABCI responses and response data.
-//!
-//! The [`Response`] enum records all possible ABCI responses. Responses that
-//! contain data are modeled as a separate struct, to avoid duplication of field
-//! definitions.
 
 // IMPORTANT NOTE ON DOCUMENTATION:
 //
