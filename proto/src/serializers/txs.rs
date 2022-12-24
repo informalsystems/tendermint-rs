@@ -19,7 +19,7 @@ where
     }
     value_vec_base64string
         .into_iter()
-        .map(|s| base64::decode(&s).map_err(serde::de::Error::custom))
+        .map(|s| base64::decode(s).map_err(serde::de::Error::custom))
         .collect()
 }
 
