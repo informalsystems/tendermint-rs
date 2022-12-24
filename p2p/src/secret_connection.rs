@@ -648,7 +648,7 @@ fn read_and_decrypt<IoHandler: Read>(
     if chunk_length as usize > DATA_MAX_SIZE {
         return Err(io::Error::new(
             io::ErrorKind::Other,
-            format!("chunk is too big: {}! max: {}", chunk_length, DATA_MAX_SIZE),
+            format!("chunk is too big: {chunk_length}! max: {DATA_MAX_SIZE}"),
         ));
     }
 

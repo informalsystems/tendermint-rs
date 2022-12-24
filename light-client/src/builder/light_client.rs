@@ -82,6 +82,7 @@ impl LightClientBuilder<NoTrustedState> {
         options: Options,
         timeout: Option<Duration>,
     ) -> Self {
+        #[allow(clippy::box_default)]
         Self::custom(
             peer_id,
             options,

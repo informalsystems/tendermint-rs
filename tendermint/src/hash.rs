@@ -234,7 +234,7 @@ impl TryFrom<Bytes> for AppHash {
     type Error = Error;
 
     fn try_from(value: Bytes) -> Result<Self, Self::Error> {
-        Ok(AppHash(value.into()))
+        Ok(AppHash(value.to_vec()))
     }
 }
 impl From<AppHash> for Bytes {

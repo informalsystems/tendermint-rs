@@ -1,8 +1,5 @@
 //! ABCI requests and request data.
 //!
-//! The [`Request`] enum records all possible ABCI requests. Requests that
-//! contain data are modeled as a separate struct, to avoid duplication of field
-//! definitions.
 
 // IMPORTANT NOTE ON DOCUMENTATION:
 //

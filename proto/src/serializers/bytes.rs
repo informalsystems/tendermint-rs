@@ -43,8 +43,8 @@ pub mod base64string {
         D: Deserializer<'de>,
         Vec<u8>: Into<T>,
     {
-        let string = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
-        let v = base64::decode(&string).map_err(serde::de::Error::custom)?;
+        let s = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
+        let v = base64::decode(s).map_err(serde::de::Error::custom)?;
         Ok(v.into())
     }
 
@@ -54,7 +54,7 @@ pub mod base64string {
         D: Deserializer<'de>,
     {
         let s = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
-        String::from_utf8(base64::decode(&s).map_err(serde::de::Error::custom)?)
+        String::from_utf8(base64::decode(s).map_err(serde::de::Error::custom)?)
             .map_err(serde::de::Error::custom)
     }
 
@@ -85,7 +85,7 @@ pub mod vec_base64string {
         Option::<Vec<String>>::deserialize(deserializer)?
             .unwrap_or_default()
             .into_iter()
-            .map(|s| base64::decode(&s).map_err(serde::de::Error::custom))
+            .map(|s| base64::decode(s).map_err(serde::de::Error::custom))
             .collect()
     }
 
@@ -117,8 +117,8 @@ pub mod option_base64string {
     where
         D: Deserializer<'de>,
     {
-        let string = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
-        base64::decode(&string).map_err(serde::de::Error::custom)
+        let s = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
+        base64::decode(s).map_err(serde::de::Error::custom)
     }
 
     /// Serialize from `T` into `Option<base64string>`
