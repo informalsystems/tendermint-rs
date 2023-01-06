@@ -161,7 +161,8 @@ impl LightClient {
         // Get the highest trusted state
         let highest = state
             .light_store
-            .highest_trusted_or_verified()
+            .highest_trusted_or_verified_before(target_height)
+            .or_else(|| state.light_store.lowest_trusted_or_verified())
             .ok_or_else(Error::no_initial_trusted_state)?;
 
         if target_height >= highest.height() {
@@ -187,7 +188,7 @@ impl LightClient {
             // Get the latest trusted state
             let trusted_block = state
                 .light_store
-                .highest_trusted_or_verified()
+                .highest_trusted_or_verified_before(target_height)
                 .ok_or_else(Error::no_initial_trusted_state)?;
 
             if target_height < trusted_block.height() {
@@ -267,7 +268,8 @@ impl LightClient {
     ) -> Result<LightBlock, Error> {
         let trusted_state = state
             .light_store
-            .highest_trusted_or_verified()
+            .highest_trusted_or_verified_before(target_height)
+            .or_else(|| state.light_store.lowest_trusted_or_verified())
             .ok_or_else(Error::no_initial_trusted_state)?;
 
         Err(Error::target_lower_than_trusted_state(
@@ -304,7 +306,8 @@ impl LightClient {
 
         let root = state
             .light_store
-            .highest_trusted_or_verified()
+            .highest_trusted_or_verified_before(target_height)
+            .or_else(|| state.light_store.lowest_trusted_or_verified())
             .ok_or_else(Error::no_initial_trusted_state)?;
 
         assert!(root.height() >= target_height);

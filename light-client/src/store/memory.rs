@@ -72,6 +72,15 @@ impl LightStore for MemoryStore {
             .map(|(_, e)| e.light_block.clone())
     }
 
+    fn highest_before(&self, height: Height, status: Status) -> Option<LightBlock> {
+        self.store
+            .iter()
+            .filter(|(_, e)| e.status == status)
+            .filter(|(h, _)| h <= &&height)
+            .max_by_key(|(&height, _)| height)
+            .map(|(_, e)| e.light_block.clone())
+    }
+
     fn lowest(&self, status: Status) -> Option<LightBlock> {
         self.store
             .iter()

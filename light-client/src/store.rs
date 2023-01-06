@@ -43,6 +43,9 @@ pub trait LightStore: Debug + Send + Sync {
     /// Get the light block of greatest height with the given status.
     fn highest(&self, status: Status) -> Option<LightBlock>;
 
+    /// Get the light block of greatest hight before the given height with the given status.
+    fn highest_before(&self, height: Height, status: Status) -> Option<LightBlock>;
+
     /// Get the light block of lowest height with the given status.
     fn lowest(&self, status: Status) -> Option<LightBlock>;
 
@@ -72,6 +75,16 @@ pub trait LightStore: Debug + Send + Sync {
         let latest_verified = self.highest(Status::Verified);
 
         std_ext::option::select(latest_trusted, latest_verified, |t, v| {
+            std_ext::cmp::max_by_key(t, v, |lb| lb.height())
+        })
+    }
+
+    /// Get the first light block before the given height with the trusted or verified status.
+    fn highest_trusted_or_verified_before(&self, height: Height) -> Option<LightBlock> {
+        let highest_trusted = self.highest_before(height, Status::Trusted);
+        let highest_verified = self.highest_before(height, Status::Verified);
+
+        std_ext::option::select(highest_trusted, highest_verified, |t, v| {
             std_ext::cmp::max_by_key(t, v, |lb| lb.height())
         })
     }

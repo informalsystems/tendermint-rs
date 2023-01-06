@@ -81,7 +81,14 @@ jobs:
         with:
           toolchain: stable
           override: true
+      # NOTE: We test with default features to make sure things work without "unstable".
       - uses: actions-rs/cargo@v1
+        name: Test with default features
+        with:
+          command: test
+          args: -p tendermint-light-client
+      - uses: actions-rs/cargo@v1
+        name: Test with all features
         with:
           command: test-all-features
           args: -p tendermint-light-client
