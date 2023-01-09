@@ -12,7 +12,7 @@ where
     D: Deserializer<'de>,
 {
     let s = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
-    let decoded = base64::decode(&s).map_err(serde::de::Error::custom)?;
+    let decoded = base64::decode(s).map_err(serde::de::Error::custom)?;
     if decoded.len() != SHA256_HASH_SIZE {
         return Err(serde::de::Error::custom(
             "unexpected transaction length for hash",

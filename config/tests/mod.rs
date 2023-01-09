@@ -19,7 +19,7 @@ fn read_fixture(name: &str) -> String {
 #[test]
 fn config_toml_parser() {
     let config_toml = read_fixture("config.toml");
-    let config = TendermintConfig::parse_toml(&config_toml).unwrap();
+    let config = TendermintConfig::parse_toml(config_toml).unwrap();
 
     // main base config options
 
@@ -206,7 +206,7 @@ fn config_toml_parser() {
 #[test]
 fn node_key_parser() {
     let raw_node_key = read_fixture("node_key.json");
-    let node_key = NodeKey::parse_json(&raw_node_key).unwrap();
+    let node_key = NodeKey::parse_json(raw_node_key).unwrap();
     assert_eq!(
         node_key.node_id().to_string(),
         "1a7b6bcf3d6fb055ab3aebca415847531b626699"
@@ -217,7 +217,7 @@ fn node_key_parser() {
 #[test]
 fn priv_validator_json_parser() {
     let raw_priv_validator_key = read_fixture("priv_validator_key.json");
-    let priv_validator_key = PrivValidatorKey::parse_json(&raw_priv_validator_key).unwrap();
+    let priv_validator_key = PrivValidatorKey::parse_json(raw_priv_validator_key).unwrap();
     assert_eq!(
         priv_validator_key.consensus_pubkey().to_hex(),
         "F26BF4B2A2E84CEB7A53C3F1AE77408779B20064782FBADBDF0E365959EE4534"
@@ -229,7 +229,7 @@ fn priv_validator_json_parser() {
 #[test]
 fn parsing_roundtrip() {
     let config_toml = read_fixture("config.toml");
-    let config = TendermintConfig::parse_toml(&config_toml).unwrap();
+    let config = TendermintConfig::parse_toml(config_toml).unwrap();
 
     let written_config_toml = toml::to_string(&config).unwrap();
     let written_config = TendermintConfig::parse_toml(&written_config_toml).unwrap();

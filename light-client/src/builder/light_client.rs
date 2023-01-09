@@ -83,6 +83,7 @@ impl LightClientBuilder<NoTrustedState, tendermint::crypto::default::Sha256> {
         options: Options,
         timeout: Option<Duration>,
     ) -> Self {
+        #[allow(clippy::box_default)]
         Self::custom(
             peer_id,
             options,

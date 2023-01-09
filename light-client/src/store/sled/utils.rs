@@ -3,6 +3,7 @@
 //! CBOR binary encoding.
 
 use std::marker::PhantomData;
+use std::ops::{Bound, RangeBounds};
 
 use serde::{de::DeserializeOwned, Serialize};
 
@@ -30,6 +31,15 @@ fn key_bytes(height: Height) -> [u8; 8] {
     // sled's iterators and ordered operations to work properly.
     // See https://github.com/spacejam/sled#a-note-on-lexicographic-ordering-and-endianness
     height.value().to_be_bytes()
+}
+
+// Can be removed once bound_map is stabilized. See https://github.com/rust-lang/rust/issues/86026
+fn map_bound(bound: Bound<&Height>) -> Bound<[u8; 8]> {
+    match bound {
+        Bound::Included(h) => Bound::Included(key_bytes(*h)),
+        Bound::Excluded(h) => Bound::Excluded(key_bytes(*h)),
+        Bound::Unbounded => Bound::Unbounded,
+    }
 }
 
 impl<V> HeightIndexedDb<V>
@@ -82,6 +92,19 @@ where
     pub fn iter(&self) -> impl DoubleEndedIterator<Item = V> {
         self.tree
             .iter()
+            .flatten()
+            .flat_map(|(_, v)| serde_cbor::from_slice(&v))
+    }
+
+    /// Return an iterator over the given range
+    pub fn range<R>(&self, range: R) -> impl DoubleEndedIterator<Item = V>
+    where
+        R: RangeBounds<Height>,
+    {
+        let range = (map_bound(range.start_bound()), map_bound(range.end_bound()));
+
+        self.tree
+            .range(range)
             .flatten()
             .flat_map(|(_, v)| serde_cbor::from_slice(&v))
     }

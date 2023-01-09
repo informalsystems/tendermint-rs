@@ -79,6 +79,10 @@ impl LightStore for SledStore {
         self.db(status).iter().next_back()
     }
 
+    fn highest_before(&self, height: Height, status: Status) -> Option<LightBlock> {
+        self.db(status).range(..=height).next_back()
+    }
+
     fn lowest(&self, status: Status) -> Option<LightBlock> {
         self.db(status).iter().next()
     }
@@ -105,6 +109,24 @@ mod tests {
             for block in blocks.into_iter().skip(1) {
                 db.insert(block, Status::Verified);
                 assert_eq!(db.lowest(Status::Verified).as_ref(), Some(&initial_block));
+            }
+        })
+    }
+
+    #[test]
+    fn highest_before_returns_correct_block() {
+        with_blocks(10, |mut db, blocks| {
+            for block in blocks {
+                db.insert(block.clone(), Status::Verified);
+                assert_eq!(
+                    db.highest_before(block.height(), Status::Verified).as_ref(),
+                    Some(&block)
+                );
+                assert_eq!(
+                    db.highest_before(block.height().increment(), Status::Verified)
+                        .as_ref(),
+                    Some(&block)
+                );
             }
         })
     }

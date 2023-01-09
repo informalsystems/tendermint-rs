@@ -483,6 +483,14 @@ mod tests {
         let mut light_store = MemoryStore::new();
         light_store.insert(trusted_state, Status::Trusted);
 
+        for extra_trusted_height in trust_options.extra_heights {
+            let trusted_state = io
+                .fetch_light_block(AtHeight::At(extra_trusted_height))
+                .expect("could not 'request' light block");
+
+            light_store.insert(trusted_state, Status::Trusted);
+        }
+
         let state = State {
             light_store: Box::new(light_store),
             verification_trace: HashMap::new(),
@@ -524,17 +532,12 @@ mod tests {
         )
     }
 
-    fn make_peer_list(
+    fn make_peer_list_opts(
         primary: Option<Vec<LightBlock>>,
         witnesses: Option<Vec<Vec<LightBlock>>>,
         now: Time,
+        trust_options: TrustOptions,
     ) -> PeerList<Instance> {
-        let trust_options = TrustOptions {
-            period: DurationStr(Duration::new(604800, 0)),
-            height: Height::try_from(1_u64).expect("Error while making height"),
-            trust_level: TrustThresholdFraction::TWO_THIRDS,
-        };
-
         let mut peer_list = PeerList::builder();
 
         if let Some(primary) = primary {
@@ -555,6 +558,24 @@ mod tests {
             }
         }
         peer_list.build()
+    }
+
+    fn make_peer_list(
+        primary: Option<Vec<LightBlock>>,
+        witnesses: Option<Vec<Vec<LightBlock>>>,
+        now: Time,
+    ) -> PeerList<Instance> {
+        make_peer_list_opts(
+            primary,
+            witnesses,
+            now,
+            TrustOptions {
+                period: DurationStr(Duration::new(604800, 0)),
+                height: Height::try_from(1_u64).expect("Error while making height"),
+                extra_heights: vec![],
+                trust_level: TrustThresholdFraction::TWO_THIRDS,
+            },
+        )
     }
 
     fn change_provider(
@@ -856,5 +877,39 @@ mod tests {
             .connected_nodes
             .iter()
             .any(|&peer| peer == primary[0].provider));
+    }
+
+    #[test]
+    fn test_bisection_between_trusted_heights() {
+        let chain = LightChain::default_with_length(10);
+        let primary = chain
+            .light_blocks
+            .into_iter()
+            .map(|lb| lb.generate().unwrap().into_light_block())
+            .collect::<Vec<LightBlock>>();
+
+        let witness = change_provider(primary.clone(), None);
+
+        // Specify two trusted heights (1 and 8), then attempt to verify target height 4 which
+        // falls between the two. Verification should use regular bisection.
+
+        let peer_list = make_peer_list_opts(
+            Some(primary.clone()),
+            Some(vec![witness]),
+            get_time(11).unwrap(),
+            TrustOptions {
+                period: DurationStr(Duration::new(604800, 0)),
+                height: Height::try_from(1_u64).expect("Error while making height"),
+                extra_heights: vec![Height::try_from(8_u64).expect("Error while making height")],
+                trust_level: TrustThresholdFraction::TWO_THIRDS,
+            },
+        );
+
+        let (result, _) = run_bisection_test(peer_list, 4);
+
+        let expected_state = primary[3].clone();
+        let new_state = result.unwrap();
+
+        assert_eq!(expected_state, new_state);
     }
 }
