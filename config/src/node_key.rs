@@ -36,7 +36,7 @@ impl NodeKey {
     pub fn public_key(&self) -> PublicKey {
         #[allow(unreachable_patterns)]
         match &self.priv_key {
-            PrivateKey::Ed25519(keypair) => keypair.public.into(),
+            PrivateKey::Ed25519(signing_key) => PublicKey::Ed25519(signing_key.verification_key()),
             _ => unreachable!(),
         }
     }

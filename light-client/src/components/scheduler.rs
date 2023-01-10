@@ -20,7 +20,7 @@ pub trait Scheduler: Send + Sync {
     ///
     /// ## Postcondition
     /// - The resulting height must be valid according to `valid_schedule`. [LCV-SCHEDULE-POST.1]
-    #[requires(light_store.highest_trusted_or_verified().is_some())]
+    #[requires(light_store.highest_trusted_or_verified_before(target_height).is_some())]
     #[ensures(valid_schedule(ret, target_height, current_height, light_store))]
     fn schedule(
         &self,
@@ -61,7 +61,7 @@ pub fn basic_bisecting_schedule(
     target_height: Height,
 ) -> Height {
     let trusted_height = light_store
-        .highest_trusted_or_verified()
+        .highest_trusted_or_verified_before(target_height)
         .map(|lb| lb.height())
         .unwrap();
 
@@ -105,7 +105,7 @@ pub fn valid_schedule(
     light_store: &dyn LightStore,
 ) -> bool {
     let latest_trusted_height = light_store
-        .highest_trusted_or_verified()
+        .highest_trusted_or_verified_before(target_height)
         .map(|lb| lb.height())
         .unwrap();
 
