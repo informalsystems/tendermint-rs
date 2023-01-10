@@ -1,18 +1,19 @@
 //! Public keys used in Tendermint networks
 
-pub use ed25519_dalek::PublicKey as Ed25519;
+pub use ed25519_consensus::VerificationKey as Ed25519;
 #[cfg(feature = "secp256k1")]
 pub use k256::ecdsa::VerifyingKey as Secp256k1;
 
 mod pub_key_request;
 mod pub_key_response;
-use core::{cmp::Ordering, convert::TryFrom, fmt, ops::Deref, str::FromStr};
 
 pub use pub_key_request::PubKeyRequest;
 pub use pub_key_response::PubKeyResponse;
+
+use core::convert::TryFrom;
+use core::{cmp::Ordering, fmt, ops::Deref, str::FromStr};
 use serde::{de, ser, Deserialize, Deserializer, Serialize};
 use serde_json::Value;
-use signature::Verifier as _;
 use subtle_encoding::{base64, bech32, hex};
 use tendermint_proto::{
     crypto::{public_key::Sum, PublicKey as RawPublicKey},
@@ -20,6 +21,9 @@ use tendermint_proto::{
 };
 
 use crate::{error::Error, prelude::*, signature::Signature};
+
+#[cfg(feature = "secp256k1")]
+use signature::Verifier as _;
 
 // Note:On the golang side this is generic in the sense that it could everything that implements
 // github.com/tendermint/tendermint/crypto.PubKey
@@ -170,7 +174,7 @@ impl PublicKey {
 
     /// From raw Ed25519 public key bytes
     pub fn from_raw_ed25519(bytes: &[u8]) -> Option<PublicKey> {
-        Ed25519::from_bytes(bytes).map(Into::into).ok()
+        Ed25519::try_from(bytes).map(PublicKey::Ed25519).ok()
     }
 
     /// Get Ed25519 public key
@@ -196,16 +200,15 @@ impl PublicKey {
     pub fn verify(&self, msg: &[u8], signature: &Signature) -> Result<(), Error> {
         match self {
             PublicKey::Ed25519(pk) => {
-                match ed25519_dalek::Signature::try_from(signature.as_bytes()) {
-                    Ok(sig) => pk.verify(msg, &sig).map_err(|_| {
+                match ed25519_consensus::Signature::try_from(signature.as_bytes()) {
+                    Ok(sig) => pk.verify(&sig, msg).map_err(|_| {
                         Error::signature_invalid(
                             "Ed25519 signature verification failed".to_string(),
                         )
                     }),
-                    Err(e) => Err(Error::signature_invalid(format!(
-                        "invalid Ed25519 signature: {}",
-                        e
-                    ))),
+                    Err(_) => Err(Error::signature_invalid(
+                        "Could not parse Ed25519 signature".to_string(),
+                    )),
                 }
             },
             #[cfg(feature = "secp256k1")]
@@ -424,7 +427,7 @@ where
     use de::Error;
     let encoded = String::deserialize(deserializer)?;
     let bytes = base64::decode(encoded).map_err(D::Error::custom)?;
-    Ed25519::from_bytes(&bytes).map_err(D::Error::custom)
+    Ed25519::try_from(&bytes[..]).map_err(|_| D::Error::custom("invalid Ed25519 key"))
 }
 
 #[cfg(feature = "secp256k1")]
