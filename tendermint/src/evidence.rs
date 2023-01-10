@@ -140,18 +140,18 @@ impl DuplicateVoteEvidence {
 
 /// Conflicting block detected in light client attack
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ConfictingBlock {
+pub struct ConflictingBlock {
     pub signed_header: SignedHeader,
     pub validator_set: validator::Set,
 }
 
-impl Protobuf<RawLightBlock> for ConfictingBlock {}
+impl Protobuf<RawLightBlock> for ConflictingBlock {}
 
-impl TryFrom<RawLightBlock> for ConfictingBlock {
+impl TryFrom<RawLightBlock> for ConflictingBlock {
     type Error = Error;
 
     fn try_from(value: RawLightBlock) -> Result<Self, Self::Error> {
-        Ok(ConfictingBlock {
+        Ok(ConflictingBlock {
             signed_header: value
                 .signed_header
                 .ok_or_else(Error::missing_evidence)?
@@ -164,8 +164,8 @@ impl TryFrom<RawLightBlock> for ConfictingBlock {
     }
 }
 
-impl From<ConfictingBlock> for RawLightBlock {
-    fn from(value: ConfictingBlock) -> Self {
+impl From<ConflictingBlock> for RawLightBlock {
+    fn from(value: ConflictingBlock) -> Self {
         RawLightBlock {
             signed_header: Some(value.signed_header.into()),
             validator_set: Some(value.validator_set.into()),
@@ -176,7 +176,7 @@ impl From<ConfictingBlock> for RawLightBlock {
 /// Light client attack evidence
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LightClientAttackEvidence {
-    pub conflicting_block: ConfictingBlock,
+    pub conflicting_block: ConflictingBlock,
     pub common_height: Height,
     pub byzantine_validators: Vec<validator::Info>,
     pub total_voting_power: Power,
