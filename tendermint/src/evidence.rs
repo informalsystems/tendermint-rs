@@ -31,12 +31,12 @@ pub enum Evidence {
     /// Duplicate vote evidence
     DuplicateVote(Box<DuplicateVoteEvidence>),
 
+    /// LightClient attack evidence
+    LightClientAttack(Box<LightClientAttackEvidence>),
+
     /// Conflicting headers evidence
     /// TODO: this is not implemented in protobuf, it's ignored now
     ConflictingHeaders(Box<ConflictingHeadersEvidence>),
-
-    /// LightClient attack evidence
-    LightClientAttack(Box<LightClientAttackEvidence>),
 }
 
 impl TryFrom<RawEvidence> for Evidence {
@@ -114,12 +114,12 @@ impl From<DuplicateVoteEvidence> for RawDuplicateVoteEvidence {
 }
 
 impl DuplicateVoteEvidence {
-    /// constructor
     pub fn new(vote_a: Vote, vote_b: Vote) -> Result<Self, Error> {
         if vote_a.height != vote_b.height {
             return Err(Error::invalid_evidence());
         }
-        // Todo: make more assumptions about what is considered a valid evidence for duplicate vote
+
+        // TODO: make more assumptions about what is considered a valid evidence for duplicate vote
         Ok(Self {
             vote_a,
             vote_b,
@@ -128,7 +128,7 @@ impl DuplicateVoteEvidence {
             timestamp: Time::unix_epoch(),
         })
     }
-    /// Get votes
+
     pub fn votes(&self) -> (&Vote, &Vote) {
         (&self.vote_a, &self.vote_b)
     }
@@ -195,7 +195,7 @@ impl TryFrom<RawLightClientAttackEvidence> for LightClientAttackEvidence {
             total_voting_power: ev.total_voting_power.try_into()?,
             timestamp: ev
                 .timestamp
-                .ok_or_else(Error::missing_evidence)?
+                .ok_or_else(Error::missing_timestamp)?
                 .try_into()?,
         })
     }
@@ -218,7 +218,7 @@ impl From<LightClientAttackEvidence> for RawLightClientAttackEvidence {
 }
 
 /// Conflicting headers evidence.
-// Todo: This struct doesn't seem to have a protobuf definition.
+// TODO: This struct doesn't seem to have a protobuf definition.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ConflictingHeadersEvidence {
     //#[serde(rename = "H1")]
@@ -249,8 +249,10 @@ impl TryFrom<RawEvidenceList> for Data {
         if value.evidence.is_empty() {
             return Ok(Self { evidence: None });
         }
+
         let evidence: Result<Vec<Evidence>, Error> =
             value.evidence.into_iter().map(TryInto::try_into).collect();
+
         Ok(Self {
             evidence: Some(evidence?),
         })
@@ -302,7 +304,7 @@ impl AsRef<[Evidence]> for Data {
 ///
 /// [Tendermint documentation](https://docs.tendermint.com/master/spec/core/data_structures.html#evidenceparams)
 #[derive(Deserialize, Serialize, Clone, Debug, Eq, PartialEq)]
-// Todo: This struct is ready to be converted through tendermint_proto::types::EvidenceParams.
+// TODO: This struct is ready to be converted through tendermint_proto::types::EvidenceParams.
 // https://github.com/informalsystems/tendermint-rs/issues/741
 pub struct Params {
     /// Max age of evidence, in blocks.
@@ -347,7 +349,7 @@ impl TryFrom<RawEvidenceParams> for Params {
 impl From<Params> for RawEvidenceParams {
     fn from(value: Params) -> Self {
         Self {
-            // Todo: Implement proper domain types so this becomes infallible
+            // TODO: Implement proper domain types so this becomes infallible
             max_age_num_blocks: value.max_age_num_blocks.try_into().unwrap(),
             max_age_duration: Some(value.max_age_duration.into()),
             max_bytes: value.max_bytes,
@@ -355,10 +357,10 @@ impl From<Params> for RawEvidenceParams {
     }
 }
 
-/// Duration is a wrapper around core::time::Duration
-/// essentially, to keep the usages look cleaner
+/// `Duration` is a wrapper around `core::time::Duration` essentially, to keep the usages look cleaner,
 /// i.e. you can avoid using serde annotations everywhere
-/// Todo: harmonize google::protobuf::Duration, core::time::Duration and this. Too many structs.
+///
+/// TODO: harmonize google::protobuf::Duration, core::time::Duration and this. Too many structs.
 /// <https://github.com/informalsystems/tendermint-rs/issues/741>
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 pub struct Duration(#[serde(with = "serializers::time_duration")] pub core::time::Duration);
@@ -384,7 +386,7 @@ impl TryFrom<RawDuration> for Duration {
 
 impl From<Duration> for RawDuration {
     fn from(value: Duration) -> Self {
-        // Todo: make the struct into a proper domaintype so this becomes infallible.
+        // TODO: make the struct into a proper domaintype so this becomes infallible.
         Self {
             seconds: value.0.as_secs() as i64,
             nanos: value.0.subsec_nanos() as i32,
