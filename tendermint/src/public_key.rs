@@ -426,7 +426,7 @@ where
 {
     use de::Error;
     let encoded = String::deserialize(deserializer)?;
-    let bytes = base64::decode(&encoded).map_err(D::Error::custom)?;
+    let bytes = base64::decode(encoded).map_err(D::Error::custom)?;
     Ed25519::try_from(&bytes[..]).map_err(|_| D::Error::custom("invalid Ed25519 key"))
 }
 
