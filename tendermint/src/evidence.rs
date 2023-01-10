@@ -39,6 +39,8 @@ pub enum Evidence {
     ConflictingHeaders(Box<ConflictingHeadersEvidence>),
 }
 
+impl Protobuf<RawEvidence> for Evidence {}
+
 impl TryFrom<RawEvidence> for Evidence {
     type Error = Error;
 
@@ -77,6 +79,8 @@ pub struct DuplicateVoteEvidence {
     pub validator_power: Power,
     pub timestamp: Time,
 }
+
+impl Protobuf<RawDuplicateVoteEvidence> for DuplicateVoteEvidence {}
 
 impl TryFrom<RawDuplicateVoteEvidence> for DuplicateVoteEvidence {
     type Error = Error;
@@ -141,14 +145,7 @@ pub struct ConfictingBlock {
     pub validator_set: validator::Set,
 }
 
-impl From<ConfictingBlock> for RawLightBlock {
-    fn from(value: ConfictingBlock) -> Self {
-        RawLightBlock {
-            signed_header: Some(value.signed_header.into()),
-            validator_set: Some(value.validator_set.into()),
-        }
-    }
-}
+impl Protobuf<RawLightBlock> for ConfictingBlock {}
 
 impl TryFrom<RawLightBlock> for ConfictingBlock {
     type Error = Error;
@@ -167,6 +164,15 @@ impl TryFrom<RawLightBlock> for ConfictingBlock {
     }
 }
 
+impl From<ConfictingBlock> for RawLightBlock {
+    fn from(value: ConfictingBlock) -> Self {
+        RawLightBlock {
+            signed_header: Some(value.signed_header.into()),
+            validator_set: Some(value.validator_set.into()),
+        }
+    }
+}
+
 /// Light client attack evidence
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LightClientAttackEvidence {
@@ -176,6 +182,8 @@ pub struct LightClientAttackEvidence {
     pub total_voting_power: Power,
     pub timestamp: Time,
 }
+
+impl Protobuf<RawLightClientAttackEvidence> for LightClientAttackEvidence {}
 
 impl TryFrom<RawLightClientAttackEvidence> for LightClientAttackEvidence {
     type Error = Error;
@@ -242,6 +250,8 @@ impl ConflictingHeadersEvidence {
 pub struct Data {
     evidence: Option<Vec<Evidence>>,
 }
+
+impl Protobuf<RawEvidenceList> for Data {}
 
 impl TryFrom<RawEvidenceList> for Data {
     type Error = Error;
