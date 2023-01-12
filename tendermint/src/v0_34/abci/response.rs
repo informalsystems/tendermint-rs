@@ -46,6 +46,12 @@ impl From<ConsensusResponse> for Response {
     fn from(req: ConsensusResponse) -> Self {
         match req {
             ConsensusResponse::InitChain(x) => Self::InitChain(x),
+            ConsensusResponse::PrepareProposal(_) => {
+                panic!("Cannot convert PrepareProposal into a v0.34 Response")
+            },
+            ConsensusResponse::ProcessProposal(_) => {
+                panic!("Cannot convert ProcessProposal into a v0.34 Response")
+            },
             ConsensusResponse::BeginBlock(x) => Self::BeginBlock(x),
             ConsensusResponse::DeliverTx(x) => Self::DeliverTx(x),
             ConsensusResponse::EndBlock(x) => Self::EndBlock(x),

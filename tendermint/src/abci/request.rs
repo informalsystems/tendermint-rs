@@ -56,6 +56,10 @@ pub use set_option::SetOption;
 pub enum ConsensusRequest {
     #[doc = include_str!("doc/request-initchain.md")]
     InitChain(InitChain),
+    #[doc = include_str!("doc/request-prepareproposal.md")]
+    PrepareProposal(PrepareProposal),
+    #[doc = include_str!("doc/request-processproposal.md")]
+    ProcessProposal(ProcessProposal),
     #[doc = include_str!("doc/request-beginblock.md")]
     BeginBlock(BeginBlock),
     #[doc = include_str!("doc/request-delivertx.md")]
