@@ -34,12 +34,12 @@ mod prelude;
 
 #[cfg(any(feature = "http-client", feature = "websocket-client"))]
 mod client;
+#[cfg(feature = "http-client")]
+pub use client::{HttpClient, HttpClientUrl};
 #[cfg(any(feature = "http-client", feature = "websocket-client"))]
 pub use client::{
     MockClient, MockRequestMatcher, MockRequestMethodMatcher, Subscription, SubscriptionClient,
 };
-#[cfg(feature = "http-client")]
-pub use client::{HttpClient, HttpClientUrl};
 #[cfg(feature = "websocket-client")]
 pub use client::{WebSocketClient, WebSocketClientDriver, WebSocketClientUrl, WebSocketConfig};
 
