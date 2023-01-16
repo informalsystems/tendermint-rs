@@ -61,6 +61,10 @@ pub use set_option::SetOption;
 pub enum ConsensusResponse {
     #[doc = include_str!("doc/response-initchain.md")]
     InitChain(InitChain),
+    #[doc = include_str!("doc/response-prepareproposal.md")]
+    PrepareProposal(PrepareProposal),
+    #[doc = include_str!("doc/response-processproposal.md")]
+    ProcessProposal(ProcessProposal),
     #[doc = include_str!("doc/response-beginblock.md")]
     BeginBlock(BeginBlock),
     #[doc = include_str!("doc/response-delivertx.md")]

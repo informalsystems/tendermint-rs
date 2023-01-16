@@ -49,6 +49,8 @@ impl From<ConsensusResponse> for Response {
     fn from(req: ConsensusResponse) -> Self {
         match req {
             ConsensusResponse::InitChain(x) => Self::InitChain(x),
+            ConsensusResponse::PrepareProposal(x) => Self::PrepareProposal(x),
+            ConsensusResponse::ProcessProposal(x) => Self::ProcessProposal(x),
             ConsensusResponse::BeginBlock(x) => Self::BeginBlock(x),
             ConsensusResponse::DeliverTx(x) => Self::DeliverTx(x),
             ConsensusResponse::EndBlock(x) => Self::EndBlock(x),
@@ -62,6 +64,8 @@ impl TryFrom<Response> for ConsensusResponse {
     fn try_from(req: Response) -> Result<Self, Self::Error> {
         match req {
             Response::InitChain(x) => Ok(Self::InitChain(x)),
+            Response::PrepareProposal(x) => Ok(Self::PrepareProposal(x)),
+            Response::ProcessProposal(x) => Ok(Self::ProcessProposal(x)),
             Response::BeginBlock(x) => Ok(Self::BeginBlock(x)),
             Response::DeliverTx(x) => Ok(Self::DeliverTx(x)),
             Response::EndBlock(x) => Ok(Self::EndBlock(x)),
