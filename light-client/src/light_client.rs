@@ -390,4 +390,20 @@ impl LightClient {
 
         Ok((block, Status::Unverified))
     }
+
+    pub(crate) fn get_target_block_or_latest(
+        &self,
+        _height: Height,
+    ) -> Result<TargetOrLatest<LightBlock>, Error> {
+        todo!()
+    }
+
+    pub(crate) fn now(&self) -> tendermint::Time {
+        self.clock.now()
+    }
+}
+
+pub(crate) enum TargetOrLatest<A> {
+    Target(A),
+    Latest(A),
 }

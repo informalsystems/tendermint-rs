@@ -187,6 +187,9 @@ pub trait ErrorExt {
     /// Whether this error means that a timeout occured when
     /// querying a node.
     fn is_timeout(&self) -> Option<Duration>;
+
+    /// Wether the height we are asking the node about is higher than its latest header.
+    fn is_height_too_high(&self) -> bool;
 }
 
 impl ErrorExt for VerificationErrorDetail {
@@ -203,5 +206,9 @@ impl ErrorExt for VerificationErrorDetail {
 
     fn is_timeout(&self) -> Option<Duration> {
         None
+    }
+
+    fn is_height_too_high(&self) -> bool {
+        false
     }
 }

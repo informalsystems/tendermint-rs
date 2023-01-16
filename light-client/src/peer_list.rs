@@ -88,6 +88,11 @@ impl<T> PeerList<T> {
         self.values.get_mut(&self.primary).unwrap() // SAFETY: Enforced by invariant
     }
 
+    /// Whether or not there are any witnesses.
+    pub fn has_witnesses(&self) -> bool {
+        !self.witnesses.is_empty()
+    }
+
     /// Get all the witnesses peer ids
     pub fn witnesses_ids(&self) -> &BTreeSet<PeerId> {
         &self.witnesses

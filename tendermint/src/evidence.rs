@@ -33,10 +33,6 @@ pub enum Evidence {
 
     /// LightClient attack evidence
     LightClientAttack(Box<LightClientAttackEvidence>),
-
-    /// Conflicting headers evidence
-    /// TODO: this is not implemented in protobuf, it's ignored now
-    ConflictingHeaders(Box<ConflictingHeadersEvidence>),
 }
 
 impl Protobuf<RawEvidence> for Evidence {}
@@ -65,7 +61,6 @@ impl From<Evidence> for RawEvidence {
             Evidence::LightClientAttack(ev) => RawEvidence {
                 sum: Some(RawSum::LightClientAttackEvidence((*ev).into())),
             },
-            Evidence::ConflictingHeaders(_ev) => RawEvidence { sum: None }, // TODO: implement
         }
     }
 }
@@ -222,23 +217,6 @@ impl From<LightClientAttackEvidence> for RawLightClientAttackEvidence {
             total_voting_power: ev.total_voting_power.into(),
             timestamp: Some(ev.timestamp.into()),
         }
-    }
-}
-
-/// Conflicting headers evidence.
-// TODO: This struct doesn't seem to have a protobuf definition.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ConflictingHeadersEvidence {
-    //#[serde(rename = "H1")]
-    pub h1: SignedHeader,
-    //#[serde(rename = "H2")]
-    pub h2: SignedHeader,
-}
-
-impl ConflictingHeadersEvidence {
-    /// Create a new evidence of conflicting headers
-    pub fn new(h1: SignedHeader, h2: SignedHeader) -> Self {
-        Self { h1, h2 }
     }
 }
 

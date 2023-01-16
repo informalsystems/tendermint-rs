@@ -141,6 +141,14 @@ impl LightBlock {
         self.signed_header.header.height
     }
 
+    /// Returns the time of this block.
+    ///
+    /// ## Note
+    /// This is a shorthand for `block.signed_header.header.time`.
+    pub fn time(&self) -> Time {
+        self.signed_header.header.time
+    }
+
     /// Obtain the verification parameters for the light block when using it as
     /// trusted state.
     pub fn as_trusted_state(&self) -> TrustedBlockState<'_> {

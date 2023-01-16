@@ -1,7 +1,7 @@
 //! Supervisor and Handle implementation.
 
 use crossbeam_channel as channel;
-use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
+use tendermint::evidence::Evidence;
 
 use crate::{
     errors::Error,
@@ -217,13 +217,14 @@ impl Supervisor {
                     .latest_trusted()
                     .ok_or_else(|| Error::no_trusted_state(Status::Trusted))?;
 
-                // Perform fork detection with the highest verified block and the trusted block.
-                let outcome = self.detect_forks(&verified_block, &trusted_block)?;
+                // Perform divergence detection with the highest verified block and the trusted block.
+                let outcome = self.detect_divergence(&verified_block, &trusted_block)?;
 
                 match outcome {
                     // There was a fork or a faulty peer
                     ForkDetection::Detected(forks) => {
                         let forked = self.process_forks(forks)?;
+
                         if !forked.is_empty() {
                             // Fork detected, exiting
                             return Err(Error::fork_detected(forked));
@@ -254,61 +255,52 @@ impl Supervisor {
         }
     }
 
-    fn process_forks(&mut self, forks: Vec<Fork>) -> Result<Vec<PeerId>, Error> {
-        let mut forked = Vec::with_capacity(forks.len());
+    fn process_forks(&mut self, _forks: Vec<Fork>) -> Result<Vec<PeerId>, Error> {
+        todo!() // TODO(romac)
 
-        for fork in forks {
-            match fork {
-                // An actual fork was detected, report evidence and record forked peer.
-                // TODO: also report to primary
-                Fork::Forked { primary, witness } => {
-                    let provider = witness.provider;
-                    self.report_evidence(provider, &primary, &witness)?;
+        // let mut forked = Vec::with_capacity(forks.len());
+        // for fork in forks {
+        //     match fork {
+        //         // An actual fork was detected, report evidence and record forked peer.
+        //         // TODO: also report to primary
+        //         Fork::Forked { primary, witness } => {
+        //             let provider = witness.provider;
+        //             self.report_evidence(provider, &primary, &witness)?;
 
-                    forked.push(provider);
-                },
-                // A witness has timed out, remove it from the peer list.
-                Fork::Timeout(provider, _error) => {
-                    self.peers.replace_faulty_witness(provider);
-                    // TODO: Log/record the error
-                },
-                // A witness has been deemed faulty, remove it from the peer list.
-                Fork::Faulty(block, _error) => {
-                    self.peers.replace_faulty_witness(block.provider);
-                    // TODO: Log/record the error
-                },
-            }
-        }
+        //             forked.push(provider);
+        //         },
+        //         // A witness has timed out, remove it from the peer list.
+        //         Fork::Timeout(provider, _error) => {
+        //             self.peers.replace_faulty_witness(provider);
+        //             // TODO: Log/record the error
+        //         },
+        //         // A witness has been deemed faulty, remove it from the peer list.
+        //         Fork::Faulty(block, _error) => {
+        //             self.peers.replace_faulty_witness(block.provider);
+        //             // TODO: Log/record the error
+        //         },
+        //     }
+        // }
 
-        Ok(forked)
+        // Ok(forked)
     }
 
     /// Report the given evidence of a fork.
-    fn report_evidence(
-        &mut self,
-        provider: PeerId,
-        primary: &LightBlock,
-        witness: &LightBlock,
-    ) -> Result<(), Error> {
-        let evidence = ConflictingHeadersEvidence::new(
-            primary.signed_header.clone(),
-            witness.signed_header.clone(),
-        );
-
+    fn report_evidence(&mut self, provider: PeerId, evidence: Evidence) -> Result<(), Error> {
         self.evidence_reporter
-            .report(Evidence::ConflictingHeaders(Box::new(evidence)), provider)
+            .report(evidence, provider)
             .map_err(Error::io)?;
 
         Ok(())
     }
 
     /// Perform fork detection with the given verified block and trusted block.
-    fn detect_forks(
+    fn detect_divergence(
         &self,
         verified_block: &LightBlock,
         trusted_block: &LightBlock,
     ) -> Result<ForkDetection, Error> {
-        if self.peers.witnesses_ids().is_empty() {
+        if !self.peers.has_witnesses() {
             return Err(Error::no_witnesses());
         }
 
@@ -317,10 +309,20 @@ impl Supervisor {
             .witnesses_ids()
             .iter()
             .filter_map(|id| self.peers.get(id))
-            .collect();
+            .collect::<Vec<_>>();
 
-        self.fork_detector
-            .detect_forks(verified_block, trusted_block, witnesses)
+        let primary = self.peers.primary();
+        let primary_trace = primary.state.get_trace(verified_block.height());
+        let now = primary.light_client.now();
+
+        self.fork_detector.detect_forks(
+            verified_block,
+            trusted_block,
+            primary_trace,
+            primary,
+            &witnesses,
+            now,
+        )
     }
 
     /// Run the supervisor event loop in the same thread.

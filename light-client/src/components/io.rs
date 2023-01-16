@@ -72,6 +72,15 @@ impl IoErrorDetail {
             _ => None,
         }
     }
+
+    pub fn is_height_too_high(&self) -> bool {
+        if let IoErrorDetail::Rpc(e) = self {
+            let msg = e.source.to_string();
+            msg.contains("height") && msg.contains("must be less than or equal to")
+        } else {
+            false
+        }
+    }
 }
 
 /// Interface for fetching light blocks from a full node, typically via the RPC client.

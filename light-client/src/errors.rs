@@ -145,6 +145,14 @@ impl ErrorExt for ErrorDetail {
             None
         }
     }
+
+    fn is_height_too_high(&self) -> bool {
+        if let Self::Io(e) = self {
+            e.source.is_height_too_high()
+        } else {
+            false
+        }
+    }
 }
 
 impl Error {
