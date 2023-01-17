@@ -283,60 +283,17 @@ fn get_byzantine_validators(
     common_validators: &validator::Set,
     trusted: &SignedHeader,
 ) -> Vec<validator::Info> {
-    let mut validators = Vec::new();
-
     // First check if the header is invalid. This means that it is a lunatic attack and therefore we take the
     // validators who are in the `common_validators` and voted for the lunatic header
     if conflicting_header_is_invalid(&conflicted.signed_header.header, &trusted.header) {
-        for commit_sig in &conflicted.signed_header.commit.signatures {
-            if !commit_sig.is_commit() {
-                continue;
-            }
-
-            let validator = commit_sig
-                .validator_address()
-                .and_then(|addr| common_validators.validator(addr));
-
-            if let Some(validator) = validator {
-                validators.push(validator);
-            }
-        }
-
-        validators.sort_by(cmp_voting_power_then_address);
-        validators
+        find_lunatic_validators(conflicted, common_validators)
     } else if trusted.commit.round == conflicted.signed_header.commit.round {
         // This is an equivocation attack as both commits are in the same round. We then find the validators
         // from the conflicting light block validator set that voted in both headers.
         // Validator hashes are the same therefore the indexing order of validators are the same and thus we
         // only need a single loop to find the validators that voted twice.
 
-        for (i, sig_a) in conflicted
-            .signed_header
-            .commit
-            .signatures
-            .iter()
-            .enumerate()
-        {
-            if sig_a.is_absent() {
-                continue;
-            }
-
-            let sig_b = &trusted.commit.signatures[i];
-            if sig_b.is_nil() {
-                continue;
-            }
-
-            let validator = sig_a
-                .validator_address()
-                .and_then(|addr| conflicted.validator_set.validator(addr));
-
-            if let Some(validator) = validator {
-                validators.push(validator);
-            }
-        }
-
-        validators.sort_by(cmp_voting_power_then_address);
-        validators
+        find_equivocating_validators(conflicted, trusted)
     } else {
         // if the rounds are different then this is an amnesia attack. Unfortunately, given the nature of the attack,
         // we aren't able yet to deduce which are malicious validators and which are not hence we return an
@@ -344,6 +301,65 @@ fn get_byzantine_validators(
 
         Vec::new()
     }
+}
+
+fn find_lunatic_validators(
+    conflicted: &ConflictingBlock,
+    common_validators: &validator::Set,
+) -> Vec<validator::Info> {
+    let mut validators = Vec::new();
+
+    for commit_sig in &conflicted.signed_header.commit.signatures {
+        if !commit_sig.is_commit() {
+            continue;
+        }
+
+        let validator = commit_sig
+            .validator_address()
+            .and_then(|addr| common_validators.validator(addr));
+
+        if let Some(validator) = validator {
+            validators.push(validator);
+        }
+    }
+
+    validators.sort_by(cmp_voting_power_then_address);
+    validators
+}
+
+fn find_equivocating_validators(
+    conflicted: &ConflictingBlock,
+    trusted: &SignedHeader,
+) -> Vec<validator::Info> {
+    let mut validators = Vec::new();
+
+    for (i, sig_a) in conflicted
+        .signed_header
+        .commit
+        .signatures
+        .iter()
+        .enumerate()
+    {
+        if sig_a.is_absent() {
+            continue;
+        }
+
+        let sig_b = &trusted.commit.signatures[i];
+        if sig_b.is_nil() {
+            continue;
+        }
+
+        let validator = sig_a
+            .validator_address()
+            .and_then(|addr| conflicted.validator_set.validator(addr));
+
+        if let Some(validator) = validator {
+            validators.push(validator);
+        }
+    }
+
+    validators.sort_by(cmp_voting_power_then_address);
+    validators
 }
 
 fn cmp_voting_power_then_address(a: &validator::Info, b: &validator::Info) -> Ordering {
