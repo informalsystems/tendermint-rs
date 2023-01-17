@@ -75,7 +75,7 @@ pub fn handle_conflicting_headers_and_report_evidence(
     witness: &Instance,
     verified_block: &LightBlock,
     trusted_block: &LightBlock,
-    witness_block: LightBlock,
+    witness_block: &LightBlock,
     hasher: &dyn Hasher,
     evidence_reporter: &dyn EvidenceReporter,
 ) -> Result<Option<LightClientAttackEvidence>, DetectorError> {
@@ -117,13 +117,16 @@ pub fn handle_conflicting_headers(
     witness: &Instance,
     verified_block: &LightBlock,
     trusted_block: &LightBlock,
-    witness_block: LightBlock,
+    witness_block: &LightBlock,
     hasher: &dyn Hasher,
 ) -> Result<Option<LightClientAttackEvidence>, DetectorError> {
-    let primary_trace = &[trusted_block.clone(), verified_block.clone()];
-
-    let (witness_trace, primary_block) =
-        examine_conflicting_header_against_trace(primary_trace, witness_block, witness, hasher)?;
+    let (witness_trace, primary_block) = examine_conflicting_header_against_trace(
+        trusted_block,
+        verified_block,
+        witness_block,
+        witness,
+        hasher,
+    )?;
 
     let common_block = witness_trace.first().unwrap(); // FIXME
     let trusted_block = witness_trace.last().unwrap(); // FIXME
@@ -153,8 +156,8 @@ enum Examination {
 fn examine_conflicting_header_against_trace_block(
     source: &Instance,
     index: usize,
-    trace_block: LightBlock,
-    target_block: LightBlock,
+    trace_block: &LightBlock,
+    target_block: &LightBlock,
     prev_verified_block: Option<LightBlock>,
     hasher: &dyn Hasher,
 ) -> Result<Examination, DetectorError> {
@@ -177,16 +180,16 @@ fn examine_conflicting_header_against_trace_block(
         if let Some(prev_verified_block) = &prev_verified_block {
             if prev_verified_block.height() != target_block.height() {
                 let source_trace =
-                    verify_skipping(source, prev_verified_block.clone(), target_block)?;
+                    verify_skipping(source, prev_verified_block.clone(), target_block.clone())?;
 
-                return Ok(Examination::Bifurcation(source_trace, trace_block));
+                return Ok(Examination::Bifurcation(source_trace, trace_block.clone()));
             }
         }
     }
 
     // get the corresponding block from the source to verify and match up against the traceBlock
     let source_block = if trace_block.height() == target_block.height() {
-        target_block
+        target_block.clone()
     } else {
         let mut state = State::new(MemoryStore::new());
         source
@@ -226,7 +229,7 @@ fn examine_conflicting_header_against_trace_block(
         != hasher.hash_header(&trace_block.signed_header.header)
     {
         // Bifurcation point found!
-        return Ok(Examination::Bifurcation(source_trace, trace_block));
+        return Ok(Examination::Bifurcation(source_trace, trace_block.clone()));
     }
 
     // headers are still the same, continue
@@ -234,28 +237,27 @@ fn examine_conflicting_header_against_trace_block(
 }
 
 fn examine_conflicting_header_against_trace(
-    trace: &[LightBlock],
-    target_block: LightBlock,
+    trusted_block: &LightBlock,
+    verified_block: &LightBlock,
+    target_block: &LightBlock,
     source: &Instance,
     hasher: &dyn Hasher,
 ) -> Result<(Vec<LightBlock>, LightBlock), DetectorError> {
-    assert!(!trace.is_empty());
-
-    if target_block.height() < trace[0].height() {
+    if target_block.height() < trusted_block.height() {
         return Err(DetectorError::target_block_lower_than_trusted(
             target_block.height(),
-            trace[0].height(),
+            trusted_block.height(),
         ));
     }
 
     let mut previously_verified_block: Option<LightBlock> = None;
 
-    for (index, trace_block) in trace.iter().enumerate() {
+    for (index, &trace_block) in [trusted_block, verified_block].iter().enumerate() {
         let result = examine_conflicting_header_against_trace_block(
             source,
             index,
-            trace_block.clone(),
-            target_block.clone(),
+            trace_block,
+            target_block,
             previously_verified_block,
             hasher,
         )?;
