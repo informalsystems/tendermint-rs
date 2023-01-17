@@ -145,6 +145,94 @@ pub fn handle_conflicting_headers(
     Ok(Some(evidence_against_primary))
 }
 
+enum Examination {
+    Continue(LightBlock),
+    Bifurcation(Vec<LightBlock>, LightBlock),
+}
+
+fn examine_conflicting_header_against_trace_block(
+    source: &Instance,
+    index: usize,
+    trace_block: LightBlock,
+    target_block: LightBlock,
+    prev_verified_block: Option<LightBlock>,
+    hasher: &dyn Hasher,
+) -> Result<Examination, DetectorError> {
+    // This case only happens in a forward lunatic attack. We treat the block with the
+    // height directly after the targetBlock as the divergent block
+    if trace_block.height() > target_block.height() {
+        // sanity check that the time of the traceBlock is indeed less than that of the targetBlock. If the trace
+        // was correctly verified we should expect monotonically increasing time. This means that if the block at
+        // the end of the trace has a lesser time than the target block then all blocks in the trace should have a
+        // lesser time
+        if trace_block.time() > target_block.time() {
+            return Err(DetectorError::trace_block_after_target_block(
+                trace_block.time(),
+                target_block.time(),
+            ));
+        }
+
+        // Before sending back the divergent block and trace we need to ensure we have verified
+        // the final gap between the previouslyVerifiedBlock and the targetBlock
+        if let Some(prev_verified_block) = &prev_verified_block {
+            if prev_verified_block.height() != target_block.height() {
+                let source_trace =
+                    verify_skipping(source, prev_verified_block.clone(), target_block)?;
+
+                return Ok(Examination::Bifurcation(source_trace, trace_block));
+            }
+        }
+    }
+
+    // get the corresponding block from the source to verify and match up against the traceBlock
+    let source_block = if trace_block.height() == target_block.height() {
+        target_block
+    } else {
+        let mut state = State::new(MemoryStore::new());
+        source
+            .light_client
+            .get_or_fetch_block(trace_block.height(), &mut state)
+            .map(|(lb, _)| lb)
+            .map_err(DetectorError::light_client)?
+    };
+
+    // The first block in the trace MUST be the same to the light block that the source produces
+    // else we cannot continue with verification.
+    if index == 0 {
+        if hasher.hash_header(&source_block.signed_header.header)
+            != hasher.hash_header(&trace_block.signed_header.header)
+        {
+            return Err(
+                DetectorError::trusted_hash_different_from_source_first_block(
+                    hasher.hash_header(&source_block.signed_header.header),
+                    hasher.hash_header(&trace_block.signed_header.header),
+                ),
+            );
+        }
+
+        return Ok(Examination::Continue(source_block));
+    }
+
+    // we check that the source provider can verify a block at the same height of the
+    // intermediate height
+    let source_trace = verify_skipping(
+        source,
+        prev_verified_block.unwrap(), // FIXME
+        source_block.clone(),
+    )?;
+
+    // check if the headers verified by the source has diverged from the trace
+    if hasher.hash_header(&source_block.signed_header.header)
+        != hasher.hash_header(&trace_block.signed_header.header)
+    {
+        // Bifurcation point found!
+        return Ok(Examination::Bifurcation(source_trace, trace_block));
+    }
+
+    // headers are still the same, continue
+    Ok(Examination::Continue(source_block))
+}
+
 fn examine_conflicting_header_against_trace(
     trace: &[LightBlock],
     target_block: LightBlock,
@@ -162,83 +250,25 @@ fn examine_conflicting_header_against_trace(
 
     let mut previously_verified_block: Option<LightBlock> = None;
 
-    for (i, trace_block) in trace.iter().enumerate() {
-        // this case only happens in a forward lunatic attack. We treat the block with the
-        // height directly after the targetBlock as the divergent block
-        if trace_block.height() > target_block.height() {
-            // sanity check that the time of the traceBlock is indeed less than that of the targetBlock. If the trace
-            // was correctly verified we should expect monotonically increasing time. This means that if the block at
-            // the end of the trace has a lesser time than the target block then all blocks in the trace should have a
-            // lesser time
-            if trace_block.time() > target_block.time() {
-                return Err(DetectorError::trace_block_after_target_block(
-                    trace_block.time(),
-                    target_block.time(),
-                ));
-            }
+    for (index, trace_block) in trace.iter().enumerate() {
+        let result = examine_conflicting_header_against_trace_block(
+            source,
+            index,
+            trace_block.clone(),
+            target_block.clone(),
+            previously_verified_block,
+            hasher,
+        )?;
 
-            // before sending back the divergent block and trace we need to ensure we have verified
-            // the final gap between the previouslyVerifiedBlock and the targetBlock
-            if let Some(prev_verified_block) = &previously_verified_block {
-                if prev_verified_block.height() != target_block.height() {
-                    let source_trace =
-                        verify_skipping(source, prev_verified_block.clone(), target_block)?;
-
-                    return Ok((source_trace, trace_block.clone()));
-                }
-            }
+        match result {
+            Examination::Continue(prev_verified_block) => {
+                previously_verified_block = Some(prev_verified_block);
+                continue;
+            },
+            Examination::Bifurcation(source_trace, trace_block) => {
+                return Ok((source_trace, trace_block));
+            },
         }
-
-        // get the corresponding block from the source to verify and match up against the traceBlock
-        let source_block = if trace_block.height() == target_block.height() {
-            target_block.clone()
-        } else {
-            let mut state = State::new(MemoryStore::new());
-            source
-                .light_client
-                .get_or_fetch_block(trace_block.height(), &mut state)
-                .map(|(lb, _)| lb)
-                .map_err(DetectorError::light_client)?
-        };
-
-        // The first block in the trace MUST be the same to the light block that the source produces
-        // else we cannot continue with verification.
-        if i == 0 {
-            if hasher.hash_header(&source_block.signed_header.header)
-                != hasher.hash_header(&trace_block.signed_header.header)
-            {
-                return Err(
-                    DetectorError::trusted_hash_different_from_source_first_block(
-                        hasher.hash_header(&source_block.signed_header.header),
-                        hasher.hash_header(&trace_block.signed_header.header),
-                    ),
-                );
-            }
-
-            previously_verified_block = Some(source_block);
-            continue;
-        }
-
-        // we check that the source provider can verify a block at the same height of the
-        // intermediate height
-        {
-            let source_trace = verify_skipping(
-                source,
-                previously_verified_block.unwrap(),
-                source_block.clone(),
-            )?;
-
-            // check if the headers verified by the source has diverged from the trace
-            if hasher.hash_header(&source_block.signed_header.header)
-                != hasher.hash_header(&trace_block.signed_header.header)
-            {
-                // Bifurcation point found!
-                return Ok((source_trace, trace_block.clone()));
-            }
-
-            // headers are still the same. update the previouslyVerifiedBlock
-            previously_verified_block = Some(source_block);
-        };
     }
 
     // We have reached the end of the trace. This should never happen. This can only happen if one of the stated
