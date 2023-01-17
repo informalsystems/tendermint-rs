@@ -35,6 +35,18 @@ pub enum Evidence {
     LightClientAttack(Box<LightClientAttackEvidence>),
 }
 
+impl From<LightClientAttackEvidence> for Evidence {
+    fn from(ev: LightClientAttackEvidence) -> Self {
+        Self::LightClientAttack(Box::new(ev))
+    }
+}
+
+impl From<DuplicateVoteEvidence> for Evidence {
+    fn from(ev: DuplicateVoteEvidence) -> Self {
+        Self::DuplicateVote(Box::new(ev))
+    }
+}
+
 impl Protobuf<RawEvidence> for Evidence {}
 
 impl TryFrom<RawEvidence> for Evidence {

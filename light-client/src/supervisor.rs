@@ -122,6 +122,7 @@ pub struct Supervisor {
     /// An instance of the fork detector
     fork_detector: Box<dyn ForkDetector>,
     /// Reporter of fork evidence
+    #[allow(dead_code)]
     evidence_reporter: Box<dyn EvidenceReporter>,
     /// Channel through which to reply to `Handle`s
     sender: channel::Sender<HandleInput>,

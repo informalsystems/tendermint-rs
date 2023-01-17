@@ -24,6 +24,7 @@ pub mod evidence;
 pub mod fork_detector;
 pub mod light_client;
 pub mod peer_list;
+pub mod relayer;
 pub mod state;
 pub mod store;
 pub mod supervisor;
