@@ -2,13 +2,12 @@ use std::cmp::Ordering;
 
 use tendermint::{
     block::{signed_header::SignedHeader, Header},
-    evidence::{ConflictingBlock, Evidence, LightClientAttackEvidence},
+    evidence::{ConflictingBlock, LightClientAttackEvidence},
     validator,
 };
 use tendermint_light_client_verifier::types::Status;
 
 use crate::{
-    evidence::EvidenceReporter,
     state::State,
     store::{memory::MemoryStore, LightStore},
     supervisor::Instance,
@@ -16,46 +15,6 @@ use crate::{
 };
 
 pub use super::error::DetectorError;
-
-pub fn handle_conflicting_headers_and_report_evidence(
-    witness: &Instance,
-    verified_block: &LightBlock,
-    trusted_block: &LightBlock,
-    witness_block: &LightBlock,
-    hasher: &dyn Hasher,
-    evidence_reporter: &dyn EvidenceReporter,
-) -> Result<Option<LightClientAttackEvidence>, DetectorError> {
-    let evidence = handle_conflicting_headers(
-        witness,
-        verified_block,
-        trusted_block,
-        witness_block,
-        hasher,
-    )?;
-
-    if let Some(evidence) = &evidence {
-        tracing::error!(
-            ev = ?evidence,
-            primary = %"TODO",
-            witness = %witness.light_client.peer,
-            "ATTEMPTED ATTACK DETECTED. Sending evidence against primary to witness",
-        );
-
-        let hash = evidence_reporter
-            .report(Evidence::from(evidence.clone()), witness.light_client.peer)
-            .map_err(DetectorError::io)?;
-
-        tracing::error!(
-            ev = ?evidence,
-            primary = %"TODO",
-            witness = %witness.light_client.peer,
-            hash = %hash,
-            "Evidence sent to witness",
-        );
-    }
-
-    Ok(evidence)
-}
 
 /// Handles the primary style of attack, which is where a primary and witness have
 /// two headers of the same height but with different hashes
