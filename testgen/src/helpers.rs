@@ -4,11 +4,7 @@ use std::io::{self, Read};
 
 use serde::de::DeserializeOwned;
 use simple_error::*;
-use tendermint::{
-    chain, public_key,
-    signature::{Signature, Verifier},
-    vote, Time,
-};
+use tendermint::{chain, public_key, signature::Signature, vote, Time};
 
 /// A macro that generates a complete setter method from a one-liner with necessary information
 #[macro_export]
@@ -50,10 +46,8 @@ pub fn get_vote_sign_bytes(chain_id: chain::Id, vote: &vote::Vote) -> Vec<u8> {
 }
 
 pub fn verify_signature(verifier: &public_key::Ed25519, msg: &[u8], signature: &Signature) -> bool {
-    use std::convert::TryFrom;
-
-    let sig = ed25519_dalek::Signature::try_from(signature.as_bytes());
-    sig.and_then(|sig| verifier.verify(msg, &sig)).is_ok()
+    let sig = ed25519_consensus::Signature::try_from(signature.as_bytes());
+    sig.and_then(|sig| verifier.verify(&sig, msg)).is_ok()
 }
 
 pub fn get_time(abs: u64) -> Result<Time, SimpleError> {

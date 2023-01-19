@@ -1,8 +1,6 @@
 //! Amino types used by Secret Connection
 
 use core::convert::TryFrom;
-
-use ed25519_dalek as ed25519;
 use prost_derive::Message;
 use tendermint_proto as proto;
 
@@ -24,13 +22,16 @@ pub struct AuthSigMessage {
 }
 
 impl AuthSigMessage {
-    pub fn new(pub_key: &ed25519::PublicKey, sig: &ed25519::Signature) -> Self {
+    pub fn new(
+        pub_key: &ed25519_consensus::VerificationKey,
+        sig: &ed25519_consensus::Signature,
+    ) -> Self {
         let mut pub_key_bytes = Vec::from(PUB_KEY_ED25519_AMINO_PREFIX);
-        pub_key_bytes.extend_from_slice(pub_key.as_ref());
+        pub_key_bytes.extend_from_slice(pub_key.as_bytes());
 
         Self {
             pub_key: pub_key_bytes,
-            sig: sig.as_ref().to_vec(),
+            sig: sig.to_bytes().to_vec(),
         }
     }
 }
