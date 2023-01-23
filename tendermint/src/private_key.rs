@@ -1,10 +1,9 @@
 //! Cryptographic private keys
 
-pub use ed25519_consensus::SigningKey as Ed25519;
-
+pub use crate::crypto::ed25519::SigningKey as Ed25519;
 use crate::prelude::*;
 use crate::public_key::PublicKey;
-use ed25519_consensus::VerificationKey;
+
 use serde::{de, ser, Deserialize, Serialize};
 use subtle_encoding::{Base64, Encoding};
 use zeroize::Zeroizing;
@@ -78,7 +77,7 @@ where
     // with the re-derived data.
     let signing_key = Ed25519::try_from(&keypair_bytes[0..32])
         .map_err(|_| D::Error::custom("invalid signing key"))?;
-    let verification_key = VerificationKey::from(&signing_key);
+    let verification_key = signing_key.verification_key();
     if &keypair_bytes[32..64] != verification_key.as_bytes() {
         return Err(D::Error::custom("keypair mismatch"));
     }

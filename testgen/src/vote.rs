@@ -90,6 +90,7 @@ impl Generator<vote::Vote> for Vote {
             Some(h) => h,
         };
         let signing_key = validator.get_private_key()?;
+        let signing_key = ed25519_consensus::SigningKey::try_from(signing_key).unwrap();
         let block_validator = validator.generate()?;
         let block_header = header.generate()?;
         let block_id = if self.nil.is_some() {

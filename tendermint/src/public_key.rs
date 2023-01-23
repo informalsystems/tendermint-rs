@@ -1,6 +1,5 @@
 //! Public keys used in Tendermint networks
 
-pub use ed25519_consensus::VerificationKey as Ed25519;
 #[cfg(feature = "secp256k1")]
 pub use k256::ecdsa::VerifyingKey as Secp256k1;
 
@@ -11,7 +10,7 @@ pub use pub_key_request::PubKeyRequest;
 pub use pub_key_response::PubKeyResponse;
 
 use core::convert::TryFrom;
-use core::{cmp::Ordering, fmt, ops::Deref, str::FromStr};
+use core::{cmp::Ordering, fmt, str::FromStr};
 use serde::{de, ser, Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use subtle_encoding::{base64, bech32, hex};
@@ -20,7 +19,8 @@ use tendermint_proto::{
     Protobuf,
 };
 
-use crate::{error::Error, prelude::*, signature::Signature};
+pub use crate::crypto::ed25519::VerificationKey as Ed25519;
+use crate::{error::Error, prelude::*};
 
 #[cfg(feature = "secp256k1")]
 use signature::Verifier as _;
@@ -132,8 +132,8 @@ impl TryFrom<RawPublicKey> for PublicKey {
             .sum
             .ok_or_else(|| Error::invalid_key("empty sum".to_string()))?;
         if let Sum::Ed25519(b) = sum {
-            return Self::from_raw_ed25519(b)
-                .ok_or_else(|| Error::invalid_key("malformed ed25519 key".to_string()));
+            let key = Ed25519::try_from(&b[..])?;
+            return Ok(PublicKey::Ed25519(key));
         }
         #[cfg(feature = "secp256k1")]
         if let Sum::Secp256k1(b) = sum {
@@ -193,38 +193,6 @@ impl PublicKey {
         match self {
             PublicKey::Secp256k1(pk) => Some(pk),
             _ => None,
-        }
-    }
-
-    /// Verify the given [`Signature`] using this public key
-    pub fn verify(&self, msg: &[u8], signature: &Signature) -> Result<(), Error> {
-        match self {
-            PublicKey::Ed25519(pk) => {
-                match ed25519_consensus::Signature::try_from(signature.as_bytes()) {
-                    Ok(sig) => pk.verify(&sig, msg).map_err(|_| {
-                        Error::signature_invalid(
-                            "Ed25519 signature verification failed".to_string(),
-                        )
-                    }),
-                    Err(_) => Err(Error::signature_invalid(
-                        "Could not parse Ed25519 signature".to_string(),
-                    )),
-                }
-            },
-            #[cfg(feature = "secp256k1")]
-            PublicKey::Secp256k1(pk) => {
-                match k256::ecdsa::Signature::try_from(signature.as_bytes()) {
-                    Ok(sig) => pk.verify(msg, &sig).map_err(|_| {
-                        Error::signature_invalid(
-                            "Secp256k1 signature verification failed".to_string(),
-                        )
-                    }),
-                    Err(e) => Err(Error::signature_invalid(format!(
-                        "invalid Secp256k1 signature: {}",
-                        e
-                    ))),
-                }
-            },
         }
     }
 
@@ -338,15 +306,6 @@ impl TendermintKey {
     }
 }
 
-// TODO(tarcieri): deprecate/remove this in favor of `TendermintKey::public_key`
-impl Deref for TendermintKey {
-    type Target = PublicKey;
-
-    fn deref(&self) -> &PublicKey {
-        self.public_key()
-    }
-}
-
 /// Public key algorithms
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Algorithm {
@@ -443,12 +402,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use core::convert::TryFrom;
-
     use subtle_encoding::hex;
     use tendermint_proto::Protobuf;
 
-    use super::{PublicKey, Signature, TendermintKey};
+    use super::{PublicKey, TendermintKey};
     use crate::{prelude::*, public_key::PubKeyResponse};
 
     const EXAMPLE_CONSENSUS_KEY: &str =
@@ -476,7 +433,7 @@ mod tests {
         // fmt.Println(mustBech32ConsPub)
         // }
         assert_eq!(
-            example_key.to_bech32("cosmosvalconspub"),
+            example_key.public_key().to_bech32("cosmosvalconspub"),
             "cosmosvalconspub1zcjduepqfgjuveq2raetnjt4xwpffm63kmguxv2chdhvhf5lhslmtgeunh8qmf7exk"
         );
     }
@@ -502,7 +459,7 @@ mod tests {
         let pubkey: PublicKey = serde_json::from_str(json_string).unwrap();
 
         assert_eq!(
-            pubkey.ed25519().unwrap().as_ref(),
+            pubkey.ed25519().unwrap().as_bytes(),
             [
                 69, 185, 115, 48, 238, 34, 179, 146, 245, 133, 156, 250, 194, 142, 36, 61, 186,
                 109, 204, 236, 174, 123, 162, 211, 147, 143, 165, 62, 16, 245, 21, 25
@@ -703,8 +660,13 @@ mod tests {
         ],
     ];
 
+    #[cfg(feature = "rust-crypto")]
     #[test]
     fn ed25519_test_vectors() {
+        use crate::crypto::default::signature::Verifier;
+        use crate::crypto::signature::Verifier as _;
+        use crate::Signature;
+
         for (i, v) in ED25519_TEST_VECTORS.iter().enumerate() {
             let public_key = v[0];
             let msg = v[1];
@@ -717,8 +679,7 @@ mod tests {
                 _ => panic!("expected public key to be Ed25519: {:?}", public_key),
             }
             let sig = Signature::try_from(sig).unwrap();
-            public_key
-                .verify(msg, &sig)
+            Verifier::verify(public_key, msg, &sig)
                 .unwrap_or_else(|_| panic!("signature should be valid for test vector {}", i));
         }
     }

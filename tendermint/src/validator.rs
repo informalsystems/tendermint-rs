@@ -14,6 +14,7 @@ use tendermint_proto::{
 
 use crate::{
     account,
+    crypto::signature::Verifier,
     crypto::Sha256,
     hash::Hash,
     merkle::{self, MerkleHash},
@@ -219,8 +220,12 @@ impl Info {
 
     /// Verify the given signature against the given sign_bytes using the validators
     /// public key.
-    pub fn verify_signature(&self, sign_bytes: &[u8], signature: &Signature) -> Result<(), Error> {
-        self.pub_key.verify(sign_bytes, signature)
+    pub fn verify_signature<V>(&self, sign_bytes: &[u8], signature: &Signature) -> Result<(), Error>
+    where
+        V: Verifier,
+    {
+        V::verify(self.pub_key, sign_bytes, signature)
+            .map_err(|_| Error::signature_invalid("Ed25519 signature verification failed".into()))
     }
 
     #[cfg(feature = "rust-crypto")]
@@ -276,7 +281,7 @@ impl From<&Info> for SimpleValidator {
     fn from(info: &Info) -> SimpleValidator {
         let sum = match &info.pub_key {
             PublicKey::Ed25519(pk) => Some(tendermint_proto::crypto::public_key::Sum::Ed25519(
-                pk.as_ref().to_vec(),
+                pk.as_bytes().to_vec(),
             )),
             #[cfg(feature = "secp256k1")]
             PublicKey::Secp256k1(pk) => Some(tendermint_proto::crypto::public_key::Sum::Secp256k1(
