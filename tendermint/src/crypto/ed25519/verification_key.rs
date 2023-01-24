@@ -4,6 +4,7 @@ use crate::Error;
 pub struct VerificationKey([u8; 32]);
 
 impl VerificationKey {
+    #[allow(dead_code)]
     pub(super) fn new(bytes: [u8; 32]) -> Self {
         Self(bytes)
     }

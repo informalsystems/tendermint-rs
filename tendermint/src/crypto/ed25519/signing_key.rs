@@ -1,4 +1,6 @@
+#[cfg(feature = "rust-crypto")]
 use super::VerificationKey;
+
 use crate::Error;
 
 #[derive(Clone, Debug)]
