@@ -38,8 +38,7 @@ fn main() {
     }));
 
     println!(
-        "[info] => Fetching {} at {} into {:?}",
-        TENDERMINT_REPO, TENDERMINT_COMMITISH, tendermint_dir
+        "[info] => Fetching {TENDERMINT_REPO} at {TENDERMINT_COMMITISH} into {tendermint_dir:?}"
     );
     get_commitish(
         &PathBuf::from(&tendermint_dir),

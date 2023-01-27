@@ -123,7 +123,7 @@ fn find_reference_or_commit<'a>(
     let mut try_reference = repo.resolve_reference_from_short_name(commitish);
     if try_reference.is_err() {
         // Local branch might be missing, try the remote branch
-        try_reference = repo.resolve_reference_from_short_name(&format!("origin/{}", commitish));
+        try_reference = repo.resolve_reference_from_short_name(&format!("origin/{commitish}"));
         tried_origin = true;
         if try_reference.is_err() {
             // Remote branch not found, last chance: try as a commit ID
@@ -144,7 +144,7 @@ fn find_reference_or_commit<'a>(
         if tried_origin {
             panic!("[error] => local branch names with 'origin/' prefix not supported");
         }
-        try_reference = repo.resolve_reference_from_short_name(&format!("origin/{}", commitish));
+        try_reference = repo.resolve_reference_from_short_name(&format!("origin/{commitish}"));
         reference = try_reference.unwrap();
         if reference.is_branch() {
             panic!("[error] => local branch names with 'origin/' prefix not supported");
@@ -181,7 +181,7 @@ pub fn copy_files(src_dir: &Path, target_dir: &Path) {
 
     if !errors.is_empty() {
         for e in errors {
-            println!("[error] => Error while copying compiled file: {}", e);
+            println!("[error] => Error while copying compiled file: {e}");
         }
         panic!("[error] => Aborted.");
     }
@@ -248,10 +248,10 @@ pub fn generate_tendermint_lib(prost_dir: &Path, tendermint_lib_target: &Path) {
             //{tabs} pub mod {part} {
             //{inner_content}
             //{tabs} }
-            inner_content = format!("{}pub mod {} {{\n{}\n{}}}", tabs, part, inner_content, tabs);
+            inner_content = format!("{tabs}pub mod {part} {{\n{inner_content}\n{tabs}}}");
         }
 
-        content = format!("{}\n{}\n", content, inner_content);
+        content = format!("{content}\n{inner_content}\n");
     }
 
     // Add meta

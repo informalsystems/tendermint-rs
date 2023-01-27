@@ -54,16 +54,13 @@ impl From<serde_json::Error> for Error {
 
 impl<T> From<tokio::sync::mpsc::error::SendError<T>> for Error {
     fn from(e: tokio::sync::mpsc::error::SendError<T>) -> Self {
-        Self::Internal(format!("failed to send to channel: {}", e))
+        Self::Internal(format!("failed to send to channel: {e}"))
     }
 }
 
 impl From<tokio::task::JoinError> for Error {
     fn from(e: tokio::task::JoinError) -> Self {
-        Self::Internal(format!(
-            "failed while waiting for async task to join: {}",
-            e
-        ))
+        Self::Internal(format!("failed while waiting for async task to join: {e}"))
     }
 }
 
