@@ -135,7 +135,7 @@ impl TryFrom<net::Address> for HttpClientUrl {
                 peer_id: _,
                 host,
                 port,
-            } => format!("http://{}:{}", host, port).parse(),
+            } => format!("http://{host}:{port}").parse(),
             net::Address::Unix { .. } => Err(Error::invalid_network_address()),
         }
     }

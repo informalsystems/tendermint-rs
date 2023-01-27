@@ -63,11 +63,11 @@ impl FromStr for Url {
 
         let host = inner
             .host_str()
-            .ok_or_else(|| Error::invalid_params(format!("URL is missing its host: {}", s)))?
+            .ok_or_else(|| Error::invalid_params(format!("URL is missing its host: {s}")))?
             .to_owned();
 
         let port = inner.port_or_known_default().ok_or_else(|| {
-            Error::invalid_params(format!("cannot determine appropriate port for URL: {}", s))
+            Error::invalid_params(format!("cannot determine appropriate port for URL: {s}"))
         })?;
 
         Ok(Self {
@@ -351,17 +351,17 @@ mod test {
     fn parsing() {
         for (url_str, expected) in SUPPORTED_URLS.iter() {
             let u = Url::from_str(url_str).unwrap();
-            assert_eq!(expected.scheme, u.scheme(), "{}", url_str);
-            assert_eq!(expected.host, u.host(), "{}", url_str);
-            assert_eq!(expected.port, u.port(), "{}", url_str);
-            assert_eq!(expected.path, u.path(), "{}", url_str);
+            assert_eq!(expected.scheme, u.scheme(), "{url_str}");
+            assert_eq!(expected.host, u.host(), "{url_str}");
+            assert_eq!(expected.port, u.port(), "{url_str}");
+            assert_eq!(expected.path, u.path(), "{url_str}");
             if let Some(n) = u.username() {
-                assert_eq!(expected.username.as_ref().unwrap(), n, "{}", url_str);
+                assert_eq!(expected.username.as_ref().unwrap(), n, "{url_str}");
             } else {
                 assert!(expected.username.is_none(), "{}", url_str);
             }
             if let Some(pw) = u.password() {
-                assert_eq!(expected.password.as_ref().unwrap(), pw, "{}", url_str);
+                assert_eq!(expected.password.as_ref().unwrap(), pw, "{url_str}");
             } else {
                 assert!(expected.password.is_none(), "{}", url_str);
             }

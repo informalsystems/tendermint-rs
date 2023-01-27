@@ -74,7 +74,7 @@ impl ConstantTimeEq for Id {
 impl Display for Id {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for byte in &self.0 {
-            write!(f, "{:02X}", byte)?;
+            write!(f, "{byte:02X}")?;
         }
         Ok(())
     }
@@ -82,7 +82,7 @@ impl Display for Id {
 
 impl Debug for Id {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "account::Id({})", self)
+        write!(f, "account::Id({self})")
     }
 }
 

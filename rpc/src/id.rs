@@ -28,8 +28,8 @@ impl Id {
 impl fmt::Display for Id {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Id::Num(i) => write!(f, "{}", i),
-            Id::Str(s) => write!(f, "{}", s),
+            Id::Num(i) => write!(f, "{i}"),
+            Id::Str(s) => write!(f, "{s}"),
             Id::None => write!(f, ""),
         }
     }

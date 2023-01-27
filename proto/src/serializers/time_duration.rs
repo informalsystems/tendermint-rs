@@ -12,7 +12,7 @@ where
 {
     let value = String::deserialize(deserializer)?
         .parse::<u64>()
-        .map_err(|e| D::Error::custom(format!("{}", e)))?;
+        .map_err(|e| D::Error::custom(format!("{e}")))?;
 
     Ok(Duration::from_nanos(value))
 }

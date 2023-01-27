@@ -132,10 +132,7 @@ mod test {
     use super::*;
 
     fn to_json(num: u64, denom: u64) -> String {
-        format!(
-            "{{\"numerator\": \"{}\", \"denominator\": \"{}\"}}",
-            num, denom
-        )
+        format!("{{\"numerator\": \"{num}\", \"denominator\": \"{denom}\"}}")
     }
 
     fn from_json(num: u64, denom: u64) -> Result<TrustThresholdFraction, serde_json::Error> {

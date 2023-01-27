@@ -43,14 +43,14 @@ impl<'de> Visitor<'de> for PartSetHeaderTotalStringOrU32 {
     where
         E: Error,
     {
-        u32::try_from(v).map_err(|e| E::custom(format!("part_set_header.total {}", e)))
+        u32::try_from(v).map_err(|e| E::custom(format!("part_set_header.total {e}")))
     }
 
     fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        u32::try_from(v).map_err(|e| E::custom(format!("part_set_header.total {}", e)))
+        u32::try_from(v).map_err(|e| E::custom(format!("part_set_header.total {e}")))
     }
 
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
@@ -58,6 +58,6 @@ impl<'de> Visitor<'de> for PartSetHeaderTotalStringOrU32 {
         E: Error,
     {
         v.parse::<u32>()
-            .map_err(|e| E::custom(format!("part_set_header.total {}", e)))
+            .map_err(|e| E::custom(format!("part_set_header.total {e}")))
     }
 }

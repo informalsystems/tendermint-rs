@@ -45,23 +45,23 @@ impl TestEnv {
     }
 
     pub fn logln(&self, msg: &str) -> Option<()> {
-        println!("{}", msg);
+        println!("{msg}");
         fs::OpenOptions::new()
             .create(true)
             .append(true)
             .open(self.full_path("log"))
             .ok()
-            .and_then(|mut file| writeln!(file, "{}", msg).ok())
+            .and_then(|mut file| writeln!(file, "{msg}").ok())
     }
 
     pub fn logln_to(&self, msg: &str, rel_path: impl AsRef<Path>) -> Option<()> {
-        println!("{}", msg);
+        println!("{msg}");
         fs::OpenOptions::new()
             .create(true)
             .append(true)
             .open(self.full_path(rel_path))
             .ok()
-            .and_then(|mut file| writeln!(file, "{}", msg).ok())
+            .and_then(|mut file| writeln!(file, "{msg}").ok())
     }
 
     /// Read a file from a path relative to the environment current dir into a string
@@ -493,12 +493,12 @@ impl Tester {
             if name.is_empty() {
                 continue;
             }
-            print(&format!("\nResults for '{}'", name));
+            print(&format!("\nResults for '{name}'"));
             let tests = self.successful_tests(name);
             if !tests.is_empty() {
                 print("  Successful tests:  ");
                 for path in tests {
-                    print(&format!("    {}", path));
+                    print(&format!("    {path}"));
                     if let Some(logs) = env.read_file(path + "/log") {
                         print(&logs)
                     }
@@ -509,7 +509,7 @@ impl Tester {
                 do_panic = true;
                 print("  Failed tests:  ");
                 for (path, message, location) in tests {
-                    print(&format!("    {}, '{}', {}", path, message, location));
+                    print(&format!("    {path}, '{message}', {location}"));
                     if let Some(logs) = env.read_file(path + "/log") {
                         print(&logs)
                     }
@@ -521,7 +521,7 @@ impl Tester {
             do_panic = true;
             print("\nUnreadable tests:  ");
             for path in tests {
-                print(&format!("  {}", path))
+                print(&format!("  {path}"))
             }
         }
         let tests = self.unparseable_tests();
@@ -529,7 +529,7 @@ impl Tester {
             do_panic = true;
             print("\nUnparseable tests:  ");
             for path in tests {
-                print(&format!("  {}", path))
+                print(&format!("  {path}"))
             }
         }
         print(&format!(
