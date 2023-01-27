@@ -692,7 +692,7 @@ mod mbt {
                 ApalacheRun::Counterexample(_) => (),
                 run => panic!("{}", run.message()),
             },
-            Err(e) => panic!("failed to run Apalache; reason: {}", e),
+            Err(e) => panic!("failed to run Apalache; reason: {e}"),
         }
         output_env.copy_file_from_env_as(env, "counterexample.tla", &tla_test);
 

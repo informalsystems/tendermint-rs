@@ -90,7 +90,7 @@ fn incoming_fixtures() {
                     let r = Event::from_string(content);
                     assert!(r.is_ok(), "failed to parse event {file_name}: {r:?}");
                 } else {
-                    panic!("unhandled incoming fixture: {}", file_name);
+                    panic!("unhandled incoming fixture: {file_name}");
                 }
             },
         }
@@ -161,7 +161,7 @@ fn outgoing_fixtures() {
                 let r = endpoint::subscribe::Request::from_string(content);
                 assert!(r.is_ok(), "{r:?}");
             },
-            _ => panic!("unhandled outgoing fixture: {}", file_name),
+            _ => panic!("unhandled outgoing fixture: {file_name}"),
         }
     }
 }

@@ -309,8 +309,7 @@ mod tests {
         match new_primary {
             Err(Error(ErrorDetail::NoWitnessesLeft(_), _)) => {},
             _ => panic!(
-                "expected NoWitnessesLeft error, instead got {:?}",
-                new_primary
+                "expected NoWitnessesLeft error, instead got {new_primary:?}"
             ),
         }
     }
