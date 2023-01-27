@@ -2,7 +2,7 @@
 name = "abci-test"
 version = "0.28.0"
 authors = ["Informal Systems <hello@informal.systems>"]
-edition = "2018"
+edition = "2021"
 description = """
     abci-test provides some end-to-end integration testing between
     tendermint-abci and a full Tendermint node.
