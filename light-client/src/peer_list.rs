@@ -308,9 +308,7 @@ mod tests {
         let new_primary = peer_list.replace_faulty_primary(None);
         match new_primary {
             Err(Error(ErrorDetail::NoWitnessesLeft(_), _)) => {},
-            _ => panic!(
-                "expected NoWitnessesLeft error, instead got {new_primary:?}"
-            ),
+            _ => panic!("expected NoWitnessesLeft error, instead got {new_primary:?}"),
         }
     }
 
