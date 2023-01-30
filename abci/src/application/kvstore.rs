@@ -133,7 +133,7 @@ impl Application for KeyValueStoreApp {
     fn query(&self, request: RequestQuery) -> ResponseQuery {
         let key = match std::str::from_utf8(&request.data) {
             Ok(s) => s,
-            Err(e) => panic!("Failed to intepret key as UTF-8: {}", e),
+            Err(e) => panic!("Failed to intepret key as UTF-8: {e}"),
         };
         debug!("Attempting to get key: {}", key);
         match self.get(key) {
@@ -161,7 +161,7 @@ impl Application for KeyValueStoreApp {
                     codespace: "".to_string(),
                 },
             },
-            Err(e) => panic!("Failed to get key \"{}\": {:?}", key, e),
+            Err(e) => panic!("Failed to get key \"{key}\": {e:?}"),
         }
     }
 

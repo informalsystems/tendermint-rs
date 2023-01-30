@@ -427,7 +427,7 @@ where
         },
     };
 
-    println!("{}", result);
+    println!("{result}");
     Ok(())
 }
 

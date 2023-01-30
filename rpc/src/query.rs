@@ -195,7 +195,7 @@ impl From<EventType> for Query {
 impl fmt::Display for Query {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(t) = &self.event_type {
-            write!(f, "tm.event = '{}'", t)?;
+            write!(f, "tm.event = '{t}'")?;
 
             if !self.conditions.is_empty() {
                 write!(f, " AND ")?;
@@ -360,7 +360,7 @@ impl FromStr for Query {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (event_types, conditions) = separate_terms(
             query_parser::query(s)
-                .map_err(|e| Error::invalid_params(format!("failed to parse query: {}", e)))?,
+                .map_err(|e| Error::invalid_params(format!("failed to parse query: {e}")))?,
         );
         if event_types.len() > 1 {
             return Err(Error::invalid_params(
@@ -382,11 +382,11 @@ where
 {
     let mut iter = iterable.into_iter();
     if let Some(first) = iter.next() {
-        write!(f, "{}", first)?;
+        write!(f, "{first}")?;
     }
 
     for item in iter {
-        write!(f, "{}{}", separator, item)?;
+        write!(f, "{separator}{item}")?;
     }
 
     Ok(())
@@ -530,9 +530,9 @@ impl fmt::Display for Operand {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Operand::String(s) => write!(f, "{}", escape(s)),
-            Operand::Signed(i) => write!(f, "{}", i),
-            Operand::Unsigned(u) => write!(f, "{}", u),
-            Operand::Float(h) => write!(f, "{}", h),
+            Operand::Signed(i) => write!(f, "{i}"),
+            Operand::Unsigned(u) => write!(f, "{u}"),
+            Operand::Float(h) => write!(f, "{h}"),
             Operand::Date(d) => {
                 write!(f, "DATE ")?;
                 fmt_date(*d, f)?;
@@ -656,7 +656,7 @@ fn escape(s: &str) -> String {
         }
         result.push(ch);
     }
-    format!("'{}'", result)
+    format!("'{result}'")
 }
 
 #[cfg(test)]

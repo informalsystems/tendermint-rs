@@ -102,8 +102,7 @@ impl Client {
             }
         }
         Err(Error::Internal(format!(
-            "subscription terminated before we could reach target height of {}",
-            h
+            "subscription terminated before we could reach target height of {h}"
         )))
     }
 
@@ -114,8 +113,7 @@ impl Client {
     async fn send_cmd(&mut self, cmd: DriverCommand) -> Result<()> {
         self.cmd_tx.send(cmd).map_err(|e| {
             Error::Internal(format!(
-                "WebSocket driver channel receiving end closed unexpectedly: {}",
-                e,
+                "WebSocket driver channel receiving end closed unexpectedly: {e}",
             ))
         })
     }
@@ -164,7 +162,7 @@ impl ClientDriver {
                     Ok(msg) => self.handle_incoming_msg(msg).await?,
                     Err(e) => return Err(
                         Error::WebSocket(
-                            format!("failed to read from WebSocket connection: {}", e),
+                            format!("failed to read from WebSocket connection: {e}"),
                         ),
                     ),
                 },
@@ -186,9 +184,10 @@ impl ClientDriver {
     }
 
     async fn send_msg(&mut self, msg: Message) -> Result<()> {
-        self.stream.send(msg).await.map_err(|e| {
-            Error::WebSocket(format!("failed to write to WebSocket connection: {}", e))
-        })
+        self.stream
+            .send(msg)
+            .await
+            .map_err(|e| Error::WebSocket(format!("failed to write to WebSocket connection: {e}")))
     }
 
     async fn send_json(&mut self, req: &serde_json::Value) -> Result<()> {
@@ -209,7 +208,7 @@ impl ClientDriver {
 
         let json_msg = serde_json::from_str::<serde_json::Value>(&msg)?;
         let id = json_msg.get("id").ok_or_else(|| {
-            Error::MalformedResponse(format!("incoming message has no \"id\" field: {}", msg))
+            Error::MalformedResponse(format!("incoming message has no \"id\" field: {msg}"))
         })?;
 
         // Check if we recognize this ID as a response to an earlier request
@@ -288,7 +287,7 @@ impl ClientDriver {
                     .to_string();
                 self.confirm_pending_request(method, wrapper, response_tx)
             },
-            _ => panic!("Unexpected pending command type: {:?}", pending_command),
+            _ => panic!("Unexpected pending command type: {pending_command:?}"),
         }
     }
 

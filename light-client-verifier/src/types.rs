@@ -103,7 +103,7 @@ impl<'a> UntrustedBlockState<'a> {
 /// A light block is the core data structure used by the light client.
 /// It records everything the light client needs to know about a block.
 #[derive(Clone, Debug, Display, PartialEq, Eq, Serialize, Deserialize)]
-#[display(fmt = "{:?}", self)]
+#[display(fmt = "{self:?}")]
 pub struct LightBlock {
     /// Header and commit of this block
     pub signed_header: SignedHeader,
@@ -167,7 +167,7 @@ impl LightBlock {
 /// Contains the local status information, like the latest height, latest block and valset hashes,
 /// list of of connected full nodes (primary and witnesses).
 #[derive(Clone, Debug, Display, PartialEq, Eq, Serialize, Deserialize)]
-#[display(fmt = "{:?}", self)]
+#[display(fmt = "{self:?}")]
 pub struct LatestStatus {
     /// The latest height we are trusting.
     pub height: Option<u64>,

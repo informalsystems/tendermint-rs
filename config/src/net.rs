@@ -53,7 +53,7 @@ impl Address {
         if raw_address.starts_with("tcp://") {
             raw_address.parse().ok()
         } else {
-            format!("tcp://{}", raw_address).parse().ok()
+            format!("tcp://{raw_address}").parse().ok()
         }
     }
 }
@@ -61,7 +61,7 @@ impl Address {
 impl<'de> Deserialize<'de> for Address {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         Self::from_str(&String::deserialize(deserializer)?)
-            .map_err(|e| D::Error::custom(format!("{}", e)))
+            .map_err(|e| D::Error::custom(format!("{e}")))
     }
 }
 
@@ -72,13 +72,13 @@ impl Display for Address {
                 peer_id: None,
                 host,
                 port,
-            } => write!(f, "{}{}:{}", TCP_PREFIX, host, port),
+            } => write!(f, "{TCP_PREFIX}{host}:{port}"),
             Address::Tcp {
                 peer_id: Some(peer_id),
                 host,
                 port,
-            } => write!(f, "{}{}@{}:{}", TCP_PREFIX, peer_id, host, port),
-            Address::Unix { path } => write!(f, "{}{}", UNIX_PREFIX, path),
+            } => write!(f, "{TCP_PREFIX}{peer_id}@{host}:{port}"),
+            Address::Unix { path } => write!(f, "{UNIX_PREFIX}{path}"),
         }
     }
 }
@@ -98,7 +98,7 @@ impl FromStr for Address {
             addr.to_owned()
         } else {
             // If the address has no scheme, assume it's TCP
-            format!("{}{}", TCP_PREFIX, addr)
+            format!("{TCP_PREFIX}{addr}")
         };
         let url = Url::parse(&prefixed_addr).map_err(Error::parse_url)?;
         match url.scheme() {
@@ -112,17 +112,17 @@ impl FromStr for Address {
                 host: url
                     .host_str()
                     .ok_or_else(|| {
-                        Error::parse(format!("invalid TCP address (missing host): {}", addr))
+                        Error::parse(format!("invalid TCP address (missing host): {addr}"))
                     })?
                     .to_owned(),
                 port: url.port().ok_or_else(|| {
-                    Error::parse(format!("invalid TCP address (missing port): {}", addr))
+                    Error::parse(format!("invalid TCP address (missing port): {addr}"))
                 })?,
             }),
             "unix" => Ok(Self::Unix {
                 path: url.path().to_string(),
             }),
-            _ => Err(Error::parse(format!("invalid address scheme: {:?}", addr))),
+            _ => Err(Error::parse(format!("invalid address scheme: {addr:?}"))),
         }
     }
 }
@@ -166,7 +166,7 @@ mod tests {
                     assert_eq!(host, "35.192.61.41");
                     assert_eq!(port, 26656);
                 },
-                other => panic!("unexpected address type: {:?}", other),
+                other => panic!("unexpected address type: {other:?}"),
             }
         }
     }
@@ -188,7 +188,7 @@ mod tests {
                     assert_eq!(host, "35.192.61.41");
                     assert_eq!(*port, 26656);
                 },
-                other => panic!("unexpected address type: {:?}", other),
+                other => panic!("unexpected address type: {other:?}"),
             }
         }
     }
@@ -200,7 +200,7 @@ mod tests {
             Address::Unix { path } => {
                 assert_eq!(path, "/tmp/node.sock");
             },
-            other => panic!("unexpected address type: {:?}", other),
+            other => panic!("unexpected address type: {other:?}"),
         }
     }
 
@@ -227,7 +227,7 @@ mod tests {
                     assert_eq!(host, "[2001:0:3238:dfe1:63::fefb]");
                     assert_eq!(*port, 26656);
                 },
-                other => panic!("unexpected address type: {:?}", other),
+                other => panic!("unexpected address type: {other:?}"),
             }
         }
     }

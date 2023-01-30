@@ -34,10 +34,7 @@ struct TestEvidenceReporter;
 #[contracts::contract_trait]
 impl EvidenceReporter for TestEvidenceReporter {
     fn report(&self, evidence: Evidence, peer: PeerId) -> Result<Hash, IoError> {
-        panic!(
-            "unexpected fork detected for peer {} with evidence: {:?}",
-            peer, evidence
-        );
+        panic!("unexpected fork detected for peer {peer} with evidence: {evidence:?}");
     }
 }
 
@@ -97,15 +94,15 @@ fn forward() {
     let max_iterations: usize = 10;
 
     for i in 1..=max_iterations {
-        println!("[info ] - iteration {}/{}", i, max_iterations);
+        println!("[info ] - iteration {i}/{max_iterations}");
 
         match handle.verify_to_highest() {
             Ok(light_block) => {
                 println!("[info ] synced to block {}", light_block.height());
             },
             Err(err) => {
-                println!("[error] sync failed: {}", err);
-                panic!("failed to sync to highest: {}", err);
+                println!("[error] sync failed: {err}");
+                panic!("failed to sync to highest: {err}");
             },
         }
 
@@ -126,7 +123,7 @@ fn backward() -> Result<(), Error> {
     std::thread::sleep(Duration::from_secs(2));
 
     for i in 1..=max_iterations {
-        println!("[info ] - iteration {}/{}", i, max_iterations);
+        println!("[info ] - iteration {i}/{max_iterations}");
 
         // First we sync to the highest block to have a high enough trusted state
         let trusted_state = handle.verify_to_highest()?;

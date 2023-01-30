@@ -84,9 +84,9 @@ impl<'de> Deserialize<'de> for Power {
         Ok(Power(
             String::deserialize(deserializer)?
                 .parse::<i64>()
-                .map_err(|e| D::Error::custom(format!("{}", e)))?
+                .map_err(|e| D::Error::custom(format!("{e}")))?
                 .try_into()
-                .map_err(|e| D::Error::custom(format!("{}", e)))?,
+                .map_err(|e| D::Error::custom(format!("{e}")))?,
         ))
     }
 }

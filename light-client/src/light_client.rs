@@ -302,8 +302,6 @@ impl LightClient {
         target_height: Height,
         state: &mut State,
     ) -> Result<LightBlock, Error> {
-        use std::convert::TryFrom;
-
         let root = state
             .light_store
             .highest_trusted_or_verified_before(target_height)

@@ -89,9 +89,9 @@ where
         cli.encode()
     };
     match res {
-        Ok(res) => println!("{}", res),
+        Ok(res) => println!("{res}"),
         Err(e) => {
-            eprintln!("Error: {}\n", e);
+            eprintln!("Error: {e}\n");
             eprintln!("Supported parameters for this command are: ");
             print_params(cli.self_usage());
             std::process::exit(1);
@@ -101,14 +101,14 @@ where
 
 fn print_params(options: &str) {
     for line in options.lines().skip(1) {
-        eprintln!("{}", line);
+        eprintln!("{line}");
     }
 }
 
 fn main() {
     let opts = CliOptions::parse_args_default_or_exit();
     if opts.usage {
-        eprintln!("{}", USAGE);
+        eprintln!("{USAGE}");
         std::process::exit(1);
     }
     match opts.command {
@@ -122,7 +122,7 @@ fn main() {
                 .split('\n')
                 .map(|s| s.split_whitespace().next().unwrap())
             {
-                eprintln!("\n{} parameters:", cmd);
+                eprintln!("\n{cmd} parameters:");
                 print_params(CliOptions::command_usage(cmd).unwrap())
             }
             std::process::exit(1);

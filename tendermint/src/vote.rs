@@ -259,7 +259,7 @@ impl fmt::Display for Type {
             Type::Prevote => "Prevote",
             Type::Precommit => "Precommit",
         };
-        write!(f, "{}", id)
+        write!(f, "{id}")
     }
 }
 

@@ -26,8 +26,7 @@ impl FromStr for Order {
             "asc" => Ok(Self::Ascending),
             "desc" => Ok(Self::Descending),
             _ => Err(Error::invalid_params(format!(
-                "invalid order type: {} (must be \"asc\" or \"desc\")",
-                s
+                "invalid order type: {s} (must be \"asc\" or \"desc\")"
             ))),
         }
     }
