@@ -87,7 +87,7 @@ impl HttpClient {
 impl v0_34::Client for HttpClient {
     async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
     where
-        R: SimpleRequest,
+        R: SimpleRequest<v0_34::Dialect>,
     {
         self.inner.perform(request).await
     }
@@ -97,7 +97,7 @@ impl v0_34::Client for HttpClient {
 impl v0_37::Client for HttpClient {
     async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
     where
-        R: SimpleRequest,
+        R: SimpleRequest<v0_37::Dialect>,
     {
         self.inner.perform(request).await
     }
@@ -178,7 +178,10 @@ mod sealed {
     use hyper_proxy::{Intercept, Proxy, ProxyConnector};
     use hyper_rustls::HttpsConnector;
 
-    use crate::{client::transport::auth::authorize, prelude::*, Error, Response, SimpleRequest};
+    use crate::prelude::*;
+    use crate::{
+        client::transport::auth::authorize, dialect::Dialect, Error, Response, SimpleRequest,
+    };
 
     /// A wrapper for a `hyper`-based client, generic over the connector type.
     #[derive(Debug, Clone)]
@@ -197,9 +200,10 @@ mod sealed {
     where
         C: Connect + Clone + Send + Sync + 'static,
     {
-        pub async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
+        pub async fn perform<R, S>(&self, request: R) -> Result<R::Response, Error>
         where
-            R: SimpleRequest,
+            R: SimpleRequest<S>,
+            S: Dialect,
         {
             let request = self.build_request(request)?;
             let response = self.inner.request(request).await.map_err(Error::hyper)?;
@@ -211,10 +215,11 @@ mod sealed {
 
     impl<C> HyperClient<C> {
         /// Build a request using the given Tendermint RPC request.
-        pub fn build_request<R: SimpleRequest>(
-            &self,
-            request: R,
-        ) -> Result<hyper::Request<hyper::Body>, Error> {
+        pub fn build_request<R, S>(&self, request: R) -> Result<hyper::Request<hyper::Body>, Error>
+        where
+            R: SimpleRequest<S>,
+            S: Dialect,
+        {
             let request_body = request.into_json();
 
             tracing::debug!("Outgoing request: {}", request_body);
@@ -291,9 +296,10 @@ mod sealed {
             )))
         }
 
-        pub async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
+        pub async fn perform<R, S>(&self, request: R) -> Result<R::Response, Error>
         where
-            R: SimpleRequest,
+            R: SimpleRequest<S>,
+            S: Dialect,
         {
             match self {
                 HttpClient::Http(c) => c.perform(request).await,
@@ -325,6 +331,7 @@ mod tests {
     use hyper::Body;
 
     use super::sealed::HyperClient;
+    use crate::dialect::DefaultDialect;
     use crate::endpoint::abci_info;
 
     fn authorization(req: &Request<Body>) -> Option<&str> {
@@ -338,7 +345,8 @@ mod tests {
         let uri = Uri::from_str("http://example.com").unwrap();
         let inner = hyper::Client::new();
         let client = HyperClient::new(uri, inner);
-        let req = client.build_request(abci_info::Request).unwrap();
+        let req =
+            HyperClient::build_request::<_, DefaultDialect>(&client, abci_info::Request).unwrap();
 
         assert_eq!(authorization(&req), None);
     }
@@ -348,7 +356,8 @@ mod tests {
         let uri = Uri::from_str("http://toto:tata@example.com").unwrap();
         let inner = hyper::Client::new();
         let client = HyperClient::new(uri, inner);
-        let req = client.build_request(abci_info::Request).unwrap();
+        let req =
+            HyperClient::build_request::<_, DefaultDialect>(&client, abci_info::Request).unwrap();
 
         assert_eq!(authorization(&req), Some("Basic dG90bzp0YXRh"));
     }

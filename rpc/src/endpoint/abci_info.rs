@@ -2,11 +2,13 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::dialect::Dialect;
+
 /// Request ABCI information from a node
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request;
 
-impl crate::Request for Request {
+impl<S: Dialect> crate::Request<S> for Request {
     type Response = Response;
 
     fn method(&self) -> crate::Method {
@@ -14,7 +16,7 @@ impl crate::Request for Request {
     }
 }
 
-impl crate::SimpleRequest for Request {}
+impl<S: Dialect> crate::SimpleRequest<S> for Request {}
 
 /// ABCI information response
 #[derive(Clone, Debug, Deserialize, Serialize)]

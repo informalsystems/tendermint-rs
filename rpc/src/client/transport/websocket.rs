@@ -29,6 +29,7 @@ use crate::{
         sync::{ChannelRx, ChannelTx},
         transport::router::{PublishResult, SubscriptionRouter},
     },
+    dialect::Dialect,
     endpoint::{subscribe, unsubscribe},
     error::Error,
     event::Event,
@@ -38,6 +39,7 @@ use crate::{
     response, Client, Id, Request, Response, Scheme, SimpleRequest, Subscription,
     SubscriptionClient, Url,
 };
+use crate::{v0_34, v0_37};
 
 // WebSocket connection times out if we haven't heard anything at all from the
 // server in this long.
@@ -175,10 +177,20 @@ impl WebSocketClient {
 }
 
 #[async_trait]
-impl Client for WebSocketClient {
-    async fn perform<R>(&self, request: R) -> Result<<R as Request>::Response, Error>
+impl v0_34::Client for WebSocketClient {
+    async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
     where
-        R: SimpleRequest,
+        R: SimpleRequest<v0_34::Dialect>,
+    {
+        self.inner.perform(request).await
+    }
+}
+
+#[async_trait]
+impl v0_37::Client for WebSocketClient {
+    async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
+    where
+        R: SimpleRequest<v0_37::Dialect>,
     {
         self.inner.perform(request).await
     }
@@ -275,6 +287,7 @@ mod sealed {
             sync::{unbounded, ChannelTx},
             transport::auth::authorize,
         },
+        dialect::Dialect,
         prelude::*,
         query::Query,
         request::Wrapper,
@@ -373,11 +386,12 @@ mod sealed {
             self.cmd_tx.send(cmd)
         }
 
-        pub async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
+        pub async fn perform<R, S>(&self, request: R) -> Result<R::Response, Error>
         where
-            R: SimpleRequest,
+            R: SimpleRequest<S>,
+            S: Dialect,
         {
-            let wrapper = Wrapper::new(request);
+            let wrapper = Wrapper::new_with_dialect(S::default(), request);
             let id = wrapper.id().to_string();
             let wrapped_request = wrapper.into_json();
 
@@ -461,9 +475,10 @@ mod sealed {
             Ok((Self::Secure(client), driver))
         }
 
-        pub async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
+        pub async fn perform<R, S>(&self, request: R) -> Result<R::Response, Error>
         where
-            R: SimpleRequest,
+            R: SimpleRequest<S>,
+            S: Dialect,
         {
             match self {
                 WebSocketClient::Unsecure(c) => c.perform(request).await,
@@ -647,9 +662,10 @@ impl WebSocketClientDriver {
         })
     }
 
-    async fn send_request<R>(&mut self, wrapper: Wrapper<R>) -> Result<(), Error>
+    async fn send_request<R, S>(&mut self, wrapper: Wrapper<R>) -> Result<(), Error>
     where
-        R: Request,
+        R: Request<S>,
+        S: Dialect,
     {
         self.send_msg(Message::Text(
             serde_json::to_string_pretty(&wrapper).unwrap(),
@@ -657,7 +673,10 @@ impl WebSocketClientDriver {
         .await
     }
 
-    async fn subscribe(&mut self, cmd: SubscribeCommand) -> Result<(), Error> {
+    async fn subscribe<S>(&mut self, cmd: SubscribeCommand) -> Result<(), Error>
+    where
+        S: Dialect,
+    {
         // If we already have an active subscription for the given query,
         // there's no need to initiate another one. Just add this subscription
         // to the router.
@@ -669,8 +688,9 @@ impl WebSocketClientDriver {
         }
 
         // Otherwise, we need to initiate a subscription request.
-        let wrapper = Wrapper::new_with_id(
+        let wrapper = Wrapper::new_with_id_and_dialect(
             Id::Str(cmd.id.clone()),
+            S::default(),
             subscribe::Request::new(cmd.query.clone()),
         );
         if let Err(e) = self.send_request(wrapper).await {

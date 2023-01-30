@@ -10,6 +10,7 @@ use crate::{
         sync::{unbounded, ChannelRx, ChannelTx},
         transport::router::SubscriptionRouter,
     },
+    dialect::Dialect,
     event::Event,
     prelude::*,
     query::Query,
@@ -63,7 +64,7 @@ pub struct MockClient<M: MockRequestMatcher> {
 impl<M: MockRequestMatcher> v0_34::Client for MockClient<M> {
     async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
     where
-        R: Request,
+        R: Request<v0_34::Dialect>,
     {
         self.matcher
             .response_for(request)
@@ -75,7 +76,7 @@ impl<M: MockRequestMatcher> v0_34::Client for MockClient<M> {
 impl<M: MockRequestMatcher> v0_37::Client for MockClient<M> {
     async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
     where
-        R: Request,
+        R: Request<v0_37::Dialect>,
     {
         self.matcher
             .response_for(request)
@@ -209,9 +210,10 @@ impl MockClientDriver {
 /// [`MockClient`]: struct.MockClient.html
 pub trait MockRequestMatcher: Send + Sync {
     /// Provide the corresponding response for the given request (if any).
-    fn response_for<R>(&self, request: R) -> Option<Result<R::Response, Error>>
+    fn response_for<R, S>(&self, request: R) -> Option<Result<R::Response, Error>>
     where
-        R: Request;
+        R: Request<S>,
+        S: Dialect;
 }
 
 /// Provides a simple [`MockRequestMatcher`] implementation that simply maps
@@ -224,9 +226,10 @@ pub struct MockRequestMethodMatcher {
 }
 
 impl MockRequestMatcher for MockRequestMethodMatcher {
-    fn response_for<R>(&self, request: R) -> Option<Result<R::Response, Error>>
+    fn response_for<R, S>(&self, request: R) -> Option<Result<R::Response, Error>>
     where
-        R: Request,
+        R: Request<S>,
+        S: Dialect,
     {
         self.mappings.get(&request.method()).map(|res| match res {
             Ok(json) => R::Response::from_string(json),

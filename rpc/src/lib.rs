@@ -43,6 +43,7 @@ pub use client::{
 #[cfg(feature = "websocket-client")]
 pub use client::{WebSocketClient, WebSocketClientDriver, WebSocketClientUrl, WebSocketConfig};
 
+mod dialect;
 pub mod endpoint;
 pub mod error;
 pub mod event;

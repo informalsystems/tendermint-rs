@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use tendermint::{block, validator};
 
-use crate::{prelude::*, serializers, PageNumber, PerPage};
+use crate::{dialect::Dialect, prelude::*, serializers, PageNumber, PerPage};
 
 /// The default number of validators to return per page.
 pub const DEFAULT_VALIDATORS_PER_PAGE: u8 = 30;
@@ -43,7 +43,7 @@ impl Request {
     }
 }
 
-impl crate::Request for Request {
+impl<S: Dialect> crate::Request<S> for Request {
     type Response = Response;
 
     fn method(&self) -> crate::Method {
@@ -51,7 +51,7 @@ impl crate::Request for Request {
     }
 }
 
-impl crate::SimpleRequest for Request {}
+impl<S: Dialect> crate::SimpleRequest<S> for Request {}
 
 /// Validator responses
 #[derive(Clone, Debug, Deserialize, Serialize)]

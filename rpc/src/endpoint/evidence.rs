@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use tendermint::{evidence::Evidence, Hash};
 
-use crate::Method;
+use crate::{dialect::Dialect, Method};
 
 /// `/broadcast_evidence`: broadcast an evidence.
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
@@ -19,7 +19,7 @@ impl Request {
     }
 }
 
-impl crate::Request for Request {
+impl<S: Dialect> crate::Request<S> for Request {
     type Response = Response;
 
     fn method(&self) -> Method {
@@ -27,7 +27,7 @@ impl crate::Request for Request {
     }
 }
 
-impl crate::SimpleRequest for Request {}
+impl<S: Dialect> crate::SimpleRequest<S> for Request {}
 
 /// Response from either an evidence broadcast request.
 #[derive(Clone, Debug, Deserialize, Serialize)]

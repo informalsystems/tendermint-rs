@@ -1,13 +1,10 @@
 use bytes::Bytes;
-use serde::{Deserialize, Serialize};
 
 use super::super::{Code, Event};
 use crate::prelude::*;
-use crate::serializers;
 
 #[doc = include_str!("../doc/response-checktx.md")]
-#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
-#[serde(default)]
+#[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct CheckTx {
     /// The response code.
     ///
@@ -16,7 +13,6 @@ pub struct CheckTx {
     /// Tendermint attributes no other value to the response code.
     pub code: Code,
     /// Result bytes, if any.
-    #[serde(with = "serializers::nullable")]
     pub data: Bytes,
     /// The output of the application's logger.
     ///
@@ -27,10 +23,8 @@ pub struct CheckTx {
     /// **May be non-deterministic**.
     pub info: String,
     /// Amount of gas requested for the transaction.
-    #[serde(with = "serializers::from_str")]
     pub gas_wanted: i64,
     /// Amount of gas consumed by the transaction.
-    #[serde(with = "serializers::from_str")]
     pub gas_used: i64,
     /// Events that occurred while checking the transaction.
     pub events: Vec<Event>,
@@ -39,7 +33,6 @@ pub struct CheckTx {
     /// The transaction's sender (e.g. the signer).
     pub sender: String,
     /// The transaction's priority (for mempool ordering).
-    #[serde(with = "serializers::from_str")]
     pub priority: i64,
     /// mempool_error is set by Tendermint.
     /// ABCI applictions should not set mempool_error.

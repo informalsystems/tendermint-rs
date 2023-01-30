@@ -5,6 +5,7 @@ use core::ops::Range;
 use serde::{Deserialize, Serialize};
 use tendermint::block;
 
+use crate::dialect::Dialect;
 use crate::prelude::*;
 
 /// Get information about a specific block
@@ -35,7 +36,7 @@ impl From<Range<block::Height>> for Request {
     }
 }
 
-impl crate::Request for Request {
+impl<S: Dialect> crate::Request<S> for Request {
     type Response = Response;
 
     fn method(&self) -> crate::Method {
@@ -43,7 +44,7 @@ impl crate::Request for Request {
     }
 }
 
-impl crate::SimpleRequest for Request {}
+impl<S: Dialect> crate::SimpleRequest<S> for Request {}
 
 /// Block responses
 #[derive(Clone, Debug, Deserialize, Serialize)]

@@ -2,24 +2,26 @@
 
 use alloc::collections::BTreeMap as HashMap;
 
-use serde::{Deserialize, Serialize};
-use tendermint::{abci, Block};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use tendermint::Block;
 
+use crate::dialect::{self, DefaultDialect, Dialect};
 use crate::{prelude::*, query::EventType, response::Wrapper, serializers, Response};
 
 /// An incoming event produced by a [`Subscription`].
 ///
 /// [`Subscription`]: ../struct.Subscription.html
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub struct Event {
+pub struct Event<Ev = <DefaultDialect as Dialect>::Event> {
     /// The query that produced the event.
     pub query: String,
     /// The data associated with the event.
-    pub data: EventData,
+    pub data: EventData<Ev>,
     /// Event type and attributes map.
     pub events: Option<HashMap<String, Vec<String>>>,
 }
-impl Response for Event {}
+
+impl<Ev> Response for Event<Ev> where Ev: Serialize + DeserializeOwned {}
 
 /// A JSON-RPC-wrapped event.
 pub type WrappedEvent = Wrapper<Event>;
@@ -41,37 +43,37 @@ impl Event {
 #[serde(tag = "type", content = "value")]
 // To be fixed in 0.24
 #[allow(clippy::large_enum_variant)]
-pub enum EventData {
+pub enum EventData<Ev = <DefaultDialect as Dialect>::Event> {
     #[serde(alias = "tendermint/event/NewBlock")]
     NewBlock {
         block: Option<Block>,
-        result_begin_block: Option<abci::response::BeginBlock>,
-        result_end_block: Option<abci::response::EndBlock>,
+        result_begin_block: Option<dialect::BeginBlock<Ev>>,
+        result_end_block: Option<dialect::EndBlock<Ev>>,
     },
     #[serde(alias = "tendermint/event/Tx")]
     Tx {
         #[serde(rename = "TxResult")]
-        tx_result: TxInfo,
+        tx_result: TxInfo<Ev>,
     },
     GenericJsonEvent(serde_json::Value),
 }
 
 /// Transaction result info.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub struct TxInfo {
+pub struct TxInfo<Ev = <DefaultDialect as Dialect>::Event> {
     #[serde(with = "serializers::from_str")]
     pub height: i64,
     pub index: Option<i64>,
     #[serde(with = "serializers::bytes::base64string")]
     pub tx: Vec<u8>,
-    pub result: TxResult,
+    pub result: TxResult<Ev>,
 }
 
 /// Transaction result.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub struct TxResult {
+pub struct TxResult<Ev = <DefaultDialect as Dialect>::Event> {
     pub log: Option<String>,
     pub gas_wanted: Option<String>,
     pub gas_used: Option<String>,
-    pub events: Vec<abci::Event>,
+    pub events: Vec<Ev>,
 }

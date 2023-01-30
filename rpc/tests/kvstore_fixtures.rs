@@ -298,6 +298,9 @@ fn outgoing_fixtures() {
 
 #[test]
 fn incoming_fixtures() {
+    // TODO: generate fixtures and test with v0_37::dialect as well
+    use tendermint_rpc::v0_34::dialect::Event as RpcEvent;
+
     let empty_merkle_root_hash = Some(
         tendermint::Hash::from_hex_upper(
             tendermint::hash::Algorithm::Sha256,
@@ -458,7 +461,8 @@ fn incoming_fixtures() {
                 assert_eq!(result.block_id.part_set_header.total, 1);
             },
             "block_results_at_height_10" => {
-                let result = endpoint::block_results::Response::from_string(content).unwrap();
+                let result =
+                    endpoint::block_results::Response::<RpcEvent>::from_string(content).unwrap();
                 assert!(result.begin_block_events.is_none());
                 assert!(result.consensus_param_updates.is_none());
                 assert!(result.end_block_events.is_none());
@@ -528,7 +532,8 @@ fn incoming_fixtures() {
             },
             "broadcast_tx_commit" => {
                 let result =
-                    endpoint::broadcast::tx_commit::Response::from_string(content).unwrap();
+                    endpoint::broadcast::tx_commit::Response::<RpcEvent>::from_string(content)
+                        .unwrap();
                 assert_eq!(result.check_tx.code, abci::Code::Ok);
                 assert!(result.check_tx.codespace.is_empty());
                 assert!(result.check_tx.data.is_empty());
@@ -829,7 +834,8 @@ fn incoming_fixtures() {
                 }
             },
             "subscribe_newblock_0" => {
-                let result = tendermint_rpc::event::Event::from_string(content).unwrap();
+                let result =
+                    tendermint_rpc::event::Event::<RpcEvent>::from_string(content).unwrap();
                 if let tendermint_rpc::event::EventData::NewBlock {
                     block,
                     result_begin_block,
@@ -884,7 +890,8 @@ fn incoming_fixtures() {
                 assert_eq!(result.query, "tm.event = 'NewBlock'");
             },
             "subscribe_newblock_1" => {
-                let result = tendermint_rpc::event::Event::from_string(content).unwrap();
+                let result =
+                    tendermint_rpc::event::Event::<RpcEvent>::from_string(content).unwrap();
                 if let tendermint_rpc::event::EventData::NewBlock {
                     block,
                     result_begin_block,
@@ -961,7 +968,8 @@ fn incoming_fixtures() {
                 assert_eq!(result.query, "tm.event = 'NewBlock'");
             },
             "subscribe_newblock_2" => {
-                let result = tendermint_rpc::event::Event::from_string(content).unwrap();
+                let result =
+                    tendermint_rpc::event::Event::<RpcEvent>::from_string(content).unwrap();
                 if let tendermint_rpc::event::EventData::NewBlock {
                     block,
                     result_begin_block,
@@ -1016,7 +1024,8 @@ fn incoming_fixtures() {
                 assert_eq!(result.query, "tm.event = 'NewBlock'");
             },
             "subscribe_newblock_3" => {
-                let result = tendermint_rpc::event::Event::from_string(content).unwrap();
+                let result =
+                    tendermint_rpc::event::Event::<RpcEvent>::from_string(content).unwrap();
                 if let tendermint_rpc::event::EventData::NewBlock {
                     block,
                     result_begin_block,
@@ -1071,7 +1080,8 @@ fn incoming_fixtures() {
                 assert_eq!(result.query, "tm.event = 'NewBlock'");
             },
             "subscribe_newblock_4" => {
-                let result = tendermint_rpc::event::Event::from_string(content).unwrap();
+                let result =
+                    tendermint_rpc::event::Event::<RpcEvent>::from_string(content).unwrap();
                 if let tendermint_rpc::event::EventData::NewBlock {
                     block,
                     result_begin_block,
@@ -1129,7 +1139,8 @@ fn incoming_fixtures() {
                 assert!(endpoint::subscribe::Response::from_string(content).is_ok());
             },
             "subscribe_txs_0" => {
-                let result = tendermint_rpc::event::Event::from_string(content).unwrap();
+                let result =
+                    tendermint_rpc::event::Event::<RpcEvent>::from_string(content).unwrap();
                 let height;
                 if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data {
                     height = tx_result.height;
@@ -1161,7 +1172,8 @@ fn incoming_fixtures() {
                 assert_eq!(result.query, "tm.event = 'Tx'");
             },
             "subscribe_txs_1" => {
-                let result = tendermint_rpc::event::Event::from_string(content).unwrap();
+                let result =
+                    tendermint_rpc::event::Event::<RpcEvent>::from_string(content).unwrap();
                 let height;
                 if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data {
                     height = tx_result.height;
@@ -1194,7 +1206,8 @@ fn incoming_fixtures() {
                 assert_eq!(result.query, "tm.event = 'Tx'");
             },
             "subscribe_txs_2" => {
-                let result = tendermint_rpc::event::Event::from_string(content).unwrap();
+                let result =
+                    tendermint_rpc::event::Event::<RpcEvent>::from_string(content).unwrap();
                 let height;
                 if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data {
                     height = tx_result.height;
@@ -1226,7 +1239,8 @@ fn incoming_fixtures() {
                 assert_eq!(result.query, "tm.event = 'Tx'");
             },
             "subscribe_txs_3" => {
-                let result = tendermint_rpc::event::Event::from_string(content).unwrap();
+                let result =
+                    tendermint_rpc::event::Event::<RpcEvent>::from_string(content).unwrap();
                 let height;
                 if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data {
                     height = tx_result.height;
@@ -1258,7 +1272,8 @@ fn incoming_fixtures() {
                 assert_eq!(result.query, "tm.event = 'Tx'");
             },
             "subscribe_txs_4" => {
-                let result = tendermint_rpc::event::Event::from_string(content).unwrap();
+                let result =
+                    tendermint_rpc::event::Event::<RpcEvent>::from_string(content).unwrap();
                 let height;
                 if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data {
                     height = tx_result.height;
@@ -1350,7 +1365,7 @@ fn incoming_fixtures() {
                 assert!(result.log.is_empty());
             },
             "tx" => {
-                let result = endpoint::tx::Response::from_string(content).unwrap();
+                let result = endpoint::tx::Response::<RpcEvent>::from_string(content).unwrap();
                 assert_eq!(
                     result.hash,
                     Hash::from_bytes(
@@ -1366,7 +1381,8 @@ fn incoming_fixtures() {
                 assert_eq!(u64::from(result.height), 12u64);
             },
             "tx_search_no_prove" => {
-                let result = endpoint::tx_search::Response::from_string(content).unwrap();
+                let result =
+                    endpoint::tx_search::Response::<RpcEvent>::from_string(content).unwrap();
                 assert_eq!(result.total_count as usize, result.txs.len());
                 // Test a few selected attributes of the results.
                 for tx in result.txs {
@@ -1382,7 +1398,8 @@ fn incoming_fixtures() {
                 }
             },
             "tx_search_with_prove" => {
-                let result = endpoint::tx_search::Response::from_string(content).unwrap();
+                let result =
+                    endpoint::tx_search::Response::<RpcEvent>::from_string(content).unwrap();
                 assert_eq!(result.total_count as usize, result.txs.len());
                 // Test a few selected attributes of the results.
                 for tx in result.txs {

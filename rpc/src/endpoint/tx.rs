@@ -1,8 +1,10 @@
 //! `/tx` endpoint JSON-RPC wrapper
 
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use tendermint::{abci, block, tx, Hash};
+use tendermint::{block, tx, Hash};
 
+use crate::dialect::{DeliverTx, Dialect};
 use crate::{prelude::*, serializers, Method};
 
 /// Request for finding a transaction by its hash.
@@ -26,18 +28,18 @@ impl Request {
     }
 }
 
-impl crate::Request for Request {
-    type Response = Response;
+impl<S: Dialect> crate::Request<S> for Request {
+    type Response = Response<S::Event>;
 
     fn method(&self) -> Method {
         Method::Tx
     }
 }
 
-impl crate::SimpleRequest for Request {}
+impl<S: Dialect> crate::SimpleRequest<S> for Request {}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Response {
+pub struct Response<Ev> {
     /// The hash of the transaction.
     ///
     /// Deserialized from a hex-encoded string (there is a discrepancy between
@@ -46,11 +48,11 @@ pub struct Response {
     pub hash: Hash,
     pub height: block::Height,
     pub index: u32,
-    pub tx_result: abci::response::DeliverTx,
+    pub tx_result: DeliverTx<Ev>,
     #[serde(with = "serializers::bytes::base64string")]
     pub tx: Vec<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proof: Option<tx::Proof>,
 }
 
-impl crate::Response for Response {}
+impl<Ev> crate::Response for Response<Ev> where Ev: Serialize + DeserializeOwned {}

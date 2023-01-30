@@ -3,6 +3,8 @@
 use serde::{Deserialize, Serialize};
 use tendermint::block::{self, Header};
 
+use crate::v0_37;
+
 /// Get information about a specific block
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request {
@@ -21,7 +23,7 @@ impl Request {
     }
 }
 
-impl crate::Request for Request {
+impl crate::Request<v0_37::Dialect> for Request {
     type Response = Response;
 
     fn method(&self) -> crate::Method {
@@ -29,7 +31,7 @@ impl crate::Request for Request {
     }
 }
 
-impl crate::SimpleRequest for Request {}
+impl crate::SimpleRequest<v0_37::Dialect> for Request {}
 
 /// Header response
 #[derive(Clone, Debug, Deserialize, Serialize)]

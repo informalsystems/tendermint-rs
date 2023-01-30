@@ -5,10 +5,11 @@ use core::fmt::Debug;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use super::{Id, Method, Version};
+use crate::dialect::{DefaultDialect, Dialect};
 use crate::{prelude::*, Error};
 
 /// JSON-RPC requests
-pub trait Request: Debug + DeserializeOwned + Serialize + Sized + Send {
+pub trait Request<S>: DeserializeOwned + Serialize + Sized + Send {
     /// Response type for this command
     type Response: super::response::Response;
 
@@ -17,12 +18,12 @@ pub trait Request: Debug + DeserializeOwned + Serialize + Sized + Send {
 
     /// Serialize this request as JSON
     fn into_json(self) -> String {
-        Wrapper::new(self).into_json()
+        Wrapper::new_with_dialect(S::default(), self).into_json()
     }
 
     /// Parse a JSON-RPC request from a JSON string.
     fn from_string(s: impl AsRef<[u8]>) -> Result<Self, Error> {
-        let wrapper: Wrapper<Self> = serde_json::from_slice(s.as_ref()).map_err(Error::serde)?;
+        let wrapper: Wrapper<Self, S> = serde_json::from_slice(s.as_ref()).map_err(Error::serde)?;
         Ok(wrapper.params)
     }
 }
@@ -35,11 +36,11 @@ pub trait Request: Debug + DeserializeOwned + Serialize + Sized + Send {
 /// simple, singular response.
 ///
 /// [`Subscription`]: struct.Subscription.html
-pub trait SimpleRequest: Request {}
+pub trait SimpleRequest<S>: Request<S> {}
 
 /// JSON-RPC request wrapper (i.e. message envelope)
 #[derive(Debug, Deserialize, Serialize)]
-pub struct Wrapper<R> {
+pub struct Wrapper<R, S = DefaultDialect> {
     /// JSON-RPC version
     jsonrpc: Version,
 
@@ -51,11 +52,16 @@ pub struct Wrapper<R> {
 
     /// Request parameters (i.e. request object)
     params: R,
+
+    /// Dialect tag
+    #[serde(skip)]
+    #[allow(dead_code)]
+    dialect: S,
 }
 
-impl<R> Wrapper<R>
+impl<R> Wrapper<R, DefaultDialect>
 where
-    R: Request,
+    R: Request<DefaultDialect>,
 {
     /// Create a new request wrapper from the given request.
     ///
@@ -72,6 +78,32 @@ where
             id,
             method: request.method(),
             params: request,
+            dialect: Default::default(),
+        }
+    }
+}
+
+impl<R, S> Wrapper<R, S>
+where
+    R: Request<S>,
+    S: Dialect,
+{
+    /// Create a new request wrapper from the given request.
+    ///
+    /// The ID of the request is set to a random [UUIDv4] value.
+    ///
+    /// [UUIDv4]: https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_(random)
+    pub fn new_with_dialect(dialect: S, request: R) -> Self {
+        Self::new_with_id_and_dialect(Id::uuid_v4(), dialect, request)
+    }
+
+    pub(crate) fn new_with_id_and_dialect(id: Id, dialect: S, request: R) -> Self {
+        Self {
+            jsonrpc: Version::current(),
+            id,
+            method: request.method(),
+            params: request,
+            dialect,
         }
     }
 

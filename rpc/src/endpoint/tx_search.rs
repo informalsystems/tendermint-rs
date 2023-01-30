@@ -1,9 +1,9 @@
 //! `/tx_search` endpoint JSON-RPC wrapper
 
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 pub use super::tx;
-use crate::{prelude::*, serializers, Method, Order};
+use crate::{dialect::Dialect, prelude::*, serializers, Method, Order};
 
 /// Request for searching for transactions with their results.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -36,21 +36,21 @@ impl Request {
     }
 }
 
-impl crate::Request for Request {
-    type Response = Response;
+impl<S: Dialect> crate::Request<S> for Request {
+    type Response = Response<S::Event>;
 
     fn method(&self) -> Method {
         Method::TxSearch
     }
 }
 
-impl crate::SimpleRequest for Request {}
+impl<S: Dialect> crate::SimpleRequest<S> for Request {}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Response {
-    pub txs: Vec<tx::Response>,
+pub struct Response<Ev> {
+    pub txs: Vec<tx::Response<Ev>>,
     #[serde(with = "serializers::from_str")]
     pub total_count: u32,
 }
 
-impl crate::Response for Response {}
+impl<Ev> crate::Response for Response<Ev> where Ev: Serialize + DeserializeOwned {}

@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::dialect::Dialect;
 use crate::prelude::*;
 
 /// Request to unsubscribe from events relating to a given query.
@@ -17,7 +18,7 @@ impl Request {
     }
 }
 
-impl crate::Request for Request {
+impl<S: Dialect> crate::Request<S> for Request {
     type Response = Response;
 
     fn method(&self) -> crate::Method {

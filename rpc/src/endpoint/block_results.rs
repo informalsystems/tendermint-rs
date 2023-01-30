@@ -1,8 +1,10 @@
 //! `/block_results` endpoint JSON-RPC wrapper
 
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use tendermint::{abci, block, consensus, validator};
+use tendermint::{block, consensus, validator};
 
+use crate::dialect::{DeliverTx, Dialect};
 use crate::prelude::*;
 use crate::serializers;
 
@@ -24,30 +26,30 @@ impl Request {
     }
 }
 
-impl crate::Request for Request {
-    type Response = Response;
+impl<S: Dialect> crate::Request<S> for Request {
+    type Response = Response<S::Event>;
 
     fn method(&self) -> crate::Method {
         crate::Method::BlockResults
     }
 }
 
-impl crate::SimpleRequest for Request {}
+impl<S: Dialect> crate::SimpleRequest<S> for Request {}
 
 /// ABCI result response.
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Response {
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Response<Ev> {
     /// Block height
     pub height: block::Height,
 
     /// Txs results (might be explicit null)
-    pub txs_results: Option<Vec<abci::response::DeliverTx>>,
+    pub txs_results: Option<Vec<DeliverTx<Ev>>>,
 
     /// Begin block events (might be explicit null)
-    pub begin_block_events: Option<Vec<abci::Event>>,
+    pub begin_block_events: Option<Vec<Ev>>,
 
     /// End block events (might be explicit null)
-    pub end_block_events: Option<Vec<abci::Event>>,
+    pub end_block_events: Option<Vec<Ev>>,
 
     /// Validator updates (might be explicit null)
     #[serde(deserialize_with = "serializers::nullable::deserialize")]
@@ -57,4 +59,4 @@ pub struct Response {
     pub consensus_param_updates: Option<consensus::Params>,
 }
 
-impl crate::Response for Response {}
+impl<Ev> crate::Response for Response<Ev> where Ev: Serialize + DeserializeOwned {}

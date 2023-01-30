@@ -1,9 +1,11 @@
 //! `/broadcast_tx_commit`: only returns error if `mempool.CheckTx()` errs or
 //! if we timeout waiting for tx to commit.
 
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use tendermint::{abci, block, Hash};
+use tendermint::{block, Hash};
 
+use crate::dialect::{CheckTx, DeliverTx, Dialect};
 use crate::{prelude::*, serializers};
 
 /// `/broadcast_tx_commit`: only returns error if `mempool.CheckTx()` errs or
@@ -25,24 +27,24 @@ impl Request {
     }
 }
 
-impl crate::Request for Request {
-    type Response = Response;
+impl<S: Dialect> crate::Request<S> for Request {
+    type Response = Response<S::Event>;
 
     fn method(&self) -> crate::Method {
         crate::Method::BroadcastTxCommit
     }
 }
 
-impl crate::SimpleRequest for Request {}
+impl<S: Dialect> crate::SimpleRequest<S> for Request {}
 
 /// Response from `/broadcast_tx_commit`.
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Response {
+pub struct Response<Ev> {
     /// `CheckTx` result
-    pub check_tx: abci::response::CheckTx,
+    pub check_tx: CheckTx<Ev>,
 
     /// `DeliverTx` result
-    pub deliver_tx: abci::response::DeliverTx,
+    pub deliver_tx: DeliverTx<Ev>,
 
     /// Transaction
     pub hash: Hash,
@@ -51,4 +53,4 @@ pub struct Response {
     pub height: block::Height,
 }
 
-impl crate::Response for Response {}
+impl<Ev> crate::Response for Response<Ev> where Ev: Serialize + DeserializeOwned {}

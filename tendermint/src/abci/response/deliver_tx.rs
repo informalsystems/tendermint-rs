@@ -1,13 +1,10 @@
 use bytes::Bytes;
-use serde::{Deserialize, Serialize};
 
 use super::super::{Code, Event};
 use crate::prelude::*;
-use crate::serializers;
 
 #[doc = include_str!("../doc/response-delivertx.md")]
-#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
-#[serde(default)]
+#[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct DeliverTx {
     /// The response code.
     ///
@@ -16,7 +13,6 @@ pub struct DeliverTx {
     /// the application state.
     pub code: Code,
     /// Result bytes, if any.
-    #[serde(with = "serializers::nullable")]
     pub data: Bytes,
     /// The output of the application's logger.
     ///
@@ -27,10 +23,8 @@ pub struct DeliverTx {
     /// **May be non-deterministic**.
     pub info: String,
     /// Amount of gas requested for the transaction.
-    #[serde(with = "serializers::from_str")]
     pub gas_wanted: i64,
     /// Amount of gas consumed by the transaction.
-    #[serde(with = "serializers::from_str")]
     pub gas_used: i64,
     /// Events that occurred while executing the transaction.
     pub events: Vec<Event>,

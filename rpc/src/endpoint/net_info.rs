@@ -9,13 +9,14 @@ use std::net::IpAddr;
 use serde::{Deserialize, Serialize};
 use tendermint::{channel::Channel, node, serializers, Time};
 
+use crate::dialect::Dialect;
 use crate::prelude::*;
 
 /// Request network information from a node
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request;
 
-impl crate::Request for Request {
+impl<S: Dialect> crate::Request<S> for Request {
     type Response = Response;
 
     fn method(&self) -> crate::Method {
@@ -23,7 +24,7 @@ impl crate::Request for Request {
     }
 }
 
-impl crate::SimpleRequest for Request {}
+impl<S: Dialect> crate::SimpleRequest<S> for Request {}
 
 /// Net info responses
 #[derive(Clone, Debug, Deserialize, Serialize)]
