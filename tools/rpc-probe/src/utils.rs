@@ -20,7 +20,7 @@ pub fn uuid_v4() -> String {
 }
 
 pub fn encode_kvpair(key: &str, value: &str) -> String {
-    let kvpair = format!("{}={}", key, value);
+    let kvpair = format!("{key}={value}");
     String::from_utf8(base64::encode(kvpair.as_bytes())).unwrap()
 }
 
@@ -29,7 +29,7 @@ pub fn hex_string(s: &str) -> String {
 }
 
 pub async fn write_json(base_path: &Path, name: &str, v: &serde_json::Value) -> Result<()> {
-    let path = base_path.join(format!("{}.json", name));
+    let path = base_path.join(format!("{name}.json"));
     tokio::fs::write(path, serde_json::to_string_pretty(v).unwrap()).await?;
     Ok(())
 }

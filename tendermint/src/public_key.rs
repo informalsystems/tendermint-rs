@@ -336,7 +336,7 @@ impl FromStr for Algorithm {
         match s {
             "ed25519" => Ok(Algorithm::Ed25519),
             "secp256k1" => Ok(Algorithm::Secp256k1),
-            _ => Err(Error::parse(format!("invalid algorithm: {}", s))),
+            _ => Err(Error::parse(format!("invalid algorithm: {s}"))),
         }
     }
 }

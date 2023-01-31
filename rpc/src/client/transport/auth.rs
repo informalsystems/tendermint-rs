@@ -19,7 +19,7 @@ pub enum Authorization {
 impl fmt::Display for Authorization {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Basic(cred) => write!(f, "Basic {}", cred),
+            Self::Basic(cred) => write!(f, "Basic {cred}"),
         }
     }
 }

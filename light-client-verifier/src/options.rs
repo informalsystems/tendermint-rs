@@ -11,7 +11,7 @@ use crate::types::TrustThreshold;
 
 /// Verification parameters
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Display, Serialize, Deserialize)]
-#[display(fmt = "{:?}", self)]
+#[display(fmt = "{self:?}")]
 pub struct Options {
     /// Defines what fraction of the total voting power of a known
     /// and trusted validator set is sufficient for a commit to be

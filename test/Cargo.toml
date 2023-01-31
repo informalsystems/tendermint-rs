@@ -2,7 +2,7 @@
 name        = "tendermint-test"
 description = "Tendermint workspace tests and common utilities for testing."
 version     = "0.28.0"
-edition     = "2018"
+edition     = "2021"
 license     = "Apache-2.0"
 categories  = ["development", "test", "tools"]
 repository  = "https://github.com/informalsystems/tendermint-rs"

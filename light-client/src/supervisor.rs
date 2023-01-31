@@ -662,7 +662,7 @@ mod tests {
 
         match result {
             Err(Error(ErrorDetail::NoWitnesses(_), _)) => {},
-            _ => panic!("expected NoWitnesses error, instead got {:?}", result),
+            _ => panic!("expected NoWitnesses error, instead got {result:?}"),
         }
     }
 
@@ -722,14 +722,14 @@ mod tests {
                         assert_eq!(e.source.code(), rpc::Code::InvalidRequest)
                     },
                     _ => {
-                        panic!("expected Response error, instead got {:?}", e)
+                        panic!("expected Response error, instead got {e:?}")
                     },
                 },
                 _ => {
-                    panic!("expected Rpc error, instead got {:?}", e)
+                    panic!("expected Rpc error, instead got {e:?}")
                 },
             },
-            _ => panic!("expected Io error, instead got {:?}", result),
+            _ => panic!("expected Io error, instead got {result:?}"),
         }
     }
 

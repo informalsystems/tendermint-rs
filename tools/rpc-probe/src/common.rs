@@ -27,7 +27,7 @@ pub fn block(height: u64) -> PlannedInteraction {
     Request::new(
         "block",
         json!({
-            "height": format!("{}", height),
+            "height": format!("{height}"),
         }),
     )
     .into()
@@ -37,7 +37,7 @@ pub fn block_by_hash(hash: &str) -> PlannedInteraction {
     Request::new(
         "block_by_hash",
         json!({
-            "hash": format!("{}", hash),
+            "hash": format!("{hash}"),
         }),
     )
     .into()
@@ -48,8 +48,8 @@ pub fn block_search(query: &str, page: u32, per_page: u32, order_by: &str) -> Pl
         "block_search",
         json!({
             "query": query,
-            "page": format!("{}", page),
-            "per_page": format!("{}", per_page),
+            "page": format!("{page}"),
+            "per_page": format!("{per_page}"),
             "order_by": order_by,
         }),
     )
@@ -60,7 +60,7 @@ pub fn block_results(height: u64) -> PlannedInteraction {
     Request::new(
         "block_results",
         json!({
-            "height": format!("{}", height),
+            "height": format!("{height}"),
         }),
     )
     .into()
@@ -70,8 +70,8 @@ pub fn blockchain(min_height: u64, max_height: u64) -> PlannedInteraction {
     Request::new(
         "blockchain",
         json!({
-            "minHeight": format!("{}", min_height),
-            "maxHeight": format!("{}", max_height),
+            "minHeight": format!("{min_height}"),
+            "maxHeight": format!("{max_height}"),
         }),
     )
     .into()
@@ -79,7 +79,7 @@ pub fn blockchain(min_height: u64, max_height: u64) -> PlannedInteraction {
 
 pub fn broadcast_tx(method: &str, key: &str, value: &str) -> PlannedInteraction {
     Request::new(
-        format!("broadcast_tx_{}", method).as_str(),
+        format!("broadcast_tx_{method}").as_str(),
         json!({
             "tx": encode_kvpair(key, value),
         }),
@@ -91,7 +91,7 @@ pub fn commit(height: u64) -> PlannedInteraction {
     Request::new(
         "commit",
         json!({
-            "height": format!("{}", height),
+            "height": format!("{height}"),
         }),
     )
     .into()
@@ -101,7 +101,7 @@ pub fn consensus_params(height: u64) -> PlannedInteraction {
     Request::new(
         "consensus_params",
         json!({
-            "height": format!("{}", height),
+            "height": format!("{height}"),
         }),
     )
     .into()
@@ -139,8 +139,8 @@ pub fn tx_search(
         json!({
             "query": query,
             "prove": prove,
-            "page": format!("{}", page),
-            "per_page": format!("{}", per_page),
+            "page": format!("{page}"),
+            "per_page": format!("{per_page}"),
             "order_by": order_by,
         }),
     )

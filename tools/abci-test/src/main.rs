@@ -78,9 +78,7 @@ async fn run_tests(client: &mut WebSocketClient) -> Result<(), Box<dyn std::erro
     raw_tx.push(b'=');
     raw_tx.extend(raw_tx_value.clone());
 
-    let _ = client
-        .broadcast_tx_async(raw_tx.clone())
-        .await?;
+    let _ = client.broadcast_tx_async(raw_tx.clone()).await?;
 
     info!("Checking for transaction events");
     let tx = tokio::time::timeout(Duration::from_secs(3), tx_subs.next())
@@ -150,8 +148,8 @@ where
     Err(Box::new(AssertionError {
         ctx: ctx.to_string(),
         what: what.to_string(),
-        expected: format!("{:?}", expected),
-        actual: format!("{:?}", actual),
+        expected: format!("{expected:?}"),
+        actual: format!("{actual:?}"),
     }))
 }
 

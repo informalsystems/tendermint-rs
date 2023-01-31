@@ -2,7 +2,7 @@
 name        = "tendermint-abci"
 version     = "0.28.0"
 authors     = ["Informal Systems <hello@informal.systems>"]
-edition     = "2018"
+edition     = "2021"
 license     = "Apache-2.0"
 readme      = "README.md"
 categories  = ["cryptography::cryptocurrencies", "network-programming"]

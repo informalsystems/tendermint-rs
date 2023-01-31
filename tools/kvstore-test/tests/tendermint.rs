@@ -130,7 +130,10 @@ mod rpc {
     async fn block_by_hash() {
         let res = localhost_http_client()
             .block_by_hash(
-                tendermint::Hash::from_str("0000000000000000000000000000000000000000000000000000000000000000").unwrap()
+                tendermint::Hash::from_str(
+                    "0000000000000000000000000000000000000000000000000000000000000000",
+                )
+                .unwrap(),
             )
             .await
             .unwrap();
@@ -260,10 +263,10 @@ mod rpc {
         let mut subs = client.subscribe(EventType::NewBlock.into()).await.unwrap();
         let mut ev_count = 5_i32;
 
-        println!("Attempting to grab {} new blocks", ev_count);
+        println!("Attempting to grab {ev_count} new blocks");
         while let Some(res) = subs.next().await {
             let ev = res.unwrap();
-            println!("Got event: {:?}", ev);
+            println!("Got event: {ev:?}");
             ev_count -= 1;
             if ev_count < 0 {
                 break;
@@ -320,11 +323,8 @@ mod rpc {
         let inner_client = client.clone();
         tokio::spawn(async move {
             for (tx_count, val) in broadcast_tx_values.into_iter().enumerate() {
-                let tx = format!("tx{}={}", tx_count, val);
-                inner_client
-                    .broadcast_tx_async(tx)
-                    .await
-                    .unwrap();
+                let tx = format!("tx{tx_count}={val}");
+                inner_client.broadcast_tx_async(tx).await.unwrap();
             }
         });
 
@@ -354,13 +354,13 @@ mod rpc {
 
                                 let key = decoded_tx_split.get(0).unwrap();
                                 let val = decoded_tx_split.get(1).unwrap();
-                                println!("Got tx: {}={}", key, val);
-                                assert_eq!(format!("tx{}", cur_tx_id), *key);
+                                println!("Got tx: {key}={val}");
+                                assert_eq!(format!("tx{cur_tx_id}"), *key);
                                 assert_eq!(next_val, *val);
                             }
-                            Err(e) => panic!("Failed to convert decoded tx to string: {}", e),
+                            Err(e) => panic!("Failed to convert decoded tx to string: {e}"),
                         },
-                        _ => panic!("Unexpected event type: {:?}", ev),
+                        _ => panic!("Unexpected event type: {ev:?}"),
                     }
                     cur_tx_id += 1;
                 },
@@ -388,11 +388,8 @@ mod rpc {
         let inner_client = client.clone();
         tokio::spawn(async move {
             for (tx_count, val) in broadcast_tx_values.into_iter().enumerate() {
-                let tx = format!("tx{}={}", tx_count, val);
-                inner_client
-                    .broadcast_tx_async(tx)
-                    .await
-                    .unwrap();
+                let tx = format!("tx{tx_count}={val}");
+                inner_client.broadcast_tx_async(tx).await.unwrap();
                 tokio::time::sleep(Duration::from_millis(100)).await;
             }
         });
@@ -412,7 +409,7 @@ mod rpc {
             tokio::select! {
                 Some(res) = combined_subs.next() => {
                     let ev: Event = res.unwrap();
-                    println!("Got event: {:?}", ev);
+                    println!("Got event: {ev:?}");
                     match ev.data {
                         EventData::NewBlock { .. } => {
                             println!("Got new block event");
@@ -422,7 +419,7 @@ mod rpc {
                             println!("Got new transaction event");
                             let _ = expected_tx_values.pop();
                         },
-                        _ => panic!("Unexpected event received: {:?}", ev),
+                        _ => panic!("Unexpected event received: {ev:?}"),
                     }
                 },
                 _ = &mut timeout => panic!("Timed out waiting for an event"),
@@ -439,14 +436,10 @@ mod rpc {
         let driver_handle = tokio::spawn(async move { driver.run().await });
 
         let tx = "tx_search_key=tx_search_value";
-        let (_, tx_info) = broadcast_tx(
-            &rpc_client,
-            &mut subs_client,
-            tx,
-        )
-        .await
-        .unwrap();
-        println!("Got tx_info: {:?}", tx_info);
+        let (_, tx_info) = broadcast_tx(&rpc_client, &mut subs_client, tx)
+            .await
+            .unwrap();
+        println!("Got tx_info: {tx_info:?}");
 
         // Give the indexer time to catch up
         tokio::time::sleep(Duration::from_secs(1)).await;
@@ -521,7 +514,7 @@ mod rpc {
                         assert_eq!(tx, tx_result_bytes);
                         Ok((r.hash, tx_result))
                     },
-                    _ => panic!("Unexpected event: {:?}", ev),
+                    _ => panic!("Unexpected event: {ev:?}"),
                 }
             }
             _ = &mut timeout => panic!("Timed out waiting for transaction"),

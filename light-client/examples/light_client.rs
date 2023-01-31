@@ -69,7 +69,7 @@ fn main() {
             std::process::exit(1);
         },
         Some(Command::Sync(sync_opts)) => sync_cmd(sync_opts).unwrap_or_else(|e| {
-            eprintln!("Command failed: {}", e);
+            eprintln!("Command failed: {e}");
             std::process::exit(1);
         }),
     }
@@ -125,7 +125,7 @@ fn sync_cmd(opts: SyncOpts) -> Result<(), Box<dyn std::error::Error>> {
                 println!("[info] synced to block {}", light_block.height());
             },
             Err(err) => {
-                println!("[error] sync failed: {}", err);
+                println!("[error] sync failed: {err}");
             },
         }
 

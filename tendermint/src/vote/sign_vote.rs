@@ -292,7 +292,7 @@ mod tests {
                 vote_type: Type::Precommit,
                 ..Default::default()
             };
-            println!("{:?}", vt_precommit);
+            println!("{vt_precommit:?}");
             let cv_precommit = CanonicalVote::new(vt_precommit, ChainId::try_from("A").unwrap());
             let got = cv_precommit.encode_vec().unwrap();
             let want = vec![

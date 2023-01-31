@@ -440,7 +440,7 @@ async fn execute_subscription(
                 Ok(event_json) => {
                     write_json(
                         &config.in_path,
-                        format!("{}_{}", name, event_count).as_str(),
+                        format!("{name}_{event_count}").as_str(),
                         &event_json,
                     )
                     .await?;
@@ -450,7 +450,7 @@ async fn execute_subscription(
                     Error::Failed(_, response) => {
                         write_json(
                             &config.in_path,
-                            format!("{}_err", name).as_str(),
+                            format!("{name}_err").as_str(),
                             &response,
                         )
                         .await?;

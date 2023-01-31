@@ -1,9 +1,9 @@
 [package]
-name = "tendermint-proto"
-version = "0.28.0"
-authors = ["Informal Systems <hello@informal.systems>"]
-edition = "2018"
-license = "Apache-2.0"
+name       = "tendermint-proto"
+version    = "0.28.0"
+authors    = ["Informal Systems <hello@informal.systems>"]
+edition    = "2021"
+license    = "Apache-2.0"
 repository = "https://github.com/informalsystems/tendermint-rs/tree/main/proto"
 readme     = "README.md"
 categories = ["cryptography", "cryptography::cryptocurrencies", "database"]
