@@ -367,7 +367,7 @@ mod mbt {
             }
             input.block.signed_header.commit.round = (round as u16).into();
             (
-                format!("commit round from {} into {}", r, round),
+                format!("commit round from {r} into {round}"),
                 LiteVerdict::Invalid,
             )
         }
@@ -586,7 +586,7 @@ mod mbt {
                         );
                     },
                     Err(e) => {
-                        output_env.logln(&format!("      > lite: {:?}", e));
+                        output_env.logln(&format!("      > lite: {e:?}"));
                         match e {
                             Verdict::Invalid(_) => assert_eq!(input.verdict, LiteVerdict::Invalid),
                             Verdict::NotEnoughTrust(_) => {
@@ -668,7 +668,7 @@ mod mbt {
         // Check for the necessary programs
         let check_program = |program| {
             if !Command::exists_program(program) {
-                output_env.logln(&format!("    > {} not found", program));
+                output_env.logln(&format!("    > {program} not found"));
                 return false;
             }
             true
@@ -692,7 +692,7 @@ mod mbt {
                 ApalacheRun::Counterexample(_) => (),
                 run => panic!("{}", run.message()),
             },
-            Err(e) => panic!("failed to run Apalache; reason: {}", e),
+            Err(e) => panic!("failed to run Apalache; reason: {e}"),
         }
         output_env.copy_file_from_env_as(env, "counterexample.tla", &tla_test);
 

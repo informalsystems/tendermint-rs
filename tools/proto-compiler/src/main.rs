@@ -30,8 +30,8 @@ fn main() {
 
     for version in TENDERMINT_VERSIONS {
         println!(
-            "[info] => Fetching {} at {} into {:?}",
-            TENDERMINT_REPO, &version.commitish, tendermint_dir
+            "[info] => Fetching {TENDERMINT_REPO} at {} into {tendermint_dir:?}",
+            &version.commitish,
         );
         get_commitish(&tendermint_dir, TENDERMINT_REPO, &version.commitish); // This panics if it fails.
 

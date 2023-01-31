@@ -41,7 +41,6 @@ impl Serialize for Type {
 impl<'de> Deserialize<'de> for Type {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let byte = i32::deserialize(deserializer)?;
-        Type::try_from(byte)
-            .map_err(|_| D::Error::custom(format!("invalid proposal type: {}", byte)))
+        Type::try_from(byte).map_err(|_| D::Error::custom(format!("invalid proposal type: {byte}")))
     }
 }

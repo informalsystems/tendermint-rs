@@ -28,6 +28,6 @@ where
         None => return Ok(None),
     };
     Ok(Some(s.parse().map_err(|e: <T as FromStr>::Err| {
-        D::Error::custom(format!("{}", e))
+        D::Error::custom(format!("{e}"))
     })?))
 }

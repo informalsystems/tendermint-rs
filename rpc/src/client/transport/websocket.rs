@@ -224,8 +224,7 @@ impl TryFrom<Url> for WebSocketClientUrl {
         match value.scheme() {
             Scheme::WebSocket | Scheme::SecureWebSocket => Ok(Self(value)),
             _ => Err(Error::invalid_params(format!(
-                "cannot use URL {} with WebSocket clients",
-                value
+                "cannot use URL {value} with WebSocket clients"
             ))),
         }
     }
@@ -257,7 +256,7 @@ impl TryFrom<net::Address> for WebSocketClientUrl {
                 peer_id: _,
                 host,
                 port,
-            } => format!("ws://{}:{}/websocket", host, port).parse(),
+            } => format!("ws://{host}:{port}/websocket").parse(),
             net::Address::Unix { .. } => Err(Error::invalid_params(
                 "only TCP-based node addresses are supported".to_string(),
             )),
@@ -1117,8 +1116,7 @@ mod test {
                             },
                             Err(e) => {
                                 println!(
-                                    "Unexpected method in incoming request: {} ({})",
-                                    json_method, e
+                                    "Unexpected method in incoming request: {json_method} ({e})"
                                 );
                             },
                         }
@@ -1138,7 +1136,7 @@ mod test {
 
         fn remove_subscription(&mut self, query: String) {
             if let Some(id) = self.subscriptions.remove(&query) {
-                println!("Removed subscription {} for query: {}", id, query);
+                println!("Removed subscription {id} for query: {query}");
             }
         }
 

@@ -108,10 +108,7 @@ impl Handshake<AwaitingEphKey> {
         &mut self,
         remote_eph_pubkey: EphemeralPublic,
     ) -> Result<Handshake<AwaitingAuthSig>, Error> {
-        let local_eph_privkey = match self.state.local_eph_privkey.take() {
-            Some(key) => key,
-            None => return Err(Error::missing_secret()),
-        };
+        let Some(local_eph_privkey) = self.state.local_eph_privkey.take() else { return Err(Error::missing_secret()) };
         let local_eph_pubkey = EphemeralPublic::from(&local_eph_privkey);
 
         // Compute common shared secret.

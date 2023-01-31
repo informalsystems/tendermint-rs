@@ -16,7 +16,7 @@ define_error! {
 
         InvalidKey
             { detail: String }
-            |e| { format_args!("invalid key: {}", e) },
+            |e| { format_args!("invalid key: {e}") },
 
         Length
             |_| { format_args!("length error") },

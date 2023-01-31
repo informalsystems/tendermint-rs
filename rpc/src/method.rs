@@ -173,6 +173,6 @@ impl Serialize for Method {
 impl<'de> Deserialize<'de> for Method {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         Self::from_str(&String::deserialize(deserializer)?)
-            .map_err(|e| D::Error::custom(format!("{}", e)))
+            .map_err(|e| D::Error::custom(format!("{e}")))
     }
 }

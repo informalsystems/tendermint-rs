@@ -130,7 +130,7 @@ impl Serialize for Id {
 impl<'de> Deserialize<'de> for Id {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         Self::from_str(&String::deserialize(deserializer)?)
-            .map_err(|e| D::Error::custom(format!("{}", e)))
+            .map_err(|e| D::Error::custom(format!("{e}")))
     }
 }
 

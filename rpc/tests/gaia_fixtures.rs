@@ -38,7 +38,7 @@ fn incoming_fixtures() {
         match file_name {
             "abci_info_0" | "abci_info_1" | "abci_info_2" => {
                 let r = endpoint::abci_info::Response::from_string(content);
-                assert!(r.is_ok(), "{:?}", r)
+                assert!(r.is_ok(), "{r:?}")
             },
             "block_at_height_0" => {
                 assert!(endpoint::block::Response::from_string(content).is_err())
@@ -51,15 +51,15 @@ fn incoming_fixtures() {
             },
             "block_at_height_4555980" => {
                 let r = endpoint::block::Response::from_string(content);
-                assert!(r.is_ok(), "{:?}", r);
+                assert!(r.is_ok(), "{r:?}");
             },
             "block_results_at_height_10" => {
                 let r = endpoint::block_results::Response::<RpcEvent>::from_string(content);
-                assert!(r.is_ok(), "block_results_at_height_10: {:?}", r);
+                assert!(r.is_ok(), "block_results_at_height_10: {r:?}");
             },
             "block_results_at_height_4555980" => {
                 let r = endpoint::block_results::Response::<RpcEvent>::from_string(content);
-                assert!(r.is_ok(), "block_results_at_height_4555980: {:?}", r);
+                assert!(r.is_ok(), "block_results_at_height_4555980: {r:?}");
             },
             "blockchain_from_1_to_10" => {
                 assert!(endpoint::blockchain::Response::from_string(content).is_ok())
@@ -86,14 +86,14 @@ fn incoming_fixtures() {
             },
             "subscribe_newblock" => {
                 let r = endpoint::subscribe::Response::from_string(content);
-                assert!(r.is_err(), "{:?}", r);
+                assert!(r.is_err(), "{r:?}");
             },
             _ => {
                 if file_name.starts_with("subscribe_newblock_") {
                     let r = Event::<RpcEvent>::from_string(content);
-                    assert!(r.is_ok(), "failed to parse event {}: {:?}", file_name, r);
+                    assert!(r.is_ok(), "failed to parse event {file_name}: {r:?}");
                 } else {
-                    panic!("unhandled incoming fixture: {}", file_name);
+                    panic!("unhandled incoming fixture: {file_name}");
                 }
             },
         }
@@ -114,7 +114,7 @@ fn outgoing_fixtures() {
         match file_name {
             "abci_info" => {
                 let r = endpoint::abci_info::Request::from_string(content);
-                assert!(r.is_ok(), "{:?}", r)
+                assert!(r.is_ok(), "{r:?}")
             },
             "block_at_height_0" => {
                 assert!(endpoint::block::Request::from_string(content).is_ok())
@@ -131,12 +131,12 @@ fn outgoing_fixtures() {
             "block_results_at_height_10" => {
                 let r =
                     <endpoint::block_results::Request as Request<RpcDialect>>::from_string(content);
-                assert!(r.is_ok(), "block_results_at_height_10: {:?}", r);
+                assert!(r.is_ok(), "block_results_at_height_10: {r:?}");
             },
             "block_results_at_height_4555980" => {
                 let r =
                     <endpoint::block_results::Request as Request<RpcDialect>>::from_string(content);
-                assert!(r.is_ok(), "block_results_at_height_4555980: {:?}", r);
+                assert!(r.is_ok(), "block_results_at_height_4555980: {r:?}");
             },
             "blockchain_from_1_to_10" => {
                 assert!(endpoint::blockchain::Request::from_string(content).is_ok())
@@ -164,9 +164,9 @@ fn outgoing_fixtures() {
             },
             "subscribe_newblock" => {
                 let r = endpoint::subscribe::Request::from_string(content);
-                assert!(r.is_ok(), "{:?}", r);
+                assert!(r.is_ok(), "{r:?}");
             },
-            _ => panic!("unhandled outgoing fixture: {}", file_name),
+            _ => panic!("unhandled outgoing fixture: {file_name}"),
         }
     }
 }

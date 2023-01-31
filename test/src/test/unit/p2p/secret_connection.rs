@@ -108,7 +108,7 @@ fn test_split_secret_connection() {
     const MESSAGES_2_TO_1: &[&str] = &["two", "four", "six", "eight"];
     let peer1_listener = TcpListener::bind("127.0.0.1:0").expect("to be able to bind to 127.0.0.1");
     let peer1_addr = peer1_listener.local_addr().unwrap();
-    println!("peer1 bound to {:?}", peer1_addr);
+    println!("peer1 bound to {peer1_addr:?}");
 
     let peer1 = thread::spawn(move || {
         let stream = peer1_listener
@@ -129,7 +129,7 @@ fn test_split_secret_connection() {
                 .read(&mut buf)
                 .expect("to read a message from peer 2");
             let msg = String::from_utf8_lossy(&buf[0..br]).to_string();
-            println!("Got message from peer2: {}", msg);
+            println!("Got message from peer2: {msg}");
             assert_eq!(msg, MESSAGES_2_TO_1[msg_counter]);
         }
     });
@@ -165,7 +165,7 @@ fn test_split_secret_connection() {
             .read(&mut buf)
             .expect("to receive a message from peer 1");
         let msg = String::from_utf8_lossy(&buf[0..br]).to_string();
-        println!("Got message from peer1: {}", msg);
+        println!("Got message from peer1: {msg}");
         assert_eq!(msg, MESSAGES_1_TO_2[msg_counter]);
         write_tx
             .send(MESSAGES_2_TO_1[msg_counter].to_string())

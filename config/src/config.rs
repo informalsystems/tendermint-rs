@@ -208,7 +208,7 @@ impl FromStr for LogLevel {
                 global = Some(parts[0].to_owned());
                 continue;
             } else if parts.len() != 2 {
-                return Err(Error::parse(format!("error parsing log level: {}", level)));
+                return Err(Error::parse(format!("error parsing log level: {level}")));
             }
 
             let key = parts[0].to_owned();
@@ -216,8 +216,7 @@ impl FromStr for LogLevel {
 
             if components.insert(key, value).is_some() {
                 return Err(Error::parse(format!(
-                    "duplicate log level setting for: {}",
-                    level
+                    "duplicate log level setting for: {level}"
                 )));
             }
         }
@@ -229,13 +228,13 @@ impl FromStr for LogLevel {
 impl fmt::Display for LogLevel {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(global) = &self.global {
-            write!(f, "{}", global)?;
+            write!(f, "{global}")?;
             if !self.components.is_empty() {
                 write!(f, ",")?;
             }
         }
         for (i, (k, v)) in self.components.iter().enumerate() {
-            write!(f, "{}:{}", k, v)?;
+            write!(f, "{k}:{v}")?;
 
             if i < self.components.len() - 1 {
                 write!(f, ",")?;
@@ -249,7 +248,7 @@ impl fmt::Display for LogLevel {
 impl<'de> Deserialize<'de> for LogLevel {
     fn deserialize<D: de::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let levels = String::deserialize(deserializer)?;
-        Self::from_str(&levels).map_err(|e| D::Error::custom(format!("{}", e)))
+        Self::from_str(&levels).map_err(|e| D::Error::custom(format!("{e}")))
     }
 }
 
@@ -725,7 +724,7 @@ where
     string
         .parse()
         .map(Some)
-        .map_err(|e| D::Error::custom(format!("{}", e)))
+        .map_err(|e| D::Error::custom(format!("{e}")))
 }
 
 fn serialize_optional_value<S, T>(value: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
@@ -754,10 +753,7 @@ where
     }
 
     for item in string.split(',') {
-        result.push(
-            item.parse()
-                .map_err(|e| D::Error::custom(format!("{}", e)))?,
-        );
+        result.push(item.parse().map_err(|e| D::Error::custom(format!("{e}")))?);
     }
 
     Ok(result)

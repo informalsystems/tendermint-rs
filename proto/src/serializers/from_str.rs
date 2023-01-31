@@ -14,7 +14,7 @@ where
 {
     String::deserialize(deserializer)?
         .parse::<T>()
-        .map_err(|e| D::Error::custom(format!("{}", e)))
+        .map_err(|e| D::Error::custom(format!("{e}")))
 }
 
 /// Serialize from T into string
@@ -23,5 +23,5 @@ where
     S: Serializer,
     T: core::fmt::Display,
 {
-    format!("{}", value).serialize(serializer)
+    format!("{value}").serialize(serializer)
 }

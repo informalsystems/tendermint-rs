@@ -175,7 +175,7 @@ prop_compose! {
         hour in 0..23u8,
         min in 0..59u8,
     ) -> String {
-        format!("{:}{:0>2}:{:0>2}", sign, hour, min)
+        format!("{sign:}{hour:0>2}:{min:0>2}")
     }
 }
 
@@ -192,9 +192,9 @@ prop_compose! {
     ) -> String {
         let frac = match secfrac {
             None => "".to_owned(),
-            Some(frac) => format!(".{:}", frac)
+            Some(frac) => format!(".{frac:}")
         };
-        format!("{:0>2}:{:0>2}:{:0>2}{:}", hour, min, sec, frac)
+        format!("{hour:0>2}:{min:0>2}:{sec:0>2}{frac:}")
     }
 }
 
@@ -203,7 +203,7 @@ prop_compose! {
         time in arb_rfc3339_partial_time(),
         offset in arb_rfc3339_offset()
     ) -> String {
-        format!("{:}{:}", time, offset)
+        format!("{time:}{offset:}")
     }
 }
 
@@ -223,7 +223,7 @@ prop_compose! {
             year in Just(year),
             month in Just(month),
         ) -> String {
-            format!("{:0>4}-{:0>2}-{:0>2}", year, month, day)
+            format!("{year:0>4}-{month:0>2}-{day:0>2}")
         }
 }
 
@@ -238,7 +238,7 @@ prop_compose! {
         date in arb_rfc3339_full_date(),
         time in arb_rfc3339_full_time()
     ) -> String {
-        format!("{:}T{:}", date, time)
+        format!("{date:}T{time:}")
     }
 }
 

@@ -227,20 +227,17 @@ impl FromStr for VoteSummary {
         let validator_address_fingerprint =
             Fingerprint::from_str(validator[1]).map_err(|e| {
                 Error::client_internal(format!(
-                    "failed to parse validator address fingerprint from consensus state vote summary: {}",
-                    e
+                    "failed to parse validator address fingerprint from consensus state vote summary: {e}"
                 ))
             })?;
         let height = Height::from_str(height_round_type[0]).map_err(|e| {
             Error::client_internal(format!(
-                "failed to parse height from consensus state vote summary: {}",
-                e
+                "failed to parse height from consensus state vote summary: {e}"
             ))
         })?;
         let round = Round::from_str(height_round_type[1]).map_err(|e| {
             Error::client_internal(format!(
-                "failed to parse round from consensus state vote summary: {}",
-                e
+                "failed to parse round from consensus state vote summary: {e}"
             ))
         })?;
         let vote_type_parts: Vec<&str> = height_round_type[2].split('(').collect();
@@ -253,26 +250,22 @@ impl FromStr for VoteSummary {
         let vote_type_str = vote_type_parts[1].trim_end_matches(')');
         let vote_type = vote::Type::from_str(vote_type_str).map_err(|e| {
             Error::client_internal(format!(
-                "failed to parse vote type from consensus state vote summary: {} ({})",
-                e, vote_type_str
+                "failed to parse vote type from consensus state vote summary: {e} ({vote_type_str})"
             ))
         })?;
         let block_id_hash_fingerprint = Fingerprint::from_str(parts[2]).map_err(|e| {
             Error::client_internal(format!(
-                "failed to parse block ID hash fingerprint from consensus state vote summary: {}",
-                e
+                "failed to parse block ID hash fingerprint from consensus state vote summary: {e}"
             ))
         })?;
         let signature_fingerprint = Fingerprint::from_str(parts[3]).map_err(|e| {
             Error::client_internal(format!(
-                "failed to parse signature fingerprint from consensus state vote summary: {}",
-                e
+                "failed to parse signature fingerprint from consensus state vote summary: {e}"
             ))
         })?;
         let timestamp = Time::parse_from_rfc3339(parts[5]).map_err(|e| {
             Error::client_internal(format!(
-                "failed to parse timestamp from consensus state vote summary: {}",
-                e
+                "failed to parse timestamp from consensus state vote summary: {e}"
             ))
         })?;
 
@@ -316,8 +309,7 @@ impl FromStr for Fingerprint {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self(hex::decode_upper(s).map_err(|e| {
             Error::client_internal(format!(
-                "failed to parse fingerprint as an uppercase hexadecimal string: {}",
-                e
+                "failed to parse fingerprint as an uppercase hexadecimal string: {e}"
             ))
         })?))
     }
@@ -327,7 +319,7 @@ impl fmt::Display for Fingerprint {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let hex_bytes = hex::encode_upper(&self.0);
         let hex_string = String::from_utf8(hex_bytes).unwrap();
-        write!(f, "{}", hex_string)
+        write!(f, "{hex_string}")
     }
 }
 

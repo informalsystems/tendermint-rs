@@ -36,6 +36,6 @@ impl Error {
         E: Display,
         T: TryFrom<Raw, Error = E>,
     {
-        Error::try_from_protobuf(format!("{}", e))
+        Error::try_from_protobuf(format!("{e}"))
     }
 }

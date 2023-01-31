@@ -290,7 +290,7 @@ fn outgoing_fixtures() {
                 assert_eq!(wrapped.params().order_by, Order::Ascending);
             },
             _ => {
-                panic!("cannot parse file name: {}", file_name);
+                panic!("cannot parse file name: {file_name}");
             },
         }
     }
@@ -516,7 +516,7 @@ fn incoming_fixtures() {
                         check_vote(&dup.vote_a);
                         check_vote(&dup.vote_b);
                     } else {
-                        panic!("not a duplicate vote: {:?}", evidence);
+                        panic!("not a duplicate vote: {evidence:?}");
                     }
                 }
             },
@@ -830,7 +830,7 @@ fn incoming_fixtures() {
 
                 match result {
                     Err(Error(ErrorDetail::Serde(_), _)) => {},
-                    _ => panic!("expected Serde parse error, instead got {:?}", result),
+                    _ => panic!("expected Serde parse error, instead got {result:?}"),
                 }
             },
             "subscribe_newblock_0" => {
@@ -1419,7 +1419,7 @@ fn incoming_fixtures() {
                 }
             },
             _ => {
-                panic!("cannot parse file name: {}", file_name);
+                panic!("cannot parse file name: {file_name}");
             },
         }
     }
@@ -1436,7 +1436,7 @@ fn check_event_attrs(events: &HashMap<String, Vec<String>>, app_key: &str, heigh
             "tm.event" => assert_eq!(v[0], "Tx"),
             "tx.hash" => assert_eq!(v[0].len(), 64),
             "tx.height" => assert_eq!(v[0], height.to_string()),
-            _ => panic!("unknown event found {}", k),
+            _ => panic!("unknown event found {k}"),
         }
     }
 }

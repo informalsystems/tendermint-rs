@@ -138,7 +138,7 @@ impl Hash {
 impl Debug for Hash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Hash::Sha256(_) => write!(f, "Hash::Sha256({})", self),
+            Hash::Sha256(_) => write!(f, "Hash::Sha256({self})"),
             Hash::None => write!(f, "Hash::None"),
         }
     }
@@ -157,7 +157,7 @@ impl Display for Hash {
             Hash::None => String::new(),
         };
 
-        write!(f, "{}", hex)
+        write!(f, "{hex}")
     }
 }
 
@@ -177,7 +177,7 @@ impl<'de> Deserialize<'de> for Hash {
         if hex.is_empty() {
             Err(D::Error::custom("empty hash"))
         } else {
-            Ok(Self::from_str(hex).map_err(|e| D::Error::custom(format!("{}", e)))?)
+            Ok(Self::from_str(hex).map_err(|e| D::Error::custom(format!("{e}")))?)
         }
     }
 }
