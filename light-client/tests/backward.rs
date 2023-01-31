@@ -15,7 +15,6 @@ use tendermint_light_client::{
     store::{memory::MemoryStore, LightStore},
     tests::{MockClock, MockIo},
     verifier::{
-        operations::ProdHasher,
         options::Options,
         types::{Height, LightBlock, Status},
         ProdVerifier,
@@ -79,7 +78,6 @@ fn make(chain: LightChain, trusted_height: Height) -> (LightClient, State) {
     };
 
     let verifier = ProdVerifier::default();
-    let hasher = ProdHasher::default();
 
     let light_client = LightClient::new(
         primary,
@@ -87,7 +85,6 @@ fn make(chain: LightChain, trusted_height: Height) -> (LightClient, State) {
         clock,
         scheduler::basic_bisecting_schedule,
         verifier,
-        hasher,
         io,
     );
 
@@ -208,7 +205,7 @@ fn tc_corrupted_hash(max: u32) -> impl Strategy<Value = TestCase> {
 proptest! {
     #![proptest_config(ProptestConfig {
         cases: 20,
-        max_shrink_iters: 0,
+        max_shrink_iters: 100,
         ..Default::default()
     })]
 

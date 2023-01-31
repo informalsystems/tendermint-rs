@@ -219,7 +219,7 @@ fn priv_validator_json_parser() {
     let raw_priv_validator_key = read_fixture("priv_validator_key.json");
     let priv_validator_key = PrivValidatorKey::parse_json(raw_priv_validator_key).unwrap();
     assert_eq!(
-        priv_validator_key.consensus_pubkey().to_hex(),
+        priv_validator_key.consensus_pubkey().public_key().to_hex(),
         "F26BF4B2A2E84CEB7A53C3F1AE77408779B20064782FBADBDF0E365959EE4534"
     );
 }

@@ -26,12 +26,13 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 default = ["rpc-client", "flex-error/std", "flex-error/eyre_tracer"]
-rpc-client = ["tokio", "tendermint-rpc/http-client"]
+rpc-client = ["tokio", "rust-crypto", "tendermint-rpc/http-client"]
+rust-crypto = ["tendermint/rust-crypto", "tendermint-light-client-verifier/rust-crypto"]
 secp256k1 = ["tendermint/secp256k1", "tendermint-rpc/secp256k1"]
 lightstore-sled = ["sled"]
-unstable = []
+unstable = ["rust-crypto"]
 # Enable to execute long-running model-based tests
-mbt = []
+mbt = ["rust-crypto"]
 
 [dependencies]
 tendermint = { version = "0.28.0", path = "../tendermint", default-features = false }

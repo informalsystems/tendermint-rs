@@ -1,17 +1,19 @@
 //! Provides an interface and default implementation of the `Verifier` component
 
-use preds::{ProdPredicates, VerificationPredicates};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{ErrorExt, VerificationError, VerificationErrorDetail},
-    operations::{
-        voting_power::VotingPowerTally, CommitValidator, Hasher, ProdCommitValidator, ProdHasher,
-        ProdVotingPowerCalculator, VotingPowerCalculator,
-    },
+    operations::{voting_power::VotingPowerTally, CommitValidator, VotingPowerCalculator},
     options::Options,
-    predicates as preds,
+    predicates::VerificationPredicates,
     types::{Time, TrustedBlockState, UntrustedBlockState},
+};
+
+#[cfg(feature = "rust-crypto")]
+use crate::{
+    operations::{ProdCommitValidator, ProdVotingPowerCalculator},
+    predicates::ProdPredicates,
 };
 
 /// Represents the result of the verification performed by the
@@ -79,45 +81,25 @@ macro_rules! ensure_verdict_success {
 
 /// Predicate verifier encapsulating components necessary to facilitate
 /// verification.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PredicateVerifier<P, C, V, H> {
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct PredicateVerifier<P, C, V> {
     predicates: P,
     voting_power_calculator: C,
     commit_validator: V,
-    hasher: H,
 }
 
-impl<P, C, V, H> Default for PredicateVerifier<P, C, V, H>
-where
-    P: Default,
-    C: Default,
-    V: Default,
-    H: Default,
-{
-    fn default() -> Self {
-        Self {
-            predicates: P::default(),
-            voting_power_calculator: C::default(),
-            commit_validator: V::default(),
-            hasher: H::default(),
-        }
-    }
-}
-
-impl<P, C, V, H> PredicateVerifier<P, C, V, H>
+impl<P, C, V> PredicateVerifier<P, C, V>
 where
     P: VerificationPredicates,
     C: VotingPowerCalculator,
     V: CommitValidator,
-    H: Hasher,
 {
     /// Constructor.
-    pub fn new(predicates: P, voting_power_calculator: C, commit_validator: V, hasher: H) -> Self {
+    pub fn new(predicates: P, voting_power_calculator: C, commit_validator: V) -> Self {
         Self {
             predicates,
             voting_power_calculator,
             commit_validator,
-            hasher,
         }
     }
 
@@ -127,7 +109,6 @@ where
         verdict!(self.predicates.validator_sets_match(
             untrusted.validators,
             untrusted.signed_header.header.validators_hash,
-            &self.hasher,
         ));
 
         // Ensure the header next validator hashes match the given next validators
@@ -135,7 +116,6 @@ where
             verdict!(self.predicates.next_validators_match(
                 untrusted_next_validators,
                 untrusted.signed_header.header.next_validators_hash,
-                &self.hasher,
             ));
         }
 
@@ -143,7 +123,6 @@ where
         verdict!(self.predicates.header_matches_commit(
             &untrusted.signed_header.header,
             untrusted.signed_header.commit.block_id.hash,
-            &self.hasher,
         ));
 
         // Additional implementation specific validation
@@ -245,12 +224,11 @@ where
     }
 }
 
-impl<P, C, V, H> Verifier for PredicateVerifier<P, C, V, H>
+impl<P, C, V> Verifier for PredicateVerifier<P, C, V>
 where
     P: VerificationPredicates,
     C: VotingPowerCalculator,
     V: CommitValidator,
-    H: Hasher,
 {
     /// Validate the given light block state by performing the following checks ->
     ///
@@ -289,9 +267,10 @@ where
     }
 }
 
+#[cfg(feature = "rust-crypto")]
 /// The default production implementation of the [`PredicateVerifier`].
 pub type ProdVerifier =
-    PredicateVerifier<ProdPredicates, ProdVotingPowerCalculator, ProdCommitValidator, ProdHasher>;
+    PredicateVerifier<ProdPredicates, ProdVotingPowerCalculator, ProdCommitValidator>;
 
 #[cfg(test)]
 mod tests {

@@ -6,17 +6,12 @@ use core::{
     str::FromStr,
 };
 
-#[cfg(feature = "secp256k1")]
-use ripemd160::Ripemd160;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-use sha2::{Digest, Sha256};
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
 use tendermint_proto::Protobuf;
 
-#[cfg(feature = "secp256k1")]
-use crate::public_key::Secp256k1;
-use crate::{error::Error, prelude::*, public_key::Ed25519};
+use crate::{error::Error, prelude::*};
 
 /// Size of an  account ID in bytes
 pub const LENGTH: usize = 20;
@@ -86,23 +81,45 @@ impl Debug for Id {
     }
 }
 
-// RIPEMD160(SHA256(pk))
-#[cfg(feature = "secp256k1")]
-impl From<Secp256k1> for Id {
-    fn from(pk: Secp256k1) -> Id {
-        let sha_digest = Sha256::digest(&pk.to_bytes());
-        let ripemd_digest = Ripemd160::digest(&sha_digest[..]);
-        let mut bytes = [0u8; LENGTH];
-        bytes.copy_from_slice(&ripemd_digest[..LENGTH]);
-        Id(bytes)
-    }
-}
+#[cfg(feature = "rust-crypto")]
+mod key_conversions {
+    use super::{Id, LENGTH};
+    use crate::crypto::default::Sha256;
+    #[cfg(feature = "secp256k1")]
+    use crate::public_key::Secp256k1;
+    use crate::public_key::{Ed25519, PublicKey};
+    use digest::Digest;
 
-// SHA256(pk)[:20]
-impl From<Ed25519> for Id {
-    fn from(pk: Ed25519) -> Id {
-        let digest = Sha256::digest(pk.as_bytes());
-        Id(digest[..LENGTH].try_into().unwrap())
+    // RIPEMD160(SHA256(pk))
+    #[cfg(feature = "secp256k1")]
+    impl From<Secp256k1> for Id {
+        fn from(pk: Secp256k1) -> Id {
+            use ripemd::Ripemd160;
+
+            let sha_digest = Sha256::digest(pk.to_bytes());
+            let ripemd_digest = Ripemd160::digest(&sha_digest[..]);
+            let mut bytes = [0u8; LENGTH];
+            bytes.copy_from_slice(&ripemd_digest[..LENGTH]);
+            Id(bytes)
+        }
+    }
+
+    // SHA256(pk)[:20]
+    impl From<Ed25519> for Id {
+        fn from(pk: Ed25519) -> Id {
+            let digest = Sha256::digest(pk.as_bytes());
+            Id(digest[..LENGTH].try_into().unwrap())
+        }
+    }
+
+    impl From<PublicKey> for Id {
+        fn from(pub_key: PublicKey) -> Id {
+            match pub_key {
+                PublicKey::Ed25519(pk) => Id::from(pk),
+                #[cfg(feature = "secp256k1")]
+                PublicKey::Secp256k1(pk) => Id::from(pk),
+            }
+        }
     }
 }
 
@@ -146,9 +163,10 @@ impl Serialize for Id {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "rust-crypto"))]
 mod tests {
     use super::*;
+    use crate::public_key::Ed25519;
 
     #[test]
     fn test_ed25519_id() {
@@ -170,6 +188,8 @@ mod tests {
     #[test]
     #[cfg(feature = "secp256k1")]
     fn test_secp_id() {
+        use crate::public_key::Secp256k1;
+
         // test vector for pubkey and id (address)
         let pubkey_hex = "02950E1CDFCB133D6024109FD489F734EEB4502418E538C28481F22BCE276F248C";
         // SHA256: 034f706ac824dbb0d227c2ca30439e5be3766cfddc90f00bd530951d638b43a4

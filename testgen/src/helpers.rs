@@ -45,9 +45,10 @@ pub fn get_vote_sign_bytes(chain_id: chain::Id, vote: &vote::Vote) -> Vec<u8> {
     signed_vote.sign_bytes()
 }
 
-pub fn verify_signature(verifier: &public_key::Ed25519, msg: &[u8], signature: &Signature) -> bool {
-    let sig = ed25519_consensus::Signature::try_from(signature.as_bytes());
-    sig.and_then(|sig| verifier.verify(&sig, msg)).is_ok()
+pub fn verify_signature(pubkey: &public_key::Ed25519, msg: &[u8], signature: &Signature) -> bool {
+    let verifier = ed25519_consensus::VerificationKey::try_from(pubkey.as_bytes()).unwrap();
+    let sig = ed25519_consensus::Signature::try_from(signature.as_bytes()).unwrap();
+    verifier.verify(&sig, msg).is_ok()
 }
 
 pub fn get_time(abs: u64) -> Result<Time, SimpleError> {

@@ -4,12 +4,15 @@ pub mod proof;
 
 pub use proof::Proof;
 
-use sha2::{Digest, Sha256};
+use core::marker::PhantomData;
 
+use digest::{consts::U32, Digest, FixedOutputReset};
+
+use crate::crypto::Sha256;
 use crate::prelude::*;
 
 /// Size of Merkle root hash
-pub const HASH_SIZE: usize = 32;
+pub use crate::crypto::sha256::HASH_SIZE;
 
 /// Hash is the output of the cryptographic digest function
 pub type Hash = [u8; HASH_SIZE];
@@ -17,101 +20,132 @@ pub type Hash = [u8; HASH_SIZE];
 /// Compute a simple Merkle root from vectors of arbitrary byte vectors.
 /// The leaves of the tree are the bytes of the given byte vectors in
 /// the given order.
-pub fn simple_hash_from_byte_vectors(byte_vecs: Vec<Vec<u8>>) -> Hash {
-    simple_hash_from_byte_slices_inner(byte_vecs.as_slice())
+pub fn simple_hash_from_byte_vectors<H>(byte_vecs: &[Vec<u8>]) -> Hash
+where
+    H: MerkleHash + Default,
+{
+    let mut hasher = H::default();
+    hasher.hash_byte_vectors(byte_vecs)
 }
 
-// recurse into subtrees
-fn simple_hash_from_byte_slices_inner(byte_slices: &[Vec<u8>]) -> Hash {
-    let length = byte_slices.len();
-    match length {
-        0 => empty_hash(),
-        1 => leaf_hash(byte_slices[0].as_slice()),
-        _ => {
-            let k = get_split_point(length);
-            let left = simple_hash_from_byte_slices_inner(&byte_slices[..k]);
-            let right = simple_hash_from_byte_slices_inner(&byte_slices[k..]);
-            inner_hash(&left, &right)
-        },
+/// Implementation of Merkle tree hashing for Tendermint.
+pub trait MerkleHash {
+    // tmhash({})
+    // Pre and post-conditions: the hasher is in the reset state
+    // before and after calling this function.
+    fn empty_hash(&mut self) -> Hash;
+
+    // tmhash(0x00 || leaf)
+    // Pre and post-conditions: the hasher is in the reset state
+    // before and after calling this function.
+    fn leaf_hash(&mut self, bytes: &[u8]) -> Hash;
+
+    // tmhash(0x01 || left || right)
+    // Pre and post-conditions: the hasher is in the reset state
+    // before and after calling this function.
+    fn inner_hash(&mut self, left: Hash, right: Hash) -> Hash;
+
+    // Implements recursion into subtrees.
+    // Pre and post-conditions: the hasher is in the reset state
+    // before and after calling this function.
+    fn hash_byte_vectors(&mut self, byte_vecs: &[Vec<u8>]) -> Hash {
+        let length = byte_vecs.len();
+        match length {
+            0 => self.empty_hash(),
+            1 => self.leaf_hash(&byte_vecs[0]),
+            _ => {
+                let split = length.next_power_of_two() / 2;
+                let left = self.hash_byte_vectors(&byte_vecs[..split]);
+                let right = self.hash_byte_vectors(&byte_vecs[split..]);
+                self.inner_hash(left, right)
+            },
+        }
     }
 }
 
-// returns the largest power of 2 less than length
-fn get_split_point(length: usize) -> usize {
-    match length {
-        0 => panic!("tree is empty!"),
-        1 => panic!("tree has only one element!"),
-        2 => 1,
-        _ => length.next_power_of_two() / 2,
+// A helper to copy GenericArray into the human-friendly Hash type.
+fn copy_to_hash(output: impl AsRef<[u8]>) -> Hash {
+    let mut hash_bytes = [0u8; HASH_SIZE];
+    hash_bytes.copy_from_slice(output.as_ref());
+    hash_bytes
+}
+
+impl<H> MerkleHash for H
+where
+    H: Digest<OutputSize = U32> + FixedOutputReset,
+{
+    fn empty_hash(&mut self) -> Hash {
+        // Get the output of an empty digest state.
+        let digest = self.finalize_reset();
+        copy_to_hash(digest)
+    }
+
+    fn leaf_hash(&mut self, bytes: &[u8]) -> Hash {
+        // Feed the data to the hasher, prepended with 0x00.
+        Digest::update(self, [0x00]);
+        Digest::update(self, bytes);
+
+        // Finalize the digest, reset the hasher state.
+        let digest = self.finalize_reset();
+
+        copy_to_hash(digest)
+    }
+
+    fn inner_hash(&mut self, left: Hash, right: Hash) -> Hash {
+        // Feed the data to the hasher: 0x1, then left and right data.
+        Digest::update(self, [0x01]);
+        Digest::update(self, left);
+        Digest::update(self, right);
+
+        // Finalize the digest, reset the hasher state
+        let digest = self.finalize_reset();
+
+        copy_to_hash(digest)
     }
 }
 
-// tmhash({})
-fn empty_hash() -> Hash {
-    // the empty string / byte slice
-    let empty = Vec::with_capacity(0);
+/// A wrapper for platform-provided host functions which can't do incremental
+/// hashing. One unfortunate example of such platform is Polkadot.
+pub struct NonIncremental<H>(PhantomData<H>);
 
-    // hash it !
-    let digest = Sha256::digest(&empty);
-
-    // copy the GenericArray out
-    let mut hash_bytes = [0u8; HASH_SIZE];
-    hash_bytes.copy_from_slice(&digest);
-    hash_bytes
+impl<H> Default for NonIncremental<H> {
+    fn default() -> Self {
+        Self(Default::default())
+    }
 }
 
-// tmhash(0x00 || leaf)
-fn leaf_hash(bytes: &[u8]) -> Hash {
-    // make a new array starting with 0 and copy in the bytes
-    let mut leaf_bytes = Vec::with_capacity(bytes.len() + 1);
-    leaf_bytes.push(0x00);
-    leaf_bytes.extend_from_slice(bytes);
+impl<H: Sha256> MerkleHash for NonIncremental<H> {
+    fn empty_hash(&mut self) -> Hash {
+        let digest = H::digest([]);
+        copy_to_hash(digest)
+    }
 
-    // hash it !
-    let digest = Sha256::digest(&leaf_bytes);
+    fn leaf_hash(&mut self, bytes: &[u8]) -> Hash {
+        // This is why non-incremental digest APIs are daft.
+        let mut buf = Vec::with_capacity(1 + bytes.len());
+        buf.push(0);
+        buf.extend_from_slice(bytes);
+        let digest = H::digest(buf);
+        copy_to_hash(digest)
+    }
 
-    // copy the GenericArray out
-    let mut hash_bytes = [0u8; HASH_SIZE];
-    hash_bytes.copy_from_slice(&digest);
-    hash_bytes
+    fn inner_hash(&mut self, left: Hash, right: Hash) -> Hash {
+        // This is why non-incremental digest APIs are daft.
+        let mut buf = [0u8; 1 + HASH_SIZE * 2];
+        buf[0] = 1;
+        buf[1..HASH_SIZE + 1].copy_from_slice(&left);
+        buf[HASH_SIZE + 1..].copy_from_slice(&right);
+        let digest = H::digest(buf);
+        copy_to_hash(digest)
+    }
 }
 
-// tmhash(0x01 || left || right)
-fn inner_hash(left: &[u8], right: &[u8]) -> Hash {
-    // make a new array starting with 0x1 and copy in the bytes
-    let mut inner_bytes = Vec::with_capacity(left.len() + right.len() + 1);
-    inner_bytes.push(0x01);
-    inner_bytes.extend_from_slice(left);
-    inner_bytes.extend_from_slice(right);
-
-    // hash it !
-    let digest = Sha256::digest(&inner_bytes);
-
-    // copy the GenericArray out
-    let mut hash_bytes = [0u8; HASH_SIZE];
-    hash_bytes.copy_from_slice(&digest);
-    hash_bytes
-}
-
-#[cfg(test)]
+#[cfg(all(test, feature = "rust-crypto"))]
 mod tests {
+    use sha2::Sha256;
     use subtle_encoding::hex;
 
     use super::*; // TODO: use non-subtle ?
-
-    #[test]
-    fn test_get_split_point() {
-        assert_eq!(get_split_point(2), 1);
-        assert_eq!(get_split_point(3), 2);
-        assert_eq!(get_split_point(4), 2);
-        assert_eq!(get_split_point(5), 4);
-        assert_eq!(get_split_point(10), 8);
-        assert_eq!(get_split_point(20), 16);
-        assert_eq!(get_split_point(100), 64);
-        assert_eq!(get_split_point(255), 128);
-        assert_eq!(get_split_point(256), 128);
-        assert_eq!(get_split_point(257), 256);
-    }
 
     #[test]
     fn test_rfc6962_empty_tree() {
@@ -120,7 +154,7 @@ mod tests {
         let empty_tree_root = &hex::decode(empty_tree_root_hex).unwrap();
         let empty_tree: Vec<Vec<u8>> = vec![vec![]; 0];
 
-        let root = simple_hash_from_byte_vectors(empty_tree);
+        let root = simple_hash_from_byte_vectors::<Sha256>(&empty_tree);
         assert_eq!(empty_tree_root, &root);
     }
 
@@ -131,7 +165,7 @@ mod tests {
         let empty_leaf_root = &hex::decode(empty_leaf_root_hex).unwrap();
         let one_empty_leaf: Vec<Vec<u8>> = vec![vec![]; 1];
 
-        let root = simple_hash_from_byte_vectors(one_empty_leaf);
+        let root = simple_hash_from_byte_vectors::<Sha256>(&one_empty_leaf);
         assert_eq!(empty_leaf_root, &root);
     }
 
@@ -143,18 +177,33 @@ mod tests {
         let leaf_root = &hex::decode(leaf_root_hex).unwrap();
         let leaf_tree: Vec<Vec<u8>> = vec![leaf_string.as_bytes().to_vec(); 1];
 
-        let root = simple_hash_from_byte_vectors(leaf_tree);
+        let root = simple_hash_from_byte_vectors::<Sha256>(&leaf_tree);
         assert_eq!(leaf_root, &root);
     }
 
     #[test]
-    fn test_rfc6962_node() {
-        let node_hash_hex = "aa217fe888e47007fa15edab33c2b492a722cb106c64667fc2b044444de66bbb";
-        let left_string = "N123";
-        let right_string = "N456";
+    fn test_rfc6962_tree_of_2() {
+        let node_hash_hex = "dc9a0536ff2e196d5a628a5bf377ab247bbddf83342be39699461c1e766e6646";
+        let left = b"N123".to_vec();
+        let right = b"N456".to_vec();
 
         let node_hash = &hex::decode(node_hash_hex).unwrap();
-        let hash = inner_hash(left_string.as_bytes(), right_string.as_bytes());
+        let hash = simple_hash_from_byte_vectors::<Sha256>(&[left, right]);
         assert_eq!(node_hash, &hash);
+    }
+
+    mod non_incremental {
+        use super::*;
+
+        #[test]
+        fn test_rfc6962_tree_of_2() {
+            let node_hash_hex = "dc9a0536ff2e196d5a628a5bf377ab247bbddf83342be39699461c1e766e6646";
+            let left = b"N123".to_vec();
+            let right = b"N456".to_vec();
+
+            let node_hash = &hex::decode(node_hash_hex).unwrap();
+            let hash = simple_hash_from_byte_vectors::<NonIncremental<Sha256>>(&[left, right]);
+            assert_eq!(node_hash, &hash);
+        }
     }
 }

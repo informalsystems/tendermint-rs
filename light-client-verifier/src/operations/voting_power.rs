@@ -1,11 +1,12 @@
 //! Provides an interface and default implementation for the `VotingPower` operation
 
 use alloc::collections::BTreeSet as HashSet;
-use core::{convert::TryFrom, fmt};
+use core::{convert::TryFrom, fmt, marker::PhantomData};
 
 use serde::{Deserialize, Serialize};
 use tendermint::{
     block::CommitSig,
+    crypto::signature,
     trust_threshold::TrustThreshold as _,
     vote::{SignedVote, ValidatorIndex, Vote},
 };
@@ -98,11 +99,31 @@ pub trait VotingPowerCalculator: Send + Sync {
     ) -> Result<VotingPowerTally, VerificationError>;
 }
 
-/// Default implementation of a `VotingPowerCalculator`
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub struct ProdVotingPowerCalculator;
+/// Default implementation of a `VotingPowerCalculator`, parameterized with
+/// the signature verification trait.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct ProvidedVotingPowerCalculator<V> {
+    _verifier: PhantomData<V>,
+}
 
-impl VotingPowerCalculator for ProdVotingPowerCalculator {
+// Safety: the only member is phantom data
+unsafe impl<V> Send for ProvidedVotingPowerCalculator<V> {}
+unsafe impl<V> Sync for ProvidedVotingPowerCalculator<V> {}
+
+impl<V> Default for ProvidedVotingPowerCalculator<V> {
+    fn default() -> Self {
+        Self {
+            _verifier: PhantomData,
+        }
+    }
+}
+
+/// Default implementation of a `VotingPowerCalculator`.
+#[cfg(feature = "rust-crypto")]
+pub type ProdVotingPowerCalculator =
+    ProvidedVotingPowerCalculator<tendermint::crypto::default::signature::Verifier>;
+
+impl<V: signature::Verifier> VotingPowerCalculator for ProvidedVotingPowerCalculator<V> {
     fn voting_power_in(
         &self,
         signed_header: &SignedHeader,
@@ -146,7 +167,7 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
             // Check vote is valid
             let sign_bytes = signed_vote.sign_bytes();
             if validator
-                .verify_signature(&sign_bytes, signed_vote.signature())
+                .verify_signature::<V>(&sign_bytes, signed_vote.signature())
                 .is_err()
             {
                 return Err(VerificationError::invalid_signature(

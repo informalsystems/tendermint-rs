@@ -421,7 +421,7 @@ impl Handle for SupervisorHandle {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "rust-crypto"))]
 mod tests {
     use core::{
         convert::{Into, TryFrom},
@@ -451,7 +451,7 @@ mod tests {
         fork_detector::ProdForkDetector,
         store::{memory::MemoryStore, LightStore},
         tests::{MockClock, MockEvidenceReporter, MockIo, TrustOptions},
-        verifier::{operations::ProdHasher, options::Options, types::Time, ProdVerifier},
+        verifier::{options::Options, types::Time, ProdVerifier},
     };
 
     trait IntoLightBlock {
@@ -505,10 +505,8 @@ mod tests {
         let verifier = ProdVerifier::default();
         let clock = MockClock { now };
         let scheduler = scheduler::basic_bisecting_schedule;
-        let hasher = ProdHasher::default();
 
-        let light_client =
-            LightClient::new(peer_id, options, clock, scheduler, verifier, hasher, io);
+        let light_client = LightClient::new(peer_id, options, clock, scheduler, verifier, io);
 
         Instance::new(light_client, state)
     }

@@ -5,13 +5,9 @@ use core::convert::TryFrom;
 pub use ed25519::Signature as Ed25519Signature;
 #[cfg(feature = "secp256k1")]
 pub use k256::ecdsa::Signature as Secp256k1Signature;
-pub use signature::{Signer, Verifier};
 use tendermint_proto::Protobuf;
 
 use crate::{error::Error, prelude::*};
-
-#[deprecated(since = "0.23.2", note = "use Ed25519Signature::BYTE_SIZE instead")]
-pub const ED25519_SIGNATURE_SIZE: usize = Ed25519Signature::BYTE_SIZE;
 
 /// The expected length of all currently supported signatures, in bytes.
 pub const SIGNATURE_LENGTH: usize = 64;
@@ -91,6 +87,7 @@ impl From<Ed25519Signature> for Signature {
     }
 }
 
+#[cfg(feature = "rust-crypto")]
 impl From<ed25519_consensus::Signature> for Signature {
     fn from(sig: ed25519_consensus::Signature) -> Signature {
         Self(sig.to_bytes().to_vec())

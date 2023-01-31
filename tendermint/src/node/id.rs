@@ -1,21 +1,15 @@
 //! Tendermint node IDs
 
 use core::{
-    convert::TryFrom,
     fmt::{self, Debug, Display},
     str::FromStr,
 };
 
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-use sha2::{Digest, Sha256};
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
 
-use crate::{
-    error::Error,
-    prelude::*,
-    public_key::{Ed25519, PublicKey},
-};
+use crate::{error::Error, prelude::*};
 
 /// Length of a Node ID in bytes
 pub const LENGTH: usize = 20;
@@ -64,12 +58,33 @@ impl Debug for Id {
     }
 }
 
-impl From<Ed25519> for Id {
-    fn from(pk: Ed25519) -> Id {
-        let digest = Sha256::digest(pk.as_bytes());
-        let mut bytes = [0u8; LENGTH];
-        bytes.copy_from_slice(&digest[..LENGTH]);
-        Id(bytes)
+#[cfg(feature = "rust-crypto")]
+mod key_conversions {
+    use super::{Id, LENGTH};
+    use crate::crypto::default::Sha256;
+    use crate::public_key::{Ed25519, PublicKey};
+    use crate::Error;
+    use digest::Digest;
+
+    impl From<Ed25519> for Id {
+        fn from(pk: Ed25519) -> Id {
+            let digest = Sha256::digest(pk.as_bytes());
+            let mut bytes = [0u8; LENGTH];
+            bytes.copy_from_slice(&digest[..LENGTH]);
+            Id(bytes)
+        }
+    }
+
+    impl TryFrom<PublicKey> for Id {
+        type Error = Error;
+
+        fn try_from(pk: PublicKey) -> Result<Self, Self::Error> {
+            match pk {
+                PublicKey::Ed25519(ed25519) => Ok(Id::from(ed25519)),
+                #[cfg(feature = "secp256k1")]
+                _ => Err(Error::unsupported_key_type()),
+            }
+        }
     }
 }
 
@@ -96,18 +111,6 @@ impl FromStr for Id {
 impl PartialEq for Id {
     fn eq(&self, other: &Id) -> bool {
         self.ct_eq(other).into()
-    }
-}
-
-impl TryFrom<PublicKey> for Id {
-    type Error = Error;
-
-    fn try_from(pk: PublicKey) -> Result<Self, Self::Error> {
-        match pk {
-            PublicKey::Ed25519(ed25519) => Ok(Id::from(ed25519)),
-            #[cfg(feature = "secp256k1")]
-            _ => Err(Error::unsupported_key_type()),
-        }
     }
 }
 
