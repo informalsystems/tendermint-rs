@@ -40,7 +40,7 @@ pub trait SimpleRequest<S>: Request<S> {}
 
 /// JSON-RPC request wrapper (i.e. message envelope)
 #[derive(Debug, Deserialize, Serialize)]
-pub struct Wrapper<R, S = DefaultDialect> {
+pub struct Wrapper<R, S> {
     /// JSON-RPC version
     jsonrpc: Version,
 

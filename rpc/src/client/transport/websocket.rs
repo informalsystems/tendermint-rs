@@ -661,7 +661,7 @@ impl WebSocketClientDriver {
         })
     }
 
-    async fn send_request<R, S>(&mut self, wrapper: Wrapper<R>) -> Result<(), Error>
+    async fn send_request<R, S>(&mut self, wrapper: Wrapper<R, S>) -> Result<(), Error>
     where
         R: Request<S>,
         S: Dialect,
