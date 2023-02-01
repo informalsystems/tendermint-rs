@@ -36,8 +36,7 @@ use crate::{
     prelude::*,
     query::Query,
     request::Wrapper,
-    response, Client, Id, Request, Response, Scheme, SimpleRequest, Subscription,
-    SubscriptionClient, Url,
+    response, Id, Request, Response, Scheme, SimpleRequest, Subscription, SubscriptionClient, Url,
 };
 use crate::{v0_34, v0_37};
 
