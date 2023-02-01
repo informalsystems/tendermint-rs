@@ -6,6 +6,7 @@ use tendermint::{block, consensus, validator};
 
 use crate::dialect::{DeliverTx, Dialect};
 use crate::prelude::*;
+use crate::request::RequestMessage;
 use crate::serializers;
 
 /// Get ABCI results at a given height.
@@ -26,12 +27,14 @@ impl Request {
     }
 }
 
-impl<S: Dialect> crate::Request<S> for Request {
-    type Response = Response<S::Event>;
-
+impl RequestMessage for Request {
     fn method(&self) -> crate::Method {
         crate::Method::BlockResults
     }
+}
+
+impl<S: Dialect> crate::Request<S> for Request {
+    type Response = Response<S::Event>;
 }
 
 impl<S: Dialect> crate::SimpleRequest<S> for Request {}

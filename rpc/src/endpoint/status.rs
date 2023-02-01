@@ -3,18 +3,20 @@
 use serde::{Deserialize, Serialize};
 use tendermint::{block, node, validator, AppHash, Hash, Time};
 
-use crate::dialect::Dialect;
+use crate::{dialect::Dialect, request::RequestMessage};
 
 /// Node status request
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request;
 
-impl<S: Dialect> crate::Request<S> for Request {
-    type Response = Response;
-
+impl RequestMessage for Request {
     fn method(&self) -> crate::Method {
         crate::Method::Status
     }
+}
+
+impl<S: Dialect> crate::Request<S> for Request {
+    type Response = Response;
 }
 
 impl<S: Dialect> crate::SimpleRequest<S> for Request {}

@@ -11,6 +11,7 @@ use pin_project::pin_project;
 
 use crate::{
     client::sync::{ChannelRx, ChannelTx},
+    dialect::DefaultDialect,
     event::Event,
     prelude::*,
     query::Query,
@@ -20,7 +21,7 @@ use crate::{
 /// A client that exclusively provides [`Event`] subscription capabilities,
 /// without any other RPC method support.
 #[async_trait]
-pub trait SubscriptionClient {
+pub trait SubscriptionClient<S = DefaultDialect> {
     /// `/subscribe`: subscribe to receive events produced by the given query.
     async fn subscribe(&self, query: Query) -> Result<Subscription, Error>;
 

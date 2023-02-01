@@ -4,7 +4,7 @@ use crate::prelude::*;
 use crate::serializers::bytes::base64string;
 use serde::{Deserialize, Serialize};
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Dialect;
 
 impl crate::dialect::Dialect for Dialect {

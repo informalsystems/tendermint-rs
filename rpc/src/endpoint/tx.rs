@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use tendermint::{block, tx, Hash};
 
 use crate::dialect::{DeliverTx, Dialect};
-use crate::{prelude::*, serializers, Method};
+use crate::{prelude::*, request::RequestMessage, serializers, Method};
 
 /// Request for finding a transaction by its hash.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -28,12 +28,14 @@ impl Request {
     }
 }
 
-impl<S: Dialect> crate::Request<S> for Request {
-    type Response = Response<S::Event>;
-
+impl RequestMessage for Request {
     fn method(&self) -> Method {
         Method::Tx
     }
+}
+
+impl<S: Dialect> crate::Request<S> for Request {
+    type Response = Response<S::Event>;
 }
 
 impl<S: Dialect> crate::SimpleRequest<S> for Request {}

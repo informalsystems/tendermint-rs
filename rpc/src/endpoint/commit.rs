@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use tendermint::{block, block::signed_header::SignedHeader};
 
-use crate::dialect::Dialect;
+use crate::{dialect::Dialect, request::RequestMessage};
 
 /// Get commit information about a specific block
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
@@ -20,12 +20,14 @@ impl Request {
     }
 }
 
-impl<S: Dialect> crate::Request<S> for Request {
-    type Response = Response;
-
+impl RequestMessage for Request {
     fn method(&self) -> crate::Method {
         crate::Method::Commit
     }
+}
+
+impl<S: Dialect> crate::Request<S> for Request {
+    type Response = Response;
 }
 
 impl<S: Dialect> crate::SimpleRequest<S> for Request {}

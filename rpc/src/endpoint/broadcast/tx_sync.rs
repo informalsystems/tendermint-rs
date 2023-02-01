@@ -4,7 +4,7 @@ use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use tendermint::{abci::Code, Hash};
 
-use crate::{dialect::Dialect, prelude::*, serializers};
+use crate::{dialect::Dialect, prelude::*, request::RequestMessage, serializers};
 
 /// `/broadcast_tx_sync`: returns with the response from `CheckTx`.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -21,12 +21,14 @@ impl Request {
     }
 }
 
-impl<S: Dialect> crate::Request<S> for Request {
-    type Response = Response;
-
+impl RequestMessage for Request {
     fn method(&self) -> crate::Method {
         crate::Method::BroadcastTxSync
     }
+}
+
+impl<S: Dialect> crate::Request<S> for Request {
+    type Response = Response;
 }
 
 impl<S: Dialect> crate::SimpleRequest<S> for Request {}

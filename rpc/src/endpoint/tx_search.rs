@@ -3,7 +3,7 @@
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 pub use super::tx;
-use crate::{dialect::Dialect, prelude::*, serializers, Method, Order};
+use crate::{dialect::Dialect, prelude::*, request::RequestMessage, serializers, Method, Order};
 
 /// Request for searching for transactions with their results.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -36,12 +36,14 @@ impl Request {
     }
 }
 
-impl<S: Dialect> crate::Request<S> for Request {
-    type Response = Response<S::Event>;
-
+impl RequestMessage for Request {
     fn method(&self) -> Method {
         Method::TxSearch
     }
+}
+
+impl<S: Dialect> crate::Request<S> for Request {
+    type Response = Response<S::Event>;
 }
 
 impl<S: Dialect> crate::SimpleRequest<S> for Request {}

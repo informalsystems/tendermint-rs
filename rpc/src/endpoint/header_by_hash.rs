@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 use tendermint::{block::Header, Hash};
 
+use crate::request::RequestMessage;
 use crate::v0_37;
 
 /// Get information about a specific block by its hash
@@ -29,12 +30,14 @@ impl Request {
     }
 }
 
-impl crate::Request<v0_37::Dialect> for Request {
-    type Response = Response;
-
+impl RequestMessage for Request {
     fn method(&self) -> crate::Method {
         crate::Method::HeaderByHash
     }
+}
+
+impl crate::Request<v0_37::Dialect> for Request {
+    type Response = Response;
 }
 
 impl crate::SimpleRequest<v0_37::Dialect> for Request {}

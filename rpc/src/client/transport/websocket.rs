@@ -3,6 +3,7 @@
 use alloc::{borrow::Cow, collections::BTreeMap as HashMap};
 use core::{
     convert::{TryFrom, TryInto},
+    marker::PhantomData,
     ops::Add,
     str::FromStr,
 };
@@ -32,7 +33,7 @@ use crate::{
     dialect::Dialect,
     endpoint::{subscribe, unsubscribe},
     error::Error,
-    event::Event,
+    event::{DialectEvent, Event},
     prelude::*,
     query::Query,
     request::Wrapper,
@@ -136,16 +137,16 @@ pub use async_tungstenite::tungstenite::protocol::WebSocketConfig;
 ///
 /// [tendermint-websocket-ping]: https://github.com/tendermint/tendermint/blob/309e29c245a01825fc9630103311fd04de99fa5e/rpc/jsonrpc/server/ws_handler.go#L28
 #[derive(Debug, Clone)]
-pub struct WebSocketClient {
-    inner: sealed::WebSocketClient,
+pub struct WebSocketClient<S> {
+    inner: sealed::WebSocketClient<S>,
 }
 
-impl WebSocketClient {
+impl<S: Dialect> WebSocketClient<S> {
     /// Construct a new WebSocket-based client connecting to the given
     /// Tendermint node's RPC endpoint.
     ///
     /// Supports both `ws://` and `wss://` protocols.
-    pub async fn new<U>(url: U) -> Result<(Self, WebSocketClientDriver), Error>
+    pub async fn new<U>(url: U) -> Result<(Self, WebSocketClientDriver<S>), Error>
     where
         U: TryInto<WebSocketClientUrl, Error = Error>,
     {
@@ -159,16 +160,17 @@ impl WebSocketClient {
     pub async fn new_with_config<U>(
         url: U,
         config: Option<WebSocketConfig>,
-    ) -> Result<(Self, WebSocketClientDriver), Error>
+    ) -> Result<(Self, WebSocketClientDriver<S>), Error>
     where
         U: TryInto<WebSocketClientUrl, Error = Error>,
     {
         let url = url.try_into()?;
+        let dialect = S::default();
 
         let (inner, driver) = if url.0.is_secure() {
-            sealed::WebSocketClient::new_secure(url.0, config).await?
+            sealed::WebSocketClient::new_secure(url.0, config, dialect).await?
         } else {
-            sealed::WebSocketClient::new_unsecure(url.0, config).await?
+            sealed::WebSocketClient::new_unsecure(url.0, config, dialect).await?
         };
 
         Ok((Self { inner }, driver))
@@ -176,7 +178,7 @@ impl WebSocketClient {
 }
 
 #[async_trait]
-impl v0_34::Client for WebSocketClient {
+impl v0_34::Client for WebSocketClient<v0_34::Dialect> {
     async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
     where
         R: SimpleRequest<v0_34::Dialect>,
@@ -186,7 +188,7 @@ impl v0_34::Client for WebSocketClient {
 }
 
 #[async_trait]
-impl v0_37::Client for WebSocketClient {
+impl v0_37::Client for WebSocketClient<v0_37::Dialect> {
     async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
     where
         R: SimpleRequest<v0_37::Dialect>,
@@ -196,7 +198,7 @@ impl v0_37::Client for WebSocketClient {
 }
 
 #[async_trait]
-impl SubscriptionClient for WebSocketClient {
+impl<S: Dialect> SubscriptionClient<S> for WebSocketClient<S> {
     async fn subscribe(&self, query: Query) -> Result<Subscription, Error> {
         self.inner.subscribe(query).await
     }
@@ -310,12 +312,12 @@ mod sealed {
     ///
     /// [`async-tungstenite`]: https://crates.io/crates/async-tungstenite
     #[derive(Debug, Clone)]
-    pub struct AsyncTungsteniteClient<C> {
+    pub struct AsyncTungsteniteClient<C, S> {
         cmd_tx: ChannelTx<DriverCommand>,
-        _client_type: core::marker::PhantomData<C>,
+        _phantom: core::marker::PhantomData<(C, S)>,
     }
 
-    impl AsyncTungsteniteClient<Unsecure> {
+    impl<S> AsyncTungsteniteClient<Unsecure, S> {
         /// Construct a WebSocket client. Immediately attempts to open a WebSocket
         /// connection to the node with the given address.
         ///
@@ -327,7 +329,7 @@ mod sealed {
         pub async fn new(
             url: Url,
             config: Option<WebSocketConfig>,
-        ) -> Result<(Self, WebSocketClientDriver), Error> {
+        ) -> Result<(Self, WebSocketClientDriver<S>), Error> {
             debug!("Connecting to unsecure WebSocket endpoint: {}", url);
 
             let (stream, _response) = connect_async_with_config(url, config)
@@ -338,14 +340,14 @@ mod sealed {
             let driver = WebSocketClientDriver::new(stream, cmd_rx);
             let client = Self {
                 cmd_tx,
-                _client_type: Default::default(),
+                _phantom: Default::default(),
             };
 
             Ok((client, driver))
         }
     }
 
-    impl AsyncTungsteniteClient<Secure> {
+    impl<S> AsyncTungsteniteClient<Secure, S> {
         /// Construct a WebSocket client. Immediately attempts to open a WebSocket
         /// connection to the node with the given address, but over a secure
         /// connection.
@@ -358,7 +360,7 @@ mod sealed {
         pub async fn new(
             url: Url,
             config: Option<WebSocketConfig>,
-        ) -> Result<(Self, WebSocketClientDriver), Error> {
+        ) -> Result<(Self, WebSocketClientDriver<S>), Error> {
             debug!("Connecting to secure WebSocket endpoint: {}", url);
 
             // Not supplying a connector means async_tungstenite will create the
@@ -372,24 +374,30 @@ mod sealed {
             let driver = WebSocketClientDriver::new(stream, cmd_rx);
             let client = Self {
                 cmd_tx,
-                _client_type: Default::default(),
+                _phantom: Default::default(),
             };
 
             Ok((client, driver))
         }
     }
 
-    impl<C> AsyncTungsteniteClient<C> {
+    impl<C, S> AsyncTungsteniteClient<C, S> {
         fn send_cmd(&self, cmd: DriverCommand) -> Result<(), Error> {
             self.cmd_tx.send(cmd)
         }
 
-        pub async fn perform<R, S>(&self, request: R) -> Result<R::Response, Error>
+        /// Signals to the driver that it must terminate.
+        pub fn close(self) -> Result<(), Error> {
+            self.send_cmd(DriverCommand::Terminate)
+        }
+    }
+
+    impl<C, S: Dialect> AsyncTungsteniteClient<C, S> {
+        pub async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
         where
             R: SimpleRequest<S>,
-            S: Dialect,
         {
-            let wrapper = Wrapper::new_with_dialect(S::default(), request);
+            let wrapper = Wrapper::new(request);
             let id = wrapper.id().to_string();
             let wrapped_request = wrapper.into_json();
 
@@ -441,42 +449,47 @@ mod sealed {
             })??;
             Ok(())
         }
-
-        /// Signals to the driver that it must terminate.
-        pub fn close(self) -> Result<(), Error> {
-            self.send_cmd(DriverCommand::Terminate)
-        }
     }
 
     /// Allows us to erase the type signatures associated with the different
     /// WebSocket client variants.
     #[derive(Debug, Clone)]
-    pub enum WebSocketClient {
-        Unsecure(AsyncTungsteniteClient<Unsecure>),
-        Secure(AsyncTungsteniteClient<Secure>),
+    pub enum WebSocketClient<S> {
+        Unsecure(AsyncTungsteniteClient<Unsecure, S>),
+        Secure(AsyncTungsteniteClient<Secure, S>),
     }
 
-    impl WebSocketClient {
+    impl<S> WebSocketClient<S> {
         pub async fn new_unsecure(
             url: Url,
             config: Option<WebSocketConfig>,
-        ) -> Result<(Self, WebSocketClientDriver), Error> {
-            let (client, driver) = AsyncTungsteniteClient::<Unsecure>::new(url, config).await?;
+            dialect: S,
+        ) -> Result<(Self, WebSocketClientDriver<S>), Error> {
+            let (client, driver) = AsyncTungsteniteClient::<Unsecure, S>::new(url, config).await?;
             Ok((Self::Unsecure(client), driver))
         }
 
         pub async fn new_secure(
             url: Url,
             config: Option<WebSocketConfig>,
-        ) -> Result<(Self, WebSocketClientDriver), Error> {
-            let (client, driver) = AsyncTungsteniteClient::<Secure>::new(url, config).await?;
+            dialect: S,
+        ) -> Result<(Self, WebSocketClientDriver<S>), Error> {
+            let (client, driver) = AsyncTungsteniteClient::<Secure, S>::new(url, config).await?;
             Ok((Self::Secure(client), driver))
         }
 
-        pub async fn perform<R, S>(&self, request: R) -> Result<R::Response, Error>
+        pub fn close(self) -> Result<(), Error> {
+            match self {
+                WebSocketClient::Unsecure(c) => c.close(),
+                WebSocketClient::Secure(c) => c.close(),
+            }
+        }
+    }
+
+    impl<S: Dialect> WebSocketClient<S> {
+        pub async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
         where
             R: SimpleRequest<S>,
-            S: Dialect,
         {
             match self {
                 WebSocketClient::Unsecure(c) => c.perform(request).await,
@@ -495,13 +508,6 @@ mod sealed {
             match self {
                 WebSocketClient::Unsecure(c) => c.unsubscribe(query).await,
                 WebSocketClient::Secure(c) => c.unsubscribe(query).await,
-            }
-        }
-
-        pub fn close(self) -> Result<(), Error> {
-            match self {
-                WebSocketClient::Unsecure(c) => c.close(),
-                WebSocketClient::Secure(c) => c.close(),
             }
         }
     }
@@ -593,7 +599,7 @@ impl Response for GenericJsonResponse {}
 ///
 /// This is the primary component responsible for transport-level interaction
 /// with the remote WebSocket endpoint.
-pub struct WebSocketClientDriver {
+pub struct WebSocketClientDriver<S> {
     // The underlying WebSocket network connection.
     stream: WebSocketStream<ConnectStream>,
     // Facilitates routing of events to their respective subscriptions.
@@ -603,18 +609,41 @@ pub struct WebSocketClientDriver {
     // Commands we've received but have not yet completed, indexed by their ID.
     // A Terminate command is executed immediately.
     pending_commands: HashMap<SubscriptionId, DriverCommand>,
+    _dialect: PhantomData<S>,
 }
 
-impl WebSocketClientDriver {
+impl<S> WebSocketClientDriver<S> {
     fn new(stream: WebSocketStream<ConnectStream>, cmd_rx: ChannelRx<DriverCommand>) -> Self {
         Self {
             stream,
             router: SubscriptionRouter::default(),
             cmd_rx,
             pending_commands: HashMap::new(),
+            _dialect: Default::default(),
         }
     }
 
+    async fn send_msg(&mut self, msg: Message) -> Result<(), Error> {
+        self.stream.send(msg).await.map_err(|e| {
+            Error::web_socket("failed to write to WebSocket connection".to_string(), e)
+        })
+    }
+
+    async fn simple_request(&mut self, cmd: SimpleRequestCommand) -> Result<(), Error> {
+        if let Err(e) = self
+            .send_msg(Message::Text(cmd.wrapped_request.clone()))
+            .await
+        {
+            cmd.response_tx.send(Err(e.clone()))?;
+            return Err(e);
+        }
+        self.pending_commands
+            .insert(cmd.id.clone(), DriverCommand::SimpleRequest(cmd));
+        Ok(())
+    }
+}
+
+impl<S: Dialect> WebSocketClientDriver<S> {
     /// Executes the WebSocket driver, which manages the underlying WebSocket
     /// transport.
     pub async fn run(mut self) -> Result<(), Error> {
@@ -654,16 +683,9 @@ impl WebSocketClientDriver {
         }
     }
 
-    async fn send_msg(&mut self, msg: Message) -> Result<(), Error> {
-        self.stream.send(msg).await.map_err(|e| {
-            Error::web_socket("failed to write to WebSocket connection".to_string(), e)
-        })
-    }
-
-    async fn send_request<R, S>(&mut self, wrapper: Wrapper<R, S>) -> Result<(), Error>
+    async fn send_request<R>(&mut self, wrapper: Wrapper<R>) -> Result<(), Error>
     where
         R: Request<S>,
-        S: Dialect,
     {
         self.send_msg(Message::Text(
             serde_json::to_string_pretty(&wrapper).unwrap(),
@@ -671,10 +693,7 @@ impl WebSocketClientDriver {
         .await
     }
 
-    async fn subscribe<S>(&mut self, cmd: SubscribeCommand) -> Result<(), Error>
-    where
-        S: Dialect,
-    {
+    async fn subscribe(&mut self, cmd: SubscribeCommand) -> Result<(), Error> {
         // If we already have an active subscription for the given query,
         // there's no need to initiate another one. Just add this subscription
         // to the router.
@@ -686,9 +705,8 @@ impl WebSocketClientDriver {
         }
 
         // Otherwise, we need to initiate a subscription request.
-        let wrapper = Wrapper::new_with_id_and_dialect(
+        let wrapper = Wrapper::new_with_id(
             Id::Str(cmd.id.clone()),
-            S::default(),
             subscribe::Request::new(cmd.query.clone()),
         );
         if let Err(e) = self.send_request(wrapper).await {
@@ -724,19 +742,6 @@ impl WebSocketClientDriver {
         Ok(())
     }
 
-    async fn simple_request(&mut self, cmd: SimpleRequestCommand) -> Result<(), Error> {
-        if let Err(e) = self
-            .send_msg(Message::Text(cmd.wrapped_request.clone()))
-            .await
-        {
-            cmd.response_tx.send(Err(e.clone()))?;
-            return Err(e);
-        }
-        self.pending_commands
-            .insert(cmd.id.clone(), DriverCommand::SimpleRequest(cmd));
-        Ok(())
-    }
-
     async fn handle_incoming_msg(&mut self, msg: Message) -> Result<(), Error> {
         match msg {
             Message::Text(s) => self.handle_text_msg(s).await,
@@ -746,8 +751,8 @@ impl WebSocketClientDriver {
     }
 
     async fn handle_text_msg(&mut self, msg: String) -> Result<(), Error> {
-        if let Ok(ev) = Event::from_string(&msg) {
-            self.publish_event(ev).await;
+        if let Ok(ev) = DialectEvent::<S::Event>::from_string(&msg) {
+            self.publish_event(ev.into()).await;
             return Ok(());
         }
 

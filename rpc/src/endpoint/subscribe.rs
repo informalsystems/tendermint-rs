@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
-use crate::dialect::Dialect;
+use crate::{dialect::Dialect, request::RequestMessage};
 
 /// Subscription request for events.
 ///
@@ -24,12 +24,14 @@ impl Request {
     }
 }
 
-impl<S: Dialect> crate::Request<S> for Request {
-    type Response = Response;
-
+impl RequestMessage for Request {
     fn method(&self) -> crate::Method {
         crate::Method::Subscribe
     }
+}
+
+impl<S: Dialect> crate::Request<S> for Request {
+    type Response = Response;
 }
 
 /// Status responses

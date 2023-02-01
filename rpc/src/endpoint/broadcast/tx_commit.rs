@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use tendermint::{block, Hash};
 
 use crate::dialect::{CheckTx, DeliverTx, Dialect};
-use crate::{prelude::*, serializers};
+use crate::{prelude::*, request::RequestMessage, serializers};
 
 /// `/broadcast_tx_commit`: only returns error if `mempool.CheckTx()` errs or
 /// if we timeout waiting for tx to commit.
@@ -27,12 +27,14 @@ impl Request {
     }
 }
 
-impl<S: Dialect> crate::Request<S> for Request {
-    type Response = Response<S::Event>;
-
+impl RequestMessage for Request {
     fn method(&self) -> crate::Method {
         crate::Method::BroadcastTxCommit
     }
+}
+
+impl<S: Dialect> crate::Request<S> for Request {
+    type Response = Response<S::Event>;
 }
 
 impl<S: Dialect> crate::SimpleRequest<S> for Request {}

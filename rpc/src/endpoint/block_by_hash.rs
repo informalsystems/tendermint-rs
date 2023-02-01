@@ -6,7 +6,7 @@ use tendermint::{
     Hash,
 };
 
-use crate::dialect::Dialect;
+use crate::{dialect::Dialect, request::RequestMessage};
 
 /// Get information about a specific block by its hash
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
@@ -32,12 +32,14 @@ impl Request {
     }
 }
 
-impl<S: Dialect> crate::Request<S> for Request {
-    type Response = Response;
-
+impl RequestMessage for Request {
     fn method(&self) -> crate::Method {
         crate::Method::BlockByHash
     }
+}
+
+impl<S: Dialect> crate::Request<S> for Request {
+    type Response = Response;
 }
 
 impl<S: Dialect> crate::SimpleRequest<S> for Request {}

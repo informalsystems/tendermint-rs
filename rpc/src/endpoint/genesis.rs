@@ -5,7 +5,7 @@ use core::{fmt, marker::PhantomData};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tendermint::Genesis;
 
-use crate::dialect::Dialect;
+use crate::{dialect::Dialect, request::RequestMessage};
 
 /// Get the genesis state for the current chain
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -17,16 +17,21 @@ impl<AppState> Default for Request<AppState> {
     }
 }
 
+impl<AppState> RequestMessage for Request<AppState>
+where
+    AppState: Serialize + DeserializeOwned,
+{
+    fn method(&self) -> crate::Method {
+        crate::Method::Genesis
+    }
+}
+
 impl<AppState, S> crate::Request<S> for Request<AppState>
 where
     AppState: fmt::Debug + Serialize + DeserializeOwned + Send,
     S: Dialect,
 {
     type Response = Response<AppState>;
-
-    fn method(&self) -> crate::Method {
-        crate::Method::Genesis
-    }
 }
 
 impl<AppState, S> crate::SimpleRequest<S> for Request<AppState>

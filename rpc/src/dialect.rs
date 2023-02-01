@@ -13,8 +13,10 @@ pub use end_block::EndBlock;
 
 use serde::{de::DeserializeOwned, Serialize};
 
-pub trait Dialect: sealed::Sealed + Default {
-    type Event: Serialize + DeserializeOwned;
+use tendermint::abci;
+
+pub trait Dialect: sealed::Sealed + Default + Clone + Send + Sync {
+    type Event: Into<abci::Event> + Serialize + DeserializeOwned;
 }
 
 pub type DefaultDialect = crate::v0_37::Dialect;
