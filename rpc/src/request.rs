@@ -9,7 +9,7 @@ use crate::dialect::{DefaultDialect, Dialect};
 use crate::{prelude::*, Error};
 
 /// JSON-RPC requests
-pub trait Request<S>: DeserializeOwned + Serialize + Sized + Send {
+pub trait Request<S: Dialect>: DeserializeOwned + Serialize + Sized + Send {
     /// Response type for this command
     type Response: super::response::Response;
 
@@ -36,7 +36,7 @@ pub trait Request<S>: DeserializeOwned + Serialize + Sized + Send {
 /// simple, singular response.
 ///
 /// [`Subscription`]: struct.Subscription.html
-pub trait SimpleRequest<S>: Request<S> {}
+pub trait SimpleRequest<S: Dialect>: Request<S> {}
 
 /// JSON-RPC request wrapper (i.e. message envelope)
 #[derive(Debug, Deserialize, Serialize)]

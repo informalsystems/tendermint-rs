@@ -3,28 +3,38 @@
 use alloc::collections::BTreeMap as HashMap;
 
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use tendermint::Block;
+use tendermint::{abci, Block};
 
-use crate::dialect::{self, DefaultDialect, Dialect};
-use crate::{prelude::*, query::EventType, response::Wrapper, serializers, Response};
+use crate::{dialect, prelude::*, query::EventType, response::Wrapper, serializers, Response};
 
 /// An incoming event produced by a [`Subscription`].
 ///
 /// [`Subscription`]: ../struct.Subscription.html
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub struct Event<Ev = <DefaultDialect as Dialect>::Event> {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Event {
     /// The query that produced the event.
     pub query: String,
     /// The data associated with the event.
-    pub data: EventData<Ev>,
+    pub data: EventData,
     /// Event type and attributes map.
     pub events: Option<HashMap<String, Vec<String>>>,
 }
 
-impl<Ev> Response for Event<Ev> where Ev: Serialize + DeserializeOwned {}
+// Serialization helper supporting differences in RPC versions.
+#[derive(Serialize, Deserialize, Debug)]
+pub(crate) struct DialectEvent<Ev> {
+    /// The query that produced the event.
+    pub query: String,
+    /// The data associated with the event.
+    pub data: DialectEventData<Ev>,
+    /// Event type and attributes map.
+    pub events: Option<HashMap<String, Vec<String>>>,
+}
+
+impl<Ev> Response for DialectEvent<Ev> where Ev: Serialize + DeserializeOwned {}
 
 /// A JSON-RPC-wrapped event.
-pub type WrappedEvent = Wrapper<Event>;
+pub(crate) type WrappedEvent<Ev> = Wrapper<DialectEvent<Ev>>;
 
 impl Event {
     /// Returns the type associated with this event, if we recognize it.
@@ -39,11 +49,38 @@ impl Event {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-#[serde(tag = "type", content = "value")]
+impl<Ev> From<DialectEvent<Ev>> for Event
+where
+    Ev: Into<abci::Event>,
+{
+    fn from(msg: DialectEvent<Ev>) -> Self {
+        Event {
+            query: msg.query,
+            data: msg.data.into(),
+            events: msg.events,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 // To be fixed in 0.24
 #[allow(clippy::large_enum_variant)]
-pub enum EventData<Ev = <DefaultDialect as Dialect>::Event> {
+pub enum EventData {
+    NewBlock {
+        block: Option<Block>,
+        result_begin_block: Option<abci::response::BeginBlock>,
+        result_end_block: Option<abci::response::EndBlock>,
+    },
+    Tx {
+        tx_result: TxInfo,
+    },
+    GenericJsonEvent(serde_json::Value),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "type", content = "value")]
+#[allow(clippy::large_enum_variant)]
+pub(crate) enum DialectEventData<Ev> {
     #[serde(alias = "tendermint/event/NewBlock")]
     NewBlock {
         block: Option<Block>,
@@ -53,27 +90,94 @@ pub enum EventData<Ev = <DefaultDialect as Dialect>::Event> {
     #[serde(alias = "tendermint/event/Tx")]
     Tx {
         #[serde(rename = "TxResult")]
-        tx_result: TxInfo<Ev>,
+        tx_result: DialectTxInfo<Ev>,
     },
     GenericJsonEvent(serde_json::Value),
 }
 
+impl<Ev> From<DialectEventData<Ev>> for EventData
+where
+    Ev: Into<abci::Event>,
+{
+    fn from(msg: DialectEventData<Ev>) -> Self {
+        match msg {
+            DialectEventData::NewBlock {
+                block,
+                result_begin_block,
+                result_end_block,
+            } => EventData::NewBlock {
+                block,
+                result_begin_block: result_begin_block.map(Into::into),
+                result_end_block: result_end_block.map(Into::into),
+            },
+            DialectEventData::Tx { tx_result } => EventData::Tx {
+                tx_result: tx_result.into(),
+            },
+            DialectEventData::GenericJsonEvent(v) => EventData::GenericJsonEvent(v),
+        }
+    }
+}
+
 /// Transaction result info.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub struct TxInfo<Ev = <DefaultDialect as Dialect>::Event> {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TxInfo {
+    pub height: i64,
+    pub index: Option<i64>,
+    pub tx: Vec<u8>,
+    pub result: TxResult,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub(crate) struct DialectTxInfo<Ev> {
     #[serde(with = "serializers::from_str")]
     pub height: i64,
     pub index: Option<i64>,
     #[serde(with = "serializers::bytes::base64string")]
     pub tx: Vec<u8>,
-    pub result: TxResult<Ev>,
+    pub result: DialectTxResult<Ev>,
+}
+
+impl<Ev> From<DialectTxInfo<Ev>> for TxInfo
+where
+    Ev: Into<abci::Event>,
+{
+    fn from(msg: DialectTxInfo<Ev>) -> Self {
+        TxInfo {
+            height: msg.height,
+            index: msg.index,
+            tx: msg.tx,
+            result: msg.result.into(),
+        }
+    }
 }
 
 /// Transaction result.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub struct TxResult<Ev = <DefaultDialect as Dialect>::Event> {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TxResult {
+    pub log: Option<String>,
+    pub gas_wanted: Option<String>,
+    pub gas_used: Option<String>,
+    pub events: Vec<abci::Event>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub(crate) struct DialectTxResult<Ev> {
     pub log: Option<String>,
     pub gas_wanted: Option<String>,
     pub gas_used: Option<String>,
     pub events: Vec<Ev>,
+}
+
+impl<Ev> From<DialectTxResult<Ev>> for TxResult
+where
+    Ev: Into<abci::Event>,
+{
+    fn from(msg: DialectTxResult<Ev>) -> Self {
+        TxResult {
+            log: msg.log,
+            gas_wanted: msg.gas_wanted,
+            gas_used: msg.gas_used,
+            events: msg.events.into_iter().map(Into::into).collect(),
+        }
+    }
 }

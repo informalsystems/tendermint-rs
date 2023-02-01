@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use tendermint::abci;
+
 use crate::prelude::*;
 
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -13,6 +15,17 @@ impl<Ev> Default for BeginBlock<Ev> {
     fn default() -> Self {
         Self {
             events: Default::default(),
+        }
+    }
+}
+
+impl<Ev> From<BeginBlock<Ev>> for abci::response::BeginBlock
+where
+    Ev: Into<abci::Event>,
+{
+    fn from(msg: BeginBlock<Ev>) -> Self {
+        Self {
+            events: msg.events.into_iter().map(Into::into).collect(),
         }
     }
 }

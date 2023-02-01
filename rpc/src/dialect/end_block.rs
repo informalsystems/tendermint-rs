@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use tendermint::{consensus, validator};
+use tendermint::{abci, consensus, validator};
 
 use crate::prelude::*;
 use crate::serializers;
@@ -25,6 +25,19 @@ impl<Ev> Default for EndBlock<Ev> {
             validator_updates: Default::default(),
             consensus_param_updates: Default::default(),
             events: Default::default(),
+        }
+    }
+}
+
+impl<Ev> From<EndBlock<Ev>> for abci::response::EndBlock
+where
+    Ev: Into<abci::Event>,
+{
+    fn from(msg: EndBlock<Ev>) -> Self {
+        Self {
+            events: msg.events.into_iter().map(Into::into).collect(),
+            validator_updates: msg.validator_updates,
+            consensus_param_updates: msg.consensus_param_updates,
         }
     }
 }

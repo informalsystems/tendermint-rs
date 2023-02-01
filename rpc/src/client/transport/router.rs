@@ -147,6 +147,8 @@ mod test {
         event::{Event, WrappedEvent},
         utils::uuid_str,
     };
+    // TODO: add fixtures for v0_37::dialect
+    use crate::v0_34::dialect::Event as RpcEvent;
 
     async fn read_json_fixture(name: &str) -> String {
         fs::read_to_string(
@@ -157,10 +159,11 @@ mod test {
     }
 
     async fn read_event(name: &str) -> Event {
-        serde_json::from_str::<WrappedEvent>(read_json_fixture(name).await.as_str())
+        serde_json::from_str::<WrappedEvent<RpcEvent>>(read_json_fixture(name).await.as_str())
             .unwrap()
             .into_result()
             .unwrap()
+            .into()
     }
 
     async fn must_recv<T>(ch: &mut ChannelRx<T>, timeout_ms: u64) -> T {
