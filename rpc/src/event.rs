@@ -63,6 +63,19 @@ where
     }
 }
 
+impl<Ev> From<Event> for DialectEvent<Ev>
+where
+    abci::Event: Into<Ev>,
+{
+    fn from(msg: Event) -> Self {
+        DialectEvent {
+            query: msg.query,
+            data: msg.data.into(),
+            events: msg.events,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 // To be fixed in 0.24
 #[allow(clippy::large_enum_variant)]
@@ -119,6 +132,29 @@ where
     }
 }
 
+impl<Ev> From<EventData> for DialectEventData<Ev>
+where
+    abci::Event: Into<Ev>,
+{
+    fn from(msg: EventData) -> Self {
+        match msg {
+            EventData::NewBlock {
+                block,
+                result_begin_block,
+                result_end_block,
+            } => DialectEventData::NewBlock {
+                block,
+                result_begin_block: result_begin_block.map(Into::into),
+                result_end_block: result_end_block.map(Into::into),
+            },
+            EventData::Tx { tx_result } => DialectEventData::Tx {
+                tx_result: tx_result.into(),
+            },
+            EventData::GenericJsonEvent(v) => DialectEventData::GenericJsonEvent(v),
+        }
+    }
+}
+
 /// Transaction result info.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TxInfo {
@@ -152,6 +188,20 @@ where
     }
 }
 
+impl<Ev> From<TxInfo> for DialectTxInfo<Ev>
+where
+    abci::Event: Into<Ev>,
+{
+    fn from(msg: TxInfo) -> Self {
+        DialectTxInfo {
+            height: msg.height,
+            index: msg.index,
+            tx: msg.tx,
+            result: msg.result.into(),
+        }
+    }
+}
+
 /// Transaction result.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TxResult {
@@ -175,6 +225,20 @@ where
 {
     fn from(msg: DialectTxResult<Ev>) -> Self {
         TxResult {
+            log: msg.log,
+            gas_wanted: msg.gas_wanted,
+            gas_used: msg.gas_used,
+            events: msg.events.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
+impl<Ev> From<TxResult> for DialectTxResult<Ev>
+where
+    abci::Event: Into<Ev>,
+{
+    fn from(msg: TxResult) -> Self {
+        DialectTxResult {
             log: msg.log,
             gas_wanted: msg.gas_wanted,
             gas_used: msg.gas_used,

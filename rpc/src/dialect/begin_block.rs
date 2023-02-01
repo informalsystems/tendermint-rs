@@ -29,3 +29,14 @@ where
         }
     }
 }
+
+impl<Ev> From<abci::response::BeginBlock> for BeginBlock<Ev>
+where
+    abci::Event: Into<Ev>,
+{
+    fn from(msg: abci::response::BeginBlock) -> Self {
+        Self {
+            events: msg.events.into_iter().map(Into::into).collect(),
+        }
+    }
+}

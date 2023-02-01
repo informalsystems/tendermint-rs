@@ -41,3 +41,16 @@ where
         }
     }
 }
+
+impl<Ev> From<abci::response::EndBlock> for EndBlock<Ev>
+where
+    abci::Event: Into<Ev>,
+{
+    fn from(msg: abci::response::EndBlock) -> Self {
+        Self {
+            events: msg.events.into_iter().map(Into::into).collect(),
+            validator_updates: msg.validator_updates,
+            consensus_param_updates: msg.consensus_param_updates,
+        }
+    }
+}
