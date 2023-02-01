@@ -11,7 +11,6 @@ use tendermint_light_client::{
     store::{memory::MemoryStore, LightStore},
     tests::*,
     verifier::{
-        operations::ProdHasher,
         options::Options,
         types::{LightBlock, Status},
         ProdVerifier,
@@ -64,7 +63,6 @@ fn run_test(tc: LightClientTest<LightBlock>) -> BisectionTestResult {
     };
 
     let verifier = ProdVerifier::default();
-    let hasher = ProdHasher::default();
 
     let mut light_client = LightClient::new(
         primary,
@@ -72,7 +70,6 @@ fn run_test(tc: LightClientTest<LightBlock>) -> BisectionTestResult {
         clock,
         scheduler::basic_bisecting_schedule,
         verifier,
-        hasher,
         io.clone(),
     );
 

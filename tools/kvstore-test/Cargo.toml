@@ -10,6 +10,7 @@ edition = "2021"
 
 [dev-dependencies]
 futures = "0.3"
+sha2 = "0.10"
 tendermint = { version = "0.28.0", path = "../../tendermint" }
 tendermint-light-client = { version = "0.28.0", path = "../../light-client", features = ["unstable"] }
 tendermint-rpc = { version = "0.28.0", path = "../../rpc", features = [ "http-client", "websocket-client" ] }

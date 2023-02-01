@@ -21,7 +21,7 @@
 
 extern crate alloc;
 
-#[cfg(test)]
+#[cfg(any(feature = "std", test))]
 extern crate std;
 
 #[macro_use]
@@ -35,6 +35,7 @@ pub mod block;
 pub mod chain;
 pub mod channel;
 pub mod consensus;
+pub mod crypto;
 pub mod evidence;
 pub mod genesis;
 pub mod hash;

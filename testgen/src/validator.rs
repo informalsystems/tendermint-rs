@@ -1,4 +1,3 @@
-use ed25519_consensus::SigningKey as Ed25519SigningKey;
 use gumdrop::Options;
 use serde::{Deserialize, Serialize};
 use simple_error::*;
@@ -50,7 +49,7 @@ impl Validator {
         }
         bytes.extend(vec![0u8; 32 - bytes.len()].iter());
         let signing_key = require_with!(
-            Ed25519SigningKey::try_from(&bytes[..]).ok(),
+            private_key::Ed25519::try_from(&bytes[..]).ok(),
             "failed to construct a seed from validator identifier"
         );
         Ok(signing_key)

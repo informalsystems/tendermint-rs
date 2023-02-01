@@ -4,48 +4,12 @@ use tendermint::block::CommitSig;
 
 use crate::{
     errors::VerificationError,
-    operations::{Hasher, ProdHasher},
     types::{SignedHeader, ValidatorSet},
 };
 
 /// Validates the commit associated with a header against a validator set
 pub trait CommitValidator: Send + Sync {
     /// Perform basic validation
-    fn validate(
-        &self,
-        signed_header: &SignedHeader,
-        validators: &ValidatorSet,
-    ) -> Result<(), VerificationError>;
-
-    /// Perform full validation, only necessary if we do full verification (2/3)
-    fn validate_full(
-        &self,
-        signed_header: &SignedHeader,
-        validator_set: &ValidatorSet,
-    ) -> Result<(), VerificationError>;
-}
-
-/// Production-ready implementation of a commit validator
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ProdCommitValidator {
-    hasher: ProdHasher,
-}
-
-impl ProdCommitValidator {
-    /// Create a new commit validator using the given [`Hasher`]
-    /// to compute the hash of headers and validator sets.
-    pub fn new(hasher: ProdHasher) -> Self {
-        Self { hasher }
-    }
-}
-
-impl Default for ProdCommitValidator {
-    fn default() -> Self {
-        Self::new(ProdHasher::default())
-    }
-}
-
-impl CommitValidator for ProdCommitValidator {
     fn validate(
         &self,
         signed_header: &SignedHeader,
@@ -71,12 +35,7 @@ impl CommitValidator for ProdCommitValidator {
         Ok(())
     }
 
-    // This check is only necessary if we do full verification (2/3)
-    //
-    // See https://github.com/informalsystems/tendermint-rs/issues/281
-    //
-    // It returns `ImplementationSpecific` error if it detects a signer
-    // that is not present in the validator set
+    /// Perform full validation, only necessary if we do full verification (2/3)
     fn validate_full(
         &self,
         signed_header: &SignedHeader,
@@ -96,7 +55,7 @@ impl CommitValidator for ProdCommitValidator {
             if validator_set.validator(*validator_address).is_none() {
                 return Err(VerificationError::faulty_signer(
                     *validator_address,
-                    self.hasher.hash_validator_set(validator_set),
+                    validator_set.clone(),
                 ));
             }
         }
@@ -104,3 +63,9 @@ impl CommitValidator for ProdCommitValidator {
         Ok(())
     }
 }
+
+/// Production-ready implementation of a commit validator.
+#[derive(Copy, Clone, Default, Debug)]
+pub struct ProdCommitValidator;
+
+impl CommitValidator for ProdCommitValidator {}

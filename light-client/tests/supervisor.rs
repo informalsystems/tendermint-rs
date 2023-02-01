@@ -1,3 +1,5 @@
+#![cfg(feature = "rust-crypto")]
+
 use std::{collections::HashMap, time::Duration};
 
 use tendermint_light_client::{
@@ -13,7 +15,6 @@ use tendermint_light_client::{
     supervisor::{Handle, Instance, Supervisor},
     tests::{LightClientTest, MockClock, MockEvidenceReporter, MockIo, TrustOptions},
     verifier::{
-        operations::ProdHasher,
         options::Options,
         types::{LightBlock, PeerId, Status, Time},
         ProdVerifier,
@@ -45,10 +46,9 @@ fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: 
 
     let clock = MockClock { now };
     let verifier = ProdVerifier::default();
-    let hasher = ProdHasher::default();
     let scheduler = scheduler::basic_bisecting_schedule;
 
-    let light_client = LightClient::new(peer_id, options, clock, scheduler, verifier, hasher, io);
+    let light_client = LightClient::new(peer_id, options, clock, scheduler, verifier, io);
 
     Instance::new(light_client, state)
 }
