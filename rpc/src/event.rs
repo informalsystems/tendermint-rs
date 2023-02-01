@@ -22,7 +22,7 @@ pub struct Event {
 
 // Serialization helper supporting differences in RPC versions.
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct DialectEvent<Ev> {
+pub struct DialectEvent<Ev> {
     /// The query that produced the event.
     pub query: String,
     /// The data associated with the event.
@@ -34,6 +34,7 @@ pub(crate) struct DialectEvent<Ev> {
 impl<Ev> Response for DialectEvent<Ev> where Ev: Serialize + DeserializeOwned {}
 
 /// A JSON-RPC-wrapped event.
+#[allow(dead_code)]
 pub(crate) type WrappedEvent<Ev> = Wrapper<DialectEvent<Ev>>;
 
 impl Event {
@@ -80,7 +81,7 @@ pub enum EventData {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type", content = "value")]
 #[allow(clippy::large_enum_variant)]
-pub(crate) enum DialectEventData<Ev> {
+pub enum DialectEventData<Ev> {
     #[serde(alias = "tendermint/event/NewBlock")]
     NewBlock {
         block: Option<Block>,
@@ -128,7 +129,7 @@ pub struct TxInfo {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct DialectTxInfo<Ev> {
+pub struct DialectTxInfo<Ev> {
     #[serde(with = "serializers::from_str")]
     pub height: i64,
     pub index: Option<i64>,
@@ -161,7 +162,7 @@ pub struct TxResult {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct DialectTxResult<Ev> {
+pub struct DialectTxResult<Ev> {
     pub log: Option<String>,
     pub gas_wanted: Option<String>,
     pub gas_used: Option<String>,

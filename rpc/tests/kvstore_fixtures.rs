@@ -835,12 +835,12 @@ fn incoming_fixtures() {
             },
             "subscribe_newblock_0" => {
                 let result =
-                    tendermint_rpc::event::Event::<RpcEvent>::from_string(content).unwrap();
+                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
                 if let tendermint_rpc::event::EventData::NewBlock {
                     block,
                     result_begin_block,
                     result_end_block,
-                } = result.data
+                } = result.data.into()
                 {
                     let b = block.unwrap();
                     assert!(b.data.get(0).is_none());
@@ -891,12 +891,12 @@ fn incoming_fixtures() {
             },
             "subscribe_newblock_1" => {
                 let result =
-                    tendermint_rpc::event::Event::<RpcEvent>::from_string(content).unwrap();
+                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
                 if let tendermint_rpc::event::EventData::NewBlock {
                     block,
                     result_begin_block,
                     result_end_block,
-                } = result.data
+                } = result.data.into()
                 {
                     let b = block.unwrap();
                     assert!(b.data.get(0).is_none());
@@ -969,12 +969,12 @@ fn incoming_fixtures() {
             },
             "subscribe_newblock_2" => {
                 let result =
-                    tendermint_rpc::event::Event::<RpcEvent>::from_string(content).unwrap();
+                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
                 if let tendermint_rpc::event::EventData::NewBlock {
                     block,
                     result_begin_block,
                     result_end_block,
-                } = result.data
+                } = result.data.into()
                 {
                     let b = block.unwrap();
                     assert!(b.data.get(0).is_none());
@@ -1025,12 +1025,12 @@ fn incoming_fixtures() {
             },
             "subscribe_newblock_3" => {
                 let result =
-                    tendermint_rpc::event::Event::<RpcEvent>::from_string(content).unwrap();
+                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
                 if let tendermint_rpc::event::EventData::NewBlock {
                     block,
                     result_begin_block,
                     result_end_block,
-                } = result.data
+                } = result.data.into()
                 {
                     let b = block.unwrap();
                     assert!(b.data.get(0).is_none());
@@ -1081,12 +1081,12 @@ fn incoming_fixtures() {
             },
             "subscribe_newblock_4" => {
                 let result =
-                    tendermint_rpc::event::Event::<RpcEvent>::from_string(content).unwrap();
+                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
                 if let tendermint_rpc::event::EventData::NewBlock {
                     block,
                     result_begin_block,
                     result_end_block,
-                } = result.data
+                } = result.data.into()
                 {
                     let b = block.unwrap();
                     assert!(b.data.get(0).is_none());
@@ -1140,9 +1140,9 @@ fn incoming_fixtures() {
             },
             "subscribe_txs_0" => {
                 let result =
-                    tendermint_rpc::event::Event::<RpcEvent>::from_string(content).unwrap();
+                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
                 let height;
-                if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data {
+                if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data.into() {
                     height = tx_result.height;
                     assert!(tx_result.result.log.is_none());
                     assert!(tx_result.result.gas_wanted.is_none());
@@ -1173,9 +1173,9 @@ fn incoming_fixtures() {
             },
             "subscribe_txs_1" => {
                 let result =
-                    tendermint_rpc::event::Event::<RpcEvent>::from_string(content).unwrap();
+                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
                 let height;
-                if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data {
+                if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data.into() {
                     height = tx_result.height;
                     assert!(tx_result.result.log.is_none());
                     assert!(tx_result.result.gas_wanted.is_none());
@@ -1207,9 +1207,9 @@ fn incoming_fixtures() {
             },
             "subscribe_txs_2" => {
                 let result =
-                    tendermint_rpc::event::Event::<RpcEvent>::from_string(content).unwrap();
+                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
                 let height;
-                if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data {
+                if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data.into() {
                     height = tx_result.height;
                     assert!(tx_result.result.log.is_none());
                     assert!(tx_result.result.gas_wanted.is_none());
@@ -1240,9 +1240,9 @@ fn incoming_fixtures() {
             },
             "subscribe_txs_3" => {
                 let result =
-                    tendermint_rpc::event::Event::<RpcEvent>::from_string(content).unwrap();
+                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
                 let height;
-                if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data {
+                if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data.into() {
                     height = tx_result.height;
                     assert!(tx_result.result.log.is_none());
                     assert!(tx_result.result.gas_wanted.is_none());
@@ -1273,9 +1273,9 @@ fn incoming_fixtures() {
             },
             "subscribe_txs_4" => {
                 let result =
-                    tendermint_rpc::event::Event::<RpcEvent>::from_string(content).unwrap();
+                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
                 let height;
-                if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data {
+                if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data.into() {
                     height = tx_result.height;
                     assert!(tx_result.result.log.is_none());
                     assert!(tx_result.result.gas_wanted.is_none());

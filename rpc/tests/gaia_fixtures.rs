@@ -1,8 +1,8 @@
 use std::{fs, path::PathBuf};
 
 // TODO: generate fixtures and test with v0_37::dialect as well
-use tendermint_rpc::v0_34::dialect::{Dialect as RpcDialect, Event as RpcEvent};
-use tendermint_rpc::{endpoint, event::Event, Request, Response};
+use tendermint_rpc::v0_34::dialect::Event as RpcEvent;
+use tendermint_rpc::{endpoint, event::DialectEvent, request::RequestMessage, Response};
 
 use walkdir::WalkDir;
 
@@ -90,7 +90,7 @@ fn incoming_fixtures() {
             },
             _ => {
                 if file_name.starts_with("subscribe_newblock_") {
-                    let r = Event::<RpcEvent>::from_string(content);
+                    let r = DialectEvent::<RpcEvent>::from_string(content);
                     assert!(r.is_ok(), "failed to parse event {file_name}: {r:?}");
                 } else {
                     panic!("unhandled incoming fixture: {file_name}");
@@ -129,13 +129,11 @@ fn outgoing_fixtures() {
                 assert!(endpoint::block::Request::from_string(content).is_ok())
             },
             "block_results_at_height_10" => {
-                let r =
-                    <endpoint::block_results::Request as Request<RpcDialect>>::from_string(content);
+                let r = endpoint::block_results::Request::from_string(content);
                 assert!(r.is_ok(), "block_results_at_height_10: {r:?}");
             },
             "block_results_at_height_4555980" => {
-                let r =
-                    <endpoint::block_results::Request as Request<RpcDialect>>::from_string(content);
+                let r = endpoint::block_results::Request::from_string(content);
                 assert!(r.is_ok(), "block_results_at_height_4555980: {r:?}");
             },
             "blockchain_from_1_to_10" => {
