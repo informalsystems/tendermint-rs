@@ -238,7 +238,7 @@ impl v0_37::Client for WebSocketClient<v0_37::Dialect> {
 }
 
 #[async_trait]
-impl<S: Dialect> SubscriptionClient<S> for WebSocketClient<S> {
+impl<S: Dialect> SubscriptionClient for WebSocketClient<S> {
     async fn subscribe(&self, query: Query) -> Result<Subscription, Error> {
         self.inner.subscribe(query).await
     }
