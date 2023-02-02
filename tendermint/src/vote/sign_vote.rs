@@ -281,6 +281,16 @@ mod tests {
 
         #[test]
         fn test_sign_bytes_compatibility() {
+            let cv = CanonicalVote::new(Vote::default(), ChainId::try_from("A").unwrap());
+            let mut got = vec![];
+            // SignBytes are encoded using MarshalBinary and not MarshalBinaryBare
+            Protobuf::<RawCanonicalVote>::encode_length_delimited(&cv, &mut got).unwrap();
+            let want = vec![
+                0x10, 0x8, 0x1, 0x11, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x2a, 0x0, 0x32, 0x1,
+                0x41,
+            ]; // Todo: Get these bytes from Go. During protobuf upgrade we didn't get to generate them.
+            assert_eq!(got, want);
+
             // with proper (fixed size) height and round (Precommit):
             {
                 let vt_precommit = Vote {
@@ -290,23 +300,6 @@ mod tests {
                     ..Default::default()
                 };
                 println!("{vt_precommit:?}");
-                let cv_precommit = CanonicalVote::new(vt_precommit, ChainId::try_from("A").unwrap());
-                let got = Protobuf::<RawCanonicalVote>::encode_vec(&cv_precommit).unwrap();
-                let want = vec![
-                    0x10, 0x8, 0x1, 0x11, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x2a, 0x0, 0x32, 0x1,
-                    0x41,
-                ]; // Todo: Get these bytes from Go. During protobuf upgrade we didn't get to generate them.
-                assert_eq!(got, want);
-            }
-            // with proper (fixed size) height and round (Precommit):
-            {
-                let vt_precommit = Vote {
-                    height: Height::from(1_u32),
-                    round: Round::from(1_u16),
-                    vote_type: Type::Precommit,
-                    ..Default::default()
-                };
-                println!("{:?}", vt_precommit);
                 let cv_precommit = CanonicalVote::new(vt_precommit, ChainId::try_from("A").unwrap());
                 let got = Protobuf::<RawCanonicalVote>::encode_vec(&cv_precommit).unwrap();
                 let want = vec![
