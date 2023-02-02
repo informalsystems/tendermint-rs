@@ -41,7 +41,7 @@ pub use client::{
     MockClient, MockRequestMatcher, MockRequestMethodMatcher, Subscription, SubscriptionClient,
 };
 #[cfg(feature = "websocket-client")]
-pub use client::{WebSocketClient, WebSocketClientDriver, WebSocketClientUrl, WebSocketConfig};
+pub use client::{WebSocketClientUrl, WebSocketConfig};
 
 pub mod dialect;
 pub mod endpoint;
@@ -65,6 +65,8 @@ pub mod v0_37;
 
 #[cfg(any(feature = "http-client", feature = "websocket-client"))]
 pub use v0_37::Client;
+#[cfg(feature = "websocket-client")]
+pub use v0_37::{WebSocketClient, WebSocketClientDriver};
 
 pub use error::Error;
 pub use id::Id;
