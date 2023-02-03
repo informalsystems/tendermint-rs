@@ -65,7 +65,7 @@ pub trait CommitValidator: Send + Sync {
 }
 
 /// Production-ready implementation of a commit validator.
-#[derive(Copy, Clone, Default, Debug)]
+#[derive(Copy, Clone, Default, Debug, PartialEq, Eq)]
 pub struct ProdCommitValidator;
 
 impl CommitValidator for ProdCommitValidator {}
