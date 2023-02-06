@@ -39,7 +39,10 @@ pub trait Request<S: Dialect>: RequestMessage + Send {
 /// simple, singular response.
 ///
 /// [`Subscription`]: struct.Subscription.html
-pub trait SimpleRequest<S: Dialect>: Request<S> {}
+pub trait SimpleRequest<S: Dialect>: Request<S> {
+    /// The output data, converted from Response.
+    type Output: From<Self::Response>;
+}
 
 /// JSON-RPC request wrapper (i.e. message envelope)
 #[derive(Debug, Deserialize, Serialize)]

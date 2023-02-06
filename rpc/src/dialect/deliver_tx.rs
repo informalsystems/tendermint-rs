@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
-use tendermint::abci::Code;
+use tendermint::abci::{self, Code};
 
 use crate::prelude::*;
 use crate::serializers;
@@ -49,6 +49,24 @@ impl<Ev> Default for DeliverTx<Ev> {
             gas_used: Default::default(),
             events: Default::default(),
             codespace: Default::default(),
+        }
+    }
+}
+
+impl<Ev> From<DeliverTx<Ev>> for abci::response::DeliverTx
+where
+    Ev: Into<abci::Event>,
+{
+    fn from(msg: DeliverTx<Ev>) -> Self {
+        Self {
+            code: msg.code,
+            data: msg.data,
+            log: msg.log,
+            info: msg.info,
+            gas_wanted: msg.gas_wanted,
+            gas_used: msg.gas_used,
+            events: msg.events.into_iter().map(Into::into).collect(),
+            codespace: msg.codespace,
         }
     }
 }

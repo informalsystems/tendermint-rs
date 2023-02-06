@@ -219,7 +219,7 @@ impl<S: Dialect> WebSocketClient<S> {
 
 #[async_trait]
 impl v0_34::Client for WebSocketClient<v0_34::Dialect> {
-    async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
+    async fn perform<R>(&self, request: R) -> Result<R::Output, Error>
     where
         R: SimpleRequest<v0_34::Dialect>,
     {
@@ -229,7 +229,7 @@ impl v0_34::Client for WebSocketClient<v0_34::Dialect> {
 
 #[async_trait]
 impl v0_37::Client for WebSocketClient<v0_37::Dialect> {
-    async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
+    async fn perform<R>(&self, request: R) -> Result<R::Output, Error>
     where
         R: SimpleRequest<v0_37::Dialect>,
     {
@@ -433,7 +433,7 @@ mod sealed {
     }
 
     impl<C, S: Dialect> AsyncTungsteniteClient<C, S> {
-        pub async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
+        pub async fn perform<R>(&self, request: R) -> Result<R::Output, Error>
         where
             R: SimpleRequest<S>,
         {
@@ -457,7 +457,7 @@ mod sealed {
 
             tracing::debug!("Incoming response: {}", response);
 
-            R::Response::from_string(response)
+            R::Response::from_string(response).map(Into::into)
         }
 
         pub async fn subscribe(&self, query: Query) -> Result<Subscription, Error> {
@@ -525,7 +525,7 @@ mod sealed {
     }
 
     impl<S: Dialect> WebSocketClient<S> {
-        pub async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
+        pub async fn perform<R>(&self, request: R) -> Result<R::Output, Error>
         where
             R: SimpleRequest<S>,
         {

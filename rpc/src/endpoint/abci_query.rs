@@ -51,7 +51,9 @@ impl<S: Dialect> crate::Request<S> for Request {
     type Response = Response;
 }
 
-impl<S: Dialect> crate::SimpleRequest<S> for Request {}
+impl<S: Dialect> crate::SimpleRequest<S> for Request {
+    type Output = Response;
+}
 
 /// ABCI query response wrapper
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]

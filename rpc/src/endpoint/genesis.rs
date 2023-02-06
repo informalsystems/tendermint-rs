@@ -39,6 +39,7 @@ where
     AppState: fmt::Debug + Serialize + DeserializeOwned + Send,
     S: Dialect,
 {
+    type Output = Response<AppState>;
 }
 
 /// Block responses

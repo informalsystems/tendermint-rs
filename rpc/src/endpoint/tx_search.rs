@@ -2,6 +2,8 @@
 
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
+use tendermint::abci;
+
 pub use super::tx;
 use crate::{dialect::Dialect, prelude::*, request::RequestMessage, serializers, Method, Order};
 
@@ -43,16 +45,37 @@ impl RequestMessage for Request {
 }
 
 impl<S: Dialect> crate::Request<S> for Request {
-    type Response = Response<S::Event>;
+    type Response = DialectResponse<S::Event>;
 }
 
-impl<S: Dialect> crate::SimpleRequest<S> for Request {}
+impl<S: Dialect> crate::SimpleRequest<S> for Request {
+    type Output = Response;
+}
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Response<Ev> {
-    pub txs: Vec<tx::Response<Ev>>,
+#[derive(Clone, Debug, Serialize)]
+pub struct Response {
+    pub txs: Vec<tx::Response>,
+    pub total_count: u32,
+}
+
+/// RPC dialect helper for serialization of the response.
+#[derive(Debug, Deserialize, Serialize)]
+pub struct DialectResponse<Ev> {
+    pub txs: Vec<tx::DialectResponse<Ev>>,
     #[serde(with = "serializers::from_str")]
     pub total_count: u32,
 }
 
-impl<Ev> crate::Response for Response<Ev> where Ev: Serialize + DeserializeOwned {}
+impl<Ev> crate::Response for DialectResponse<Ev> where Ev: Serialize + DeserializeOwned {}
+
+impl<Ev> From<DialectResponse<Ev>> for Response
+where
+    Ev: Into<abci::Event>,
+{
+    fn from(msg: DialectResponse<Ev>) -> Self {
+        Self {
+            txs: msg.txs.into_iter().map(Into::into).collect(),
+            total_count: msg.total_count,
+        }
+    }
+}

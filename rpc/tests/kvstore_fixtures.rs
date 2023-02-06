@@ -461,8 +461,10 @@ fn incoming_fixtures() {
                 assert_eq!(result.block_id.part_set_header.total, 1);
             },
             "block_results_at_height_10" => {
-                let result =
-                    endpoint::block_results::Response::<RpcEvent>::from_string(content).unwrap();
+                let result: endpoint::block_results::Response =
+                    endpoint::block_results::DialectResponse::<RpcEvent>::from_string(content)
+                        .unwrap()
+                        .into();
                 assert!(result.begin_block_events.is_none());
                 assert!(result.consensus_param_updates.is_none());
                 assert!(result.end_block_events.is_none());
@@ -531,9 +533,12 @@ fn incoming_fixtures() {
                 assert!(result.log.is_empty());
             },
             "broadcast_tx_commit" => {
-                let result =
-                    endpoint::broadcast::tx_commit::Response::<RpcEvent>::from_string(content)
-                        .unwrap();
+                let result: endpoint::broadcast::tx_commit::Response =
+                    endpoint::broadcast::tx_commit::DialectResponse::<RpcEvent>::from_string(
+                        content,
+                    )
+                    .unwrap()
+                    .into();
                 assert_eq!(result.check_tx.code, abci::Code::Ok);
                 assert!(result.check_tx.codespace.is_empty());
                 assert!(result.check_tx.data.is_empty());
@@ -1365,7 +1370,10 @@ fn incoming_fixtures() {
                 assert!(result.log.is_empty());
             },
             "tx" => {
-                let result = endpoint::tx::Response::<RpcEvent>::from_string(content).unwrap();
+                let result: endpoint::tx::Response =
+                    endpoint::tx::DialectResponse::<RpcEvent>::from_string(content)
+                        .unwrap()
+                        .into();
                 assert_eq!(
                     result.hash,
                     Hash::from_bytes(
@@ -1381,8 +1389,10 @@ fn incoming_fixtures() {
                 assert_eq!(u64::from(result.height), 12u64);
             },
             "tx_search_no_prove" => {
-                let result =
-                    endpoint::tx_search::Response::<RpcEvent>::from_string(content).unwrap();
+                let result: endpoint::tx_search::Response =
+                    endpoint::tx_search::DialectResponse::<RpcEvent>::from_string(content)
+                        .unwrap()
+                        .into();
                 assert_eq!(result.total_count as usize, result.txs.len());
                 // Test a few selected attributes of the results.
                 for tx in result.txs {
@@ -1398,8 +1408,10 @@ fn incoming_fixtures() {
                 }
             },
             "tx_search_with_prove" => {
-                let result =
-                    endpoint::tx_search::Response::<RpcEvent>::from_string(content).unwrap();
+                let result: endpoint::tx_search::Response =
+                    endpoint::tx_search::DialectResponse::<RpcEvent>::from_string(content)
+                        .unwrap()
+                        .into();
                 assert_eq!(result.total_count as usize, result.txs.len());
                 // Test a few selected attributes of the results.
                 for tx in result.txs {

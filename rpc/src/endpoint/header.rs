@@ -34,7 +34,9 @@ impl crate::Request<v0_37::Dialect> for Request {
     type Response = Response;
 }
 
-impl crate::SimpleRequest<v0_37::Dialect> for Request {}
+impl crate::SimpleRequest<v0_37::Dialect> for Request {
+    type Output = Response;
+}
 
 /// Header response
 #[derive(Clone, Debug, Deserialize, Serialize)]

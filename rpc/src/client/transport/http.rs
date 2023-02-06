@@ -85,7 +85,7 @@ impl HttpClient {
 
 #[async_trait]
 impl v0_34::Client for HttpClient {
-    async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
+    async fn perform<R>(&self, request: R) -> Result<R::Output, Error>
     where
         R: SimpleRequest<v0_34::Dialect>,
     {
@@ -95,7 +95,7 @@ impl v0_34::Client for HttpClient {
 
 #[async_trait]
 impl v0_37::Client for HttpClient {
-    async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
+    async fn perform<R>(&self, request: R) -> Result<R::Output, Error>
     where
         R: SimpleRequest<v0_37::Dialect>,
     {
@@ -200,7 +200,7 @@ mod sealed {
     where
         C: Connect + Clone + Send + Sync + 'static,
     {
-        pub async fn perform<R, S>(&self, request: R) -> Result<R::Response, Error>
+        pub async fn perform<R, S>(&self, request: R) -> Result<R::Output, Error>
         where
             R: SimpleRequest<S>,
             S: Dialect,
@@ -209,7 +209,7 @@ mod sealed {
             let response = self.inner.request(request).await.map_err(Error::hyper)?;
             let response_body = response_to_string(response).await?;
             tracing::debug!("Incoming response: {}", response_body);
-            R::Response::from_string(&response_body)
+            R::Response::from_string(&response_body).map(Into::into)
         }
     }
 
@@ -296,7 +296,7 @@ mod sealed {
             )))
         }
 
-        pub async fn perform<R, S>(&self, request: R) -> Result<R::Response, Error>
+        pub async fn perform<R, S>(&self, request: R) -> Result<R::Output, Error>
         where
             R: SimpleRequest<S>,
             S: Dialect,

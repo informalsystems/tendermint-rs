@@ -35,7 +35,9 @@ impl<S: Dialect> crate::Request<S> for Request {
     type Response = Response;
 }
 
-impl<S: Dialect> crate::SimpleRequest<S> for Request {}
+impl<S: Dialect> crate::SimpleRequest<S> for Request {
+    type Output = Response;
+}
 
 /// The current consensus state (UNSTABLE).
 ///

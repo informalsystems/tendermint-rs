@@ -38,7 +38,9 @@ impl<S: Dialect> crate::Request<S> for Request {
     type Response = Response;
 }
 
-impl<S: Dialect> crate::SimpleRequest<S> for Request {}
+impl<S: Dialect> crate::SimpleRequest<S> for Request {
+    type Output = Response;
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {

@@ -54,11 +54,11 @@ fn incoming_fixtures() {
                 assert!(r.is_ok(), "{r:?}");
             },
             "block_results_at_height_10" => {
-                let r = endpoint::block_results::Response::<RpcEvent>::from_string(content);
+                let r = endpoint::block_results::DialectResponse::<RpcEvent>::from_string(content);
                 assert!(r.is_ok(), "block_results_at_height_10: {r:?}");
             },
             "block_results_at_height_4555980" => {
-                let r = endpoint::block_results::Response::<RpcEvent>::from_string(content);
+                let r = endpoint::block_results::DialectResponse::<RpcEvent>::from_string(content);
                 assert!(r.is_ok(), "block_results_at_height_4555980: {r:?}");
             },
             "blockchain_from_1_to_10" => {

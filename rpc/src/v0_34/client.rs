@@ -7,7 +7,7 @@ use serde::{de::DeserializeOwned, Serialize};
 use tendermint::{abci, block::Height, evidence::Evidence, Genesis, Hash};
 use tokio::time;
 
-use super::dialect::{Dialect, Event};
+use super::dialect::Dialect;
 use crate::{
     endpoint::{validators::DEFAULT_VALIDATORS_PER_PAGE, *},
     paging::Paging,
@@ -69,7 +69,7 @@ pub trait Client {
     }
 
     /// `/block_results`: get ABCI results for a block at a particular height.
-    async fn block_results<H>(&self, height: H) -> Result<block_results::Response<Event>, Error>
+    async fn block_results<H>(&self, height: H) -> Result<block_results::Response, Error>
     where
         H: Into<Height> + Send,
     {
@@ -78,7 +78,7 @@ pub trait Client {
     }
 
     /// `/block_results`: get ABCI results for the latest block.
-    async fn latest_block_results(&self) -> Result<block_results::Response<Event>, Error> {
+    async fn latest_block_results(&self) -> Result<block_results::Response, Error> {
         self.perform(block_results::Request::default()).await
     }
 
@@ -127,10 +127,7 @@ pub trait Client {
 
     /// `/broadcast_tx_commit`: broadcast a transaction, returning the response
     /// from `DeliverTx`.
-    async fn broadcast_tx_commit<T>(
-        &self,
-        tx: T,
-    ) -> Result<broadcast::tx_commit::Response<Event>, Error>
+    async fn broadcast_tx_commit<T>(&self, tx: T) -> Result<broadcast::tx_commit::Response, Error>
     where
         T: Into<Vec<u8>> + Send,
     {
@@ -252,7 +249,7 @@ pub trait Client {
     }
 
     /// `/tx`: find transaction by hash.
-    async fn tx(&self, hash: Hash, prove: bool) -> Result<tx::Response<Event>, Error> {
+    async fn tx(&self, hash: Hash, prove: bool) -> Result<tx::Response, Error> {
         self.perform(tx::Request::new(hash, prove)).await
     }
 
@@ -264,7 +261,7 @@ pub trait Client {
         page: u32,
         per_page: u8,
         order: Order,
-    ) -> Result<tx_search::Response<Event>, Error> {
+    ) -> Result<tx_search::Response, Error> {
         self.perform(tx_search::Request::new(query, prove, page, per_page, order))
             .await
     }
@@ -292,7 +289,7 @@ pub trait Client {
     }
 
     /// Perform a request against the RPC endpoint
-    async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
+    async fn perform<R>(&self, request: R) -> Result<R::Output, Error>
     where
         R: SimpleRequest<Dialect>;
 }

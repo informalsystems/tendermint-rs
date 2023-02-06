@@ -14,6 +14,7 @@ use crate::{
     event::Event,
     prelude::*,
     query::Query,
+    request::SimpleRequest,
     utils::uuid_str,
     Error, Method, Request, Response, Subscription, SubscriptionClient,
 };
@@ -62,25 +63,27 @@ pub struct MockClient<M: MockRequestMatcher> {
 
 #[async_trait]
 impl<M: MockRequestMatcher> v0_34::Client for MockClient<M> {
-    async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
+    async fn perform<R>(&self, request: R) -> Result<R::Output, Error>
     where
-        R: Request<v0_34::Dialect>,
+        R: SimpleRequest<v0_34::Dialect>,
     {
         self.matcher
             .response_for(request)
             .ok_or_else(Error::mismatch_response)?
+            .map(Into::into)
     }
 }
 
 #[async_trait]
 impl<M: MockRequestMatcher> v0_37::Client for MockClient<M> {
-    async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
+    async fn perform<R>(&self, request: R) -> Result<R::Output, Error>
     where
-        R: Request<v0_37::Dialect>,
+        R: SimpleRequest<v0_37::Dialect>,
     {
         self.matcher
             .response_for(request)
             .ok_or_else(Error::mismatch_response)?
+            .map(Into::into)
     }
 }
 

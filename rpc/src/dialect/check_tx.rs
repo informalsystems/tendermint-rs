@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
-use tendermint::abci::Code;
+use tendermint::abci::{self, Code};
 
 use crate::prelude::*;
 use crate::serializers;
@@ -60,6 +60,27 @@ impl<Ev> Default for CheckTx<Ev> {
             sender: Default::default(),
             priority: Default::default(),
             mempool_error: Default::default(),
+        }
+    }
+}
+
+impl<Ev> From<CheckTx<Ev>> for abci::response::CheckTx
+where
+    Ev: Into<abci::Event>,
+{
+    fn from(msg: CheckTx<Ev>) -> Self {
+        Self {
+            code: msg.code,
+            data: msg.data,
+            log: msg.log,
+            info: msg.info,
+            gas_wanted: msg.gas_wanted,
+            gas_used: msg.gas_used,
+            events: msg.events.into_iter().map(Into::into).collect(),
+            codespace: msg.codespace,
+            sender: msg.sender,
+            priority: msg.priority,
+            mempool_error: msg.mempool_error,
         }
     }
 }
