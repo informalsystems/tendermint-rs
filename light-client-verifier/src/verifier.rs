@@ -285,6 +285,12 @@ mod tests {
         Verdict, Verifier,
     };
 
+    #[cfg(feature = "rust-crypto")]
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    struct ProdVerifierSupportsCommonDerivedTraits {
+        verifier: ProdVerifier,
+    }
+
     #[test]
     fn test_verification_failure_on_chain_id_mismatch() {
         let now = Time::now();
