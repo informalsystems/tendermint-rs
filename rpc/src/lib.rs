@@ -33,7 +33,7 @@ extern crate std;
 mod prelude;
 
 #[cfg(any(feature = "http-client", feature = "websocket-client"))]
-mod client;
+pub mod client;
 #[cfg(feature = "http-client")]
 pub use client::{HttpClient, HttpClientUrl};
 #[cfg(any(feature = "http-client", feature = "websocket-client"))]
