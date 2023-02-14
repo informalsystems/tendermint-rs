@@ -30,7 +30,7 @@ use crate::{
         sync::{ChannelRx, ChannelTx},
         transport::router::{PublishResult, SubscriptionRouter},
     },
-    dialect::{DefaultDialect, Dialect},
+    dialect::Dialect,
     endpoint::{subscribe, unsubscribe},
     error::Error,
     event::{DialectEvent, Event},
@@ -141,13 +141,13 @@ pub struct WebSocketClient<S> {
     inner: sealed::WebSocketClient<S>,
 }
 
-impl WebSocketClient<DefaultDialect> {
+impl<S: Dialect> WebSocketClient<S> {
     /// Construct a new WebSocket-based client connecting to the given
     /// Tendermint node's RPC endpoint.
     /// The RPC protocol version is the one supported by this crate by default.
     ///
     /// Supports both `ws://` and `wss://` protocols.
-    pub async fn new<U>(url: U) -> Result<(Self, WebSocketClientDriver<DefaultDialect>), Error>
+    pub async fn new<U>(url: U) -> Result<(Self, WebSocketClientDriver<S>), Error>
     where
         U: TryInto<WebSocketClientUrl, Error = Error>,
     {
@@ -162,45 +162,6 @@ impl WebSocketClient<DefaultDialect> {
     pub async fn new_with_config<U>(
         url: U,
         config: Option<WebSocketConfig>,
-    ) -> Result<(Self, WebSocketClientDriver<DefaultDialect>), Error>
-    where
-        U: TryInto<WebSocketClientUrl, Error = Error>,
-    {
-        let url = url.try_into()?;
-
-        let (inner, driver) = if url.0.is_secure() {
-            sealed::WebSocketClient::new_secure(url.0, config).await?
-        } else {
-            sealed::WebSocketClient::new_unsecure(url.0, config).await?
-        };
-
-        Ok((Self { inner }, driver))
-    }
-}
-
-impl<S: Dialect> WebSocketClient<S> {
-    /// Construct a new WebSocket-based client connecting to the given
-    /// Tendermint node's RPC endpoint.
-    ///
-    /// Supports both `ws://` and `wss://` protocols.
-    pub async fn new_with_dialect<U>(
-        url: U,
-        dialect: S,
-    ) -> Result<(Self, WebSocketClientDriver<S>), Error>
-    where
-        U: TryInto<WebSocketClientUrl, Error = Error>,
-    {
-        Self::new_with_config_and_dialect(url, None, dialect).await
-    }
-
-    /// Construct a new WebSocket-based client connecting to the given
-    /// Tendermint node's RPC endpoint.
-    ///
-    /// Supports both `ws://` and `wss://` protocols.
-    pub async fn new_with_config_and_dialect<U>(
-        url: U,
-        config: Option<WebSocketConfig>,
-        _dialect: S,
     ) -> Result<(Self, WebSocketClientDriver<S>), Error>
     where
         U: TryInto<WebSocketClientUrl, Error = Error>,
@@ -1233,7 +1194,7 @@ mod test {
         println!("Starting WebSocket server...");
         let mut server = TestServer::new("127.0.0.1:0").await;
         println!("Creating client RPC WebSocket connection...");
-        let (client, driver) = WebSocketClient::new_with_dialect(server.node_addr.clone(), Dialect)
+        let (client, driver) = WebSocketClient::<Dialect>::new(server.node_addr.clone())
             .await
             .unwrap();
         let driver_handle = tokio::spawn(async move { driver.run().await });
