@@ -19,7 +19,7 @@ pub trait Dialect: sealed::Sealed + Default + Clone + Send + Sync {
     type Event: Into<abci::Event> + Serialize + DeserializeOwned;
 }
 
-pub type DefaultDialect = crate::v0_37::Dialect;
+pub type LatestDialect = crate::v0_37::Dialect;
 
 mod sealed {
     pub trait Sealed {}

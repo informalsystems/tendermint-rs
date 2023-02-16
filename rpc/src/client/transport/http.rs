@@ -331,7 +331,7 @@ mod tests {
     use hyper::Body;
 
     use super::sealed::HyperClient;
-    use crate::dialect::DefaultDialect;
+    use crate::dialect::LatestDialect;
     use crate::endpoint::abci_info;
 
     fn authorization(req: &Request<Body>) -> Option<&str> {
@@ -346,7 +346,7 @@ mod tests {
         let inner = hyper::Client::new();
         let client = HyperClient::new(uri, inner);
         let req =
-            HyperClient::build_request::<_, DefaultDialect>(&client, abci_info::Request).unwrap();
+            HyperClient::build_request::<_, LatestDialect>(&client, abci_info::Request).unwrap();
 
         assert_eq!(authorization(&req), None);
     }
@@ -357,7 +357,7 @@ mod tests {
         let inner = hyper::Client::new();
         let client = HyperClient::new(uri, inner);
         let req =
-            HyperClient::build_request::<_, DefaultDialect>(&client, abci_info::Request).unwrap();
+            HyperClient::build_request::<_, LatestDialect>(&client, abci_info::Request).unwrap();
 
         assert_eq!(authorization(&req), Some("Basic dG90bzp0YXRh"));
     }
