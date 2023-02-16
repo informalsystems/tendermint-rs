@@ -15,7 +15,7 @@ receive data from full nodes, to detect conflicting information, and to report
 on conflicts. While there are many ways for a full node to provide bad
 information, what we're really looking for is misbehaviour by the validators,
 which is reflected in conflicting commits (ie. commits for different blocks at
-the same height). 
+the same height).
 
 ### Detect
 
@@ -48,7 +48,7 @@ mechanism may be utilized.
 
 #### Sequential Sync
 
-Inital state: 
+Initial state:
 
     - time T
     - height H 
@@ -87,5 +87,5 @@ Skipping sync is essentially the same as sequential, except for a few points:
 - skipping is only permitted if the validator set has not changed too much - ie.
   if +1/3 of the last trusted validator set has signed the commit for the height we're attempting to skip to
 - if the validator set changes too much, we "bisect" the height space,
-  attempting to skip to a lower height, recursively. 
+  attempting to skip to a lower height, recursively.
 - in the worst case, the bisection takes us to a sequential height

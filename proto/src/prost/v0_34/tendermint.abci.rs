@@ -337,7 +337,7 @@ pub struct ResponseCheckTx {
     #[prost(int64, tag = "10")]
     pub priority: i64,
     /// mempool_error is set by Tendermint.
-    /// ABCI applictions creating a ResponseCheckTX should not set mempool_error.
+    /// ABCI applications creating a ResponseCheckTX should not set mempool_error.
     #[prost(string, tag = "11")]
     pub mempool_error: ::prost::alloc::string::String,
 }

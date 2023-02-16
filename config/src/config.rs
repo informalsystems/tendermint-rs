@@ -702,7 +702,7 @@ pub struct FastsyncConfig {
 pub struct TransferRate(u64);
 
 impl TransferRate {
-    /// Get the trasfer rate in bytes per second
+    /// Get the transfer rate in bytes per second
     pub fn bytes_per_sec(self) -> u64 {
         self.0
     }

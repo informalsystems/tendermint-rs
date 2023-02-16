@@ -43,7 +43,7 @@ pub trait LightStore: Debug + Send + Sync {
     /// Get the light block of greatest height with the given status.
     fn highest(&self, status: Status) -> Option<LightBlock>;
 
-    /// Get the light block of greatest hight before the given height with the given status.
+    /// Get the light block of greatest height before the given height with the given status.
     fn highest_before(&self, height: Height, status: Status) -> Option<LightBlock>;
 
     /// Get the light block of lowest height with the given status.

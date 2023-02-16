@@ -138,7 +138,7 @@ define_error! {
                 now: Time,
             }
             | e | {
-                format_args!("not withing trusting period: expires_at={0} now={1}",
+                format_args!("not within trusting period: expires_at={0} now={1}",
                     e.expires_at, e.now)
             },
 
@@ -183,7 +183,7 @@ pub trait ErrorExt {
     /// ie. it's outside of the trusting period.
     fn has_expired(&self) -> bool;
 
-    /// Whether this error means that a timeout occured when
+    /// Whether this error means that a timeout occurred when
     /// querying a node.
     fn is_timeout(&self) -> Option<Duration>;
 }

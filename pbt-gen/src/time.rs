@@ -101,7 +101,7 @@ prop_compose! {
 }
 
 prop_compose! {
-    /// An abitrary [`OffsetDateTime`], offset in UTC (between [min_time] and [max_time]).
+    /// An arbitrary [`OffsetDateTime`], offset in UTC (between [min_time] and [max_time]).
     pub fn arb_datetime()
         (
             d in arb_datetime_in_range(min_time(), max_time())
@@ -111,7 +111,7 @@ prop_compose! {
 }
 
 prop_compose! {
-    /// An abitrary [`OffsetDateTime`] ((between [min_time] and [max_time])),
+    /// An arbitrary [`OffsetDateTime`] ((between [min_time] and [max_time])),
     /// with an arbitrary time zone offset from UTC.
     pub fn arb_datetime_with_offset()
         (
@@ -123,7 +123,7 @@ prop_compose! {
 }
 
 prop_compose! {
-    /// An abitrary [`OffsetDateTime`], offset in UTC, that can be represented
+    /// An arbitrary [`OffsetDateTime`], offset in UTC, that can be represented
     /// as an RFC 3339 timestamp. Values with year 0 are further excluded
     /// due to the validity requirements on
     /// Google's well-known [`Timestamp`] protobuf message format.
@@ -228,11 +228,11 @@ prop_compose! {
 }
 
 prop_compose! {
-    /// An aribtrary RFC3339 timestamp
+    /// An arbitrary RFC3339 timestamp
     ///
     /// For example: `1985-04-12T23:20:50.52Z`
     ///
-    /// The implementaiton follows
+    /// The implementation follows
     /// [Section 5.6 of RFC3339](https://tools.ietf.org/html/rfc3339#ref-ABNF)
     pub fn arb_rfc3339_timestamp()(
         date in arb_rfc3339_full_date(),

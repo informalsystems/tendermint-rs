@@ -7,7 +7,7 @@ This specification is not maintained. See
 [tendermint/spec](https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/detection/)
 for the most recent version.
 
-## Abstract 
+## Abstract
 
 This document collects drafts of function for generating and
 submitting proof of fork in the IBC context
@@ -63,7 +63,7 @@ func QueryHeightsRange(id, from, to) ([]Height)
 
 > This function can be used if the relayer has no information about
 > the IBC component. This allows late-joining relayers to also
-> participate in fork dection and the generation in proof of
+> participate in fork detection and the generation in proof of
 > fork. Alternatively, we may also postulate that relayers are not
 > responsible to detect forks for heights before they started (and
 > subscribed to the transactions reporting fresh headers being
@@ -118,7 +118,7 @@ func SubmitIBCProofOfFork(
     else {
         // the ibc component does not have the TrustedBlock and might
 		// even be on yet a different branch. We have to compute a PoF
-		// that the ibc component can verifiy based on its current
+		// that the ibc component can verify based on its current
         // knowledge
 		
         ibcLightBlock, lblock, _, result := commonRoot(lightStore, ibc, PoF.TrustedBlock)
@@ -153,7 +153,7 @@ func SubmitIBCProofOfFork(
 > If the relayer detects a fork, it has to compute a proof of fork that
 > will convince the IBC component. That is it has to compare the
 > relayer's local lightstore against the lightstore of the IBC
-> component, and find common ancestor lightblocks. 
+> component, and find common ancestor lightblocks.
 
 
 
@@ -194,10 +194,10 @@ LightBlock) (LightBlock, LightBlock, LightStore, Result) {
 
 - Expected postcondition
     - returns
-	    - a lightBlock b1 from the IBC component, and 
+	    - a lightBlock b1 from the IBC component, and
 		- a lightBlock b2
-            from the local lightStore with height less than 
-			lblock.Header.Hight, s.t. b1 supports b2, and 
+            from the local lightStore with height less than
+			lblock.Header.Height, s.t. b1 supports b2, and
 		- a lightstore with the blocks downloaded from
           the ibc component
 ----
@@ -237,9 +237,9 @@ func extendPoF (root LightBlock,
 - Expected postcondition
     - returns a newPOF:
 	    - newPoF.TrustedBlock = root
-        - let prefix = 
+        - let prefix =
 		     connector +
-		     lightStore.Subtrace(connector.Header.Height, PoF.TrustedBlock.Header.Height-1) + 
+		     lightStore.Subtrace(connector.Header.Height, PoF.TrustedBlock.Header.Height-1) +
 		     PoF.TrustedBlock  
             - newPoF.PrimaryTrace = prefix + PoF.PrimaryTrace
             - newPoF.SecondaryTrace = prefix + PoF.SecondaryTrace
@@ -284,7 +284,7 @@ func DetectIBCFork(ibc IBCComponent, lightStore LightStore) (LightNodeProofOfFor
 ```
 **TODO:** finish conditions
 - Implementation remark
-    - we ask the handler for the lastest check. Cross-check with the
+    - we ask the handler for the latest check. Cross-check with the
       chain. In case they deviate we generate PoF.
 	- we assume IBC component is correct. It has verified the
       consensus state

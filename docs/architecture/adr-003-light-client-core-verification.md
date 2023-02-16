@@ -22,16 +22,16 @@ For reference, a schematic of the light node is below:
 ![Light Node Diagram](assets/light-node.png).
 
 Here we focus on the core verification library, which is reflected in the
-diagram as the "Light Client Verifier" and "Bisector". 
+diagram as the "Light Client Verifier" and "Bisector".
 
 The light node is subjectively initialized, and then attempts to sync to a most
 recent height by skipping straight to it. The verifier is the core logic
-to check if a header can be trusted and if we can skip to it. 
+to check if a header can be trusted and if we can skip to it.
 If the validator set has changed too much, the header can't be trusted,
 and we'll have to request intermediate headers as necessary to sync through the validator set changes.
 
 Note the verifier should also work for IBC, though in IBC bisection can't be performed directly
-since blockchains can't make HTTP requests. There, bisection is expected to be done by an external relayer 
+since blockchains can't make HTTP requests. There, bisection is expected to be done by an external relayer
 process that can make requests to full nodes and submit the results to an IBC enabled chain.
 
 The library should lend itself smoothly to both use cases and should be difficult to use incorrectly.
@@ -45,7 +45,7 @@ hence the core verification library should abstract over it.
 
 Here we describe the core verification library, including:
 
-- traits 
+- traits
 - public functions for IBC and light nodes
 - implementations of traits for the existing Tendermint data-structures
 
@@ -59,10 +59,10 @@ The implementation of the core verification involves two components:
   the traits for the tendermint specific data structures
 
 The `light` crate should have minimal dependencies and not depend on
-`tendermint`. This way it will be kept clean, easy to test, and easily used for 
-variatons on tendermint with different header and vote data types.
+`tendermint`. This way it will be kept clean, easy to test, and easily used for
+variations on tendermint with different header and vote data types.
 
-The light crate exposes traits for the block header, validator set, and commit 
+The light crate exposes traits for the block header, validator set, and commit
 with the minimum information necessary to support general light client logic.
 
 According to the specification, the key functionality the light client
@@ -73,7 +73,7 @@ validated.
 
 ### Header
 
-A Header must contain a height, time, and the hashes of the current and next validator sets. 
+A Header must contain a height, time, and the hashes of the current and next validator sets.
 It can be uniquely identified by its hash:
 
 ```rust
@@ -89,8 +89,8 @@ pub trait Header {
 
 ### Commit
 
-A commit in the blockchain contains the underlying signatures from validators, typically in 
-the form of votes. From the perspective of the light client, 
+A commit in the blockchain contains the underlying signatures from validators, typically in
+the form of votes. From the perspective of the light client,
 we don't care about the signatures themselves.
 We're only interested in knowing the total voting power from a given validator
 set that signed for the given block. Hence we can abstract over underlying votes and
@@ -105,7 +105,7 @@ pub trait Commit {
     fn voting_power_in(&self, vals: &Self::ValidatorSet) -> Result<u64, Error>;
 }
 ```
-The `header_hash` is the header being committed to, 
+The `header_hash` is the header being committed to,
 and `validate` performs Commit-structure-specific validations,
 for instance checking the number of votes is correct, or that they are
 all for the right block ID.
@@ -113,23 +113,23 @@ all for the right block ID.
 Computing `voting_power_in` require access to a validator set
 to get the public keys to verify signatures. But this specific relationship
 between validators and commit structure isn't the business of the `light` crate;
-it's rather how a kind of Tendermint Commit structure implements the `light` traits. 
+it's rather how a kind of Tendermint Commit structure implements the `light` traits.
 By making ValidatorSet an associated type of Commit, the light crate doesn't
-have to know much about validators or how they relate to commits, so the ValidatorSet 
+have to know much about validators or how they relate to commits, so the ValidatorSet
 trait can be much smaller, and we never even define the concept of an individual
 validator.
 
 Note this means `Commit` is expected to have access to the ids of the validators that
-signed, which can then be used to look them up in their ValidatorSet implementation. 
+signed, which can then be used to look them up in their ValidatorSet implementation.
 This is presently true, since Commit's contain the validator addresses
 along with the signatures. But if the addresses were removed, for instance to
-save space, the Commit trait would need access to the relevant validator set to 
+save space, the Commit trait would need access to the relevant validator set to
 get the Ids, and this validator set may be different than the one being passed
 in `voting_power_in`.
 
 By abstracting over the underlying vote type, this trait can support
-optimizations like batch verification of signatures, and the use of 
-agreggate signatures instead of individual votes. 
+optimizations like batch verification of signatures, and the use of
+agreggate signatures instead of individual votes.
 So long as it can be determined what voting power of a given validator set
 signed correctly for the commit.
 
@@ -140,14 +140,14 @@ Note the specification introduces a `signers(commit) -> validators` method that
 returns the list of validators that signed a commit. However, such a method
 would require access to the underlying validator set in order to verify the
 commits, and it is only ever used in computing `voting_power_in`. Hence, we
-dispence with it here in favour of a `voting_power_in` that operates on a
+dispense with it here in favour of a `voting_power_in` that operates on a
 `Commit` and `ValidatorSet`. However, this also means that ValidatorSet will
-need to expose facilities for determining wheter a validator signed correctly in
+need to expose facilities for determining whether a validator signed correctly in
 order for implementations to make use of it to compute `voting_power_in`.
 
 Note also that in Tendermint, commits are for a particular block ID, which
 includes both a header hash and a "parts set hash". The latter is completely
-irelevant to the light client, and can only be verified by downloading the full
+irrelevant to the light client, and can only be verified by downloading the full
 block. Hence it is effectively ignored here. It would be great if Tendermint
 could disentangle commits to the proposal block parts for gossip (ie. the parts
 set hash) from commits to the header itself (ie. the header hash), but that's
@@ -165,9 +165,9 @@ It also has a total power used for determining if the result of `voting_power_in
 than a fraction of the total power. 
 
 ValidatorSet is implemented as an associated type of Commit, where it's
-necessary to compute `voting_power_in`, so the underyling implementation must
-have some way to determine the voting power of the validators that signed, 
-since voting power is not found in the commit itself. 
+necessary to compute `voting_power_in`, so the underlying implementation must
+have some way to determine the voting power of the validators that signed,
+since voting power is not found in the commit itself.
 
 Note we don't need to define individual validators since all the details of how validators relates to commits
 is encapsulated in the Commit.
@@ -187,7 +187,7 @@ validators to be used in verifying a new header, but it's also needed in case
 any conflicting commits are discovered and they need to be published to the
 blockchain. That said, it's not needed for the core verification, so we don't
 include it here. Users of the `light` crate like a light node decide how to
-manage the state. We do include some convenience structus:
+manage the state. We do include some convenience structs:
 
 ```rust
 pub struct SignedHeader<C, H> 
@@ -214,7 +214,7 @@ ready to be persisted to some external store.
 
 ### TrustThreshold
 
-The amount of validator set change that occur when skipping to a higher height depends on the 
+The amount of validator set change that occur when skipping to a higher height depends on the
 trust threshold, as per the spec. Here we define it as a trait that encapsulated the math of what percent
 of validators need to sign:
 
@@ -241,8 +241,8 @@ where
 }
 ```
 
-In practice, this can be implemented as a Tendermint RPC client making requests 
-to the `/commit` and `/validators` endpoints of full nodes. 
+In practice, this can be implemented as a Tendermint RPC client making requests
+to the `/commit` and `/validators` endpoints of full nodes.
 For testing, the Requester can be implemented by JSON files.
 
 ### Verification
@@ -250,7 +250,7 @@ For testing, the Requester can be implemented by JSON files.
 Both IBC and full node syncing have to perform a common set of checks:
 
 - validate the hashes
-- if the header is sequential, validate the next validator set 
+- if the header is sequential, validate the next validator set
 - if the header is not sequential, check if the trust threshold is reached
 	- this uses `voting_power_in` with a validator set that may be different from
 the one that actually created the commit.
@@ -288,7 +288,7 @@ pub fn verify_single<H, C, T>(
 ) -> Result<TrustedState<C, H>, Error>
 ```
 
-For the light node, we pass in a Requester, and specify a height we want to sync to. 
+For the light node, we pass in a Requester, and specify a height we want to sync to.
 It will fetch that header and try to verify it using the skipping method,
 and will run a bisection algorithm to recursively request headers of lower height
 as needed. It returns a list of headers it verified along the way:
@@ -311,7 +311,7 @@ their variations. For instance, v0.33 of Tendermint Core introduced a breaking
 change to the Commit structure to make it much smaller. We can implement the
 `light` traits for both versions of the Commit structure.
 
-The `light` abstractions also facilitate testing, as complete Tendermint data structures 
+The `light` abstractions also facilitate testing, as complete Tendermint data structures
 are not required to test the light client logic, only
 the elements it cares about. This means we can implement mock commits and validators,
 where validators are just numbered 0,1,2... and both commits and validators are
@@ -354,4 +354,4 @@ There are likely a few other instances of things the light client is not validat
 
 ### Neutral
 
-- Certain validity checks are ommitted since they have little bearing
+- Certain validity checks are omitted since they have little bearing

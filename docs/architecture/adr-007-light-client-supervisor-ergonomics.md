@@ -51,5 +51,5 @@ Approved
 
 ## References
 
-* [Feedback on preceeding ADR](https://github.com/informalsystems/tendermint-rs/pull/185#pullrequestreview-439830876)
+* [Feedback on preceding ADR](https://github.com/informalsystems/tendermint-rs/pull/185#pullrequestreview-439830876)
 * [Tracking issue](https://github.com/informalsystems/tendermint-rs/issues/398)

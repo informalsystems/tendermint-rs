@@ -137,7 +137,7 @@ impl ErrorExt for ErrorDetail {
         }
     }
 
-    /// Whether this error means that a timeout occured when querying a node.
+    /// Whether this error means that a timeout occurred when querying a node.
     fn is_timeout(&self) -> Option<Duration> {
         if let Self::Io(e) = self {
             e.source.is_timeout()

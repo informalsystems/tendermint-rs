@@ -24,7 +24,7 @@ core domain and transports messages into the rest of the system.
 
 ### Transport
 
-Wraping the design is the `Transport`. Modelled with the properties of
+Wrapping the design is the `Transport`. Modelled with the properties of
 a physical network endpoint in mind, which can be bound and stopped. It should
 strongly correspond to the acquisition and lifecycle management of network
 resources on the system.

@@ -7,7 +7,7 @@
 
 ## Status
 
-WIP. 
+WIP.
 
 ## Context
 
@@ -37,17 +37,17 @@ latest height and stay synced while it runs.
 
 ### Abscissa
 
-[Abscissa](https://github.com/iqlusioninc/abscissa) is a framework for building CLI 
-tools in Rust by Tony Arcieri of Iqlusion. 
-It's focus is on security and minimizing dependencies. 
-The full list of dependencies can be found [here](https://github.com/iqlusioninc/abscissa#depencencies).
+[Abscissa](https://github.com/iqlusioninc/abscissa) is a framework for building CLI
+tools in Rust by Tony Arcieri of Iqlusion.
+It's focus is on security and minimizing dependencies.
+The full list of dependencies can be found [here](https://github.com/iqlusioninc/abscissa#dependencies).
 
-For instance, while it includes functionality for command-line option parsing like that 
+For instance, while it includes functionality for command-line option parsing like that
 provided by `structopt` + `clap`, it does so with far less dependencies.
 
 [Users](https://github.com/iqlusioninc/abscissa#projects-using-abscissa)
 of note include the [Tendermint KMS](https://github.com/tendermint/kms)
-for validators and the new 
+for validators and the new
 [Zebra ZCash full node](https://github.com/ZcashFoundation/zebra).
 
 See the [introductory blog

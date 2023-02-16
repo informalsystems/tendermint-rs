@@ -65,7 +65,7 @@ define_error! {
 }
 
 impl IoErrorDetail {
-    /// Whether this error means that a timeout occured when querying a node.
+    /// Whether this error means that a timeout occurred when querying a node.
     pub fn is_timeout(&self) -> Option<Duration> {
         match self {
             Self::Timeout(e) => Some(e.duration),

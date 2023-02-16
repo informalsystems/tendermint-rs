@@ -1,6 +1,6 @@
 //! ABCI-specific data types used in requests and responses.
 //!
-//! These types have changes from the core data structures to better accomodate
+//! These types have changes from the core data structures to better accommodate
 //! ABCI applications.
 //!
 //! [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#data-types)

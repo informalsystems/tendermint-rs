@@ -161,7 +161,7 @@ TwoThirdsPrevotes(vr, v) ==
   Cardinality(PV) >= THRESHOLD2
 
 \* if a process sends a PREVOTE, then there are three possibilities:
-\* 1) the process is faulty, 2) the PREVOTE cotains Nil,
+\* 1) the process is faulty, 2) the PREVOTE contains Nil,
 \* 3) there is a proposal in an earlier (valid) round and two thirds of PREVOTES
 IfSentPrevoteThenReceivedProposalOrTwoThirds(r) ==
   \A mpv \in msgsPrevote[r]:
@@ -249,7 +249,7 @@ NoEquivocationByCorrect(r, msgs) ==
         \/ m.src /= p
         \/ m.id = v
 
-\* a proposer nevers sends two values
+\* a proposer never sends two values
 ProposalsByProposer(r, msgs) ==
   \* if the proposer is not faulty, it sends only one value
   \E v \in ValidValues:
