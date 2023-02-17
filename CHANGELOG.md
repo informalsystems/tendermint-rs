@@ -1,5 +1,78 @@
 # CHANGELOG
 
+## v0.29.0
+
+*Feb 17, 2023*
+
+This release features modularity improvements for the cryptographic routines, as well as fixes related to block verification and the use of a consensus-friendly ed25519 crate.
+
+### BREAKING CHANGES
+
+- `[tendermint]` Make implementations of cryptographic primitives replaceable
+  ([#1238](https://github.com/informalsystems/tendermint-rs/pull/1238)).
+  * Provide a `Sha256` trait in module `crypto` and make digest hashing
+    implementations available through it.
+  * Provide a `Verifier` trait in module `crypto::signature` to enable
+    alternative implementations of signature verification available through it.
+    An `Error` enum is defined in the same module, representing the error cases
+    that can arise in the implementation in a deliberately opaque way.
+  * The module `crypto::default` provides pure Rust implementations of the
+    cryptographic traits. The module is made available by a
+    new `rust-crypto` feature, enabled by default.
+  * `merkle::simple_hash_from_byte_vectors` is made generic over an
+    implementation of the new `MerkleHash` trait. Implementations for
+    Rust-Crypto conformant digest objects and the non-incremental
+    `crypto::Sha256` API are provided in the crate.
+  * The `Header::hash` and `ValidatorSet::hash` methods are gated by the
+    `rust-crypto` feature. Generic hashing methods not dependent on
+    the default crypto implementations are added for both types,
+    named `hash_with`.
+  * Conversions to `account::Id` and `node::Id` from `PublicKey` and
+    curve-specific key types are gated by the `rust-crypto` feature.
+  * The `validator::Info::new` method is gated by the `rust-crypto` feature.
+  * Remove a deprecated constant `signature::ED25519_SIGNATURE_SIZE`.
+
+- `[tendermint-light-client-verifier]` Changes for the new Tendermint crypto API
+  ([#1238](https://github.com/informalsystems/tendermint-rs/pull/1238)).
+  * The `rust-crypto` feature, enabled by default, guards the
+    batteries-included implementation types: `ProdVerifier`, `ProdPredicates`,
+    `ProdVotingPowerCalculator`.
+  * Remove the `operations::hasher` API (`Hasher` and `ProdHasher`),
+    made unnecessary by the new crypto abstractions in the `tendermint` crate.
+  * The `VerificationPredicates` trait features a `Sha256` associated type
+    to represent the hasher implementation, replacing the `&dyn Hasher`
+    parameter passed to methods.
+  * Change the type of the `VerificationErrorDetail::FaultySigner` field
+    `validator_set` to `ValidatorSet`. This removes a hasher dependency from
+    `CommitValidator`, and `ProdCommitValidator` is now an empty dummy type.
+
+- `[tendermint-light-client]` Changes for the new Tendermint crypto API
+  ([#1238](https://github.com/informalsystems/tendermint-rs/pull/1238)).
+  * The `rust-crypto` feature enables the default crypto implementations,
+    and is required by the `rpc-client` and `unstable` features.
+    `ProdForkDetector` is guarded by this feature, and is made a specific
+    type alias to the hasher-generic `ProvidedForkDetector` type.
+  * `LightClientBuilder` gets another type parameter for the Merkle hasher.
+    Its generic constructors lose the `Hasher` parameter.
+
+### BUG FIXES
+
+- `[tendermint-light-client]` Fix verification of blocks between two trusted
+  heights
+  ([#1246](https://github.com/informalsystems/tendermint-rs/issues/1246))
+
+### DEPENDENCIES
+
+- `[tendermint, tendermint-p2p]` Replaced the `ed25519-dalek` dependency with
+  `ed25519-consensus`
+  ([#1046](https://github.com/informalsystems/tendermint-rs/pull/1046))
+
+### IMPROVEMENTS
+
+- Update all crates to the [2021 edition](https://doc.rust-
+  lang.org/edition-guide/rust-2021/index.html) of the Rust language
+  ([#1262](https://github.com/informalsystems/tendermint-rs/issues/1262))
+
 ## v0.28.0
 
 *Dec 13, 2022*
@@ -226,11 +299,11 @@ Pre-releases will continue along this line until v0.34.20 is released.
 
 ### FEATURES
 
-- `[tendermint-rpc]` Update `broadcast_tx_*` result to include
-  prioritized new mempool fields available from v0.34.20-rc0
-  ([#1148](https://github.com/informalsystems/tendermint-rs/issues/1148))
 - `[tendermint-proto]` Regenerate protos from Tendermint
   v0.34.20-rc0, including prioritized mempool fields in `ResponseCheckTx`
+  ([#1148](https://github.com/informalsystems/tendermint-rs/issues/1148))
+- `[tendermint-rpc]` Update `broadcast_tx_*` result to include
+  prioritized new mempool fields available from v0.34.20-rc0
   ([#1148](https://github.com/informalsystems/tendermint-rs/issues/1148))
 
 ## v0.23.7
@@ -388,18 +461,18 @@ not yet support `no_std`.
 - Upgraded Prost to the official v0.9 release to finally resolve the security
   issue introduced by v0.7
   ([#925](https://github.com/informalsystems/tendermint-rs/issues/925))
-- `[tendermint, tendermint-config]` The `tendermint::config`
-  module has now been broken out into its own crate (`tendermint-
-  config`) to help towards facilitating `no_std` compatibility
-  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
-- `[tendermint]` The `tendermint::node::info::OtherInfo::rpc_address`
-  field type has been changed from `tendermint::net::Address`
-  to `String` toward facilitating `no_std` compatibility
-  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
 - `[tendermint]` The `tendermint::node::info::ListenAddress::to_net_address`
   method was replaced with a simple `as_str` method toward facilitating
   `no_std` compatibility ([#983](https://github.com/informalsystems/tendermint-
   rs/issues/983))
+- `[tendermint]` The `tendermint::node::info::OtherInfo::rpc_address`
+  field type has been changed from `tendermint::net::Address`
+  to `String` toward facilitating `no_std` compatibility
+  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
+- `[tendermint, tendermint-config]` The `tendermint::config`
+  module has now been broken out into its own crate (`tendermint-
+  config`) to help towards facilitating `no_std` compatibility
+  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
 
 ### FEATURES
 
