@@ -1,0 +1,34 @@
+# Attempts to perform a release when a particular tag is pushed. This uses the
+# release.sh script in the root of the repository, and assumes that the
+# CRATES_TOKEN secret has been set and contains an API token with which we can
+# publish our crates to crates.io.
+#
+# If release operation fails partway through due to a temporary error (e.g. the
+# crate being published depends on the crate published just prior, but the
+# prior crate isn't yet available via crates.io), one can simply rerun this
+# workflow. The release.sh script aims to be an idempotent operation, skipping
+# the publishing of crates that have already been published.
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"  # Push events to matching v*, i.e. v1.0, v20.15.10
+      - "v[0-9]+.[0-9]+.[0-9]+-alpha.[0-9]+"  # e.g. v0.37.0-alpha.1, v0.38.0-alpha.10
+      - "v[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+"   # e.g. v0.37.0-beta.1, v0.38.0-beta.10
+      - "v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+"      # e.g. v0.37.0-rc1, v0.38.0-rc10
+
+jobs:
+  release:
+    runs-on: ubuntu
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Publish crates
+        run: ./release.sh
+        env:
+          CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
+
