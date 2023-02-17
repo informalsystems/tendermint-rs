@@ -6,9 +6,12 @@ use core::{
 };
 
 use async_trait::async_trait;
+
+use tendermint::{block::Height, Hash};
 use tendermint_config::net;
 
-use crate::{prelude::*, Error, Scheme, SimpleRequest, Url};
+use crate::prelude::*;
+use crate::{client::CompatMode, endpoint, query::Query, Error, Order, Scheme, SimpleRequest, Url};
 use crate::{v0_34, v0_37};
 
 /// A JSON-RPC/HTTP Tendermint RPC client (implements [`crate::Client`]).
@@ -40,6 +43,14 @@ use crate::{v0_34, v0_37};
 #[derive(Debug, Clone)]
 pub struct HttpClient {
     inner: sealed::HttpClient,
+    compat: CompatMode,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct HttpConfig {
+    /// Compatibility mode for Tendermint RPC protocol.
+    pub compat: CompatMode,
+    pub proxy_url: Option<HttpClientUrl>,
 }
 
 impl HttpClient {
@@ -56,6 +67,7 @@ impl HttpClient {
             } else {
                 sealed::HttpClient::new_http(url.try_into()?)
             },
+            compat: Default::default(),
         })
     }
 
@@ -71,15 +83,53 @@ impl HttpClient {
         U: TryInto<HttpClientUrl, Error = Error>,
         P: TryInto<HttpClientUrl, Error = Error>,
     {
-        let url = url.try_into()?;
-        let proxy_url = proxy_url.try_into()?;
-        Ok(Self {
-            inner: if proxy_url.0.is_secure() {
-                sealed::HttpClient::new_https_proxy(url.try_into()?, proxy_url.try_into()?)?
-            } else {
-                sealed::HttpClient::new_http_proxy(url.try_into()?, proxy_url.try_into()?)?
+        Self::new_with_config(
+            url,
+            HttpConfig {
+                proxy_url: Some(proxy_url.try_into()?),
+                ..Default::default()
             },
-        })
+        )
+    }
+
+    /// Construct a new Tendermint RPC HTTP/S client connecting to the given
+    /// URL with specified configuration options.
+    ///
+    /// If the `proxy_url` member of the [`HttpConfig`] parameter is not `None`
+    /// and the RPC endpoint is secured (HTTPS), the proxy will automatically
+    /// attempt to connect using the [HTTP CONNECT] method.
+    ///
+    /// [HTTP CONNECT]: https://en.wikipedia.org/wiki/HTTP_tunnel
+    pub fn new_with_config<U>(url: U, config: HttpConfig) -> Result<Self, Error>
+    where
+        U: TryInto<HttpClientUrl, Error = Error>,
+    {
+        let url = url.try_into()?;
+        match config.proxy_url {
+            None => Ok(Self {
+                inner: if url.0.is_secure() {
+                    sealed::HttpClient::new_https(url.try_into()?)
+                } else {
+                    sealed::HttpClient::new_http(url.try_into()?)
+                },
+                compat: config.compat,
+            }),
+            Some(proxy_url) => Ok(Self {
+                inner: if proxy_url.0.is_secure() {
+                    sealed::HttpClient::new_https_proxy(url.try_into()?, proxy_url.try_into()?)?
+                } else {
+                    sealed::HttpClient::new_http_proxy(url.try_into()?, proxy_url.try_into()?)?
+                },
+                compat: config.compat,
+            }),
+        }
+    }
+
+    async fn perform_v0_34<R>(&self, request: R) -> Result<R::Output, Error>
+    where
+        R: SimpleRequest<v0_34::Dialect>,
+    {
+        self.inner.perform(request).await
     }
 }
 
@@ -93,6 +143,16 @@ impl v0_34::Client for HttpClient {
     }
 }
 
+macro_rules! perform_with_compat {
+    ($self:expr, $request:expr) => {{
+        let request = $request;
+        match $self.compat {
+            CompatMode::Latest => $self.perform(request).await,
+            CompatMode::V0_34 => $self.perform_v0_34(request).await,
+        }
+    }};
+}
+
 #[async_trait]
 impl v0_37::Client for HttpClient {
     async fn perform<R>(&self, request: R) -> Result<R::Output, Error>
@@ -100,6 +160,79 @@ impl v0_37::Client for HttpClient {
         R: SimpleRequest<v0_37::Dialect>,
     {
         self.inner.perform(request).await
+    }
+
+    async fn block_results<H>(&self, height: H) -> Result<endpoint::block_results::Response, Error>
+    where
+        H: Into<Height> + Send,
+    {
+        perform_with_compat!(self, endpoint::block_results::Request::new(height.into()))
+    }
+
+    async fn header<H>(&self, height: H) -> Result<endpoint::header::Response, Error>
+    where
+        H: Into<Height> + Send,
+    {
+        let height = height.into();
+        match self.compat {
+            CompatMode::Latest => self.perform(endpoint::header::Request::new(height)).await,
+            CompatMode::V0_34 => {
+                // Back-fill with a request to /block endpoint and
+                // taking just the header from the response.
+                let resp = self
+                    .perform_v0_34(endpoint::block::Request::new(height))
+                    .await?;
+                Ok(resp.into())
+            },
+        }
+    }
+
+    async fn header_by_hash(
+        &self,
+        hash: Hash,
+    ) -> Result<endpoint::header_by_hash::Response, Error> {
+        match self.compat {
+            CompatMode::Latest => {
+                self.perform(endpoint::header_by_hash::Request::new(hash))
+                    .await
+            },
+            CompatMode::V0_34 => {
+                // Back-fill with a request to /block_by_hash endpoint and
+                // taking just the header from the response.
+                let resp = self
+                    .perform_v0_34(endpoint::block_by_hash::Request::new(hash))
+                    .await?;
+                Ok(resp.into())
+            },
+        }
+    }
+
+    async fn tx(&self, hash: Hash, prove: bool) -> Result<endpoint::tx::Response, Error> {
+        perform_with_compat!(self, endpoint::tx::Request::new(hash, prove))
+    }
+
+    async fn tx_search(
+        &self,
+        query: Query,
+        prove: bool,
+        page: u32,
+        per_page: u8,
+        order: Order,
+    ) -> Result<endpoint::tx_search::Response, Error> {
+        perform_with_compat!(
+            self,
+            endpoint::tx_search::Request::new(query, prove, page, per_page, order)
+        )
+    }
+
+    async fn broadcast_tx_commit<T>(
+        &self,
+        tx: T,
+    ) -> Result<endpoint::broadcast::tx_commit::Response, Error>
+    where
+        T: Into<Vec<u8>> + Send,
+    {
+        perform_with_compat!(self, endpoint::broadcast::tx_commit::Request::new(tx))
     }
 }
 

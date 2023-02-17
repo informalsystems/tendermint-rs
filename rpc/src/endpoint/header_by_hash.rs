@@ -52,3 +52,11 @@ pub struct Response {
 }
 
 impl crate::Response for Response {}
+
+impl From<super::block_by_hash::Response> for Response {
+    fn from(block_resp: super::block_by_hash::Response) -> Self {
+        Response {
+            header: block_resp.block.map(|b| b.header),
+        }
+    }
+}

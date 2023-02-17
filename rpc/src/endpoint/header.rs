@@ -46,3 +46,11 @@ pub struct Response {
 }
 
 impl crate::Response for Response {}
+
+impl From<super::block::Response> for Response {
+    fn from(block_resp: super::block::Response) -> Self {
+        Response {
+            header: block_resp.block.header,
+        }
+    }
+}
