@@ -183,8 +183,6 @@ Our release process is as follows:
    changes to the release PR. This includes:
    1. All `Cargo.toml` files (making sure dependencies' versions are updated
       too).
-   2. All crates' `lib.rs` files documentation references' `html_root_url`
-      parameters must point to the new version.
 4. Run `cargo doc --all-features --open` locally to double-check that all the
    documentation compiles and seems up-to-date and coherent. Fix any potential
    issues here and push them to the release PR.
