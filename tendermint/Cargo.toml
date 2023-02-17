@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint"
-version    = "0.28.0" # Also update `html_root_url` in lib.rs and
+version    = "0.29.0" # Also update `html_root_url` in lib.rs and
                                # depending crates (rpc, light-node, ..) when bumping this
 license    = "Apache-2.0"
 homepage   = "https://www.tendermint.com/"
@@ -45,7 +45,7 @@ serde_repr = { version = "0.1", default-features = false }
 signature = { version = "1", default-features = false }
 subtle = { version = "2", default-features = false }
 subtle-encoding = { version = "0.5", default-features = false, features = ["bech32-preview"] }
-tendermint-proto = { version = "0.28.0", default-features = false, path = "../proto" }
+tendermint-proto = { version = "0.29.0", default-features = false, path = "../proto" }
 time = { version = "0.3", default-features = false, features = ["macros", "parsing"] }
 zeroize = { version = "1.1", default-features = false, features = ["zeroize_derive", "alloc"] }
 flex-error = { version = "0.4.4", default-features = false }
