@@ -34,14 +34,15 @@ mod prelude;
 
 #[cfg(any(feature = "http-client", feature = "websocket-client"))]
 pub mod client;
-#[cfg(feature = "http-client")]
-pub use client::{HttpClient, HttpClientUrl};
 #[cfg(any(feature = "http-client", feature = "websocket-client"))]
 pub use client::{
-    MockClient, MockRequestMatcher, MockRequestMethodMatcher, Subscription, SubscriptionClient,
+    Client, MockClient, MockRequestMatcher, MockRequestMethodMatcher, Subscription,
+    SubscriptionClient,
 };
+#[cfg(feature = "http-client")]
+pub use client::{HttpClient, HttpClientUrl};
 #[cfg(feature = "websocket-client")]
-pub use client::{WebSocketClientUrl, WebSocketConfig};
+pub use client::{WebSocketClient, WebSocketClientDriver, WebSocketClientUrl, WebSocketConfig};
 
 pub mod dialect;
 pub mod endpoint;
@@ -59,14 +60,6 @@ mod rpc_url;
 pub mod serializers;
 mod utils;
 mod version;
-
-pub mod v0_34;
-pub mod v0_37;
-
-#[cfg(any(feature = "http-client", feature = "websocket-client"))]
-pub use v0_37::Client;
-#[cfg(feature = "websocket-client")]
-pub use v0_37::{WebSocketClient, WebSocketClientDriver};
 
 pub use error::Error;
 pub use id::Id;

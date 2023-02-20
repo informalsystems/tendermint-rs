@@ -299,7 +299,7 @@ fn outgoing_fixtures() {
 #[test]
 fn incoming_fixtures() {
     // TODO: generate fixtures and test with v0_37::dialect as well
-    use tendermint_rpc::v0_34::dialect::Event as RpcEvent;
+    use tendermint_rpc::dialect::v0_34::Event as RpcEvent;
 
     let empty_merkle_root_hash = Some(
         tendermint::Hash::from_hex_upper(

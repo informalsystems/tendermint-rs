@@ -4,13 +4,14 @@ use alloc::collections::BTreeMap as HashMap;
 
 use async_trait::async_trait;
 
+use crate::dialect::{v0_37, Dialect};
 use crate::{
     client::{
         subscription::SubscriptionTx,
         sync::{unbounded, ChannelRx, ChannelTx},
         transport::router::SubscriptionRouter,
+        Client,
     },
-    dialect::Dialect,
     event::Event,
     prelude::*,
     query::Query,
@@ -18,7 +19,6 @@ use crate::{
     utils::uuid_str,
     Error, Method, Request, Response, Subscription, SubscriptionClient,
 };
-use crate::{v0_34, v0_37};
 
 /// A mock client implementation for use in testing.
 ///
@@ -62,20 +62,7 @@ pub struct MockClient<M: MockRequestMatcher> {
 }
 
 #[async_trait]
-impl<M: MockRequestMatcher> v0_34::Client for MockClient<M> {
-    async fn perform<R>(&self, request: R) -> Result<R::Output, Error>
-    where
-        R: SimpleRequest<v0_34::Dialect>,
-    {
-        self.matcher
-            .response_for(request)
-            .ok_or_else(Error::mismatch_response)?
-            .map(Into::into)
-    }
-}
-
-#[async_trait]
-impl<M: MockRequestMatcher> v0_37::Client for MockClient<M> {
+impl<M: MockRequestMatcher> Client for MockClient<M> {
     async fn perform<R>(&self, request: R) -> Result<R::Output, Error>
     where
         R: SimpleRequest<v0_37::Dialect>,
@@ -274,12 +261,11 @@ mod test {
 
     mod v0_34 {
         use super::*;
+        use crate::dialect::v0_34::Event as RpcEvent;
         use crate::event::DialectEvent;
-        use crate::v0_34::{dialect, Client};
 
         async fn read_event(name: &str) -> Event {
-            let msg =
-                DialectEvent::<dialect::Event>::from_string(read_json_fixture(name).await).unwrap();
+            let msg = DialectEvent::<RpcEvent>::from_string(read_json_fixture(name).await).unwrap();
             msg.into()
         }
 
@@ -344,7 +330,6 @@ mod test {
 
     mod v0_37 {
         use super::*;
-        use crate::v0_37::Client;
 
         #[tokio::test]
         async fn mock_client() {

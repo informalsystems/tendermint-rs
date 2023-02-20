@@ -10,9 +10,14 @@ use async_trait::async_trait;
 use tendermint::{block::Height, Hash};
 use tendermint_config::net;
 
+use crate::dialect::{v0_34, v0_37};
 use crate::prelude::*;
-use crate::{client::CompatMode, endpoint, query::Query, Error, Order, Scheme, SimpleRequest, Url};
-use crate::{v0_34, v0_37};
+use crate::{
+    client::{Client, CompatMode},
+    endpoint,
+    query::Query,
+    Error, Order, Scheme, SimpleRequest, Url,
+};
 
 /// A JSON-RPC/HTTP Tendermint RPC client (implements [`crate::Client`]).
 ///
@@ -134,27 +139,7 @@ impl HttpClient {
 }
 
 #[async_trait]
-impl v0_34::Client for HttpClient {
-    async fn perform<R>(&self, request: R) -> Result<R::Output, Error>
-    where
-        R: SimpleRequest<v0_34::Dialect>,
-    {
-        self.inner.perform(request).await
-    }
-}
-
-macro_rules! perform_with_compat {
-    ($self:expr, $request:expr) => {{
-        let request = $request;
-        match $self.compat {
-            CompatMode::Latest => $self.perform(request).await,
-            CompatMode::V0_34 => $self.perform_v0_34(request).await,
-        }
-    }};
-}
-
-#[async_trait]
-impl v0_37::Client for HttpClient {
+impl Client for HttpClient {
     async fn perform<R>(&self, request: R) -> Result<R::Output, Error>
     where
         R: SimpleRequest<v0_37::Dialect>,

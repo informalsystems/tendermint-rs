@@ -3,8 +3,8 @@
 use serde::{Deserialize, Serialize};
 use tendermint::{block::Header, Hash};
 
+use crate::dialect::v0_37;
 use crate::request::RequestMessage;
-use crate::v0_37;
 
 /// Get information about a specific block by its hash
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]

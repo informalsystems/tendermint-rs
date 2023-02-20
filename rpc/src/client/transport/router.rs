@@ -147,8 +147,8 @@ mod test {
         event::{Event, WrappedEvent},
         utils::uuid_str,
     };
-    // TODO: add fixtures for v0_37::dialect
-    use crate::v0_34::dialect::Event as RpcEvent;
+    // TODO: add fixtures for dialect::v0_37
+    use crate::dialect::v0_34::Event as RpcEvent;
 
     async fn read_json_fixture(name: &str) -> String {
         fs::read_to_string(
