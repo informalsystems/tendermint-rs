@@ -1,6 +1,7 @@
 //! Support for dynamic compatibility with older protocol versions.
 
-use super::Client;
+use tendermint::Version;
+
 use crate::prelude::*;
 use crate::Error;
 
@@ -20,7 +21,21 @@ impl Default for CompatMode {
 }
 
 impl CompatMode {
-    fn from_tendermint_version(raw_version: String) -> Result<CompatMode, Error> {
+    /// Parse the Tendermint version string to determine
+    /// the compatibility mode.
+    ///
+    /// The version can be obtained by querying the `/status` endpoint.
+    /// The request and response format of this endpoint is currently the same
+    /// for all supported RPC dialects, so such a request can be performed
+    /// before the required compatibility mode is settled upon.
+    ///
+    /// Note that this is not fail-proof: the version is reported for a particular
+    /// client connection, so any other connections to the same URL might not
+    /// be handled by the same server. In the future, the RPC protocol should
+    /// follow versioning practices designed to avoid ambiguities with
+    /// message formats.
+    pub fn from_version(tendermint_version: Version) -> Result<CompatMode, Error> {
+        let raw_version: String = tendermint_version.into();
         let version = semver::Version::parse(&raw_version)
             .map_err(|_| Error::invalid_tendermint_version(raw_version))?;
         match (version.major, version.minor) {
@@ -31,45 +46,36 @@ impl CompatMode {
     }
 }
 
-/// Queries the `/status` RPC endpoint to discover which compatibility mode
-/// to use for the node that this client connects to.
-///
-/// Note that this is not fail-proof: the version is reported for a particular
-/// client connection, so any other connections to the same URL might not
-/// be handled by the same server. In the future, the RPC protocol should
-/// follow versioning practices designed to avoid ambiguities with
-/// message formats.
-pub async fn discover<C>(client: &C) -> Result<CompatMode, Error>
-where
-    C: Client + Send + Sync,
-{
-    let status = client.status().await?;
-    CompatMode::from_tendermint_version(status.node_info.version.into())
-}
-
 #[cfg(test)]
 mod tests {
     use super::CompatMode;
+    use crate::prelude::*;
+    use tendermint::Version;
+
+    fn parse_version(s: &str) -> Version {
+        let json = format!("\"{s}\"");
+        serde_json::from_str(&json).unwrap()
+    }
 
     #[test]
     fn test_parse_version_for_compat_mode() {
         assert_eq!(
-            CompatMode::from_tendermint_version("0.34.16".into()).unwrap(),
+            CompatMode::from_version(parse_version("0.34.16")).unwrap(),
             CompatMode::V0_34
         );
         assert_eq!(
-            CompatMode::from_tendermint_version("0.37.0-pre1".into()).unwrap(),
+            CompatMode::from_version(parse_version("0.37.0-pre1")).unwrap(),
             CompatMode::Latest
         );
         assert_eq!(
-            CompatMode::from_tendermint_version("0.37.0".into()).unwrap(),
+            CompatMode::from_version(parse_version("0.37.0")).unwrap(),
             CompatMode::Latest
         );
-        let res = CompatMode::from_tendermint_version("0.38.0".into());
+        let res = CompatMode::from_version(parse_version("0.38.0"));
         assert!(res.is_err());
-        let res = CompatMode::from_tendermint_version("1.0.0".into());
+        let res = CompatMode::from_version(parse_version("1.0.0"));
         assert!(res.is_err());
-        let res = CompatMode::from_tendermint_version("poobah".into());
+        let res = CompatMode::from_version(parse_version("poobah"));
         assert!(res.is_err());
     }
 }
