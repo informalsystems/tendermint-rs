@@ -1,6 +1,6 @@
 //! Tendermint RPC client.
 
-pub mod compat;
+mod compat;
 pub use compat::CompatMode;
 mod subscription;
 pub use subscription::{Subscription, SubscriptionClient};
