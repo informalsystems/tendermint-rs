@@ -56,12 +56,12 @@ const RECV_TIMEOUT: Duration = Duration::from_secs(RECV_TIMEOUT_SECONDS);
 // Taken from https://github.com/tendermint/tendermint/blob/309e29c245a01825fc9630103311fd04de99fa5e/rpc/jsonrpc/server/ws_handler.go#L28
 const PING_INTERVAL: Duration = Duration::from_secs((RECV_TIMEOUT_SECONDS * 9) / 10);
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 /// WebSocket client configuration
 pub struct WebSocketConfig {
-    compat: CompatMode,
+    pub compat: CompatMode,
     /// Low-level protocol configuration
-    transport: Option<async_tungstenite::tungstenite::protocol::WebSocketConfig>,
+    pub transport: Option<async_tungstenite::tungstenite::protocol::WebSocketConfig>,
 }
 
 /// Tendermint RPC client that provides access to all RPC functionality
