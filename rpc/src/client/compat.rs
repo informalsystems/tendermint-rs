@@ -36,7 +36,7 @@ impl CompatMode {
     /// message formats.
     pub fn from_version(tendermint_version: Version) -> Result<CompatMode, Error> {
         let raw_version: String = tendermint_version.into();
-        let version = semver::Version::parse(&raw_version)
+        let version = semver::Version::parse(raw_version.trim_start_matches('v'))
             .map_err(|_| Error::invalid_tendermint_version(raw_version))?;
         match (version.major, version.minor) {
             (0, 34) => Ok(CompatMode::V0_34),
@@ -60,20 +60,20 @@ mod tests {
     #[test]
     fn test_parse_version_for_compat_mode() {
         assert_eq!(
-            CompatMode::from_version(parse_version("0.34.16")).unwrap(),
+            CompatMode::from_version(parse_version("v0.34.16")).unwrap(),
             CompatMode::V0_34
         );
         assert_eq!(
-            CompatMode::from_version(parse_version("0.37.0-pre1")).unwrap(),
+            CompatMode::from_version(parse_version("v0.37.0-pre1")).unwrap(),
             CompatMode::Latest
         );
         assert_eq!(
-            CompatMode::from_version(parse_version("0.37.0")).unwrap(),
+            CompatMode::from_version(parse_version("v0.37.0")).unwrap(),
             CompatMode::Latest
         );
-        let res = CompatMode::from_version(parse_version("0.38.0"));
+        let res = CompatMode::from_version(parse_version("v0.38.0"));
         assert!(res.is_err());
-        let res = CompatMode::from_version(parse_version("1.0.0"));
+        let res = CompatMode::from_version(parse_version("v1.0.0"));
         assert!(res.is_err());
         let res = CompatMode::from_version(parse_version("poobah"));
         assert!(res.is_err());
