@@ -130,6 +130,15 @@ impl HttpClient {
         }
     }
 
+    /// Set compatibility mode on the instantiated client.
+    ///
+    /// As the HTTP client is stateless and does not support subscriptions,
+    /// the protocol version it uses can be changed at will, for example,
+    /// as a result of version discovery over the `/status` endpoint.
+    pub fn set_compat_mode(&mut self, compat: CompatMode) {
+        self.compat = compat;
+    }
+
     async fn perform_v0_34<R>(&self, request: R) -> Result<R::Output, Error>
     where
         R: SimpleRequest<v0_34::Dialect>,

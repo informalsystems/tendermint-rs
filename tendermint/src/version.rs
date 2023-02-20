@@ -13,3 +13,9 @@ impl Display for Version {
         write!(f, "{}", self.0)
     }
 }
+
+impl From<Version> for String {
+    fn from(value: Version) -> Self {
+        value.0
+    }
+}
