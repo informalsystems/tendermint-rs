@@ -19,6 +19,18 @@ impl Default for CompatMode {
     }
 }
 
+impl CompatMode {
+    fn from_tendermint_version(raw_version: String) -> Result<CompatMode, Error> {
+        let version = semver::Version::parse(&raw_version)
+            .map_err(|_| Error::invalid_tendermint_version(raw_version))?;
+        match (version.major, version.minor) {
+            (0, 34) => Ok(CompatMode::V0_34),
+            (0, 37) => Ok(CompatMode::Latest),
+            _ => Err(Error::unsupported_tendermint_version(version.to_string())),
+        }
+    }
+}
+
 /// Queries the `/status` RPC endpoint to discover which compatibility mode
 /// to use for the node that this client connects to.
 ///
@@ -32,14 +44,32 @@ where
     C: Client + Send + Sync,
 {
     let status = client.status().await?;
-    let raw_version: String = status.node_info.version.into();
-    let tm_version = semver::Version::parse(&raw_version)
-        .map_err(|_| Error::invalid_tendermint_version(raw_version))?;
-    match (tm_version.major, tm_version.minor) {
-        (0, 34) => Ok(CompatMode::V0_34),
-        (0, 37) => Ok(CompatMode::Latest),
-        _ => Err(Error::unsupported_tendermint_version(
-            tm_version.to_string(),
-        )),
+    CompatMode::from_tendermint_version(status.node_info.version.into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::CompatMode;
+
+    #[test]
+    fn test_parse_version_for_compat_mode() {
+        assert_eq!(
+            CompatMode::from_tendermint_version("0.34.16".into()).unwrap(),
+            CompatMode::V0_34
+        );
+        assert_eq!(
+            CompatMode::from_tendermint_version("0.37.0-pre1".into()).unwrap(),
+            CompatMode::Latest
+        );
+        assert_eq!(
+            CompatMode::from_tendermint_version("0.37.0".into()).unwrap(),
+            CompatMode::Latest
+        );
+        let res = CompatMode::from_tendermint_version("0.38.0".into());
+        assert!(res.is_err());
+        let res = CompatMode::from_tendermint_version("1.0.0".into());
+        assert!(res.is_err());
+        let res = CompatMode::from_tendermint_version("poobah".into());
+        assert!(res.is_err());
     }
 }
