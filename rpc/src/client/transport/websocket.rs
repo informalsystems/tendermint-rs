@@ -974,7 +974,7 @@ mod test {
 
     use super::*;
     use crate::{client::sync::unbounded, query::EventType, request, Id, Method};
-    // TODO: test with v0_37::dialect as well
+    // TODO: test with dialect::v0_37 as well
     use crate::dialect::v0_34::Event as RpcEvent;
 
     // Interface to a driver that manages all incoming WebSocket connections.
@@ -1280,9 +1280,15 @@ mod test {
         println!("Starting WebSocket server...");
         let mut server = TestServer::new("127.0.0.1:0").await;
         println!("Creating client RPC WebSocket connection...");
-        let (client, driver) = WebSocketClient::new(server.node_addr.clone())
-            .await
-            .unwrap();
+        let (client, driver) = WebSocketClient::new_with_config(
+            server.node_addr.clone(),
+            WebSocketConfig {
+                compat: CompatMode::V0_34,
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
         let driver_handle = tokio::spawn(async move { driver.run().await });
 
         println!("Initiating subscription for new blocks...");
