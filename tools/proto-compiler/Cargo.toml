@@ -8,6 +8,6 @@ publish = false
 [dependencies]
 walkdir         = { version = "2.3" }
 prost-build     = { version = "0.11" }
-git2            = { version = "0.13" }
+git2            = { version = "0.16" }
 tempfile        = { version = "3.2.0" }
 subtle-encoding = { version = "0.5" }
