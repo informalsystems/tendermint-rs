@@ -1,8 +1,9 @@
 [env]
 CONTAINER_NAME = "kvstore-rpc-probe"
-DOCKER_IMAGE = "informaldev/tendermint:0.34.21"
+DOCKER_IMAGE = "cometbft/cometbft:v0.37.x"
 HOST_RPC_PORT = 26657
 CARGO_MAKE_WAIT_MILLISECONDS = 3500
+OUTPUT_DIR = "fixtures"
 
 [tasks.default]
 clear = true
@@ -10,7 +11,7 @@ dependencies = [ "docker-up", "wait", "run", "docker-down" ]
 
 [tasks.run]
 command = "cargo"
-args = ["run", "kvstore"]
+args = ["run", "--", "--verbose", "--output", "${OUTPUT_DIR}", "kvstore"]
 
 [tasks.docker-down]
 dependencies = [ "docker-stop", "docker-rm" ]
