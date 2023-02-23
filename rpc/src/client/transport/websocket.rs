@@ -837,6 +837,7 @@ impl WebSocketClientDriver {
             CompatMode::V0_34 => DialectEvent::<v0_34::Event>::from_string(&msg).map(Into::into),
         };
         if let Ok(ev) = parse_res {
+            debug!("JSON-RPC event: {}", msg);
             self.publish_event(ev).await;
             return Ok(());
         }
