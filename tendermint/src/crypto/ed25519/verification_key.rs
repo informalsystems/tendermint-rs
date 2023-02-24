@@ -1,7 +1,22 @@
 use crate::Error;
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 pub struct VerificationKey([u8; 32]);
+
+impl core::fmt::Display for VerificationKey {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        for byte in &self.0 {
+            write!(f, "{byte:02x}")?;
+        }
+        Ok(())
+    }
+}
+
+impl core::fmt::Debug for VerificationKey {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        <Self as core::fmt::Display>::fmt(self, f)
+    }
+}
 
 impl VerificationKey {
     #[allow(dead_code)]
