@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## v0.29.1
+
+Improve debug output for Ed25519 keys.
+
+### BUG FIXES
+
+- `[tendermint]` Restore hex-formatting in debug output of Ed25519 keys.
+  ([#1272](https://github.com/informalsystems/tendermint-rs/pull/1272))
+
 ## v0.29.0
 
 *Feb 17, 2023*
