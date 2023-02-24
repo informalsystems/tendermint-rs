@@ -1,0 +1,14 @@
+{
+  "id": "abd9f0d1-5b80-424a-8f7d-94b2d854707c",
+  "jsonrpc": "2.0",
+  "result": {
+    "block": null,
+    "block_id": {
+      "hash": "",
+      "parts": {
+        "hash": "",
+        "total": 0
+      }
+    }
+  }
+}

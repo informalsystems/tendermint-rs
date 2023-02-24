@@ -1,0 +1,6 @@
+{
+  "id": "e6cd2152-119e-4349-bf6d-ec8b1e5e077f",
+  "jsonrpc": "2.0",
+  "method": "net_info",
+  "params": null
+}

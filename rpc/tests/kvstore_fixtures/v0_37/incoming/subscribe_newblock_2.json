@@ -1,0 +1,73 @@
+{
+  "id": "0e1ef52e-482f-43d7-b94f-94f1ecdaa8d1",
+  "jsonrpc": "2.0",
+  "result": {
+    "data": {
+      "type": "tendermint/event/NewBlock",
+      "value": {
+        "block": {
+          "data": {
+            "txs": []
+          },
+          "evidence": {
+            "evidence": []
+          },
+          "header": {
+            "app_hash": "0600000000000000",
+            "chain_id": "dockerchain",
+            "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
+            "data_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+            "evidence_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+            "height": "239",
+            "last_block_id": {
+              "hash": "562CC9E027599E2E6EF5DBC0F4BFEAE3B0CA2EE419E9181C4F000F4C6937E970",
+              "parts": {
+                "hash": "F3434293749106B5861D97EB8C617EAFE66F3A7705CCB53C818ACEDF089FB9B8",
+                "total": 1
+              }
+            },
+            "last_commit_hash": "61B0F7374BA2D42A637B22ADB13AC6877AB3D0F7FADDFF1DBCAF50C3B03A4ECE",
+            "last_results_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+            "next_validators_hash": "D1A8803929B7478B2D459D9113569AFA4037635D8125741F1A9E143FC9C17C55",
+            "proposer_address": "87F74499559B0B60995F57C2224D27E55DD46ACD",
+            "time": "2023-02-24T15:11:39.096768039Z",
+            "validators_hash": "D1A8803929B7478B2D459D9113569AFA4037635D8125741F1A9E143FC9C17C55",
+            "version": {
+              "app": "1",
+              "block": "11"
+            }
+          },
+          "last_commit": {
+            "block_id": {
+              "hash": "562CC9E027599E2E6EF5DBC0F4BFEAE3B0CA2EE419E9181C4F000F4C6937E970",
+              "parts": {
+                "hash": "F3434293749106B5861D97EB8C617EAFE66F3A7705CCB53C818ACEDF089FB9B8",
+                "total": 1
+              }
+            },
+            "height": "238",
+            "round": 0,
+            "signatures": [
+              {
+                "block_id_flag": 2,
+                "signature": "V+17mMoSu+9HLPJ4joKXpd+SflRc0AQXI3kiMXz+zeVGWNLdRrfjWVoMOm9JkvI7Llm4eLzNsOkoUk0OhEAEBA==",
+                "timestamp": "2023-02-24T15:11:39.096768039Z",
+                "validator_address": "87F74499559B0B60995F57C2224D27E55DD46ACD"
+              }
+            ]
+          }
+        },
+        "result_begin_block": {},
+        "result_end_block": {
+          "validator_updates": null
+        }
+      }
+    },
+    "events": {
+      "tm.event": [
+        "NewBlock"
+      ]
+    },
+    "query": "tm.event = 'NewBlock'"
+  }
+}

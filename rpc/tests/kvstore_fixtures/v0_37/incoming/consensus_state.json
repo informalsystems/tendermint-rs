@@ -1,0 +1,30 @@
+{
+  "id": "6954460c-8b30-41e9-9752-261e063dda0c",
+  "jsonrpc": "2.0",
+  "result": {
+    "round_state": {
+      "height/round/step": "223/0/1",
+      "height_vote_set": [
+        {
+          "precommits": [
+            "nil-Vote"
+          ],
+          "precommits_bit_array": "BA{1:_} 0/10 = 0.00",
+          "prevotes": [
+            "nil-Vote"
+          ],
+          "prevotes_bit_array": "BA{1:_} 0/10 = 0.00",
+          "round": 0
+        }
+      ],
+      "locked_block_hash": "",
+      "proposal_block_hash": "",
+      "proposer": {
+        "address": "87F74499559B0B60995F57C2224D27E55DD46ACD",
+        "index": 0
+      },
+      "start_time": "2023-02-24T15:11:31.310596522Z",
+      "valid_block_hash": ""
+    }
+  }
+}
