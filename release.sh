@@ -23,6 +23,16 @@ DEFAULT_CRATES="tendermint-proto tendermint-std-ext tendermint tendermint-config
 # Allows us to override the crates we want to publish.
 CRATES=${*:-${DEFAULT_CRATES}}
 
+# Additional flags to pass to the "cargo publish" operation for every crate we
+# publish.
+CARGO_PUBLISH_FLAGS=""
+
+# Allow us to specify a crates.io API token via environment variables. Mostly
+# for CI use.
+if [ -n "${CRATES_TOKEN}" ]; then
+  CARGO_PUBLISH_FLAGS="${CARGO_PUBLISH_FLAGS} --token ${CRATES_TOKEN}"
+fi
+
 get_manifest_path() {
   cargo metadata --format-version 1 | jq -r '.packages[]|select(.name == "'"${1}"'")|.manifest_path'
 }
@@ -37,7 +47,7 @@ check_version_online() {
 
 publish() {
   echo "Publishing crate $1..."
-  cargo publish --manifest-path "$(get_manifest_path "${1}")"
+  cargo publish --manifest-path "$(get_manifest_path "${1}")" ${CARGO_PUBLISH_FLAGS}
   echo ""
 }
 
