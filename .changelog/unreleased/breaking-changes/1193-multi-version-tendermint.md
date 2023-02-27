@@ -9,3 +9,7 @@
   to unsigned varint, to correspond to the changes in Tendermint Core 0.37.
   No compatibility with 0.34 is provided at the moment.
   ([#1193](https://github.com/informalsystems/tendermint-rs/pull/1193)).
+- [`tendermint-rpc`] Changed the signature of `WebSocketClient::new_with_config`
+  and the public `WebSocketConfig` type of its parameter: instead of being
+  a re-export from tungstenite, it's a struct defined in this crate and
+  featuring a compatibility mode parameter.
