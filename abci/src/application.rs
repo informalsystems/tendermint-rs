@@ -6,13 +6,14 @@ pub mod echo;
 pub mod kvstore;
 
 use tendermint_proto::v0_37::abci::{
-    request::Value, response, Request, RequestApplySnapshotChunk, RequestBeginBlock,
-    RequestCheckTx, RequestDeliverTx, RequestEcho, RequestEndBlock, RequestInfo, RequestInitChain,
-    RequestLoadSnapshotChunk, RequestOfferSnapshot, RequestPrepareProposal, RequestProcessProposal,
-    RequestQuery, Response, ResponseApplySnapshotChunk, ResponseBeginBlock, ResponseCheckTx,
-    ResponseCommit, ResponseDeliverTx, ResponseEcho, ResponseEndBlock, ResponseFlush, ResponseInfo,
-    ResponseInitChain, ResponseListSnapshots, ResponseLoadSnapshotChunk, ResponseOfferSnapshot,
-    ResponsePrepareProposal, ResponseProcessProposal, ResponseQuery,
+    request::Value, response, response_process_proposal, Request, RequestApplySnapshotChunk,
+    RequestBeginBlock, RequestCheckTx, RequestDeliverTx, RequestEcho, RequestEndBlock, RequestInfo,
+    RequestInitChain, RequestLoadSnapshotChunk, RequestOfferSnapshot, RequestPrepareProposal,
+    RequestProcessProposal, RequestQuery, Response, ResponseApplySnapshotChunk, ResponseBeginBlock,
+    ResponseCheckTx, ResponseCommit, ResponseDeliverTx, ResponseEcho, ResponseEndBlock,
+    ResponseFlush, ResponseInfo, ResponseInitChain, ResponseListSnapshots,
+    ResponseLoadSnapshotChunk, ResponseOfferSnapshot, ResponsePrepareProposal,
+    ResponseProcessProposal, ResponseQuery,
 };
 
 /// An ABCI application.
@@ -99,12 +100,49 @@ pub trait Application: Send + Clone + 'static {
         Default::default()
     }
 
-    fn prepare_proposal(&self, _request: RequestPrepareProposal) -> ResponsePrepareProposal {
-        Default::default()
+    /// A stage where the application can modify the list of transactions
+    /// in the preliminary proposal.
+    ///
+    /// The default implementation implements the required behavior in a
+    /// very naive way, removing transactions off the end of the list
+    /// until the limit on the total size of the transaction is met as
+    /// specified in the `max_tx_bytes` field of the request, or there are
+    /// no more transactions. It's up to the application to implement
+    /// more elaborate removal strategies.
+    ///
+    /// This method is introduced in ABCI++.
+    fn prepare_proposal(&self, request: RequestPrepareProposal) -> ResponsePrepareProposal {
+        // Per the ABCI++ spec: if the size of RequestPrepareProposal.txs is
+        // greater than RequestPrepareProposal.max_tx_bytes, the Application
+        // MUST remove transactions to ensure that the
+        // RequestPrepareProposal.max_tx_bytes limit is respected by those
+        // transactions returned in ResponsePrepareProposal.txs.
+        let RequestPrepareProposal {
+            mut txs,
+            max_tx_bytes,
+            ..
+        } = request;
+        let max_tx_bytes: usize = max_tx_bytes.try_into().unwrap_or(0);
+        let mut total_tx_bytes: usize = txs.iter().map(|tx| tx.len()).sum();
+        while total_tx_bytes > max_tx_bytes {
+            if let Some(tx) = txs.pop() {
+                total_tx_bytes -= tx.len();
+            } else {
+                break;
+            }
+        }
+        ResponsePrepareProposal { txs }
     }
 
+    /// A stage where the application can accept or reject the proposed block.
+    ///
+    /// The default implementation returns the status value of `ACCEPT`.
+    ///
+    /// This method is introduced in ABCI++.
     fn process_proposal(&self, _request: RequestProcessProposal) -> ResponseProcessProposal {
-        Default::default()
+        ResponseProcessProposal {
+            status: response_process_proposal::ProposalStatus::Accept as i32,
+        }
     }
 }
 
