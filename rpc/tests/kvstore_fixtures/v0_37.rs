@@ -1109,7 +1109,7 @@ fn incoming_fixtures() {
                     assert!(tx_result.result.log.is_none());
                     assert!(tx_result.result.gas_wanted.is_none());
                     assert!(tx_result.result.gas_used.is_none());
-                    assert_eq!(tx_result.result.events.len(), 1);
+                    assert_eq!(tx_result.result.events.len(), 2);
                     assert_eq!(tx_result.result.events[0].kind, "app");
                     for attr in &tx_result.result.events[0].attributes {
                         match attr.key.as_str() {
@@ -1142,7 +1142,7 @@ fn incoming_fixtures() {
                     assert!(tx_result.result.log.is_none());
                     assert!(tx_result.result.gas_wanted.is_none());
                     assert!(tx_result.result.gas_used.is_none());
-                    assert_eq!(tx_result.result.events.len(), 1);
+                    assert_eq!(tx_result.result.events.len(), 2);
                     assert_eq!(tx_result.result.events[0].kind, "app");
                     for attr in &tx_result.result.events[0].attributes {
                         match attr.key.as_str() {
@@ -1176,7 +1176,7 @@ fn incoming_fixtures() {
                     assert!(tx_result.result.log.is_none());
                     assert!(tx_result.result.gas_wanted.is_none());
                     assert!(tx_result.result.gas_used.is_none());
-                    assert_eq!(tx_result.result.events.len(), 1);
+                    assert_eq!(tx_result.result.events.len(), 2);
                     assert_eq!(tx_result.result.events[0].kind, "app");
                     for attr in &tx_result.result.events[0].attributes {
                         match attr.key.as_str() {
@@ -1209,7 +1209,7 @@ fn incoming_fixtures() {
                     assert!(tx_result.result.log.is_none());
                     assert!(tx_result.result.gas_wanted.is_none());
                     assert!(tx_result.result.gas_used.is_none());
-                    assert_eq!(tx_result.result.events.len(), 1);
+                    assert_eq!(tx_result.result.events.len(), 2);
                     assert_eq!(tx_result.result.events[0].kind, "app");
                     for attr in &tx_result.result.events[0].attributes {
                         match attr.key.as_str() {
@@ -1242,7 +1242,7 @@ fn incoming_fixtures() {
                     assert!(tx_result.result.log.is_none());
                     assert!(tx_result.result.gas_wanted.is_none());
                     assert!(tx_result.result.gas_used.is_none());
-                    assert_eq!(tx_result.result.events.len(), 1);
+                    assert_eq!(tx_result.result.events.len(), 2);
                     assert_eq!(tx_result.result.events[0].kind, "app");
                     for attr in &tx_result.result.events[0].attributes {
                         match attr.key.as_str() {
@@ -1355,7 +1355,7 @@ fn incoming_fixtures() {
                 for tx in result.txs {
                     assert_ne!(tx.hash.as_bytes(), [0; 32]);
                     assert_eq!(tx.tx_result.code, abci::Code::Ok);
-                    assert_eq!(tx.tx_result.events.len(), 1);
+                    assert_eq!(tx.tx_result.events.len(), 2);
                     assert_eq!(tx.tx_result.events[0].kind, "app");
                     assert_eq!(tx.tx_result.gas_used, 0);
                     assert_eq!(tx.tx_result.gas_wanted, 0);
@@ -1374,7 +1374,7 @@ fn incoming_fixtures() {
                 for tx in result.txs {
                     assert_ne!(tx.hash.as_bytes(), [0; 32]);
                     assert_eq!(tx.tx_result.code, abci::Code::Ok);
-                    assert_eq!(tx.tx_result.events.len(), 1);
+                    assert_eq!(tx.tx_result.events.len(), 2);
                     assert_eq!(tx.tx_result.events[0].kind, "app");
                     assert_eq!(tx.tx_result.gas_used, 0);
                     assert_eq!(tx.tx_result.gas_wanted, 0);
@@ -1390,6 +1390,42 @@ fn incoming_fixtures() {
             _ => {
                 panic!("cannot parse file name: {file_name}");
             },
+        }
+    }
+}
+
+fn check_event_attrs(events: &HashMap<String, Vec<String>>, app_key: &str, height: i64) {
+    for (k, v) in events {
+        match k.as_str() {
+            "app.creator" => {
+                assert_eq!(v.len(), 2);
+                assert_eq!(v[0], "Cosmoshi Netowoko");
+            },
+            "app.index_key" => {
+                assert_eq!(v.len(), 2);
+                assert_eq!(v[0], "index is working");
+            },
+            "app.key" => {
+                assert_eq!(v.len(), 2);
+                assert_eq!(v[0], app_key);
+            },
+            "app.noindex_key" => {
+                assert_eq!(v.len(), 2);
+                assert_eq!(v[0], "index is working");
+            },
+            "tm.event" => {
+                assert_eq!(v.len(), 1);
+                assert_eq!(v[0], "Tx");
+            },
+            "tx.hash" => {
+                assert_eq!(v.len(), 1);
+                assert_eq!(v[0].len(), 64);
+            },
+            "tx.height" => {
+                assert_eq!(v.len(), 1);
+                assert_eq!(v[0], height.to_string());
+            },
+            _ => panic!("unknown event found {k}"),
         }
     }
 }
