@@ -1,8 +1,8 @@
 {
-  "id": "abd9f0d1-5b80-424a-8f7d-94b2d854707c",
+  "id": "56d4851a-1f30-4d73-9f86-c1a084e8aa97",
   "jsonrpc": "2.0",
   "method": "block_by_hash",
   "params": {
-    "hash": "ABEiM0RVZneImaq7zN3u/wARIjNEVWZ3iJmqu8zd7v8="
+    "hash": "/PnCU3/DU0ynEAH+HxTE92kJCUjBpSFoL2EufPc65jk="
   }
 }

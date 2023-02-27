@@ -26,12 +26,9 @@ pub fn quick_probe_plan(output_path: &Path, request_wait: Duration) -> Result<Pl
                     .with_min_height(10)
                     .with_name("block_at_height_10"),
                 block_results(10).with_name("block_results_at_height_10"),
-                // CometBFT 0.37
-                block_by_hash("ABEiM0RVZneImaq7zN3u/wARIjNEVWZ3iJmqu8zd7v8=")
+                // FIXME: need a way to discover a hash that works for the test chain
+                block_by_hash("/PnCU3/DU0ynEAH+HxTE92kJCUjBpSFoL2EufPc65jk=")
                     .with_name("block_by_hash"),
-                // CometBFT 0.34
-                // block_by_hash("0x00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF")
-                //     .with_name("block_by_hash"),
                 block_search("block.height > 1", 1, 100, "asc").with_name("block_search"),
                 blockchain(1, 10).with_name("blockchain_from_1_to_10"),
                 commit(10).with_name("commit_at_height_10"),

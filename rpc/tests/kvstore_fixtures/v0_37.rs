@@ -56,14 +56,13 @@ fn outgoing_fixtures() {
                 assert_eq!(wrapped.params().height.unwrap().value(), 10);
             },
             "block_by_hash" => {
-                // First, get the hash at height 1.
                 let wrapped = serde_json::from_str::<
                     RequestWrapper<endpoint::block_by_hash::Request>,
                 >(&content)
                 .unwrap();
                 assert_eq!(
                     wrapped.params().hash.unwrap().to_string(),
-                    "00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF"
+                    "FCF9C2537FC3534CA71001FE1F14C4F769090948C1A521682F612E7CF73AE639"
                 );
             },
             "block_results_at_height_10" => {
@@ -282,10 +281,10 @@ fn incoming_fixtures() {
             "abci_info" => {
                 let result = endpoint::abci_info::Response::from_string(content).unwrap();
                 assert_eq!(result.response.app_version, 1);
-                assert_eq!(result.response.data, "{\"size\":0}");
+                assert_eq!(result.response.data, "{\"size\":9}");
                 assert_eq!(
                     result.response.last_block_app_hash.as_bytes(),
-                    b"AAAAAAAAAAA="
+                    b"EgAAAAAAAAA="
                 );
                 assert_eq!(result.response.version, "1.0.0");
             },
@@ -434,7 +433,7 @@ fn incoming_fixtures() {
                 let result = endpoint::block_by_hash::Response::from_string(content).unwrap();
                 assert_eq!(
                     result.block_id.hash.to_string(),
-                    "BCF3DB412E80A396D10BF5B5E6D3E63D3B06DEB25AA958BCB8CE18D023838042"
+                    "FCF9C2537FC3534CA71001FE1F14C4F769090948C1A521682F612E7CF73AE639"
                 );
             },
             "block_search" => {
@@ -509,7 +508,7 @@ fn incoming_fixtures() {
                 assert_eq!(result.deliver_tx.code, abci::Code::Ok);
                 assert!(result.deliver_tx.codespace.is_empty());
                 assert!(result.deliver_tx.data.is_empty());
-                assert_eq!(result.deliver_tx.events.len(), 1);
+                assert_eq!(result.deliver_tx.events.len(), 2);
                 assert_eq!(result.deliver_tx.events[0].attributes.len(), 4);
                 assert_eq!(result.deliver_tx.events[0].attributes[0].key, "creator");
                 assert_eq!(
@@ -602,7 +601,7 @@ fn incoming_fixtures() {
                 assert_eq!(u64::from(result.block_height), 10_u64);
                 assert_eq!(result.consensus_params.block.max_bytes, 22020096_u64);
                 assert_eq!(result.consensus_params.block.max_gas, -1_i64);
-                assert_eq!(result.consensus_params.block.time_iota_ms, 500_i64);
+                assert_eq!(result.consensus_params.block.time_iota_ms, 1000_i64);
                 assert_eq!(
                     result.consensus_params.evidence.max_age_duration,
                     Duration(core::time::Duration::from_nanos(172800000000000_u64))
@@ -674,7 +673,7 @@ fn incoming_fixtures() {
                 assert_eq!(result.genesis.validators[0].power(), 10);
                 assert!(result.genesis.validators[0].pub_key.ed25519().is_some());
                 assert_eq!(result.genesis.validators[0].proposer_priority.value(), 0);
-                assert_eq!(result.genesis.consensus_params.block.time_iota_ms, 500);
+                assert_eq!(result.genesis.consensus_params.block.time_iota_ms, 1000);
             },
             "net_info" => {
                 let result = endpoint::net_info::Response::from_string(content).unwrap();
@@ -708,7 +707,7 @@ fn incoming_fixtures() {
                         app: 1
                     }
                 );
-                assert_eq!(result.node_info.version.to_string(), "0.34.21");
+                assert_eq!(result.node_info.version.to_string(), "0.37.0-alpha.3");
                 assert!(!result.sync_info.catching_up);
                 assert_eq!(
                     result.sync_info.latest_app_hash.as_bytes(),
