@@ -123,10 +123,13 @@ pub trait Application: Send + Clone + 'static {
             ..
         } = request;
         let max_tx_bytes: usize = max_tx_bytes.try_into().unwrap_or(0);
-        let mut total_tx_bytes: usize = txs.iter().map(|tx| tx.len()).sum();
+        let mut total_tx_bytes: usize = txs
+            .iter()
+            .map(|tx| tx.len())
+            .fold(0, |acc, len| acc.saturating_add(len));
         while total_tx_bytes > max_tx_bytes {
             if let Some(tx) = txs.pop() {
-                total_tx_bytes -= tx.len();
+                total_tx_bytes = total_tx_bytes.saturating_sub(tx.len());
             } else {
                 break;
             }
