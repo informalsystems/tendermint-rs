@@ -57,7 +57,35 @@
             ]
           }
         },
-        "result_begin_block": {},
+        "result_begin_block": {
+          "events": [
+            {
+              "type": "transfer",
+              "attributes": [
+                {
+                  "index": true,
+                  "key": "recipient",
+                  "value": "cosmos17xpfvakm2amg962yls6f84z3kell8c5lserqta"
+                },
+                {
+                  "index": false,
+                  "key": "sender",
+                  "value": "cosmos1m3h30wlvsf8llruxtpukdvsy0km2kum8g38c8q"
+                }
+              ]
+            },
+            {
+              "type": "message",
+              "attributes": [
+                {
+                  "index": true,
+                  "key": "sender",
+                  "value": "cosmos1m3h30wlvsf8llruxtpukdvsy0km2kum8g38c8q"
+                }
+              ]
+            }
+          ]
+        },
         "result_end_block": {
           "validator_updates": null
         }
