@@ -251,9 +251,12 @@ mod test {
     use super::*;
     use crate::query::EventType;
 
-    async fn read_json_fixture(name: &str) -> String {
+    async fn read_json_fixture(version: &str, name: &str) -> String {
         fs::read_to_string(
-            PathBuf::from("./tests/kvstore_fixtures/incoming/").join(name.to_owned() + ".json"),
+            PathBuf::from("./tests/kvstore_fixtures")
+                .join(version)
+                .join("incoming")
+                .join(name.to_owned() + ".json"),
         )
         .await
         .unwrap()
@@ -265,14 +268,15 @@ mod test {
         use crate::event::DialectEvent;
 
         async fn read_event(name: &str) -> Event {
-            let msg = DialectEvent::<RpcEvent>::from_string(read_json_fixture(name).await).unwrap();
+            let msg = DialectEvent::<RpcEvent>::from_string(read_json_fixture("v0_34", name).await)
+                .unwrap();
             msg.into()
         }
 
         #[tokio::test]
         async fn mock_client() {
-            let abci_info_fixture = read_json_fixture("abci_info").await;
-            let block_fixture = read_json_fixture("block_at_height_10").await;
+            let abci_info_fixture = read_json_fixture("v0_34", "abci_info").await;
+            let block_fixture = read_json_fixture("v0_34", "block_at_height_10").await;
             let matcher = MockRequestMethodMatcher::default()
                 .map(Method::AbciInfo, Ok(abci_info_fixture))
                 .map(Method::Block, Ok(block_fixture));
@@ -330,11 +334,19 @@ mod test {
 
     mod v0_37 {
         use super::*;
+        use crate::dialect::v0_37::Event as RpcEvent;
+        use crate::event::DialectEvent;
+
+        async fn read_event(name: &str) -> Event {
+            let msg = DialectEvent::<RpcEvent>::from_string(read_json_fixture("v0_37", name).await)
+                .unwrap();
+            msg.into()
+        }
 
         #[tokio::test]
         async fn mock_client() {
-            let abci_info_fixture = read_json_fixture("abci_info").await;
-            let block_fixture = read_json_fixture("block_at_height_10").await;
+            let abci_info_fixture = read_json_fixture("v0_37", "abci_info").await;
+            let block_fixture = read_json_fixture("v0_37", "block_at_height_10").await;
             let matcher = MockRequestMethodMatcher::default()
                 .map(Method::AbciInfo, Ok(abci_info_fixture))
                 .map(Method::Block, Ok(block_fixture));
@@ -342,7 +354,7 @@ mod test {
             let driver_hdl = tokio::spawn(async move { driver.run().await });
 
             let abci_info = client.abci_info().await.unwrap();
-            assert_eq!("{\"size\":0}".to_string(), abci_info.data);
+            assert_eq!("{\"size\":9}".to_string(), abci_info.data);
 
             let block = client.block(Height::from(10_u32)).await.unwrap().block;
             assert_eq!(Height::from(10_u32), block.header.height);
@@ -352,6 +364,41 @@ mod test {
             driver_hdl.await.unwrap().unwrap();
         }
 
-        // TODO: add mock_subscription_client test for v0_37
+        #[tokio::test]
+        async fn mock_subscription_client() {
+            let (client, driver) = MockClient::new(MockRequestMethodMatcher::default());
+            let driver_hdl = tokio::spawn(async move { driver.run().await });
+
+            let event1 = read_event("subscribe_newblock_0").await;
+            let event2 = read_event("subscribe_newblock_1").await;
+            let event3 = read_event("subscribe_newblock_2").await;
+            let events = vec![event1, event2, event3];
+
+            let subs1 = client.subscribe(EventType::NewBlock.into()).await.unwrap();
+            let subs2 = client.subscribe(EventType::NewBlock.into()).await.unwrap();
+            assert_ne!(subs1.id().to_string(), subs2.id().to_string());
+
+            // We can do this because the underlying channels can buffer the
+            // messages as we publish them.
+            let subs1_events = subs1.take(3);
+            let subs2_events = subs2.take(3);
+            for ev in &events {
+                client.publish(ev);
+            }
+
+            // Here each subscription's channel is drained.
+            let subs1_events = subs1_events.collect::<Vec<Result<Event, Error>>>().await;
+            let subs2_events = subs2_events.collect::<Vec<Result<Event, Error>>>().await;
+
+            assert_eq!(3, subs1_events.len());
+            assert_eq!(3, subs2_events.len());
+
+            for i in 0..3 {
+                assert!(events[i].eq(subs1_events[i].as_ref().unwrap()));
+            }
+
+            client.close();
+            driver_hdl.await.unwrap().unwrap();
+        }
     }
 }

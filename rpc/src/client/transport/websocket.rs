@@ -974,9 +974,7 @@ mod test {
     };
 
     use super::*;
-    use crate::{client::sync::unbounded, query::EventType, request, Id, Method};
-    // TODO: test with dialect::v0_37 as well
-    use crate::dialect::v0_34::Event as RpcEvent;
+    use crate::{client::sync::unbounded, dialect, query::EventType, request, Id, Method};
 
     // Interface to a driver that manages all incoming WebSocket connections.
     struct TestServer {
@@ -987,7 +985,7 @@ mod test {
     }
 
     impl TestServer {
-        async fn new(addr: &str) -> Self {
+        async fn new(addr: &str, compat: CompatMode) -> Self {
             let listener = TcpListener::bind(addr).await.unwrap();
             let local_addr = listener.local_addr().unwrap();
             let node_addr = net::Address::Tcp {
@@ -997,7 +995,7 @@ mod test {
             };
             let (terminate_tx, terminate_rx) = unbounded();
             let (event_tx, event_rx) = unbounded();
-            let driver = TestServerDriver::new(listener, event_rx, terminate_rx);
+            let driver = TestServerDriver::new(listener, compat, event_rx, terminate_rx);
             let driver_hdl = tokio::spawn(async move { driver.run().await });
             Self {
                 node_addr,
@@ -1020,6 +1018,7 @@ mod test {
     // Manages all incoming WebSocket connections.
     struct TestServerDriver {
         listener: TcpListener,
+        compat: CompatMode,
         event_rx: ChannelRx<Event>,
         terminate_rx: ChannelRx<Result<(), Error>>,
         handlers: Vec<TestServerHandler>,
@@ -1028,11 +1027,13 @@ mod test {
     impl TestServerDriver {
         fn new(
             listener: TcpListener,
+            compat: CompatMode,
             event_rx: ChannelRx<Event>,
             terminate_rx: ChannelRx<Result<(), Error>>,
         ) -> Self {
             Self {
                 listener,
+                compat,
                 event_rx,
                 terminate_rx,
                 handlers: Vec::new(),
@@ -1064,7 +1065,8 @@ mod test {
         }
 
         async fn handle_incoming(&mut self, stream: TcpStream) {
-            self.handlers.push(TestServerHandler::new(stream).await);
+            self.handlers
+                .push(TestServerHandler::new(stream, self.compat).await);
         }
 
         async fn terminate(&mut self) {
@@ -1087,12 +1089,12 @@ mod test {
     }
 
     impl TestServerHandler {
-        async fn new(stream: TcpStream) -> Self {
+        async fn new(stream: TcpStream, compat: CompatMode) -> Self {
             let conn: WebSocketStream<TokioAdapter<TcpStream>> =
                 accept_async(stream).await.unwrap();
             let (terminate_tx, terminate_rx) = unbounded();
             let (event_tx, event_rx) = unbounded();
-            let driver = TestServerHandlerDriver::new(conn, event_rx, terminate_rx);
+            let driver = TestServerHandlerDriver::new(conn, compat, event_rx, terminate_rx);
             let driver_hdl = tokio::spawn(async move { driver.run().await });
             Self {
                 driver_hdl,
@@ -1114,6 +1116,7 @@ mod test {
     // Manages interaction with a single incoming WebSocket connection.
     struct TestServerHandlerDriver {
         conn: WebSocketStream<TokioAdapter<TcpStream>>,
+        compat: CompatMode,
         event_rx: ChannelRx<Event>,
         terminate_rx: ChannelRx<Result<(), Error>>,
         // A mapping of subscription queries to subscription IDs for this
@@ -1124,11 +1127,13 @@ mod test {
     impl TestServerHandlerDriver {
         fn new(
             conn: WebSocketStream<TokioAdapter<TcpStream>>,
+            compat: CompatMode,
             event_rx: ChannelRx<Event>,
             terminate_rx: ChannelRx<Result<(), Error>>,
         ) -> Self {
             Self {
                 conn,
+                compat,
                 event_rx,
                 terminate_rx,
                 subscriptions: HashMap::new(),
@@ -1157,8 +1162,16 @@ mod test {
                 Some(id) => id.clone(),
                 None => return,
             };
-            let ev: DialectEvent<RpcEvent> = ev.into();
-            self.send(Id::Str(subs_id), ev).await;
+            match self.compat {
+                CompatMode::Latest => {
+                    let ev: DialectEvent<dialect::v0_37::Event> = ev.into();
+                    self.send(Id::Str(subs_id), ev).await;
+                },
+                CompatMode::V0_34 => {
+                    let ev: DialectEvent<dialect::v0_34::Event> = ev.into();
+                    self.send(Id::Str(subs_id), ev).await;
+                },
+            }
         }
 
         async fn handle_incoming_msg(&mut self, msg: Message) -> Option<Result<(), Error>> {
@@ -1257,76 +1270,154 @@ mod test {
         }
     }
 
-    async fn read_json_fixture(name: &str) -> String {
+    async fn read_json_fixture(version: &str, name: &str) -> String {
         fs::read_to_string(
-            PathBuf::from("./tests/kvstore_fixtures/incoming/").join(name.to_owned() + ".json"),
+            PathBuf::from("./tests/kvstore_fixtures")
+                .join(version)
+                .join("incoming")
+                .join(name.to_owned() + ".json"),
         )
         .await
         .unwrap()
     }
 
-    async fn read_event(name: &str) -> Event {
-        DialectEvent::<RpcEvent>::from_string(read_json_fixture(name).await)
-            .unwrap()
-            .into()
-    }
+    mod v0_34 {
+        use super::*;
+        use crate::dialect::v0_34::Event as RpcEvent;
 
-    #[tokio::test]
-    async fn websocket_client_happy_path() {
-        let event1 = read_event("subscribe_newblock_0").await;
-        let event2 = read_event("subscribe_newblock_1").await;
-        let event3 = read_event("subscribe_newblock_2").await;
-        let test_events = vec![event1, event2, event3];
-
-        println!("Starting WebSocket server...");
-        let mut server = TestServer::new("127.0.0.1:0").await;
-        println!("Creating client RPC WebSocket connection...");
-        let (client, driver) = WebSocketClient::new_with_config(
-            server.node_addr.clone(),
-            WebSocketConfig {
-                compat: CompatMode::V0_34,
-                ..Default::default()
-            },
-        )
-        .await
-        .unwrap();
-        let driver_handle = tokio::spawn(async move { driver.run().await });
-
-        println!("Initiating subscription for new blocks...");
-        let mut subs = client.subscribe(EventType::NewBlock.into()).await.unwrap();
-
-        // Collect all the events from the subscription.
-        let subs_collector_hdl = tokio::spawn(async move {
-            let mut results = Vec::new();
-            while let Some(res) = subs.next().await {
-                results.push(res);
-                if results.len() == 3 {
-                    break;
-                }
-            }
-            results
-        });
-
-        println!("Publishing events");
-        // Publish the events from this context
-        for ev in &test_events {
-            server.publish_event(ev.clone()).unwrap();
+        async fn read_event(name: &str) -> Event {
+            DialectEvent::<RpcEvent>::from_string(read_json_fixture("v0_34", name).await)
+                .unwrap()
+                .into()
         }
 
-        println!("Collecting results from subscription...");
-        let collected_results = subs_collector_hdl.await.unwrap();
+        #[tokio::test]
+        async fn websocket_client_happy_path() {
+            let event1 = read_event("subscribe_newblock_0").await;
+            let event2 = read_event("subscribe_newblock_1").await;
+            let event3 = read_event("subscribe_newblock_2").await;
+            let test_events = vec![event1, event2, event3];
 
-        client.close().unwrap();
-        server.terminate().await.unwrap();
-        let _ = driver_handle.await.unwrap();
-        println!("Closed client and terminated server");
+            println!("Starting WebSocket server...");
+            let mut server = TestServer::new("127.0.0.1:0", CompatMode::V0_34).await;
+            println!("Creating client RPC WebSocket connection...");
+            let (client, driver) = WebSocketClient::new_with_config(
+                server.node_addr.clone(),
+                WebSocketConfig {
+                    compat: CompatMode::V0_34,
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
+            let driver_handle = tokio::spawn(async move { driver.run().await });
 
-        assert_eq!(3, collected_results.len());
-        for i in 0..3 {
-            assert_eq!(
-                test_events[i],
-                collected_results[i].as_ref().unwrap().clone()
-            );
+            println!("Initiating subscription for new blocks...");
+            let mut subs = client.subscribe(EventType::NewBlock.into()).await.unwrap();
+
+            // Collect all the events from the subscription.
+            let subs_collector_hdl = tokio::spawn(async move {
+                let mut results = Vec::new();
+                while let Some(res) = subs.next().await {
+                    results.push(res);
+                    if results.len() == 3 {
+                        break;
+                    }
+                }
+                results
+            });
+
+            println!("Publishing events");
+            // Publish the events from this context
+            for ev in &test_events {
+                server.publish_event(ev.clone()).unwrap();
+            }
+
+            println!("Collecting results from subscription...");
+            let collected_results = subs_collector_hdl.await.unwrap();
+
+            client.close().unwrap();
+            server.terminate().await.unwrap();
+            let _ = driver_handle.await.unwrap();
+            println!("Closed client and terminated server");
+
+            assert_eq!(3, collected_results.len());
+            for i in 0..3 {
+                assert_eq!(
+                    test_events[i],
+                    collected_results[i].as_ref().unwrap().clone()
+                );
+            }
+        }
+    }
+
+    mod v0_37 {
+        use super::*;
+        use crate::dialect::v0_37::Event as RpcEvent;
+
+        async fn read_event(name: &str) -> Event {
+            DialectEvent::<RpcEvent>::from_string(read_json_fixture("v0_37", name).await)
+                .unwrap()
+                .into()
+        }
+
+        #[tokio::test]
+        async fn websocket_client_happy_path() {
+            let event1 = read_event("subscribe_newblock_0").await;
+            let event2 = read_event("subscribe_newblock_1").await;
+            let event3 = read_event("subscribe_newblock_2").await;
+            let test_events = vec![event1, event2, event3];
+
+            println!("Starting WebSocket server...");
+            let mut server = TestServer::new("127.0.0.1:0", CompatMode::Latest).await;
+            println!("Creating client RPC WebSocket connection...");
+            let (client, driver) = WebSocketClient::new_with_config(
+                server.node_addr.clone(),
+                WebSocketConfig {
+                    compat: CompatMode::Latest,
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
+            let driver_handle = tokio::spawn(async move { driver.run().await });
+
+            println!("Initiating subscription for new blocks...");
+            let mut subs = client.subscribe(EventType::NewBlock.into()).await.unwrap();
+
+            // Collect all the events from the subscription.
+            let subs_collector_hdl = tokio::spawn(async move {
+                let mut results = Vec::new();
+                while let Some(res) = subs.next().await {
+                    results.push(res);
+                    if results.len() == 3 {
+                        break;
+                    }
+                }
+                results
+            });
+
+            println!("Publishing events");
+            // Publish the events from this context
+            for ev in &test_events {
+                server.publish_event(ev.clone()).unwrap();
+            }
+
+            println!("Collecting results from subscription...");
+            let collected_results = subs_collector_hdl.await.unwrap();
+
+            client.close().unwrap();
+            server.terminate().await.unwrap();
+            let _ = driver_handle.await.unwrap();
+            println!("Closed client and terminated server");
+
+            assert_eq!(3, collected_results.len());
+            for i in 0..3 {
+                assert_eq!(
+                    test_events[i],
+                    collected_results[i].as_ref().unwrap().clone()
+                );
+            }
         }
     }
 
