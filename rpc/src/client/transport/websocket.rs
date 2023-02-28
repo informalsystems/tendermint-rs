@@ -196,7 +196,7 @@ impl WebSocketClient {
 impl Client for WebSocketClient {
     async fn perform<R>(&self, request: R) -> Result<R::Output, Error>
     where
-        R: SimpleRequest<v0_37::Dialect>,
+        R: SimpleRequest,
     {
         self.inner.perform(request).await
     }
@@ -214,7 +214,7 @@ impl Client for WebSocketClient {
     {
         let height = height.into();
         match self.compat {
-            CompatMode::Latest => self.perform(endpoint::header::Request::new(height)).await,
+            CompatMode::V0_37 => self.perform(endpoint::header::Request::new(height)).await,
             CompatMode::V0_34 => {
                 // Back-fill with a request to /block endpoint and
                 // taking just the header from the response.
@@ -231,7 +231,7 @@ impl Client for WebSocketClient {
         hash: Hash,
     ) -> Result<endpoint::header_by_hash::Response, Error> {
         match self.compat {
-            CompatMode::Latest => {
+            CompatMode::V0_37 => {
                 self.perform(endpoint::header_by_hash::Request::new(hash))
                     .await
             },
@@ -833,7 +833,7 @@ impl WebSocketClientDriver {
 
     async fn handle_text_msg(&mut self, msg: String) -> Result<(), Error> {
         let parse_res = match self.compat {
-            CompatMode::Latest => DialectEvent::<v0_37::Event>::from_string(&msg).map(Into::into),
+            CompatMode::V0_37 => DialectEvent::<v0_37::Event>::from_string(&msg).map(Into::into),
             CompatMode::V0_34 => DialectEvent::<v0_34::Event>::from_string(&msg).map(Into::into),
         };
         if let Ok(ev) = parse_res {
@@ -1159,17 +1159,17 @@ mod test {
 
         async fn publish_event(&mut self, ev: Event) {
             let subs_id = match self.subscriptions.get(&ev.query) {
-                Some(id) => id.clone(),
+                Some(id) => Id::Str(id.clone()),
                 None => return,
             };
             match self.compat {
-                CompatMode::Latest => {
+                CompatMode::V0_37 => {
                     let ev: DialectEvent<dialect::v0_37::Event> = ev.into();
-                    self.send(Id::Str(subs_id), ev).await;
+                    self.send(subs_id, ev).await;
                 },
                 CompatMode::V0_34 => {
                     let ev: DialectEvent<dialect::v0_34::Event> = ev.into();
-                    self.send(Id::Str(subs_id), ev).await;
+                    self.send(subs_id, ev).await;
                 },
             }
         }
@@ -1369,12 +1369,12 @@ mod test {
             let test_events = vec![event1, event2, event3];
 
             println!("Starting WebSocket server...");
-            let mut server = TestServer::new("127.0.0.1:0", CompatMode::Latest).await;
+            let mut server = TestServer::new("127.0.0.1:0", CompatMode::V0_37).await;
             println!("Creating client RPC WebSocket connection...");
             let (client, driver) = WebSocketClient::new_with_config(
                 server.node_addr.clone(),
                 WebSocketConfig {
-                    compat: CompatMode::Latest,
+                    compat: CompatMode::V0_37,
                     ..Default::default()
                 },
             )

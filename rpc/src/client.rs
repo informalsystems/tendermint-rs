@@ -24,7 +24,6 @@ use tendermint::{abci, block::Height, evidence::Evidence, Genesis, Hash};
 use tokio::time;
 
 use crate::{
-    dialect::v0_37::Dialect,
     endpoint::{validators::DEFAULT_VALIDATORS_PER_PAGE, *},
     paging::Paging,
     prelude::*,
@@ -320,8 +319,11 @@ pub trait Client {
         Ok(())
     }
 
-    /// Perform a request against the RPC endpoint
+    /// Perform a request against the RPC endpoint.
+    ///
+    /// This method is used by the default implementations of specific
+    /// endpoint methods. The latest protocol dialect is assumed to be invoked.
     async fn perform<R>(&self, request: R) -> Result<R::Output, Error>
     where
-        R: SimpleRequest<Dialect>;
+        R: SimpleRequest;
 }

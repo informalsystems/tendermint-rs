@@ -10,7 +10,7 @@ use async_trait::async_trait;
 use tendermint::{block::Height, Hash};
 use tendermint_config::net;
 
-use crate::dialect::{v0_34, v0_37};
+use crate::dialect::v0_34;
 use crate::prelude::*;
 use crate::{
     client::{Client, CompatMode},
@@ -151,7 +151,7 @@ impl HttpClient {
 impl Client for HttpClient {
     async fn perform<R>(&self, request: R) -> Result<R::Output, Error>
     where
-        R: SimpleRequest<v0_37::Dialect>,
+        R: SimpleRequest,
     {
         self.inner.perform(request).await
     }
@@ -169,7 +169,7 @@ impl Client for HttpClient {
     {
         let height = height.into();
         match self.compat {
-            CompatMode::Latest => self.perform(endpoint::header::Request::new(height)).await,
+            CompatMode::V0_37 => self.perform(endpoint::header::Request::new(height)).await,
             CompatMode::V0_34 => {
                 // Back-fill with a request to /block endpoint and
                 // taking just the header from the response.
@@ -186,7 +186,7 @@ impl Client for HttpClient {
         hash: Hash,
     ) -> Result<endpoint::header_by_hash::Response, Error> {
         match self.compat {
-            CompatMode::Latest => {
+            CompatMode::V0_37 => {
                 self.perform(endpoint::header_by_hash::Request::new(hash))
                     .await
             },

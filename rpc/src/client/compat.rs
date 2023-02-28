@@ -8,19 +8,22 @@ use crate::Error;
 /// Protocol compatibility mode for a Tendermint RPC client.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum CompatMode {
-    /// Use the latest version of the protocol (v0.37 in this release).
-    Latest,
-    /// Use v0.34 version of the protocol.
+    /// Use version 0.34 of the protocol.
     V0_34,
+    /// Use version 0.37 of the protocol.
+    V0_37,
 }
 
 impl Default for CompatMode {
     fn default() -> Self {
-        CompatMode::Latest
+        CompatMode::LATEST
     }
 }
 
 impl CompatMode {
+    /// The latest supported version, selected by default.
+    pub const LATEST: Self = CompatMode::V0_37;
+
     /// Parse the Tendermint version string to determine
     /// the compatibility mode.
     ///
@@ -40,7 +43,7 @@ impl CompatMode {
             .map_err(|_| Error::invalid_tendermint_version(raw_version))?;
         match (version.major, version.minor) {
             (0, 34) => Ok(CompatMode::V0_34),
-            (0, 37) => Ok(CompatMode::Latest),
+            (0, 37) => Ok(CompatMode::V0_37),
             _ => Err(Error::unsupported_tendermint_version(version.to_string())),
         }
     }
@@ -65,11 +68,11 @@ mod tests {
         );
         assert_eq!(
             CompatMode::from_version(parse_version("v0.37.0-pre1")).unwrap(),
-            CompatMode::Latest
+            CompatMode::V0_37
         );
         assert_eq!(
             CompatMode::from_version(parse_version("v0.37.0")).unwrap(),
-            CompatMode::Latest
+            CompatMode::V0_37
         );
         let res = CompatMode::from_version(parse_version("v0.38.0"));
         assert!(res.is_err());
