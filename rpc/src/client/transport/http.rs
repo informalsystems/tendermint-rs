@@ -62,7 +62,7 @@ impl Builder {
     /// Use the specified compatibility mode for the Tendermint RPC protocol.
     ///
     /// The default is the latest protocol version supported by this crate.
-    pub fn compat_mode(&mut self, mode: CompatMode) -> &mut Self {
+    pub fn compat_mode(mut self, mode: CompatMode) -> Self {
         self.compat = mode;
         self
     }
@@ -73,33 +73,30 @@ impl Builder {
     /// attempt to connect using the [HTTP CONNECT] method.
     ///
     /// [HTTP CONNECT]: https://en.wikipedia.org/wiki/HTTP_tunnel
-    pub fn proxy_url(&mut self, url: HttpClientUrl) -> &mut Self {
+    pub fn proxy_url(mut self, url: HttpClientUrl) -> Self {
         self.proxy_url = Some(url);
         self
     }
 
     /// Try to create a client with the options specified for this builder.
-    pub fn build(&self) -> Result<HttpClient, Error> {
-        match &self.proxy_url {
+    pub fn build(self) -> Result<HttpClient, Error> {
+        match self.proxy_url {
             None => Ok(HttpClient {
                 inner: if self.url.0.is_secure() {
-                    sealed::HttpClient::new_https(self.url.clone().try_into()?)
+                    sealed::HttpClient::new_https(self.url.try_into()?)
                 } else {
-                    sealed::HttpClient::new_http(self.url.clone().try_into()?)
+                    sealed::HttpClient::new_http(self.url.try_into()?)
                 },
                 compat: self.compat,
             }),
             Some(proxy_url) => Ok(HttpClient {
                 inner: if proxy_url.0.is_secure() {
                     sealed::HttpClient::new_https_proxy(
-                        self.url.clone().try_into()?,
-                        proxy_url.clone().try_into()?,
+                        self.url.try_into()?,
+                        proxy_url.try_into()?,
                     )?
                 } else {
-                    sealed::HttpClient::new_http_proxy(
-                        self.url.clone().try_into()?,
-                        proxy_url.clone().try_into()?,
-                    )?
+                    sealed::HttpClient::new_http_proxy(self.url.try_into()?, proxy_url.try_into()?)?
                 },
                 compat: self.compat,
             }),

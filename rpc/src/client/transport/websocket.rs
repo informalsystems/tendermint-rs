@@ -155,20 +155,20 @@ impl Builder {
     /// Use the specified compatibility mode for the Tendermint RPC protocol.
     ///
     /// The default is the latest protocol version supported by this crate.
-    pub fn compat_mode(&mut self, mode: CompatMode) -> &mut Self {
+    pub fn compat_mode(mut self, mode: CompatMode) -> Self {
         self.compat = mode;
         self
     }
 
     /// Use the specfied low-level WebSocket configuration options.
-    pub fn config(&mut self, config: WebSocketConfig) -> &mut Self {
+    pub fn config(mut self, config: WebSocketConfig) -> Self {
         self.transport_config = Some(config);
         self
     }
 
     /// Try to create a client with the options specified for this builder.
-    pub async fn build(&self) -> Result<(WebSocketClient, WebSocketClientDriver), Error> {
-        let url = self.url.0.clone();
+    pub async fn build(self) -> Result<(WebSocketClient, WebSocketClientDriver), Error> {
+        let url = self.url.0;
         let compat = self.compat;
         let (inner, driver) = if url.is_secure() {
             sealed::WebSocketClient::new_secure(url, compat, self.transport_config).await?
