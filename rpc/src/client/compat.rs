@@ -1,5 +1,7 @@
 //! Support for dynamic compatibility with older protocol versions.
 
+use core::fmt;
+
 use tendermint::Version;
 
 use crate::prelude::*;
@@ -48,6 +50,15 @@ impl CompatMode {
             (0, 34) => Ok(CompatMode::V0_34),
             (0, 37) => Ok(CompatMode::V0_37),
             _ => Err(Error::unsupported_tendermint_version(version.to_string())),
+        }
+    }
+}
+
+impl fmt::Display for CompatMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            CompatMode::V0_34 => f.write_str("v0.34"),
+            CompatMode::V0_37 => f.write_str("v0.37"),
         }
     }
 }

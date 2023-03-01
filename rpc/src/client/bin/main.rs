@@ -6,14 +6,15 @@ use futures::StreamExt;
 use structopt::StructOpt;
 use tendermint::Hash;
 use tendermint_rpc::{
+    client::CompatMode,
     dialect::{Dialect, LatestDialect},
     event::DialectEvent,
     query::Query,
     Client, Error, HttpClient, Order, Paging, Scheme, Subscription, SubscriptionClient, Url,
     WebSocketClient,
 };
-use tokio::time::Duration;
-use tracing::{error, info, level_filters::LevelFilter, warn};
+use tokio::{task::JoinHandle, time::Duration};
+use tracing::{debug, error, info, level_filters::LevelFilter, warn};
 
 /// CLI for performing simple interactions against a Tendermint node's RPC.
 ///
@@ -252,7 +253,7 @@ fn get_http_proxy_url(url_scheme: Scheme, proxy_url: Option<Url>) -> Result<Opti
 }
 
 async fn http_request(url: Url, proxy_url: Option<Url>, req: Request) -> Result<(), Error> {
-    let client = match proxy_url {
+    let mut client = match proxy_url {
         Some(proxy_url) => {
             info!(
                 "Using HTTP client with proxy {} to submit request to {}",
@@ -266,6 +267,11 @@ async fn http_request(url: Url, proxy_url: Option<Url>, req: Request) -> Result<
         },
     }?;
 
+    let status = client.status().await?;
+    let compat_mode = CompatMode::from_version(status.node_info.version)?;
+    debug!("Using compatibility mode {}", compat_mode);
+    client.set_compat_mode(compat_mode);
+
     match req {
         Request::ClientRequest(r) => client_request(&client, r).await,
         _ => Err(Error::invalid_params("HTTP/S clients do not support subscription capabilities (please use the WebSocket client instead)".to_owned()))
@@ -274,8 +280,7 @@ async fn http_request(url: Url, proxy_url: Option<Url>, req: Request) -> Result<
 
 async fn websocket_request(url: Url, req: Request) -> Result<(), Error> {
     info!("Using WebSocket client to submit request to: {}", url);
-    let (client, driver) = WebSocketClient::new(url).await?;
-    let driver_hdl = tokio::spawn(async move { driver.run().await });
+    let (client, driver_hdl) = start_websocket_client(url).await?;
 
     let result = match req {
         Request::ClientRequest(r) => client_request(&client, r).await,
@@ -286,9 +291,38 @@ async fn websocket_request(url: Url, req: Request) -> Result<(), Error> {
         } => subscription_client_request(&client, query, max_events, max_time).await,
     };
 
-    client.close()?;
-    driver_hdl.await.map_err(Error::join)??;
+    stop_websocket_client(client, driver_hdl).await?;
     result
+}
+
+async fn start_websocket_client(
+    url: Url,
+) -> Result<(WebSocketClient, JoinHandle<Result<(), Error>>), Error> {
+    let (client, driver) = WebSocketClient::new(url.clone()).await?;
+    let driver_hdl = tokio::spawn(async move { driver.run().await });
+    let status = client.status().await?;
+    let compat_mode = CompatMode::from_version(status.node_info.version)?;
+    if compat_mode == CompatMode::latest() {
+        debug!("Using compatibility mode {}", compat_mode);
+        Ok((client, driver_hdl))
+    } else {
+        debug!("Reconnecting with compatibility mode {}", compat_mode);
+        stop_websocket_client(client, driver_hdl).await?;
+        let (client, driver) = WebSocketClient::builder(url.try_into()?)
+            .compat_mode(compat_mode)
+            .build()
+            .await?;
+        let driver_hdl = tokio::spawn(async move { driver.run().await });
+        Ok((client, driver_hdl))
+    }
+}
+
+async fn stop_websocket_client(
+    client: WebSocketClient,
+    driver_hdl: JoinHandle<Result<(), Error>>,
+) -> Result<(), Error> {
+    client.close()?;
+    driver_hdl.await.map_err(Error::join)?
 }
 
 async fn client_request<C>(client: &C, req: ClientRequest) -> Result<(), Error>
