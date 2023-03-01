@@ -16,13 +16,15 @@ pub enum CompatMode {
 
 impl Default for CompatMode {
     fn default() -> Self {
-        CompatMode::LATEST
+        CompatMode::latest()
     }
 }
 
 impl CompatMode {
     /// The latest supported version, selected by default.
-    pub const LATEST: Self = CompatMode::V0_37;
+    pub const fn latest() -> Self {
+        Self::V0_37
+    }
 
     /// Parse the Tendermint version string to determine
     /// the compatibility mode.
@@ -41,6 +43,7 @@ impl CompatMode {
         let raw_version: String = tendermint_version.into();
         let version = semver::Version::parse(raw_version.trim_start_matches('v'))
             .map_err(|_| Error::invalid_tendermint_version(raw_version))?;
+
         match (version.major, version.minor) {
             (0, 34) => Ok(CompatMode::V0_34),
             (0, 37) => Ok(CompatMode::V0_37),
