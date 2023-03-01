@@ -51,11 +51,60 @@ pub struct HttpClient {
     compat: CompatMode,
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct HttpConfig {
-    /// Compatibility mode for Tendermint RPC protocol.
-    pub compat: CompatMode,
-    pub proxy_url: Option<HttpClientUrl>,
+/// The builder pattern constructor for [`HttpClient`].
+pub struct Builder {
+    url: HttpClientUrl,
+    compat: CompatMode,
+    proxy_url: Option<HttpClientUrl>,
+}
+
+impl Builder {
+    /// Use the specified compatibility mode for the Tendermint RPC protocol.
+    ///
+    /// The default is the latest protocol version supported by this crate.
+    pub fn compat_mode(&mut self, mode: CompatMode) -> &mut Self {
+        self.compat = mode;
+        self
+    }
+
+    /// Specify the URL of a proxy server for the client to connect through.
+    ///
+    /// If the RPC endpoint is secured (HTTPS), the proxy will automatically
+    /// attempt to connect using the [HTTP CONNECT] method.
+    ///
+    /// [HTTP CONNECT]: https://en.wikipedia.org/wiki/HTTP_tunnel
+    pub fn proxy_url(&mut self, url: HttpClientUrl) -> &mut Self {
+        self.proxy_url = Some(url);
+        self
+    }
+
+    /// Try to create a client with the options specified for this builder.
+    pub fn build(&self) -> Result<HttpClient, Error> {
+        match &self.proxy_url {
+            None => Ok(HttpClient {
+                inner: if self.url.0.is_secure() {
+                    sealed::HttpClient::new_https(self.url.clone().try_into()?)
+                } else {
+                    sealed::HttpClient::new_http(self.url.clone().try_into()?)
+                },
+                compat: self.compat,
+            }),
+            Some(proxy_url) => Ok(HttpClient {
+                inner: if proxy_url.0.is_secure() {
+                    sealed::HttpClient::new_https_proxy(
+                        self.url.clone().try_into()?,
+                        proxy_url.clone().try_into()?,
+                    )?
+                } else {
+                    sealed::HttpClient::new_http_proxy(
+                        self.url.clone().try_into()?,
+                        proxy_url.clone().try_into()?,
+                    )?
+                },
+                compat: self.compat,
+            }),
+        }
+    }
 }
 
 impl HttpClient {
@@ -88,45 +137,18 @@ impl HttpClient {
         U: TryInto<HttpClientUrl, Error = Error>,
         P: TryInto<HttpClientUrl, Error = Error>,
     {
-        Self::new_with_config(
-            url,
-            HttpConfig {
-                proxy_url: Some(proxy_url.try_into()?),
-                ..Default::default()
-            },
-        )
+        let url = url.try_into()?;
+        Self::builder(url).proxy_url(proxy_url.try_into()?).build()
     }
 
-    /// Construct a new Tendermint RPC HTTP/S client connecting to the given
-    /// URL with specified configuration options.
-    ///
-    /// If the `proxy_url` member of the [`HttpConfig`] parameter is not `None`
-    /// and the RPC endpoint is secured (HTTPS), the proxy will automatically
-    /// attempt to connect using the [HTTP CONNECT] method.
-    ///
-    /// [HTTP CONNECT]: https://en.wikipedia.org/wiki/HTTP_tunnel
-    pub fn new_with_config<U>(url: U, config: HttpConfig) -> Result<Self, Error>
-    where
-        U: TryInto<HttpClientUrl, Error = Error>,
-    {
-        let url = url.try_into()?;
-        match config.proxy_url {
-            None => Ok(Self {
-                inner: if url.0.is_secure() {
-                    sealed::HttpClient::new_https(url.try_into()?)
-                } else {
-                    sealed::HttpClient::new_http(url.try_into()?)
-                },
-                compat: config.compat,
-            }),
-            Some(proxy_url) => Ok(Self {
-                inner: if proxy_url.0.is_secure() {
-                    sealed::HttpClient::new_https_proxy(url.try_into()?, proxy_url.try_into()?)?
-                } else {
-                    sealed::HttpClient::new_http_proxy(url.try_into()?, proxy_url.try_into()?)?
-                },
-                compat: config.compat,
-            }),
+    /// Initiate a builder for a Tendermint RPC HTTP/S client connecting
+    /// to the given URL, so that more configuration options can be specified
+    /// with the builder.
+    pub fn builder(url: HttpClientUrl) -> Builder {
+        Builder {
+            url,
+            compat: Default::default(),
+            proxy_url: None,
         }
     }
 

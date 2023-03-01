@@ -56,13 +56,8 @@ const RECV_TIMEOUT: Duration = Duration::from_secs(RECV_TIMEOUT_SECONDS);
 // Taken from https://github.com/tendermint/tendermint/blob/309e29c245a01825fc9630103311fd04de99fa5e/rpc/jsonrpc/server/ws_handler.go#L28
 const PING_INTERVAL: Duration = Duration::from_secs((RECV_TIMEOUT_SECONDS * 9) / 10);
 
-#[derive(Default, Debug)]
-/// WebSocket client configuration
-pub struct WebSocketConfig {
-    pub compat: CompatMode,
-    /// Low-level protocol configuration
-    pub transport: Option<async_tungstenite::tungstenite::protocol::WebSocketConfig>,
-}
+/// Low-level WebSocket configuration
+pub use async_tungstenite::tungstenite::protocol::WebSocketConfig;
 
 /// Tendermint RPC client that provides access to all RPC functionality
 /// (including [`Event`] subscription) over a WebSocket connection.
@@ -149,6 +144,42 @@ pub struct WebSocketClient {
     compat: CompatMode,
 }
 
+/// The builder pattern constructor for [`WebSocketClient`].
+pub struct Builder {
+    url: WebSocketClientUrl,
+    compat: CompatMode,
+    transport_config: Option<WebSocketConfig>,
+}
+
+impl Builder {
+    /// Use the specified compatibility mode for the Tendermint RPC protocol.
+    ///
+    /// The default is the latest protocol version supported by this crate.
+    pub fn compat_mode(&mut self, mode: CompatMode) -> &mut Self {
+        self.compat = mode;
+        self
+    }
+
+    /// Use the specfied low-level WebSocket configuration options.
+    pub fn config(&mut self, config: WebSocketConfig) -> &mut Self {
+        self.transport_config = Some(config);
+        self
+    }
+
+    /// Try to create a client with the options specified for this builder.
+    pub async fn build(&self) -> Result<(WebSocketClient, WebSocketClientDriver), Error> {
+        let url = self.url.0.clone();
+        let compat = self.compat;
+        let (inner, driver) = if url.is_secure() {
+            sealed::WebSocketClient::new_secure(url, compat, self.transport_config).await?
+        } else {
+            sealed::WebSocketClient::new_unsecure(url, compat, self.transport_config).await?
+        };
+
+        Ok((WebSocketClient { inner, compat }, driver))
+    }
+}
+
 impl WebSocketClient {
     /// Construct a new WebSocket-based client connecting to the given
     /// Tendermint node's RPC endpoint.
@@ -158,7 +189,8 @@ impl WebSocketClient {
     where
         U: TryInto<WebSocketClientUrl, Error = Error>,
     {
-        Self::new_with_config(url, Default::default()).await
+        let url = url.try_into()?;
+        Self::builder(url).build().await
     }
 
     /// Construct a new WebSocket-based client connecting to the given
@@ -173,15 +205,19 @@ impl WebSocketClient {
         U: TryInto<WebSocketClientUrl, Error = Error>,
     {
         let url = url.try_into()?;
-        let compat = config.compat;
+        Self::builder(url).config(config).build().await
+    }
 
-        let (inner, driver) = if url.0.is_secure() {
-            sealed::WebSocketClient::new_secure(url.0, config).await?
-        } else {
-            sealed::WebSocketClient::new_unsecure(url.0, config).await?
-        };
-
-        Ok((Self { inner, compat }, driver))
+    /// Initiate a builder for a WebSocket-based client connecting to the given
+    /// Tendermint node's RPC endpoint.
+    ///
+    /// Supports both `ws://` and `wss://` protocols.
+    pub fn builder(url: WebSocketClientUrl) -> Builder {
+        Builder {
+            url,
+            compat: Default::default(),
+            transport_config: Default::default(),
+        }
     }
 
     async fn perform_v0_34<R>(&self, request: R) -> Result<R::Output, Error>
@@ -364,6 +400,7 @@ mod sealed {
         client::{
             sync::{unbounded, ChannelTx},
             transport::auth::authorize,
+            CompatMode,
         },
         dialect::Dialect,
         prelude::*,
@@ -406,16 +443,17 @@ mod sealed {
         /// doesn't block the client.
         pub async fn new(
             url: Url,
-            config: WebSocketConfig,
+            compat: CompatMode,
+            config: Option<WebSocketConfig>,
         ) -> Result<(Self, WebSocketClientDriver), Error> {
             debug!("Connecting to unsecure WebSocket endpoint: {}", url);
 
-            let (stream, _response) = connect_async_with_config(url, config.transport)
+            let (stream, _response) = connect_async_with_config(url, config)
                 .await
                 .map_err(Error::tungstenite)?;
 
             let (cmd_tx, cmd_rx) = unbounded();
-            let driver = WebSocketClientDriver::new(stream, cmd_rx, config.compat);
+            let driver = WebSocketClientDriver::new(stream, cmd_rx, compat);
             let client = Self {
                 cmd_tx,
                 _client_type: Default::default(),
@@ -437,19 +475,20 @@ mod sealed {
         /// doesn't block the client.
         pub async fn new(
             url: Url,
-            config: WebSocketConfig,
+            compat: CompatMode,
+            config: Option<WebSocketConfig>,
         ) -> Result<(Self, WebSocketClientDriver), Error> {
             debug!("Connecting to secure WebSocket endpoint: {}", url);
 
             // Not supplying a connector means async_tungstenite will create the
             // connector for us.
             let (stream, _response) =
-                connect_async_with_tls_connector_and_config(url, None, config.transport)
+                connect_async_with_tls_connector_and_config(url, None, config)
                     .await
                     .map_err(Error::tungstenite)?;
 
             let (cmd_tx, cmd_rx) = unbounded();
-            let driver = WebSocketClientDriver::new(stream, cmd_rx, config.compat);
+            let driver = WebSocketClientDriver::new(stream, cmd_rx, compat);
             let client = Self {
                 cmd_tx,
                 _client_type: Default::default(),
@@ -541,17 +580,21 @@ mod sealed {
     impl WebSocketClient {
         pub async fn new_unsecure(
             url: Url,
-            config: WebSocketConfig,
+            compat: CompatMode,
+            config: Option<WebSocketConfig>,
         ) -> Result<(Self, WebSocketClientDriver), Error> {
-            let (client, driver) = AsyncTungsteniteClient::<Unsecure>::new(url, config).await?;
+            let (client, driver) =
+                AsyncTungsteniteClient::<Unsecure>::new(url, compat, config).await?;
             Ok((Self::Unsecure(client), driver))
         }
 
         pub async fn new_secure(
             url: Url,
-            config: WebSocketConfig,
+            compat: CompatMode,
+            config: Option<WebSocketConfig>,
         ) -> Result<(Self, WebSocketClientDriver), Error> {
-            let (client, driver) = AsyncTungsteniteClient::<Secure>::new(url, config).await?;
+            let (client, driver) =
+                AsyncTungsteniteClient::<Secure>::new(url, compat, config).await?;
             Ok((Self::Secure(client), driver))
         }
 
@@ -1301,15 +1344,12 @@ mod test {
             println!("Starting WebSocket server...");
             let mut server = TestServer::new("127.0.0.1:0", CompatMode::V0_34).await;
             println!("Creating client RPC WebSocket connection...");
-            let (client, driver) = WebSocketClient::new_with_config(
-                server.node_addr.clone(),
-                WebSocketConfig {
-                    compat: CompatMode::V0_34,
-                    ..Default::default()
-                },
-            )
-            .await
-            .unwrap();
+            let url = server.node_addr.clone().try_into().unwrap();
+            let (client, driver) = WebSocketClient::builder(url)
+                .compat_mode(CompatMode::V0_34)
+                .build()
+                .await
+                .unwrap();
             let driver_handle = tokio::spawn(async move { driver.run().await });
 
             println!("Initiating subscription for new blocks...");
@@ -1371,15 +1411,12 @@ mod test {
             println!("Starting WebSocket server...");
             let mut server = TestServer::new("127.0.0.1:0", CompatMode::V0_37).await;
             println!("Creating client RPC WebSocket connection...");
-            let (client, driver) = WebSocketClient::new_with_config(
-                server.node_addr.clone(),
-                WebSocketConfig {
-                    compat: CompatMode::V0_37,
-                    ..Default::default()
-                },
-            )
-            .await
-            .unwrap();
+            let url = server.node_addr.clone().try_into().unwrap();
+            let (client, driver) = WebSocketClient::builder(url)
+                .compat_mode(CompatMode::V0_37)
+                .build()
+                .await
+                .unwrap();
             let driver_handle = tokio::spawn(async move { driver.run().await });
 
             println!("Initiating subscription for new blocks...");
