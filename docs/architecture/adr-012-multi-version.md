@@ -2,7 +2,7 @@
 
 ## Changelog
 
-* 2023-02-27: Created
+* 2023-03-01: First draft
 
 ## Context
 
@@ -14,11 +14,11 @@ that performs IBC relaying across chains that are not necessarily using the
 same CometBFT version.
 
 Previously, it was feasible for tendermint-rs to support a single version of
-the CometBFT Core protocol and expect all chain and relayer operators to
-upgrade in sync. But now there is a number of established chains using
-CometBFT 0.34 in production, and new chains using future versions of the
-protocol are expected to be deployed and be interoperable with these existing
-chains.
+the CometBFT Core protocols and expect all chain and relayer operators to
+upgrade their software in sync. But now there is a number of established chains
+using CometBFT 0.34 in production, and new chains using future versions of the
+protocol are expected to be deployed alongside the shared Cosmos ecosystem
+so that relaying is possible between the old and the new chains.
 
 The approach to protocol evolution and versioning in CometBFT has not been
 very rigorous to date. As a result, the 0.37 release has a number of breaking
@@ -37,7 +37,8 @@ way. It's desirable to decouple tendermint-rs versioning from that of CometBFT
 Core, making it solely a matter of Rust crate API evolution. In the long term,
 a single version of the tendermint-rs libraries should be able to support all
 versions of CometBFT Core protocols that are relevant to the community.
-The developers of CometBFT protocols, on there
+The developers of CometBFT protocols should take versioning practices into use
+for future revisions that support backward compatibility on the source code level.
 
 ## Decision
 
@@ -51,12 +52,16 @@ The generated Rust files providing bindings for Tendermint protobuf defitions
 will be emitted in two side-by-side modules, `tendermint::v0_34` and
 `tendermint::v0_37`. All names under the latter module are also reexported under
 the `tendermint` module, providing a low-change migration path for code bases
-that used previous versions of the crate and the "default" import names for
+that used previous versions of the crate, and the "default" import paths for
 those applications that only need to target the latest version.
 
 ### tendermint
 
-The domain types are largely unchanged
+The domain types are largely unchanged, except where additional fields are
+needed to support version 0.37. Some new types are added as required by the
+new version. Conversions to and from Protobuf types defined in
+`tendermint-proto` are provided for both `tendermint::v0_34` and
+`tendermint::v0_37` generated types, except where the types are new to 0.37.
 
 ### tendermint-rpc
 
