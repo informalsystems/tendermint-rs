@@ -8,13 +8,13 @@
 - [`tendermint`] Protobuf conversions provided for both `v0_34` and `v0_37`
   versions of the generated [`tendermint-proto`] structs, where applicable.
   ([#1193](https://github.com/informalsystems/tendermint-rs/pull/1193)).
-- [`tendermint-rpc`] Introduce protocol compatibility modes specifying the
-  RPC data encoding used by the client. An `HttpClient` can be created with
-  a selected mode specified as a field in `HttpConfig`, or have the mode
-  changed afterwards (usually after version discovery) by the added
-  `set_compat_mode` method.
-  `WebSocketClient` can only be created with `CompatMode` specified in the added
-  `new_with_config` constructor, accepting a new `WebSocketConfig` struct.
+- [`tendermint-rpc`] Introduce `client::CompatMode`, enumerating protocol
+  compatibility modes specifying the RPC data encoding used by the client.
+  An `HttpClient` can be created with a selected mode specified in the new
+  `builder` API, or have the mode changed afterwards (usually after
+  version discovery) by the added `set_compat_mode` method.
+  For `WebSocketClient`, the mode can only be specified at creation via the new
+  `builder` API.
   ([#1193](https://github.com/informalsystems/tendermint-rs/pull/1193))
 - [`tendermint-abci`] Port ABCI application support to 0.37 Tendermint Core API.
   No legacy support for 0.34 is provided at the moment.
