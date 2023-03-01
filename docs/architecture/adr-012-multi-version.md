@@ -65,17 +65,18 @@ with the following type:
 
 ```rust
 pub enum CompatMode {
-    /// Use the latest version of the protocol (v0.37 in this release).
-    Latest,
+    /// Use the v0.37 version of the protocol.
+    V0_37,
     /// Use v0.34 version of the protocol.
     V0_34,
 }
 ```
 
 The mode parameter is used to dynamically select the encoding used by a client.
-By default, the clients use the latest protocol, but it's possible to specify
+By default, the clients use the latest protocol (designated by the associated
+const `CompatMode::LATEST`), but it's possible to specify
 the compatibility mode at construction using the newly introduced configuration
-API. In the HTTP client, it's also possible to switch the mode for an client
+API. In the HTTP client, it's also possible to switch the mode for a client
 that has been already connected; this is useful for dynamic version discovery
 using the `status` endpoint.
 
