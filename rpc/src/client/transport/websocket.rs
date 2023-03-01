@@ -1,6 +1,6 @@
 //! WebSocket-based clients for accessing Tendermint RPC functionality.
 
-use alloc::{borrow::Cow, collections::BTreeMap as HashMap};
+use alloc::{borrow::Cow, collections::BTreeMap as HashMap, fmt};
 use core::{
     convert::{TryFrom, TryInto},
     ops::Add,
@@ -352,6 +352,12 @@ impl FromStr for WebSocketClientUrl {
     fn from_str(s: &str) -> Result<Self, Error> {
         let url: Url = s.parse()?;
         url.try_into()
+    }
+}
+
+impl fmt::Display for WebSocketClientUrl {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
     }
 }
 
