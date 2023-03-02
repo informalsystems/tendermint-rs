@@ -79,7 +79,7 @@ pub enum CompatMode {
 
 The mode parameter is used to dynamically select the encoding used by a client.
 By default, the clients use the latest protocol (designated by the associated
-const `CompatMode::LATEST`), but it's possible to specify
+const function `CompatMode::latest()`), but it's possible to specify
 the compatibility mode at construction using the newly introduced configuration
 API. In the HTTP client, it's also possible to switch the mode for a client
 that has been already connected; this is useful for dynamic version discovery
