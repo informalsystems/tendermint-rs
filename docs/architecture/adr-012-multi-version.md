@@ -2,7 +2,7 @@
 
 ## Changelog
 
-* 2023-03-01: First draft
+* 2023-03-02: First draft
 
 ## Context
 
@@ -118,18 +118,25 @@ Proposed
 
 ### Positive
 
-Interoperability with both 0.34 and 0.37 nodes is possible in a single built
+RPC interoperability with both 0.34 and 0.37 nodes is possible in a single built
 executable and a single runtime process without much extra coding effort.
+
+Consumers of other tendermint-rs crates will get support for both 0.34 and 0.37
+versions of the protobuf messages and be able to use either or both.
 
 ### Negative
 
-The users of `tendermint-rpc` wishing to remain interoperable with 0.34 nodes
+The consumers of `tendermint-rpc` wishing to remain interoperable with 0.34 nodes
 will have to configure the compatibility mode or add version discovery when
 migrating to the release of the crate that introduces these changes.
 
 Conversions from and to Protobuf message types in `tendermint-proto`
 and the domain types in `tendermint` are no longer unambiguously resolved
 by type inference and the types sometimes have to be explicitly annotated.
+
+The existing consumers of `tendermint-abci` who wish to remain on 0.34
+will be effectively stranded on the previous semver break release of the crate
+(0.29.x as of this writing).
 
 ## References
 
