@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use tendermint::{abci::Code, block, merkle::proof::ProofOps, serializers};
 
 use crate::prelude::*;
+use crate::{dialect::Dialect, request::RequestMessage};
 
 /// Query the ABCI application for information
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -40,15 +41,19 @@ impl Request {
     }
 }
 
-impl crate::Request for Request {
-    type Response = Response;
-
+impl RequestMessage for Request {
     fn method(&self) -> crate::Method {
         crate::Method::AbciQuery
     }
 }
 
-impl crate::SimpleRequest for Request {}
+impl<S: Dialect> crate::Request<S> for Request {
+    type Response = Response;
+}
+
+impl<S: Dialect> crate::SimpleRequest<S> for Request {
+    type Output = Response;
+}
 
 /// ABCI query response wrapper
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]

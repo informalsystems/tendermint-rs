@@ -37,7 +37,7 @@ This will:
 To run a specific version of Tendermint, simply:
 
 ```bash
-DOCKER_IMAGE="informaldev/tendermint:v0.34.0" cargo make
+cargo make --env DOCKER_IMAGE="informaldev/tendermint:v0.34.0" 
 ```
 
 ## Usage (without Docker)

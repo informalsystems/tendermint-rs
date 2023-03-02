@@ -2,14 +2,14 @@
 
 use std::net::{TcpStream, ToSocketAddrs};
 
-use tendermint_proto::abci::{
+use tendermint_proto::v0_37::abci::{
     request, response, Request, RequestApplySnapshotChunk, RequestBeginBlock, RequestCheckTx,
     RequestCommit, RequestDeliverTx, RequestEcho, RequestEndBlock, RequestFlush, RequestInfo,
     RequestInitChain, RequestListSnapshots, RequestLoadSnapshotChunk, RequestOfferSnapshot,
-    RequestQuery, RequestSetOption, ResponseApplySnapshotChunk, ResponseBeginBlock,
-    ResponseCheckTx, ResponseCommit, ResponseDeliverTx, ResponseEcho, ResponseEndBlock,
-    ResponseFlush, ResponseInfo, ResponseInitChain, ResponseListSnapshots,
-    ResponseLoadSnapshotChunk, ResponseOfferSnapshot, ResponseQuery, ResponseSetOption,
+    RequestQuery, ResponseApplySnapshotChunk, ResponseBeginBlock, ResponseCheckTx, ResponseCommit,
+    ResponseDeliverTx, ResponseEcho, ResponseEndBlock, ResponseFlush, ResponseInfo,
+    ResponseInitChain, ResponseListSnapshots, ResponseLoadSnapshotChunk, ResponseOfferSnapshot,
+    ResponseQuery,
 };
 
 use crate::{codec::ClientCodec, Error};
@@ -111,15 +111,6 @@ impl Client {
     /// Commit the current state at the current height.
     pub fn commit(&mut self) -> Result<ResponseCommit, Error> {
         perform!(self, Commit, RequestCommit {})
-    }
-
-    /// Request that the application set an option to a particular value.
-    ///
-    /// This request lacks specification and should not be used.
-    /// It will be removed in Tendermint Core v0.37.
-    #[deprecated(note = "The set_option ABCI method will be removed in Tendermint Core v0.37")]
-    pub fn set_option(&mut self, req: RequestSetOption) -> Result<ResponseSetOption, Error> {
-        perform!(self, SetOption, req)
     }
 
     /// Used during state sync to discover available snapshots on peers.

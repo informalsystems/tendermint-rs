@@ -11,9 +11,10 @@ pub struct SetOption {
 // Protobuf conversions
 // =============================================================================
 
-use core::convert::TryFrom;
+// The SetOption request has been removed after 0.34.
 
-use tendermint_proto::{abci as pb, Protobuf};
+use tendermint_proto::v0_34::abci as pb;
+use tendermint_proto::Protobuf;
 
 impl From<SetOption> for pb::RequestSetOption {
     fn from(message: SetOption) -> Self {

@@ -39,33 +39,33 @@ impl Default for CheckTxKind {
 // Protobuf conversions
 // =============================================================================
 
-use core::convert::TryFrom;
+tendermint_pb_modules! {
+    use super::{CheckTx, CheckTxKind};
 
-use tendermint_proto::{abci as pb, Protobuf};
-
-impl From<CheckTx> for pb::RequestCheckTx {
-    fn from(check_tx: CheckTx) -> Self {
-        Self {
-            tx: check_tx.tx,
-            r#type: check_tx.kind as i32,
+    impl From<CheckTx> for pb::abci::RequestCheckTx {
+        fn from(check_tx: CheckTx) -> Self {
+            Self {
+                tx: check_tx.tx,
+                r#type: check_tx.kind as i32,
+            }
         }
     }
-}
 
-impl TryFrom<pb::RequestCheckTx> for CheckTx {
-    type Error = crate::Error;
+    impl TryFrom<pb::abci::RequestCheckTx> for CheckTx {
+        type Error = crate::Error;
 
-    fn try_from(check_tx: pb::RequestCheckTx) -> Result<Self, Self::Error> {
-        let kind = match check_tx.r#type {
-            0 => CheckTxKind::New,
-            1 => CheckTxKind::Recheck,
-            _ => return Err(crate::Error::unsupported_check_tx_type()),
-        };
-        Ok(Self {
-            tx: check_tx.tx,
-            kind,
-        })
+        fn try_from(check_tx: pb::abci::RequestCheckTx) -> Result<Self, Self::Error> {
+            let kind = match check_tx.r#type {
+                0 => CheckTxKind::New,
+                1 => CheckTxKind::Recheck,
+                _ => return Err(crate::Error::unsupported_check_tx_type()),
+            };
+            Ok(Self {
+                tx: check_tx.tx,
+                kind,
+            })
+        }
     }
-}
 
-impl Protobuf<pb::RequestCheckTx> for CheckTx {}
+    impl Protobuf<pb::abci::RequestCheckTx> for CheckTx {}
+}

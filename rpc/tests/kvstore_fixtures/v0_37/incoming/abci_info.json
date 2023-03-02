@@ -1,0 +1,13 @@
+{
+  "id": "4e158c90-577c-4408-b8f6-d3680b84e7e9",
+  "jsonrpc": "2.0",
+  "result": {
+    "response": {
+      "app_version": "1",
+      "data": "{\"size\":9}",
+      "last_block_app_hash": "EgAAAAAAAAA=",
+      "last_block_height": "161",
+      "version": "1.0.0"
+    }
+  }
+}

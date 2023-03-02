@@ -1,18 +1,8 @@
 //! Tendermint consensus parameters
 
-use core::convert::{TryFrom, TryInto};
-
 use serde::{Deserialize, Serialize};
-use tendermint_proto::{
-    abci::ConsensusParams as RawAbciParams,
-    types::{
-        ConsensusParams as RawParams, ValidatorParams as RawValidatorParams,
-        VersionParams as RawVersionParams,
-    },
-    Protobuf,
-};
 
-use crate::{block, error::Error, evidence, prelude::*, public_key};
+use crate::{block, evidence, prelude::*, public_key};
 
 /// All consensus-relevant parameters that can be adjusted by the ABCI app.
 ///
@@ -31,76 +21,6 @@ pub struct Params {
     pub version: Option<VersionParams>,
 }
 
-impl Protobuf<RawParams> for Params {}
-
-impl TryFrom<RawParams> for Params {
-    type Error = Error;
-
-    fn try_from(value: RawParams) -> Result<Self, Self::Error> {
-        Ok(Self {
-            block: value
-                .block
-                .ok_or_else(|| Error::invalid_block("missing block".to_string()))?
-                .try_into()?,
-            evidence: value
-                .evidence
-                .ok_or_else(Error::invalid_evidence)?
-                .try_into()?,
-            validator: value
-                .validator
-                .ok_or_else(Error::invalid_validator_params)?
-                .try_into()?,
-            version: value.version.map(TryFrom::try_from).transpose()?,
-        })
-    }
-}
-
-impl From<Params> for RawParams {
-    fn from(value: Params) -> Self {
-        RawParams {
-            block: Some(value.block.into()),
-            evidence: Some(value.evidence.into()),
-            validator: Some(value.validator.into()),
-            version: value.version.map(From::from),
-        }
-    }
-}
-
-impl Protobuf<RawAbciParams> for Params {}
-
-impl TryFrom<RawAbciParams> for Params {
-    type Error = Error;
-
-    fn try_from(value: RawAbciParams) -> Result<Self, Self::Error> {
-        Ok(Self {
-            block: value
-                .block
-                .ok_or_else(|| Error::invalid_block("missing block".to_string()))?
-                .try_into()?,
-            evidence: value
-                .evidence
-                .ok_or_else(Error::invalid_evidence)?
-                .try_into()?,
-            validator: value
-                .validator
-                .ok_or_else(Error::invalid_validator_params)?
-                .try_into()?,
-            version: value.version.map(TryFrom::try_from).transpose()?,
-        })
-    }
-}
-
-impl From<Params> for RawAbciParams {
-    fn from(value: Params) -> Self {
-        RawAbciParams {
-            block: Some(value.block.into()),
-            evidence: Some(value.evidence.into()),
-            validator: Some(value.validator.into()),
-            version: value.version.map(From::from),
-        }
-    }
-}
-
 /// ValidatorParams restrict the public key types validators can use.
 ///
 /// [Tendermint documentation](https://docs.tendermint.com/master/spec/core/data_structures.html#validatorparams)
@@ -110,17 +30,19 @@ pub struct ValidatorParams {
     pub pub_key_types: Vec<public_key::Algorithm>,
 }
 
-impl Protobuf<RawValidatorParams> for ValidatorParams {}
-
-impl TryFrom<RawValidatorParams> for ValidatorParams {
-    type Error = Error;
-
-    fn try_from(value: RawValidatorParams) -> Result<Self, Self::Error> {
-        Ok(Self {
-            pub_key_types: value.pub_key_types.iter().map(|f| key_type(f)).collect(),
-        })
-    }
+/// Version Parameters
+///
+/// [Tendermint documentation](https://docs.tendermint.com/master/spec/core/data_structures.html#versionparams)
+#[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq, Default)]
+pub struct VersionParams {
+    /// The ABCI application version.
+    #[serde(with = "crate::serializers::from_str")]
+    pub app: u64,
 }
+
+// =============================================================================
+// Protobuf conversions
+// =============================================================================
 
 // Todo: How are these key types created?
 fn key_type(s: &str) -> public_key::Algorithm {
@@ -133,47 +55,222 @@ fn key_type(s: &str) -> public_key::Algorithm {
     public_key::Algorithm::Ed25519 // Todo: Shall we error out for invalid key types?
 }
 
-impl From<ValidatorParams> for RawValidatorParams {
-    fn from(value: ValidatorParams) -> Self {
-        RawValidatorParams {
-            pub_key_types: value
-                .pub_key_types
-                .into_iter()
-                .map(|k| match k {
-                    public_key::Algorithm::Ed25519 => "ed25519".to_string(),
-                    public_key::Algorithm::Secp256k1 => "secp256k1".to_string(),
-                })
-                .collect(),
+mod v0_34 {
+    use tendermint_proto::v0_34::{
+        abci::ConsensusParams as RawAbciParams,
+        types::{
+            ConsensusParams as RawParams, ValidatorParams as RawValidatorParams,
+            VersionParams as RawVersionParams,
+        },
+    };
+    use tendermint_proto::Protobuf;
+
+    use super::{key_type, Params, ValidatorParams, VersionParams};
+    use crate::{error::Error, prelude::*, public_key};
+
+    impl Protobuf<RawParams> for Params {}
+
+    impl TryFrom<RawParams> for Params {
+        type Error = Error;
+
+        fn try_from(value: RawParams) -> Result<Self, Self::Error> {
+            Ok(Self {
+                block: value
+                    .block
+                    .ok_or_else(|| Error::invalid_block("missing block".to_string()))?
+                    .try_into()?,
+                evidence: value
+                    .evidence
+                    .ok_or_else(Error::invalid_evidence)?
+                    .try_into()?,
+                validator: value
+                    .validator
+                    .ok_or_else(Error::invalid_validator_params)?
+                    .try_into()?,
+                version: value.version.map(TryFrom::try_from).transpose()?,
+            })
+        }
+    }
+
+    impl From<Params> for RawParams {
+        fn from(value: Params) -> Self {
+            RawParams {
+                block: Some(value.block.into()),
+                evidence: Some(value.evidence.into()),
+                validator: Some(value.validator.into()),
+                version: value.version.map(From::from),
+            }
+        }
+    }
+
+    impl Protobuf<RawAbciParams> for Params {}
+
+    impl TryFrom<RawAbciParams> for Params {
+        type Error = Error;
+
+        fn try_from(value: RawAbciParams) -> Result<Self, Self::Error> {
+            Ok(Self {
+                block: value
+                    .block
+                    .ok_or_else(|| Error::invalid_block("missing block".to_string()))?
+                    .try_into()?,
+                evidence: value
+                    .evidence
+                    .ok_or_else(Error::invalid_evidence)?
+                    .try_into()?,
+                validator: value
+                    .validator
+                    .ok_or_else(Error::invalid_validator_params)?
+                    .try_into()?,
+                version: value.version.map(TryFrom::try_from).transpose()?,
+            })
+        }
+    }
+
+    impl From<Params> for RawAbciParams {
+        fn from(value: Params) -> Self {
+            RawAbciParams {
+                block: Some(value.block.into()),
+                evidence: Some(value.evidence.into()),
+                validator: Some(value.validator.into()),
+                version: value.version.map(From::from),
+            }
+        }
+    }
+
+    impl Protobuf<RawValidatorParams> for ValidatorParams {}
+
+    impl TryFrom<RawValidatorParams> for ValidatorParams {
+        type Error = Error;
+
+        fn try_from(value: RawValidatorParams) -> Result<Self, Self::Error> {
+            Ok(Self {
+                pub_key_types: value.pub_key_types.iter().map(|f| key_type(f)).collect(),
+            })
+        }
+    }
+
+    impl From<ValidatorParams> for RawValidatorParams {
+        fn from(value: ValidatorParams) -> Self {
+            RawValidatorParams {
+                pub_key_types: value
+                    .pub_key_types
+                    .into_iter()
+                    .map(|k| match k {
+                        public_key::Algorithm::Ed25519 => "ed25519".to_string(),
+                        public_key::Algorithm::Secp256k1 => "secp256k1".to_string(),
+                    })
+                    .collect(),
+            }
+        }
+    }
+
+    impl Protobuf<RawVersionParams> for VersionParams {}
+
+    impl TryFrom<RawVersionParams> for VersionParams {
+        type Error = Error;
+
+        fn try_from(value: RawVersionParams) -> Result<Self, Self::Error> {
+            Ok(Self {
+                app: value.app_version,
+            })
+        }
+    }
+
+    impl From<VersionParams> for RawVersionParams {
+        fn from(value: VersionParams) -> Self {
+            RawVersionParams {
+                app_version: value.app,
+            }
         }
     }
 }
 
-/// Version Parameters
-///
-/// [Tendermint documentation](https://docs.tendermint.com/master/spec/core/data_structures.html#versionparams)
-#[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq, Default)]
-pub struct VersionParams {
-    /// The ABCI application version.
-    #[serde(with = "crate::serializers::from_str")]
-    pub app_version: u64,
-}
+mod v0_37 {
+    use tendermint_proto::v0_37::types::{
+        ConsensusParams as RawParams, ValidatorParams as RawValidatorParams,
+        VersionParams as RawVersionParams,
+    };
+    use tendermint_proto::Protobuf;
 
-impl Protobuf<RawVersionParams> for VersionParams {}
+    use super::{key_type, Params, ValidatorParams, VersionParams};
+    use crate::{error::Error, prelude::*, public_key};
 
-impl TryFrom<RawVersionParams> for VersionParams {
-    type Error = Error;
+    impl Protobuf<RawParams> for Params {}
 
-    fn try_from(value: RawVersionParams) -> Result<Self, Self::Error> {
-        Ok(Self {
-            app_version: value.app_version,
-        })
+    impl TryFrom<RawParams> for Params {
+        type Error = Error;
+
+        fn try_from(value: RawParams) -> Result<Self, Self::Error> {
+            Ok(Self {
+                block: value
+                    .block
+                    .ok_or_else(|| Error::invalid_block("missing block".to_string()))?
+                    .try_into()?,
+                evidence: value
+                    .evidence
+                    .ok_or_else(Error::invalid_evidence)?
+                    .try_into()?,
+                validator: value
+                    .validator
+                    .ok_or_else(Error::invalid_validator_params)?
+                    .try_into()?,
+                version: value.version.map(TryFrom::try_from).transpose()?,
+            })
+        }
     }
-}
 
-impl From<VersionParams> for RawVersionParams {
-    fn from(value: VersionParams) -> Self {
-        RawVersionParams {
-            app_version: value.app_version,
+    impl From<Params> for RawParams {
+        fn from(value: Params) -> Self {
+            RawParams {
+                block: Some(value.block.into()),
+                evidence: Some(value.evidence.into()),
+                validator: Some(value.validator.into()),
+                version: value.version.map(From::from),
+            }
+        }
+    }
+
+    impl Protobuf<RawValidatorParams> for ValidatorParams {}
+
+    impl TryFrom<RawValidatorParams> for ValidatorParams {
+        type Error = Error;
+
+        fn try_from(value: RawValidatorParams) -> Result<Self, Self::Error> {
+            Ok(Self {
+                pub_key_types: value.pub_key_types.iter().map(|f| key_type(f)).collect(),
+            })
+        }
+    }
+
+    impl From<ValidatorParams> for RawValidatorParams {
+        fn from(value: ValidatorParams) -> Self {
+            RawValidatorParams {
+                pub_key_types: value
+                    .pub_key_types
+                    .into_iter()
+                    .map(|k| match k {
+                        public_key::Algorithm::Ed25519 => "ed25519".to_string(),
+                        public_key::Algorithm::Secp256k1 => "secp256k1".to_string(),
+                    })
+                    .collect(),
+            }
+        }
+    }
+
+    impl Protobuf<RawVersionParams> for VersionParams {}
+
+    impl TryFrom<RawVersionParams> for VersionParams {
+        type Error = Error;
+
+        fn try_from(value: RawVersionParams) -> Result<Self, Self::Error> {
+            Ok(Self { app: value.app })
+        }
+    }
+
+    impl From<VersionParams> for RawVersionParams {
+        fn from(value: VersionParams) -> Self {
+            RawVersionParams { app: value.app }
         }
     }
 }

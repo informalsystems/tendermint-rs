@@ -30,7 +30,6 @@ mod rpc {
         merkle::simple_hash_from_byte_vectors,
     };
     use tendermint_rpc::{
-        endpoint::tx::Response as ResultTx,
         event::{Event, EventData, TxInfo},
         query::{EventType, Query},
         Client, HttpClient, Id, Order, SubscriptionClient, WebSocketClient, WebSocketClientDriver,
@@ -462,7 +461,7 @@ mod rpc {
             .txs
             .iter()
             .filter(|tx| tx.height.value() == (tx_info.height as u64))
-            .collect::<Vec<&ResultTx>>();
+            .collect::<Vec<_>>();
         assert_eq!(1, txs.len());
         assert_eq!(tx_info.tx, txs[0].tx);
 

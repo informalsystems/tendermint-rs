@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use tendermint::block;
 
 use crate::prelude::*;
+use crate::{dialect::Dialect, request::RequestMessage};
 
 /// Get information about a specific block
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -35,15 +36,19 @@ impl From<Range<block::Height>> for Request {
     }
 }
 
-impl crate::Request for Request {
-    type Response = Response;
-
+impl RequestMessage for Request {
     fn method(&self) -> crate::Method {
         crate::Method::Blockchain
     }
 }
 
-impl crate::SimpleRequest for Request {}
+impl<S: Dialect> crate::Request<S> for Request {
+    type Response = Response;
+}
+
+impl<S: Dialect> crate::SimpleRequest<S> for Request {
+    type Output = Response;
+}
 
 /// Block responses
 #[derive(Clone, Debug, Deserialize, Serialize)]

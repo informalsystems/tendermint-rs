@@ -1,7 +1,7 @@
 //! Supervisor and Handle implementation.
 
 use crossbeam_channel as channel;
-use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
+use tendermint::evidence::Evidence;
 
 use crate::{
     errors::Error,
@@ -284,19 +284,15 @@ impl Supervisor {
     }
 
     /// Report the given evidence of a fork.
+    // TODO: rework to supply LightClientAttackEvidence data
     fn report_evidence(
         &mut self,
         provider: PeerId,
-        primary: &LightBlock,
-        witness: &LightBlock,
+        _primary: &LightBlock,
+        _witness: &LightBlock,
     ) -> Result<(), Error> {
-        let evidence = ConflictingHeadersEvidence::new(
-            primary.signed_header.clone(),
-            witness.signed_header.clone(),
-        );
-
         self.evidence_reporter
-            .report(Evidence::ConflictingHeaders(Box::new(evidence)), provider)
+            .report(Evidence::LightClientAttackEvidence, provider)
             .map_err(Error::io)?;
 
         Ok(())

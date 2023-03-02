@@ -6,7 +6,7 @@ use std::{
 };
 
 use bytes::BytesMut;
-use tendermint_proto::abci::{
+use tendermint_proto::v0_37::abci::{
     Event, EventAttribute, RequestCheckTx, RequestDeliverTx, RequestInfo, RequestQuery,
     ResponseCheckTx, ResponseCommit, ResponseDeliverTx, ResponseInfo, ResponseQuery,
 };
@@ -199,18 +199,18 @@ impl Application for KeyValueStoreApp {
                 r#type: "app".to_string(),
                 attributes: vec![
                     EventAttribute {
-                        key: "key".to_string().into_bytes().into(),
-                        value: key.to_string().into_bytes().into(),
+                        key: "key".to_owned(),
+                        value: key.to_owned(),
                         index: true,
                     },
                     EventAttribute {
-                        key: "index_key".to_string().into_bytes().into(),
-                        value: "index is working".to_string().into_bytes().into(),
+                        key: "index_key".to_owned(),
+                        value: "index is working".to_owned(),
                         index: true,
                     },
                     EventAttribute {
-                        key: "noindex_key".to_string().into_bytes().into(),
-                        value: "index is working".to_string().into_bytes().into(),
+                        key: "noindex_key".to_owned(),
+                        value: "index is working".to_owned(),
                         index: false,
                     },
                 ],

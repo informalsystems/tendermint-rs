@@ -11,26 +11,26 @@ pub struct Exception {
 // Protobuf conversions
 // =============================================================================
 
-use core::convert::TryFrom;
+tendermint_pb_modules! {
+    use super::Exception;
 
-use tendermint_proto::{abci as pb, Protobuf};
-
-impl From<Exception> for pb::ResponseException {
-    fn from(exception: Exception) -> Self {
-        Self {
-            error: exception.error,
+    impl From<Exception> for pb::abci::ResponseException {
+        fn from(exception: Exception) -> Self {
+            Self {
+                error: exception.error,
+            }
         }
     }
-}
 
-impl TryFrom<pb::ResponseException> for Exception {
-    type Error = crate::Error;
+    impl TryFrom<pb::abci::ResponseException> for Exception {
+        type Error = crate::Error;
 
-    fn try_from(exception: pb::ResponseException) -> Result<Self, Self::Error> {
-        Ok(Self {
-            error: exception.error,
-        })
+        fn try_from(exception: pb::abci::ResponseException) -> Result<Self, Self::Error> {
+            Ok(Self {
+                error: exception.error,
+            })
+        }
     }
-}
 
-impl Protobuf<pb::ResponseException> for Exception {}
+    impl Protobuf<pb::abci::ResponseException> for Exception {}
+}

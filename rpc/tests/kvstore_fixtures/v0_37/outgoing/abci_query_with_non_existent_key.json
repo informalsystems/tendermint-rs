@@ -1,0 +1,8 @@
+{
+  "id": "437f6c65-b4b2-4417-9e03-2b584a75403f",
+  "jsonrpc": "2.0",
+  "method": "abci_query",
+  "params": {
+    "data": "6e6f6e5f6578697374656e745f6b6579"
+  }
+}

@@ -13,7 +13,7 @@ additional verification schemes to avoid denial-of-service attacks. The
 verified `app_hash` is automatically checked against the restored application
 at the end of snapshot restoration.
 
-See also the [`Snapshot`] data type and the [ABCI state sync documentation][ssd].
+See also the `Snapshot` data type and the [ABCI state sync documentation][ssd].
 
 [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#offersnapshot)
 

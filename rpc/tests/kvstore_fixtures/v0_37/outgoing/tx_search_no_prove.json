@@ -1,0 +1,12 @@
+{
+  "id": "8254b599-571a-4714-bdad-791d9d125a16",
+  "jsonrpc": "2.0",
+  "method": "tx_search",
+  "params": {
+    "order_by": "asc",
+    "page": "1",
+    "per_page": "10",
+    "prove": false,
+    "query": "tx.height > 1"
+  }
+}

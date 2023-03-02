@@ -1,8 +1,4 @@
-use core::convert::TryFrom;
-
-use tendermint_proto::{privval::PubKeyRequest as RawPubKeyRequest, Protobuf};
-
-use crate::{chain::Id as ChainId, prelude::*, Error};
+use crate::{chain::Id as ChainId, prelude::*};
 
 /// PubKeyRequest requests the consensus public key from the remote signer.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -11,63 +7,69 @@ pub struct PubKeyRequest {
     pub chain_id: ChainId,
 }
 
-impl Protobuf<RawPubKeyRequest> for PubKeyRequest {}
+tendermint_pb_modules! {
+    use super::PubKeyRequest;
+    use crate::{chain::Id as ChainId, prelude::*};
+    use pb::privval::PubKeyRequest as RawPubKeyRequest;
 
-impl TryFrom<RawPubKeyRequest> for PubKeyRequest {
-    type Error = Error;
+    impl Protobuf<RawPubKeyRequest> for PubKeyRequest {}
 
-    fn try_from(value: RawPubKeyRequest) -> Result<Self, Self::Error> {
-        Ok(PubKeyRequest {
-            chain_id: ChainId::try_from(value.chain_id)?,
-        })
+    impl TryFrom<RawPubKeyRequest> for PubKeyRequest {
+        type Error = crate::Error;
+
+        fn try_from(value: RawPubKeyRequest) -> Result<Self, Self::Error> {
+            Ok(PubKeyRequest {
+                chain_id: ChainId::try_from(value.chain_id)?,
+            })
+        }
     }
-}
 
-impl From<PubKeyRequest> for RawPubKeyRequest {
-    fn from(value: PubKeyRequest) -> Self {
-        RawPubKeyRequest {
-            chain_id: value.chain_id.as_str().to_string(),
+    impl From<PubKeyRequest> for RawPubKeyRequest {
+        fn from(value: PubKeyRequest) -> Self {
+            RawPubKeyRequest {
+                chain_id: value.chain_id.as_str().to_string(),
+            }
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use core::str::FromStr;
+    tendermint_pb_modules! {
+        use super::super::PubKeyRequest;
+        use pb::privval::PubKeyRequest as RawPubKeyRequest;
+        use crate::{chain::Id as ChainId, prelude::*};
+        use core::str::FromStr;
 
-    use tendermint_proto::Protobuf;
+        #[test]
+        fn test_empty_pubkey_msg() {
+            // test-vector generated via the following go code:
+            // import (
+            // "fmt"
+            // "github.com/tendermint/tendermint/proto/tendermint/privval"
+            // )
+            // func ed25519_empty() {
+            // pkr := &privval.PubKeyRequest{
+            // ChainId: "A",
+            // }
+            // pbpk, _ := pkr.Marshal()
+            // fmt.Printf("%#v\n", pbpk)
+            //
+            // }
 
-    use super::PubKeyRequest;
-    use crate::{chain::Id as ChainId, prelude::*};
+            let want: Vec<u8> = vec![10, 1, 65];
+            let msg = PubKeyRequest {
+                chain_id: ChainId::from_str("A").unwrap(),
+            };
+            let mut got = vec![];
+            Protobuf::<RawPubKeyRequest>::encode(&msg, &mut got).unwrap();
 
-    #[test]
-    fn test_empty_pubkey_msg() {
-        // test-vector generated via the following go code:
-        // import (
-        // "fmt"
-        // "github.com/tendermint/tendermint/proto/tendermint/privval"
-        // )
-        // func ed25519_empty() {
-        // pkr := &privval.PubKeyRequest{
-        // ChainId: "A",
-        // }
-        // pbpk, _ := pkr.Marshal()
-        // fmt.Printf("%#v\n", pbpk)
-        //
-        // }
+            assert_eq!(got, want);
 
-        let want: Vec<u8> = vec![10, 1, 65];
-        let msg = PubKeyRequest {
-            chain_id: ChainId::from_str("A").unwrap(),
-        };
-        let mut got = vec![];
-        let _have = msg.encode(&mut got);
-
-        assert_eq!(got, want);
-
-        match PubKeyRequest::decode(want.as_ref()) {
-            Ok(have) => assert_eq!(have, msg),
-            Err(err) => panic!("{}", err.to_string()),
+            match <PubKeyRequest as Protobuf<RawPubKeyRequest>>::decode(want.as_ref()) {
+                Ok(have) => assert_eq!(have, msg),
+                Err(err) => panic!("{}", err.to_string()),
+            }
         }
     }
 }

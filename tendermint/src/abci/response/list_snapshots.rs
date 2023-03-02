@@ -12,34 +12,34 @@ pub struct ListSnapshots {
 // Protobuf conversions
 // =============================================================================
 
-use core::convert::{TryFrom, TryInto};
+tendermint_pb_modules! {
+    use super::ListSnapshots;
 
-use tendermint_proto::{abci as pb, Protobuf};
-
-impl From<ListSnapshots> for pb::ResponseListSnapshots {
-    fn from(list_snapshots: ListSnapshots) -> Self {
-        Self {
-            snapshots: list_snapshots
-                .snapshots
-                .into_iter()
-                .map(Into::into)
-                .collect(),
+    impl From<ListSnapshots> for pb::abci::ResponseListSnapshots {
+        fn from(list_snapshots: ListSnapshots) -> Self {
+            Self {
+                snapshots: list_snapshots
+                    .snapshots
+                    .into_iter()
+                    .map(Into::into)
+                    .collect(),
+            }
         }
     }
-}
 
-impl TryFrom<pb::ResponseListSnapshots> for ListSnapshots {
-    type Error = crate::Error;
+    impl TryFrom<pb::abci::ResponseListSnapshots> for ListSnapshots {
+        type Error = crate::Error;
 
-    fn try_from(list_snapshots: pb::ResponseListSnapshots) -> Result<Self, Self::Error> {
-        Ok(Self {
-            snapshots: list_snapshots
-                .snapshots
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<_, _>>()?,
-        })
+        fn try_from(list_snapshots: pb::abci::ResponseListSnapshots) -> Result<Self, Self::Error> {
+            Ok(Self {
+                snapshots: list_snapshots
+                    .snapshots
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<_, _>>()?,
+            })
+        }
     }
-}
 
-impl Protobuf<pb::ResponseListSnapshots> for ListSnapshots {}
+    impl Protobuf<pb::abci::ResponseListSnapshots> for ListSnapshots {}
+}

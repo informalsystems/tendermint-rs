@@ -16,26 +16,26 @@ pub struct LoadSnapshotChunk {
 // Protobuf conversions
 // =============================================================================
 
-use core::convert::TryFrom;
+tendermint_pb_modules! {
+    use super::LoadSnapshotChunk;
 
-use tendermint_proto::{abci as pb, Protobuf};
-
-impl From<LoadSnapshotChunk> for pb::ResponseLoadSnapshotChunk {
-    fn from(load_snapshot_chunk: LoadSnapshotChunk) -> Self {
-        Self {
-            chunk: load_snapshot_chunk.chunk,
+    impl From<LoadSnapshotChunk> for pb::abci::ResponseLoadSnapshotChunk {
+        fn from(load_snapshot_chunk: LoadSnapshotChunk) -> Self {
+            Self {
+                chunk: load_snapshot_chunk.chunk,
+            }
         }
     }
-}
 
-impl TryFrom<pb::ResponseLoadSnapshotChunk> for LoadSnapshotChunk {
-    type Error = crate::Error;
+    impl TryFrom<pb::abci::ResponseLoadSnapshotChunk> for LoadSnapshotChunk {
+        type Error = crate::Error;
 
-    fn try_from(load_snapshot_chunk: pb::ResponseLoadSnapshotChunk) -> Result<Self, Self::Error> {
-        Ok(Self {
-            chunk: load_snapshot_chunk.chunk,
-        })
+        fn try_from(load_snapshot_chunk: pb::abci::ResponseLoadSnapshotChunk) -> Result<Self, Self::Error> {
+            Ok(Self {
+                chunk: load_snapshot_chunk.chunk,
+            })
+        }
     }
-}
 
-impl Protobuf<pb::ResponseLoadSnapshotChunk> for LoadSnapshotChunk {}
+    impl Protobuf<pb::abci::ResponseLoadSnapshotChunk> for LoadSnapshotChunk {}
+}

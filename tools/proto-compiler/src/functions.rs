@@ -1,4 +1,5 @@
 use std::{
+    collections::BTreeSet,
     fs::{copy, create_dir_all, remove_dir_all, File},
     io::Write,
     path::{Path, PathBuf},
@@ -10,6 +11,8 @@ use git2::{
 };
 use subtle_encoding::hex;
 use walkdir::WalkDir;
+
+use crate::constants::TendermintVersion;
 
 /// Clone or open+fetch a repository and check out a specific commitish
 /// In case of an existing repository, the origin remote will be set to `url`.
@@ -163,20 +166,20 @@ pub fn copy_files(src_dir: &Path, target_dir: &Path) {
 
     // Copy new compiled files (prost does not use folder structures)
     let errors = WalkDir::new(src_dir)
+        .contents_first(true)
         .into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|e| e.file_type().is_file())
-        .map(|e| {
-            copy(
-                e.path(),
-                std::path::Path::new(&format!(
-                    "{}/{}",
-                    &target_dir.display(),
-                    &e.file_name().to_os_string().to_str().unwrap()
-                )),
-            )
+        .filter_entry(|e| {
+            e.file_type().is_file()
+                && e.file_name()
+                    .to_str()
+                    .map(|name| name.starts_with("tendermint."))
+                    .unwrap_or(false)
         })
-        .filter_map(|e| e.err())
+        .map(|res| {
+            let e = res?;
+            copy(e.path(), target_dir.join(e.file_name()))
+        })
+        .filter_map(|res| res.err())
         .collect::<Vec<_>>();
 
     if !errors.is_empty() {
@@ -207,8 +210,10 @@ pub fn find_proto_files(proto_paths: Vec<PathBuf>) -> Vec<PathBuf> {
     protos
 }
 
-/// Create tendermint.rs with library information
-pub fn generate_tendermint_lib(prost_dir: &Path, tendermint_lib_target: &Path) {
+/// Create a module including generated content for the specified
+/// Tendermint source version.
+pub fn generate_tendermint_mod(prost_dir: &Path, version: &TendermintVersion, target_dir: &Path) {
+    create_dir_all(target_dir).unwrap();
     let file_names = WalkDir::new(prost_dir)
         .into_iter()
         .filter_map(|e| e.ok())
@@ -217,8 +222,9 @@ pub fn generate_tendermint_lib(prost_dir: &Path, tendermint_lib_target: &Path) {
                 && e.file_name().to_str().unwrap().starts_with("tendermint.")
                 && e.file_name().to_str().unwrap().ends_with(".rs")
         })
-        .map(|d| d.file_name().to_str().unwrap().to_string())
-        .collect::<Vec<_>>();
+        .map(|d| d.file_name().to_str().unwrap().to_owned())
+        .collect::<BTreeSet<_>>();
+    let file_names = Vec::from_iter(file_names);
 
     let mut content =
         String::from("//! Tendermint-proto auto-generated sub-modules for Tendermint\n");
@@ -237,8 +243,9 @@ pub fn generate_tendermint_lib(prost_dir: &Path, tendermint_lib_target: &Path) {
         let mut tab_count = parts.len();
 
         let mut inner_content = format!(
-            "{}include!(\"prost/{}\");",
+            "{}include!(\"../prost/{}/{}\");",
             tab.repeat(tab_count),
+            &version.ident,
             file_name
         );
 
@@ -261,11 +268,22 @@ pub fn generate_tendermint_lib(prost_dir: &Path, tendermint_lib_target: &Path) {
         tab,
         crate::constants::TENDERMINT_REPO,
         tab,
-        crate::constants::TENDERMINT_COMMITISH,
+        &version.commitish,
     );
 
+    let tendermint_mod_target = target_dir.join(format!("{}.rs", version.ident));
+    let mut file =
+        File::create(tendermint_mod_target).expect("tendermint module file create failed");
+    file.write_all(content.as_bytes())
+        .expect("tendermint module file write failed");
+}
+
+pub fn generate_tendermint_lib(versions: &[TendermintVersion], tendermint_lib_target: &Path) {
     let mut file =
         File::create(tendermint_lib_target).expect("tendermint library file create failed");
-    file.write_all(content.as_bytes())
-        .expect("tendermint library file write failed");
+    for version in versions {
+        writeln!(&mut file, "pub mod {};", version.ident).unwrap();
+    }
+    let last_version = versions.last().unwrap();
+    writeln!(&mut file, "pub use {}::*;", last_version.ident).unwrap();
 }

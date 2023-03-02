@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
+use crate::{dialect::Dialect, request::RequestMessage};
 
 /// Request to unsubscribe from events relating to a given query.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -17,12 +18,14 @@ impl Request {
     }
 }
 
-impl crate::Request for Request {
-    type Response = Response;
-
+impl RequestMessage for Request {
     fn method(&self) -> crate::Method {
         crate::Method::Unsubscribe
     }
+}
+
+impl<S: Dialect> crate::Request<S> for Request {
+    type Response = Response;
 }
 
 /// Status responses

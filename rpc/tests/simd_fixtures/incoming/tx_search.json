@@ -1,0 +1,166 @@
+{
+  "jsonrpc": "2.0",
+  "id": "950dbe9e-8991-4680-b990-ac5cbe1cf9b5",
+  "result": {
+    "txs": [
+      {
+        "hash": "ACDCA9995210D86AF9C73535047AAA3469E915C548194423279FE5F61E41E9F8",
+        "height": "925",
+        "index": 0,
+        "tx_result": {
+          "code": 0,
+          "data": "Ei0KKy9pYmMuY29yZS5jbGllbnQudjEuTXNnQ3JlYXRlQ2xpZW50UmVzcG9uc2U=",
+          "log": "[{\"msg_index\":0,\"events\":[{\"type\":\"create_client\",\"attributes\":[{\"key\":\"client_id\",\"value\":\"07-tendermint-17\"},{\"key\":\"client_type\",\"value\":\"07-tendermint\"},{\"key\":\"consensus_height\",\"value\":\"1-924\"}]},{\"type\":\"message\",\"attributes\":[{\"key\":\"action\",\"value\":\"/ibc.core.client.v1.MsgCreateClient\"},{\"key\":\"sender\",\"value\":\"cosmos175gsvrtdqe5j77566dfyf8f2pgle5v5u9xsda9\"},{\"key\":\"module\",\"value\":\"ibc_client\"}]}]}]",
+          "info": "",
+          "gas_wanted": "88080",
+          "gas_used": "79943",
+          "events": [
+            {
+              "type": "coin_spent",
+              "attributes": [
+                {
+                  "key": "spender",
+                  "value": "cosmos175gsvrtdqe5j77566dfyf8f2pgle5v5u9xsda9",
+                  "index": true
+                },
+                {
+                  "key": "amount",
+                  "value": "881stake",
+                  "index": true
+                }
+              ]
+            },
+            {
+              "type": "coin_received",
+              "attributes": [
+                {
+                  "key": "receiver",
+                  "value": "cosmos17xpfvakm2amg962yls6f84z3kell8c5lserqta",
+                  "index": true
+                },
+                {
+                  "key": "amount",
+                  "value": "881stake",
+                  "index": true
+                }
+              ]
+            },
+            {
+              "type": "transfer",
+              "attributes": [
+                {
+                  "key": "recipient",
+                  "value": "cosmos17xpfvakm2amg962yls6f84z3kell8c5lserqta",
+                  "index": true
+                },
+                {
+                  "key": "sender",
+                  "value": "cosmos175gsvrtdqe5j77566dfyf8f2pgle5v5u9xsda9",
+                  "index": true
+                },
+                {
+                  "key": "amount",
+                  "value": "881stake",
+                  "index": true
+                }
+              ]
+            },
+            {
+              "type": "message",
+              "attributes": [
+                {
+                  "key": "sender",
+                  "value": "cosmos175gsvrtdqe5j77566dfyf8f2pgle5v5u9xsda9",
+                  "index": true
+                }
+              ]
+            },
+            {
+              "type": "tx",
+              "attributes": [
+                {
+                  "key": "fee",
+                  "value": "881stake",
+                  "index": true
+                },
+                {
+                  "key": "fee_payer",
+                  "value": "cosmos175gsvrtdqe5j77566dfyf8f2pgle5v5u9xsda9",
+                  "index": true
+                }
+              ]
+            },
+            {
+              "type": "tx",
+              "attributes": [
+                {
+                  "key": "acc_seq",
+                  "value": "cosmos175gsvrtdqe5j77566dfyf8f2pgle5v5u9xsda9/17",
+                  "index": true
+                }
+              ]
+            },
+            {
+              "type": "tx",
+              "attributes": [
+                {
+                  "key": "signature",
+                  "value": "eaw7VwfoviJhMffnwxld3T4CR3o1SSZRaLvXldmZ9X5Ktzfegqb5kOKDZWjLPNh1szOiq7/umSm3kuRZNjZEeA==",
+                  "index": true
+                }
+              ]
+            },
+            {
+              "type": "message",
+              "attributes": [
+                {
+                  "key": "action",
+                  "value": "/ibc.core.client.v1.MsgCreateClient",
+                  "index": true
+                },
+                {
+                  "key": "sender",
+                  "value": "cosmos175gsvrtdqe5j77566dfyf8f2pgle5v5u9xsda9",
+                  "index": true
+                }
+              ]
+            },
+            {
+              "type": "create_client",
+              "attributes": [
+                {
+                  "key": "client_id",
+                  "value": "07-tendermint-17",
+                  "index": true
+                },
+                {
+                  "key": "client_type",
+                  "value": "07-tendermint",
+                  "index": true
+                },
+                {
+                  "key": "consensus_height",
+                  "value": "1-924",
+                  "index": true
+                }
+              ]
+            },
+            {
+              "type": "message",
+              "attributes": [
+                {
+                  "key": "module",
+                  "value": "ibc_client",
+                  "index": true
+                }
+              ]
+            }
+          ],
+          "codespace": ""
+        },
+        "tx": "Cs8DCo0DCiMvaWJjLmNvcmUuY2xpZW50LnYxLk1zZ0NyZWF0ZUNsaWVudBLlAgqqAQorL2liYy5saWdodGNsaWVudHMudGVuZGVybWludC52MS5DbGllbnRTdGF0ZRJ7CgVpYmMtMRIECAEQAxoECIDqSSIECIDfbioCCCgyADoFCAEQnAdCGQoJCAEYASABKgEAEgwKAgABECEYBCAMMAFCGQoJCAEYASABKgEAEgwKAgABECAYASABMAFKB3VwZ3JhZGVKEHVwZ3JhZGVkSUJDU3RhdGVQAVgBEoYBCi4vaWJjLmxpZ2h0Y2xpZW50cy50ZW5kZXJtaW50LnYxLkNvbnNlbnN1c1N0YXRlElQKDAj2kMWeBhD4iszpARIiCiBZ4RxJoGp5+LiWhv9GmXmro0O9PsLAJae7p+ddjMlKshogtvCuWO8lJ8lFLlabtOVGzd/+1IblTmo12leDMLoFz/saLWNvc21vczE3NWdzdnJ0ZHFlNWo3NzU2NmRmeWY4ZjJwZ2xlNXY1dTl4c2RhORI9aGVybWVzIDEuMi4wKzdmM2M0ZDc4LWRpcnR5IChodHRwczovL2hlcm1lcy5pbmZvcm1hbC5zeXN0ZW1zKRJmClAKRgofL2Nvc21vcy5jcnlwdG8uc2VjcDI1NmsxLlB1YktleRIjCiED3b32P6jgs4E32s/TRZksqUTo3E7SuAcQOsAGQ5UYWjQSBAoCCAEYERISCgwKBXN0YWtlEgM4ODEQkLAFGkB5rDtXB+i+ImEx9+fDGV3dPgJHejVJJlFou9eV2Zn1fkq3N96CpvmQ4oNlaMs82HWzM6Krv+6ZKbeS5Fk2NkR4"
+      }
+    ],
+    "total_count": "1"
+  }
+}

@@ -11,7 +11,7 @@ use std::{
 
 use bytes::{Buf, BufMut, BytesMut};
 use prost::Message;
-use tendermint_proto::abci::{Request, Response};
+use tendermint_proto::v0_37::abci::{Request, Response};
 
 use crate::error::Error;
 
@@ -130,7 +130,7 @@ where
     message.encode(&mut buf).map_err(Error::encode)?;
 
     let buf = buf.freeze();
-    encode_varint(buf.len() as u64, &mut dst);
+    prost::encoding::encode_varint(buf.len() as u64, &mut dst);
     dst.put(buf);
     Ok(())
 }
@@ -142,11 +142,11 @@ where
 {
     let src_len = src.len();
     let mut tmp = src.clone().freeze();
-    let encoded_len = match decode_varint(&mut tmp) {
+    let encoded_len = match prost::encoding::decode_varint(&mut tmp) {
         Ok(len) => len,
         // We've potentially only received a partial length delimiter
         Err(_) if src_len <= MAX_VARINT_LENGTH => return Ok(None),
-        Err(e) => return Err(e),
+        Err(e) => return Err(Error::decode(e)),
     };
     let remaining = tmp.remaining() as u64;
     if remaining < encoded_len {
@@ -163,15 +163,4 @@ where
 
         Ok(Some(res))
     }
-}
-
-// encode_varint and decode_varint will be removed once
-// https://github.com/tendermint/tendermint/issues/5783 lands in Tendermint.
-pub fn encode_varint<B: BufMut>(val: u64, mut buf: &mut B) {
-    prost::encoding::encode_varint(val << 1, &mut buf);
-}
-
-pub fn decode_varint<B: Buf>(mut buf: &mut B) -> Result<u64, Error> {
-    let len = prost::encoding::decode_varint(&mut buf).map_err(Error::decode)?;
-    Ok(len >> 1)
 }

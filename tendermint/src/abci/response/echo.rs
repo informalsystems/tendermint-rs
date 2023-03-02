@@ -11,26 +11,26 @@ pub struct Echo {
 // Protobuf conversions
 // =============================================================================
 
-use core::convert::TryFrom;
+tendermint_pb_modules! {
+    use super::Echo;
 
-use tendermint_proto::{abci as pb, Protobuf};
-
-impl From<Echo> for pb::ResponseEcho {
-    fn from(echo: Echo) -> Self {
-        Self {
-            message: echo.message,
+    impl From<Echo> for pb::abci::ResponseEcho {
+        fn from(echo: Echo) -> Self {
+            Self {
+                message: echo.message,
+            }
         }
     }
-}
 
-impl TryFrom<pb::ResponseEcho> for Echo {
-    type Error = crate::Error;
+    impl TryFrom<pb::abci::ResponseEcho> for Echo {
+        type Error = crate::Error;
 
-    fn try_from(echo: pb::ResponseEcho) -> Result<Self, Self::Error> {
-        Ok(Self {
-            message: echo.message,
-        })
+        fn try_from(echo: pb::abci::ResponseEcho) -> Result<Self, Self::Error> {
+            Ok(Self {
+                message: echo.message,
+            })
+        }
     }
-}
 
-impl Protobuf<pb::ResponseEcho> for Echo {}
+    impl Protobuf<pb::abci::ResponseEcho> for Echo {}
+}

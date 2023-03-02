@@ -1,13 +1,13 @@
 [package]
 name = "tendermint-proto-compiler"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Informal Systems <hello@informal.systems>"]
 edition = "2021"
 publish = false
 
 [dependencies]
 walkdir         = { version = "2.3" }
-prost-build     = { version = "0.11" }
+prost-build     = { version = "0.11.4" }
 git2            = { version = "0.16" }
 tempfile        = { version = "3.2.0" }
 subtle-encoding = { version = "0.5" }

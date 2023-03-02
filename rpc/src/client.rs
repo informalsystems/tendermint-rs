@@ -1,16 +1,13 @@
 //! Tendermint RPC client.
 
+mod compat;
+pub use compat::CompatMode;
 mod subscription;
 pub use subscription::{Subscription, SubscriptionClient};
 pub mod sync;
 
 mod transport;
-use core::{fmt, time::Duration};
 
-use async_trait::async_trait;
-use serde::{de::DeserializeOwned, Serialize};
-use tendermint::{abci, block::Height, evidence::Evidence, Genesis, Hash};
-use tokio::time;
 #[cfg(feature = "http-client")]
 pub use transport::http::{HttpClient, HttpClientUrl};
 pub use transport::mock::{MockClient, MockRequestMatcher, MockRequestMethodMatcher};
@@ -18,6 +15,13 @@ pub use transport::mock::{MockClient, MockRequestMatcher, MockRequestMethodMatch
 pub use transport::websocket::{
     WebSocketClient, WebSocketClientDriver, WebSocketClientUrl, WebSocketConfig,
 };
+
+use core::{fmt, time::Duration};
+
+use async_trait::async_trait;
+use serde::{de::DeserializeOwned, Serialize};
+use tendermint::{abci, block::Height, evidence::Evidence, Genesis, Hash};
+use tokio::time;
 
 use crate::{
     endpoint::{validators::DEFAULT_VALIDATORS_PER_PAGE, *},
@@ -77,6 +81,22 @@ pub trait Client {
     /// `/block`: get the latest block.
     async fn latest_block(&self) -> Result<block::Response, Error> {
         self.perform(block::Request::default()).await
+    }
+
+    /// `/header`: get block header at a given height.
+    async fn header<H>(&self, height: H) -> Result<header::Response, Error>
+    where
+        H: Into<Height> + Send,
+    {
+        self.perform(header::Request::new(height.into())).await
+    }
+
+    /// `/header_by_hash`: get block by hash.
+    async fn header_by_hash(
+        &self,
+        hash: tendermint::Hash,
+    ) -> Result<header_by_hash::Response, Error> {
+        self.perform(header_by_hash::Request::new(hash)).await
     }
 
     /// `/block_results`: get ABCI results for a block at a particular height.
@@ -299,8 +319,11 @@ pub trait Client {
         Ok(())
     }
 
-    /// Perform a request against the RPC endpoint
-    async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
+    /// Perform a request against the RPC endpoint.
+    ///
+    /// This method is used by the default implementations of specific
+    /// endpoint methods. The latest protocol dialect is assumed to be invoked.
+    async fn perform<R>(&self, request: R) -> Result<R::Output, Error>
     where
         R: SimpleRequest;
 }

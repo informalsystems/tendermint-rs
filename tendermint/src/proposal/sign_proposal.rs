@@ -1,16 +1,8 @@
-use core::convert::{TryFrom, TryInto};
-
 use bytes::BufMut;
-use tendermint_proto::{
-    privval::{
-        RemoteSignerError, SignProposalRequest as RawSignProposalRequest,
-        SignedProposalResponse as RawSignedProposalResponse,
-    },
-    Error as ProtobufError, Protobuf,
-};
+use tendermint_proto::Error as ProtobufError;
 
 use super::Proposal;
-use crate::{chain::Id as ChainId, error::Error, prelude::*};
+use crate::{chain::Id as ChainId, prelude::*, privval::RemoteSignerError};
 
 /// SignProposalRequest is a request to sign a proposal
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -19,32 +11,6 @@ pub struct SignProposalRequest {
     pub proposal: Proposal,
     /// Chain ID
     pub chain_id: ChainId,
-}
-
-impl Protobuf<RawSignProposalRequest> for SignProposalRequest {}
-impl Protobuf<RawSignedProposalResponse> for SignedProposalResponse {}
-
-impl TryFrom<RawSignProposalRequest> for SignProposalRequest {
-    type Error = Error;
-
-    fn try_from(value: RawSignProposalRequest) -> Result<Self, Self::Error> {
-        if value.proposal.is_none() {
-            return Err(Error::no_proposal_found());
-        }
-        Ok(SignProposalRequest {
-            proposal: Proposal::try_from(value.proposal.unwrap())?,
-            chain_id: ChainId::try_from(value.chain_id).unwrap(),
-        })
-    }
-}
-
-impl From<SignProposalRequest> for RawSignProposalRequest {
-    fn from(value: SignProposalRequest) -> Self {
-        RawSignProposalRequest {
-            proposal: Some(value.proposal.into()),
-            chain_id: value.chain_id.to_string(),
-        }
-    }
 }
 
 impl SignProposalRequest {
@@ -64,7 +30,7 @@ impl SignProposalRequest {
 }
 
 /// SignedProposalResponse is response containing a signed proposal or an error
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct SignedProposalResponse {
     /// Proposal
     pub proposal: Option<Proposal>,
@@ -72,22 +38,61 @@ pub struct SignedProposalResponse {
     pub error: Option<RemoteSignerError>,
 }
 
-impl TryFrom<RawSignedProposalResponse> for SignedProposalResponse {
-    type Error = Error;
+// =============================================================================
+// Protobuf conversions
+// =============================================================================
 
-    fn try_from(value: RawSignedProposalResponse) -> Result<Self, Self::Error> {
-        Ok(SignedProposalResponse {
-            proposal: value.proposal.map(TryInto::try_into).transpose()?,
-            error: value.error,
-        })
+tendermint_pb_modules! {
+    use pb::privval::{
+        SignProposalRequest as RawSignProposalRequest,
+        SignedProposalResponse as RawSignedProposalResponse,
+    };
+    use crate::{Error, Proposal, chain::Id as ChainId, prelude::*};
+    use super::{SignProposalRequest, SignedProposalResponse};
+
+    impl Protobuf<RawSignProposalRequest> for SignProposalRequest {}
+    impl Protobuf<RawSignedProposalResponse> for SignedProposalResponse {}
+
+    impl TryFrom<RawSignProposalRequest> for SignProposalRequest {
+        type Error = Error;
+
+        fn try_from(value: RawSignProposalRequest) -> Result<Self, Self::Error> {
+            if value.proposal.is_none() {
+                return Err(Error::no_proposal_found());
+            }
+            Ok(SignProposalRequest {
+                proposal: Proposal::try_from(value.proposal.unwrap())?,
+                chain_id: ChainId::try_from(value.chain_id).unwrap(),
+            })
+        }
     }
-}
 
-impl From<SignedProposalResponse> for RawSignedProposalResponse {
-    fn from(value: SignedProposalResponse) -> Self {
-        RawSignedProposalResponse {
-            proposal: value.proposal.map(Into::into),
-            error: value.error,
+    impl From<SignProposalRequest> for RawSignProposalRequest {
+        fn from(value: SignProposalRequest) -> Self {
+            RawSignProposalRequest {
+                proposal: Some(value.proposal.into()),
+                chain_id: value.chain_id.to_string(),
+            }
+        }
+    }
+
+    impl TryFrom<RawSignedProposalResponse> for SignedProposalResponse {
+        type Error = Error;
+
+        fn try_from(value: RawSignedProposalResponse) -> Result<Self, Self::Error> {
+            Ok(SignedProposalResponse {
+                proposal: value.proposal.map(TryInto::try_into).transpose()?,
+                error: value.error.map(TryInto::try_into).transpose()?,
+            })
+        }
+    }
+
+    impl From<SignedProposalResponse> for RawSignedProposalResponse {
+        fn from(value: SignedProposalResponse) -> Self {
+            RawSignedProposalResponse {
+                proposal: value.proposal.map(Into::into),
+                error: value.error.map(Into::into),
+            }
         }
     }
 }

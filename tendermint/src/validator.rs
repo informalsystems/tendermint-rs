@@ -1,16 +1,8 @@
 //! Tendermint validators
 
-use core::convert::{TryFrom, TryInto};
-
 use serde::{Deserialize, Serialize};
-use tendermint_proto::{
-    abci::ValidatorUpdate as RawValidatorUpdate,
-    types::{
-        SimpleValidator as RawSimpleValidator, Validator as RawValidator,
-        ValidatorSet as RawValidatorSet,
-    },
-    Protobuf,
-};
+use tendermint_proto::v0_37::types::SimpleValidator as RawSimpleValidator;
+use tendermint_proto::Protobuf;
 
 use crate::{
     account,
@@ -29,44 +21,6 @@ pub struct Set {
     validators: Vec<Info>,
     proposer: Option<Info>,
     total_voting_power: vote::Power,
-}
-
-impl Protobuf<RawValidatorSet> for Set {}
-
-impl TryFrom<RawValidatorSet> for Set {
-    type Error = Error;
-
-    fn try_from(value: RawValidatorSet) -> Result<Self, Self::Error> {
-        let validators = value
-            .validators
-            .into_iter()
-            .map(TryInto::try_into)
-            .collect::<Result<Vec<_>, _>>()?;
-
-        let proposer = value.proposer.map(TryInto::try_into).transpose()?;
-        let validator_set = Self::new(validators, proposer);
-
-        // Ensure that the raw voting power matches the computed one
-        let raw_voting_power = value.total_voting_power.try_into()?;
-        if raw_voting_power != validator_set.total_voting_power() {
-            return Err(Error::raw_voting_power_mismatch(
-                raw_voting_power,
-                validator_set.total_voting_power(),
-            ));
-        }
-
-        Ok(validator_set)
-    }
-}
-
-impl From<Set> for RawValidatorSet {
-    fn from(value: Set) -> Self {
-        RawValidatorSet {
-            validators: value.validators.into_iter().map(Into::into).collect(),
-            proposer: value.proposer.map(Into::into),
-            total_voting_power: value.total_voting_power.into(),
-        }
-    }
 }
 
 impl Set {
@@ -184,34 +138,6 @@ pub struct Info {
     pub proposer_priority: ProposerPriority,
 }
 
-impl TryFrom<RawValidator> for Info {
-    type Error = Error;
-
-    fn try_from(value: RawValidator) -> Result<Self, Self::Error> {
-        Ok(Info {
-            address: value.address.try_into()?,
-            pub_key: value
-                .pub_key
-                .ok_or_else(Error::missing_public_key)?
-                .try_into()?,
-            power: value.voting_power.try_into()?,
-            name: None,
-            proposer_priority: value.proposer_priority.into(),
-        })
-    }
-}
-
-impl From<Info> for RawValidator {
-    fn from(value: Info) -> Self {
-        RawValidator {
-            address: value.address.into(),
-            pub_key: Some(value.pub_key.into()),
-            voting_power: value.power.into(),
-            proposer_priority: value.proposer_priority.into(),
-        }
-    }
-}
-
 impl Info {
     /// Return the voting power of the validator.
     pub fn power(&self) -> u64 {
@@ -246,50 +172,19 @@ impl Info {
 /// nor the proposer priority, as that changes with every block even if the validator set didn't.
 /// It contains only the pubkey and the voting power.
 /// TODO: currently only works for Ed25519 pubkeys
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct SimpleValidator {
     /// Public key
-    pub pub_key: Option<tendermint_proto::crypto::PublicKey>,
+    pub pub_key: PublicKey,
     /// Voting power
     pub voting_power: vote::Power,
-}
-
-impl Protobuf<RawSimpleValidator> for SimpleValidator {}
-
-impl TryFrom<RawSimpleValidator> for SimpleValidator {
-    type Error = Error;
-
-    fn try_from(value: RawSimpleValidator) -> Result<Self, Self::Error> {
-        Ok(SimpleValidator {
-            pub_key: value.pub_key,
-            voting_power: value.voting_power.try_into()?,
-        })
-    }
-}
-
-impl From<SimpleValidator> for RawSimpleValidator {
-    fn from(value: SimpleValidator) -> Self {
-        RawSimpleValidator {
-            pub_key: value.pub_key,
-            voting_power: value.voting_power.into(),
-        }
-    }
 }
 
 /// Info -> SimpleValidator
 impl From<&Info> for SimpleValidator {
     fn from(info: &Info) -> SimpleValidator {
-        let sum = match &info.pub_key {
-            PublicKey::Ed25519(pk) => Some(tendermint_proto::crypto::public_key::Sum::Ed25519(
-                pk.as_bytes().to_vec(),
-            )),
-            #[cfg(feature = "secp256k1")]
-            PublicKey::Secp256k1(pk) => Some(tendermint_proto::crypto::public_key::Sum::Secp256k1(
-                pk.to_bytes().to_vec(),
-            )),
-        };
         SimpleValidator {
-            pub_key: Some(tendermint_proto::crypto::PublicKey { sum }),
+            pub_key: info.pub_key,
             voting_power: info.power,
         }
     }
@@ -299,7 +194,7 @@ impl Info {
     /// Returns the bytes to be hashed into the Merkle tree -
     /// the leaves of the tree.
     pub fn hash_bytes(&self) -> Vec<u8> {
-        SimpleValidator::from(self).encode_vec().unwrap()
+        Protobuf::<RawSimpleValidator>::encode_vec(&SimpleValidator::from(self)).unwrap()
     }
 }
 
@@ -343,28 +238,134 @@ pub struct Update {
     pub power: vote::Power,
 }
 
-impl Protobuf<RawValidatorUpdate> for Update {}
+// =============================================================================
+// Protobuf conversions
+// =============================================================================
 
-impl From<Update> for RawValidatorUpdate {
-    fn from(vu: Update) -> Self {
-        Self {
-            pub_key: Some(vu.pub_key.into()),
-            power: vu.power.into(),
+tendermint_pb_modules! {
+    use pb::{
+        abci::ValidatorUpdate as RawValidatorUpdate,
+        types::{
+            SimpleValidator as RawSimpleValidator, Validator as RawValidator,
+            ValidatorSet as RawValidatorSet,
+        },
+    };
+    use super::{Info, Set, SimpleValidator, Update};
+    use crate::{prelude::*, Error};
+
+    impl Protobuf<RawValidatorSet> for Set {}
+
+    impl TryFrom<RawValidatorSet> for Set {
+        type Error = Error;
+
+        fn try_from(value: RawValidatorSet) -> Result<Self, Self::Error> {
+            let validators = value
+                .validators
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<Vec<_>, _>>()?;
+
+            let proposer = value.proposer.map(TryInto::try_into).transpose()?;
+            let validator_set = Self::new(validators, proposer);
+
+            // Ensure that the raw voting power matches the computed one
+            let raw_voting_power = value.total_voting_power.try_into()?;
+            if raw_voting_power != validator_set.total_voting_power() {
+                return Err(Error::raw_voting_power_mismatch(
+                    raw_voting_power,
+                    validator_set.total_voting_power(),
+                ));
+            }
+
+            Ok(validator_set)
         }
     }
-}
 
-impl TryFrom<RawValidatorUpdate> for Update {
-    type Error = Error;
+    impl From<Set> for RawValidatorSet {
+        fn from(value: Set) -> Self {
+            RawValidatorSet {
+                validators: value.validators.into_iter().map(Into::into).collect(),
+                proposer: value.proposer.map(Into::into),
+                total_voting_power: value.total_voting_power.into(),
+            }
+        }
+    }
 
-    fn try_from(vu: RawValidatorUpdate) -> Result<Self, Self::Error> {
-        Ok(Self {
-            pub_key: vu
-                .pub_key
-                .ok_or_else(Error::missing_public_key)?
-                .try_into()?,
-            power: vu.power.try_into()?,
-        })
+    impl TryFrom<RawValidator> for Info {
+        type Error = Error;
+
+        fn try_from(value: RawValidator) -> Result<Self, Self::Error> {
+            Ok(Info {
+                address: value.address.try_into()?,
+                pub_key: value
+                    .pub_key
+                    .ok_or_else(Error::missing_public_key)?
+                    .try_into()?,
+                power: value.voting_power.try_into()?,
+                name: None,
+                proposer_priority: value.proposer_priority.into(),
+            })
+        }
+    }
+
+    impl From<Info> for RawValidator {
+        fn from(value: Info) -> Self {
+            RawValidator {
+                address: value.address.into(),
+                pub_key: Some(value.pub_key.into()),
+                voting_power: value.power.into(),
+                proposer_priority: value.proposer_priority.into(),
+            }
+        }
+    }
+
+    impl Protobuf<RawSimpleValidator> for SimpleValidator {}
+
+    impl TryFrom<RawSimpleValidator> for SimpleValidator {
+        type Error = Error;
+
+        fn try_from(value: RawSimpleValidator) -> Result<Self, Self::Error> {
+            Ok(SimpleValidator {
+                pub_key: value.pub_key
+                    .ok_or_else(Error::missing_public_key)?
+                    .try_into()?,
+                voting_power: value.voting_power.try_into()?,
+            })
+        }
+    }
+
+    impl From<SimpleValidator> for RawSimpleValidator {
+        fn from(value: SimpleValidator) -> Self {
+            RawSimpleValidator {
+                pub_key: Some(value.pub_key.into()),
+                voting_power: value.voting_power.into(),
+            }
+        }
+    }
+
+    impl Protobuf<RawValidatorUpdate> for Update {}
+
+    impl From<Update> for RawValidatorUpdate {
+        fn from(vu: Update) -> Self {
+            Self {
+                pub_key: Some(vu.pub_key.into()),
+                power: vu.power.into(),
+            }
+        }
+    }
+
+    impl TryFrom<RawValidatorUpdate> for Update {
+        type Error = Error;
+
+        fn try_from(vu: RawValidatorUpdate) -> Result<Self, Self::Error> {
+            Ok(Self {
+                pub_key: vu
+                    .pub_key
+                    .ok_or_else(Error::missing_public_key)?
+                    .try_into()?,
+                power: vu.power.try_into()?,
+            })
+        }
     }
 }
 

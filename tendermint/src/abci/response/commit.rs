@@ -18,28 +18,28 @@ pub struct Commit {
 // Protobuf conversions
 // =============================================================================
 
-use core::convert::TryFrom;
+tendermint_pb_modules! {
+    use super::Commit;
 
-use tendermint_proto::{abci as pb, Protobuf};
-
-impl From<Commit> for pb::ResponseCommit {
-    fn from(commit: Commit) -> Self {
-        Self {
-            data: commit.data,
-            retain_height: commit.retain_height.into(),
+    impl From<Commit> for pb::abci::ResponseCommit {
+        fn from(commit: Commit) -> Self {
+            Self {
+                data: commit.data,
+                retain_height: commit.retain_height.into(),
+            }
         }
     }
-}
 
-impl TryFrom<pb::ResponseCommit> for Commit {
-    type Error = crate::Error;
+    impl TryFrom<pb::abci::ResponseCommit> for Commit {
+        type Error = crate::Error;
 
-    fn try_from(commit: pb::ResponseCommit) -> Result<Self, Self::Error> {
-        Ok(Self {
-            data: commit.data,
-            retain_height: commit.retain_height.try_into()?,
-        })
+        fn try_from(commit: pb::abci::ResponseCommit) -> Result<Self, Self::Error> {
+            Ok(Self {
+                data: commit.data,
+                retain_height: commit.retain_height.try_into()?,
+            })
+        }
     }
-}
 
-impl Protobuf<pb::ResponseCommit> for Commit {}
+    impl Protobuf<pb::abci::ResponseCommit> for Commit {}
+}

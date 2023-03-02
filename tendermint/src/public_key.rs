@@ -14,10 +14,6 @@ use core::{cmp::Ordering, fmt, str::FromStr};
 use serde::{de, ser, Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use subtle_encoding::{base64, bech32, hex};
-use tendermint_proto::{
-    crypto::{public_key::Sum, PublicKey as RawPublicKey},
-    Protobuf,
-};
 
 pub use crate::crypto::ed25519::VerificationKey as Ed25519;
 use crate::{error::Error, prelude::*};
@@ -119,42 +115,48 @@ where
     .map_err(serde::de::Error::custom)
 }
 
-impl Protobuf<RawPublicKey> for PublicKey {}
+tendermint_pb_modules! {
+    use super::{PublicKey, Ed25519};
+    use pb::crypto::{PublicKey as RawPublicKey, public_key::Sum};
+    use crate::{prelude::*, Error};
 
-impl TryFrom<RawPublicKey> for PublicKey {
-    type Error = Error;
+    impl Protobuf<RawPublicKey> for PublicKey {}
 
-    fn try_from(value: RawPublicKey) -> Result<Self, Self::Error> {
-        let sum = &value
-            .sum
-            .ok_or_else(|| Error::invalid_key("empty sum".to_string()))?;
-        if let Sum::Ed25519(b) = sum {
-            let key = Ed25519::try_from(&b[..])?;
-            return Ok(PublicKey::Ed25519(key));
-        }
-        #[cfg(feature = "secp256k1")]
-        if let Sum::Secp256k1(b) = sum {
-            return Self::from_raw_secp256k1(b)
-                .ok_or_else(|| Error::invalid_key("malformed key".to_string()));
-        }
-        Err(Error::invalid_key("not an ed25519 key".to_string()))
-    }
-}
+    impl TryFrom<RawPublicKey> for PublicKey {
+        type Error = Error;
 
-impl From<PublicKey> for RawPublicKey {
-    fn from(value: PublicKey) -> Self {
-        match value {
-            PublicKey::Ed25519(ref pk) => RawPublicKey {
-                sum: Some(tendermint_proto::crypto::public_key::Sum::Ed25519(
-                    pk.as_bytes().to_vec(),
-                )),
-            },
+        fn try_from(value: RawPublicKey) -> Result<Self, Self::Error> {
+            let sum = &value
+                .sum
+                .ok_or_else(|| Error::invalid_key("empty sum".to_string()))?;
+            if let Sum::Ed25519(b) = sum {
+                let key = Ed25519::try_from(&b[..])?;
+                return Ok(PublicKey::Ed25519(key));
+            }
             #[cfg(feature = "secp256k1")]
-            PublicKey::Secp256k1(ref pk) => RawPublicKey {
-                sum: Some(tendermint_proto::crypto::public_key::Sum::Secp256k1(
-                    pk.to_bytes().to_vec(),
-                )),
-            },
+            if let Sum::Secp256k1(b) = sum {
+                return Self::from_raw_secp256k1(b)
+                    .ok_or_else(|| Error::invalid_key("malformed key".to_string()));
+            }
+            Err(Error::invalid_key("not an ed25519 key".to_string()))
+        }
+    }
+
+    impl From<PublicKey> for RawPublicKey {
+        fn from(value: PublicKey) -> Self {
+            match value {
+                PublicKey::Ed25519(ref pk) => RawPublicKey {
+                    sum: Some(Sum::Ed25519(
+                        pk.as_bytes().to_vec(),
+                    )),
+                },
+                #[cfg(feature = "secp256k1")]
+                PublicKey::Secp256k1(ref pk) => RawPublicKey {
+                    sum: Some(Sum::Secp256k1(
+                        pk.to_bytes().to_vec(),
+                    )),
+                },
+            }
         }
     }
 }
@@ -400,7 +402,6 @@ where
 #[cfg(test)]
 mod tests {
     use subtle_encoding::hex;
-    use tendermint_proto::Protobuf;
 
     use super::{PublicKey, TendermintKey};
     use crate::{prelude::*, public_key::PubKeyResponse};
@@ -467,49 +468,57 @@ mod tests {
         assert_eq!(reserialized_json.as_str(), json_string);
     }
 
-    #[test]
-    fn test_ed25519_pubkey_msg() {
-        // test-vector generated from Go
-        // import (
-        // "fmt"
-        // "github.com/tendermint/tendermint/proto/tendermint/crypto"
-        // "github.com/tendermint/tendermint/proto/tendermint/privval"
-        // )
-        //
-        // func ed25519_key() {
-        // pkr := &privval.PubKeyResponse{
-        // PubKey: &crypto.PublicKey{
-        // Sum: &crypto.PublicKey_Ed25519{Ed25519: []byte{
-        // 215, 90, 152, 1, 130, 177, 10, 183, 213, 75, 254, 211, 201, 100, 7, 58,
-        // 14, 225, 114, 243, 218, 166, 35, 37, 175, 2, 26, 104, 247, 7, 81, 26,
-        // },
-        // },
-        // },
-        // Error: nil,
-        // }
-        // pbpk, _ := pkr.Marshal()
-        // fmt.Printf("%#v\n", pbpk)
-        //
-        // }
-        let encoded = vec![
-            0xa, 0x22, 0xa, 0x20, 0xd7, 0x5a, 0x98, 0x1, 0x82, 0xb1, 0xa, 0xb7, 0xd5, 0x4b, 0xfe,
-            0xd3, 0xc9, 0x64, 0x7, 0x3a, 0xe, 0xe1, 0x72, 0xf3, 0xda, 0xa6, 0x23, 0x25, 0xaf, 0x2,
-            0x1a, 0x68, 0xf7, 0x7, 0x51, 0x1a,
-        ];
+    tendermint_pb_modules! {
+        use super::*;
+        use pb::privval::PubKeyResponse as RawPubKeyResponse;
 
-        let msg = PubKeyResponse {
-            pub_key: Some(
-                PublicKey::from_raw_ed25519(&[
-                    215, 90, 152, 1, 130, 177, 10, 183, 213, 75, 254, 211, 201, 100, 7, 58, 14,
-                    225, 114, 243, 218, 166, 35, 37, 175, 2, 26, 104, 247, 7, 81, 26,
-                ])
-                .unwrap(),
-            ),
-            error: None,
-        };
-        let got = msg.encode_vec().unwrap();
+        #[test]
+        fn test_ed25519_pubkey_msg() {
+            // test-vector generated from Go
+            // import (
+            // "fmt"
+            // "github.com/tendermint/tendermint/proto/tendermint/crypto"
+            // "github.com/tendermint/tendermint/proto/tendermint/privval"
+            // )
+            //
+            // func ed25519_key() {
+            // pkr := &privval.PubKeyResponse{
+            // PubKey: &crypto.PublicKey{
+            // Sum: &crypto.PublicKey_Ed25519{Ed25519: []byte{
+            // 215, 90, 152, 1, 130, 177, 10, 183, 213, 75, 254, 211, 201, 100, 7, 58,
+            // 14, 225, 114, 243, 218, 166, 35, 37, 175, 2, 26, 104, 247, 7, 81, 26,
+            // },
+            // },
+            // },
+            // Error: nil,
+            // }
+            // pbpk, _ := pkr.Marshal()
+            // fmt.Printf("%#v\n", pbpk)
+            //
+            // }
+            let encoded = vec![
+                0xa, 0x22, 0xa, 0x20, 0xd7, 0x5a, 0x98, 0x1, 0x82, 0xb1, 0xa, 0xb7, 0xd5, 0x4b, 0xfe,
+                0xd3, 0xc9, 0x64, 0x7, 0x3a, 0xe, 0xe1, 0x72, 0xf3, 0xda, 0xa6, 0x23, 0x25, 0xaf, 0x2,
+                0x1a, 0x68, 0xf7, 0x7, 0x51, 0x1a,
+            ];
 
-        assert_eq!(got, encoded);
-        assert_eq!(PubKeyResponse::decode_vec(&encoded).unwrap(), msg);
+            let msg = PubKeyResponse {
+                pub_key: Some(
+                    PublicKey::from_raw_ed25519(&[
+                        215, 90, 152, 1, 130, 177, 10, 183, 213, 75, 254, 211, 201, 100, 7, 58, 14,
+                        225, 114, 243, 218, 166, 35, 37, 175, 2, 26, 104, 247, 7, 81, 26,
+                    ])
+                    .unwrap(),
+                ),
+                error: None,
+            };
+            let got = Protobuf::<RawPubKeyResponse>::encode_vec(&msg).unwrap();
+
+            assert_eq!(got, encoded);
+            let decoded = <PubKeyResponse as Protobuf<RawPubKeyResponse>>::decode_vec(
+                &encoded
+            ).unwrap();
+            assert_eq!(decoded, msg);
+        }
     }
 }

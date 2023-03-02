@@ -10,20 +10,25 @@ use serde::{Deserialize, Serialize};
 use tendermint::{channel::Channel, node, serializers, Time};
 
 use crate::prelude::*;
+use crate::{dialect::Dialect, request::RequestMessage};
 
 /// Request network information from a node
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request;
 
-impl crate::Request for Request {
-    type Response = Response;
-
+impl RequestMessage for Request {
     fn method(&self) -> crate::Method {
         crate::Method::NetInfo
     }
 }
 
-impl crate::SimpleRequest for Request {}
+impl<S: Dialect> crate::Request<S> for Request {
+    type Response = Response;
+}
+
+impl<S: Dialect> crate::SimpleRequest<S> for Request {
+    type Output = Response;
+}
 
 /// Net info responses
 #[derive(Clone, Debug, Deserialize, Serialize)]

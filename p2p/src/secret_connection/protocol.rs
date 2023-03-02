@@ -3,7 +3,7 @@
 use std::convert::TryInto;
 
 use prost::Message as _;
-use tendermint_proto as proto;
+use tendermint_proto::v0_37 as proto;
 use x25519_dalek::PublicKey as EphemeralPublic;
 
 #[cfg(feature = "amino")]

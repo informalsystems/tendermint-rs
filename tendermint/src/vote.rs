@@ -5,15 +5,12 @@ mod power;
 mod sign_vote;
 mod validator_index;
 
-use core::{
-    convert::{TryFrom, TryInto},
-    fmt,
-    str::FromStr,
-};
+use core::{fmt, str::FromStr};
 
 use bytes::BufMut;
 use serde::{Deserialize, Serialize};
-use tendermint_proto::{types::Vote as RawVote, Error as ProtobufError, Protobuf};
+use tendermint_proto::v0_37::types::{CanonicalVote as RawCanonicalVote, Vote as RawVote};
+use tendermint_proto::{Error as ProtobufError, Protobuf};
 
 pub use self::{
     canonical_vote::CanonicalVote, power::Power, sign_vote::*, validator_index::ValidatorIndex,
@@ -55,44 +52,50 @@ pub struct Vote {
     pub signature: Option<Signature>,
 }
 
-impl Protobuf<RawVote> for Vote {}
+tendermint_pb_modules! {
+    use super::Vote;
+    use crate::{prelude::*, block, Error, Signature};
+    use pb::types::Vote as RawVote;
 
-impl TryFrom<RawVote> for Vote {
-    type Error = Error;
+    impl Protobuf<RawVote> for Vote {}
 
-    fn try_from(value: RawVote) -> Result<Self, Self::Error> {
-        if value.timestamp.is_none() {
-            return Err(Error::missing_timestamp());
+    impl TryFrom<RawVote> for Vote {
+        type Error = Error;
+
+        fn try_from(value: RawVote) -> Result<Self, Self::Error> {
+            if value.timestamp.is_none() {
+                return Err(Error::missing_timestamp());
+            }
+            Ok(Vote {
+                vote_type: value.r#type.try_into()?,
+                height: value.height.try_into()?,
+                round: value.round.try_into()?,
+                // block_id can be nil in the Go implementation
+                block_id: value
+                    .block_id
+                    .map(TryInto::try_into)
+                    .transpose()?
+                    .filter(|i| i != &block::Id::default()),
+                timestamp: value.timestamp.map(|t| t.try_into()).transpose()?,
+                validator_address: value.validator_address.try_into()?,
+                validator_index: value.validator_index.try_into()?,
+                signature: Signature::new(value.signature)?,
+            })
         }
-        Ok(Vote {
-            vote_type: value.r#type.try_into()?,
-            height: value.height.try_into()?,
-            round: value.round.try_into()?,
-            // block_id can be nil in the Go implementation
-            block_id: value
-                .block_id
-                .map(TryInto::try_into)
-                .transpose()?
-                .filter(|i| i != &block::Id::default()),
-            timestamp: value.timestamp.map(|t| t.try_into()).transpose()?,
-            validator_address: value.validator_address.try_into()?,
-            validator_index: value.validator_index.try_into()?,
-            signature: Signature::new(value.signature)?,
-        })
     }
-}
 
-impl From<Vote> for RawVote {
-    fn from(value: Vote) -> Self {
-        RawVote {
-            r#type: value.vote_type.into(),
-            height: value.height.into(),
-            round: value.round.into(),
-            block_id: value.block_id.map(Into::into),
-            timestamp: value.timestamp.map(Into::into),
-            validator_address: value.validator_address.into(),
-            validator_index: value.validator_index.into(),
-            signature: value.signature.map(|s| s.to_bytes()).unwrap_or_default(),
+    impl From<Vote> for RawVote {
+        fn from(value: Vote) -> Self {
+            RawVote {
+                r#type: value.vote_type.into(),
+                height: value.height.into(),
+                round: value.round.into(),
+                block_id: value.block_id.map(Into::into),
+                timestamp: value.timestamp.map(Into::into),
+                validator_address: value.validator_address.into(),
+                validator_index: value.validator_index.into(),
+                signature: value.signature.map(|s| s.to_bytes()).unwrap_or_default(),
+            }
         }
     }
 }
@@ -128,13 +131,15 @@ impl Vote {
     where
         B: BufMut,
     {
-        CanonicalVote::new(self.clone(), chain_id).encode_length_delimited(sign_bytes)?;
+        let canonical = CanonicalVote::new(self.clone(), chain_id);
+        Protobuf::<RawCanonicalVote>::encode_length_delimited(&canonical, sign_bytes)?;
         Ok(true)
     }
 
     /// Create signable vector from Vote.
     pub fn to_signable_vec(&self, chain_id: ChainId) -> Result<Vec<u8>, ProtobufError> {
-        CanonicalVote::new(self.clone(), chain_id).encode_length_delimited_vec()
+        let canonical = CanonicalVote::new(self.clone(), chain_id);
+        Protobuf::<RawCanonicalVote>::encode_length_delimited_vec(&canonical)
     }
 
     /// Consensus state from this vote - This doesn't seem to be used anywhere.
@@ -213,7 +218,7 @@ impl SignedVote {
 
     /// Return the bytes (of the canonicalized vote) that were signed.
     pub fn sign_bytes(&self) -> Vec<u8> {
-        self.vote.encode_length_delimited_vec().unwrap()
+        Protobuf::<RawCanonicalVote>::encode_length_delimited_vec(&self.vote).unwrap()
     }
 
     /// Return the actual signature on the canonicalized vote.

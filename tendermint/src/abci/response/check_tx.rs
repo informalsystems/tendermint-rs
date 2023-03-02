@@ -1,13 +1,11 @@
 use bytes::Bytes;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use super::super::{Code, Event};
 use crate::prelude::*;
-use crate::serializers;
 
 #[doc = include_str!("../doc/response-checktx.md")]
-#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
-#[serde(default)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize)]
 pub struct CheckTx {
     /// The response code.
     ///
@@ -16,7 +14,6 @@ pub struct CheckTx {
     /// Tendermint attributes no other value to the response code.
     pub code: Code,
     /// Result bytes, if any.
-    #[serde(with = "serializers::nullable")]
     pub data: Bytes,
     /// The output of the application's logger.
     ///
@@ -27,10 +24,8 @@ pub struct CheckTx {
     /// **May be non-deterministic**.
     pub info: String,
     /// Amount of gas requested for the transaction.
-    #[serde(with = "serializers::from_str")]
     pub gas_wanted: i64,
     /// Amount of gas consumed by the transaction.
-    #[serde(with = "serializers::from_str")]
     pub gas_used: i64,
     /// Events that occurred while checking the transaction.
     pub events: Vec<Event>,
@@ -39,7 +34,6 @@ pub struct CheckTx {
     /// The transaction's sender (e.g. the signer).
     pub sender: String,
     /// The transaction's priority (for mempool ordering).
-    #[serde(with = "serializers::from_str")]
     pub priority: i64,
     /// mempool_error is set by Tendermint.
     /// ABCI applictions should not set mempool_error.
@@ -50,50 +44,50 @@ pub struct CheckTx {
 // Protobuf conversions
 // =============================================================================
 
-use core::convert::{TryFrom, TryInto};
+tendermint_pb_modules! {
+    use super::CheckTx;
 
-use tendermint_proto::{abci as pb, Protobuf};
-
-impl From<CheckTx> for pb::ResponseCheckTx {
-    fn from(check_tx: CheckTx) -> Self {
-        Self {
-            code: check_tx.code.into(),
-            data: check_tx.data,
-            log: check_tx.log,
-            info: check_tx.info,
-            gas_wanted: check_tx.gas_wanted,
-            gas_used: check_tx.gas_used,
-            events: check_tx.events.into_iter().map(Into::into).collect(),
-            codespace: check_tx.codespace,
-            sender: check_tx.sender,
-            priority: check_tx.priority,
-            mempool_error: check_tx.mempool_error,
+    impl From<CheckTx> for pb::abci::ResponseCheckTx {
+        fn from(check_tx: CheckTx) -> Self {
+            Self {
+                code: check_tx.code.into(),
+                data: check_tx.data,
+                log: check_tx.log,
+                info: check_tx.info,
+                gas_wanted: check_tx.gas_wanted,
+                gas_used: check_tx.gas_used,
+                events: check_tx.events.into_iter().map(Into::into).collect(),
+                codespace: check_tx.codespace,
+                sender: check_tx.sender,
+                priority: check_tx.priority,
+                mempool_error: check_tx.mempool_error,
+            }
         }
     }
-}
 
-impl TryFrom<pb::ResponseCheckTx> for CheckTx {
-    type Error = crate::Error;
+    impl TryFrom<pb::abci::ResponseCheckTx> for CheckTx {
+        type Error = crate::Error;
 
-    fn try_from(check_tx: pb::ResponseCheckTx) -> Result<Self, Self::Error> {
-        Ok(Self {
-            code: check_tx.code.into(),
-            data: check_tx.data,
-            log: check_tx.log,
-            info: check_tx.info,
-            gas_wanted: check_tx.gas_wanted,
-            gas_used: check_tx.gas_used,
-            events: check_tx
-                .events
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<_, _>>()?,
-            codespace: check_tx.codespace,
-            sender: check_tx.sender,
-            priority: check_tx.priority,
-            mempool_error: check_tx.mempool_error,
-        })
+        fn try_from(check_tx: pb::abci::ResponseCheckTx) -> Result<Self, Self::Error> {
+            Ok(Self {
+                code: check_tx.code.into(),
+                data: check_tx.data,
+                log: check_tx.log,
+                info: check_tx.info,
+                gas_wanted: check_tx.gas_wanted,
+                gas_used: check_tx.gas_used,
+                events: check_tx
+                    .events
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<_, _>>()?,
+                codespace: check_tx.codespace,
+                sender: check_tx.sender,
+                priority: check_tx.priority,
+                mempool_error: check_tx.mempool_error,
+            })
+        }
     }
-}
 
-impl Protobuf<pb::ResponseCheckTx> for CheckTx {}
+    impl Protobuf<pb::abci::ResponseCheckTx> for CheckTx {}
+}

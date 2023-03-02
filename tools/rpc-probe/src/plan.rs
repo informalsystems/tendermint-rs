@@ -369,6 +369,8 @@ async fn execute_request(
     request: Request,
 ) -> Result<()> {
     let request_json = request.as_json();
+    debug!("Sending outgoing request: {}", request_json);
+
     write_json(&config.out_path, name, &request_json).await?;
     let response_json = match client.request(&request_json).await {
         Ok(r) => {

@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 pub use super::{block, block_results};
-use crate::{prelude::*, serializers, Method, Order};
+use crate::{dialect::Dialect, prelude::*, request::RequestMessage, serializers, Method, Order};
 
 /// Request for searching for blocks by their BeginBlock and EndBlock events.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -28,15 +28,19 @@ impl Request {
     }
 }
 
-impl crate::Request for Request {
-    type Response = Response;
-
+impl RequestMessage for Request {
     fn method(&self) -> Method {
         Method::BlockSearch
     }
 }
 
-impl crate::SimpleRequest for Request {}
+impl<S: Dialect> crate::Request<S> for Request {
+    type Response = Response;
+}
+
+impl<S: Dialect> crate::SimpleRequest<S> for Request {
+    type Output = Response;
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {

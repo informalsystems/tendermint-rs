@@ -1,0 +1,26 @@
+{
+  "id": "6713de4d-11cc-4725-9dff-1dad524f2d44",
+  "jsonrpc": "2.0",
+  "result": {
+    "block_height": "10",
+    "consensus_params": {
+      "block": {
+        "max_bytes": "22020096",
+        "max_gas": "-1"
+      },
+      "evidence": {
+        "max_age_duration": "172800000000000",
+        "max_age_num_blocks": "100000",
+        "max_bytes": "1048576"
+      },
+      "validator": {
+        "pub_key_types": [
+          "ed25519"
+        ]
+      },
+      "version": {
+        "app": "0"
+      }
+    }
+  }
+}

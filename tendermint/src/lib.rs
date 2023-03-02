@@ -24,6 +24,8 @@ extern crate alloc;
 extern crate std;
 
 #[macro_use]
+mod proto_macros;
+
 pub mod error;
 
 pub mod abci;
@@ -41,6 +43,7 @@ mod moniker;
 pub mod node;
 mod prelude;
 pub mod private_key;
+pub mod privval;
 pub mod proposal;
 pub mod public_key;
 pub mod serializers;
@@ -52,6 +55,9 @@ pub mod tx;
 pub mod validator;
 mod version;
 pub mod vote;
+
+pub mod v0_34;
+pub mod v0_37;
 
 #[cfg(test)]
 mod test;

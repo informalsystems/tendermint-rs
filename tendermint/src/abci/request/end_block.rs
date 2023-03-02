@@ -11,26 +11,26 @@ pub struct EndBlock {
 // Protobuf conversions
 // =============================================================================
 
-use core::convert::TryFrom;
+tendermint_pb_modules! {
+    use super::EndBlock;
 
-use tendermint_proto::{abci as pb, Protobuf};
-
-impl From<EndBlock> for pb::RequestEndBlock {
-    fn from(end_block: EndBlock) -> Self {
-        Self {
-            height: end_block.height,
+    impl From<EndBlock> for pb::abci::RequestEndBlock {
+        fn from(end_block: EndBlock) -> Self {
+            Self {
+                height: end_block.height,
+            }
         }
     }
-}
 
-impl TryFrom<pb::RequestEndBlock> for EndBlock {
-    type Error = crate::Error;
+    impl TryFrom<pb::abci::RequestEndBlock> for EndBlock {
+        type Error = crate::Error;
 
-    fn try_from(end_block: pb::RequestEndBlock) -> Result<Self, Self::Error> {
-        Ok(Self {
-            height: end_block.height,
-        })
+        fn try_from(end_block: pb::abci::RequestEndBlock) -> Result<Self, Self::Error> {
+            Ok(Self {
+                height: end_block.height,
+            })
+        }
     }
-}
 
-impl Protobuf<pb::RequestEndBlock> for EndBlock {}
+    impl Protobuf<pb::abci::RequestEndBlock> for EndBlock {}
+}

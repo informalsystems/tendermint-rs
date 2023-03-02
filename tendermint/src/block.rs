@@ -11,10 +11,8 @@ mod round;
 pub mod signed_header;
 mod size;
 
-use core::convert::{TryFrom, TryInto};
-
 use serde::{Deserialize, Serialize};
-use tendermint_proto::{types::Block as RawBlock, Protobuf};
+use tendermint_proto::v0_37::types::Block as RawBlock;
 
 pub use self::{
     commit::*,
@@ -50,49 +48,55 @@ pub struct Block {
     pub last_commit: Option<Commit>,
 }
 
-impl Protobuf<RawBlock> for Block {}
+tendermint_pb_modules! {
+    use super::{Block, Header, Commit};
+    use crate::{Error, prelude::*};
+    use pb::types::Block as RawBlock;
 
-impl TryFrom<RawBlock> for Block {
-    type Error = Error;
+    impl Protobuf<RawBlock> for Block {}
 
-    fn try_from(value: RawBlock) -> Result<Self, Self::Error> {
-        let header: Header = value.header.ok_or_else(Error::missing_header)?.try_into()?;
-        // if last_commit is Commit::Default, it is considered nil by Go.
-        let last_commit = value
-            .last_commit
-            .map(TryInto::try_into)
-            .transpose()?
-            .filter(|c| c != &Commit::default());
-        if last_commit.is_none() && header.height.value() != 1 {
-            return Err(Error::invalid_block(
-                "last_commit is empty on non-first block".to_string(),
-            ));
+    impl TryFrom<RawBlock> for Block {
+        type Error = Error;
+
+        fn try_from(value: RawBlock) -> Result<Self, Self::Error> {
+            let header: Header = value.header.ok_or_else(Error::missing_header)?.try_into()?;
+            // if last_commit is Commit::Default, it is considered nil by Go.
+            let last_commit = value
+                .last_commit
+                .map(TryInto::try_into)
+                .transpose()?
+                .filter(|c| c != &Commit::default());
+            if last_commit.is_none() && header.height.value() != 1 {
+                return Err(Error::invalid_block(
+                    "last_commit is empty on non-first block".to_string(),
+                ));
+            }
+            // Todo: Figure out requirements.
+            // if last_commit.is_some() && header.height.value() == 1 {
+            //    return Err(Kind::InvalidFirstBlock.context("last_commit is not null on first
+            // height").into());
+            //}
+            Ok(Block {
+                header,
+                data: value.data.ok_or_else(Error::missing_data)?.txs,
+                evidence: value
+                    .evidence
+                    .ok_or_else(Error::missing_evidence)?
+                    .try_into()?,
+                last_commit,
+            })
         }
-        // Todo: Figure out requirements.
-        // if last_commit.is_some() && header.height.value() == 1 {
-        //    return Err(Kind::InvalidFirstBlock.context("last_commit is not null on first
-        // height").into());
-        //}
-        Ok(Block {
-            header,
-            data: value.data.ok_or_else(Error::missing_data)?.txs,
-            evidence: value
-                .evidence
-                .ok_or_else(Error::missing_evidence)?
-                .try_into()?,
-            last_commit,
-        })
     }
-}
 
-impl From<Block> for RawBlock {
-    fn from(value: Block) -> Self {
-        use tendermint_proto::types::Data as RawData;
-        RawBlock {
-            header: Some(value.header.into()),
-            data: Some(RawData { txs: value.data }),
-            evidence: Some(value.evidence.into()),
-            last_commit: value.last_commit.map(Into::into),
+    impl From<Block> for RawBlock {
+        fn from(value: Block) -> Self {
+            use pb::types::Data as RawData;
+            RawBlock {
+                header: Some(value.header.into()),
+                data: Some(RawData { txs: value.data }),
+                evidence: Some(value.evidence.into()),
+                last_commit: value.last_commit.map(Into::into),
+            }
         }
     }
 }

@@ -1,12 +1,10 @@
 //! Block metadata
 
-use core::convert::{TryFrom, TryInto};
-
 use serde::{Deserialize, Serialize};
-use tendermint_proto::types::BlockMeta as RawMeta;
+use tendermint_proto::v0_37::types::BlockMeta as RawMeta;
 
 use super::{Header, Id};
-use crate::{error::Error, prelude::*};
+use crate::prelude::*;
 
 /// Block metadata - Todo: implement constructor and getters
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -25,32 +23,38 @@ pub struct Meta {
     pub num_txs: i64,
 }
 
-impl TryFrom<RawMeta> for Meta {
-    type Error = Error;
+tendermint_pb_modules! {
+    use super::Meta;
+    use crate::{error::Error, prelude::*};
+    use pb::types::BlockMeta as RawMeta;
 
-    fn try_from(value: RawMeta) -> Result<Self, Self::Error> {
-        Ok(Meta {
-            block_id: value
-                .block_id
-                .ok_or_else(|| Error::invalid_block("no block_id".to_string()))?
-                .try_into()?,
-            block_size: value.block_size,
-            header: value
-                .header
-                .ok_or_else(|| Error::invalid_block("no header".to_string()))?
-                .try_into()?,
-            num_txs: value.num_txs,
-        })
+    impl TryFrom<RawMeta> for Meta {
+        type Error = Error;
+
+        fn try_from(value: RawMeta) -> Result<Self, Self::Error> {
+            Ok(Meta {
+                block_id: value
+                    .block_id
+                    .ok_or_else(|| Error::invalid_block("no block_id".to_string()))?
+                    .try_into()?,
+                block_size: value.block_size,
+                header: value
+                    .header
+                    .ok_or_else(|| Error::invalid_block("no header".to_string()))?
+                    .try_into()?,
+                num_txs: value.num_txs,
+            })
+        }
     }
-}
 
-impl From<Meta> for RawMeta {
-    fn from(value: Meta) -> Self {
-        RawMeta {
-            block_id: Some(value.block_id.into()),
-            block_size: value.block_size,
-            header: Some(value.header.into()),
-            num_txs: value.num_txs,
+    impl From<Meta> for RawMeta {
+        fn from(value: Meta) -> Self {
+            RawMeta {
+                block_id: Some(value.block_id.into()),
+                block_size: value.block_size,
+                header: Some(value.header.into()),
+                num_txs: value.num_txs,
+            }
         }
     }
 }

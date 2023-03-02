@@ -1,0 +1,8 @@
+{
+  "id": "505651d8-1cf4-4bdd-b58f-0c66360640b5",
+  "jsonrpc": "2.0",
+  "method": "subscribe",
+  "params": {
+    "query": "malformed query"
+  }
+}

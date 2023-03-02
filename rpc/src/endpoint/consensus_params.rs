@@ -3,6 +3,8 @@
 use serde::{Deserialize, Serialize};
 use tendermint::block::Height;
 
+use crate::{dialect::Dialect, request::RequestMessage};
+
 /// Get the consensus parameters.
 ///
 /// If no height is supplied, the latest consensus parameters will be returned.
@@ -20,15 +22,19 @@ impl Request {
     }
 }
 
-impl crate::Request for Request {
-    type Response = Response;
-
+impl RequestMessage for Request {
     fn method(&self) -> crate::Method {
         crate::Method::ConsensusParams
     }
 }
 
-impl crate::SimpleRequest for Request {}
+impl<S: Dialect> crate::Request<S> for Request {
+    type Response = Response;
+}
+
+impl<S: Dialect> crate::SimpleRequest<S> for Request {
+    type Output = Response;
+}
 
 /// Consensus parameters response.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

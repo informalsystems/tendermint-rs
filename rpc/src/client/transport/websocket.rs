@@ -1,6 +1,6 @@
 //! WebSocket-based clients for accessing Tendermint RPC functionality.
 
-use alloc::{borrow::Cow, collections::BTreeMap as HashMap};
+use alloc::{borrow::Cow, collections::BTreeMap as HashMap, fmt};
 use core::{
     convert::{TryFrom, TryInto},
     ops::Add,
@@ -18,24 +18,28 @@ use async_tungstenite::{
 };
 use futures::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
-use tendermint_config::net;
 use tokio::time::{Duration, Instant};
 use tracing::{debug, error};
 
+use tendermint::{block::Height, Hash};
+use tendermint_config::net;
+
 use super::router::{SubscriptionId, SubscriptionIdRef};
+use crate::dialect::{v0_34, v0_37};
 use crate::{
     client::{
         subscription::SubscriptionTx,
         sync::{ChannelRx, ChannelTx},
         transport::router::{PublishResult, SubscriptionRouter},
+        Client, CompatMode,
     },
-    endpoint::{subscribe, unsubscribe},
+    endpoint::{self, subscribe, unsubscribe},
     error::Error,
-    event::Event,
+    event::{DialectEvent, Event},
     prelude::*,
     query::Query,
     request::Wrapper,
-    response, Client, Id, Request, Response, Scheme, SimpleRequest, Subscription,
+    response, Id, Order, Request, Response, Scheme, SimpleRequest, Subscription,
     SubscriptionClient, Url,
 };
 
@@ -137,6 +141,43 @@ pub use async_tungstenite::tungstenite::protocol::WebSocketConfig;
 #[derive(Debug, Clone)]
 pub struct WebSocketClient {
     inner: sealed::WebSocketClient,
+    compat: CompatMode,
+}
+
+/// The builder pattern constructor for [`WebSocketClient`].
+pub struct Builder {
+    url: WebSocketClientUrl,
+    compat: CompatMode,
+    transport_config: Option<WebSocketConfig>,
+}
+
+impl Builder {
+    /// Use the specified compatibility mode for the Tendermint RPC protocol.
+    ///
+    /// The default is the latest protocol version supported by this crate.
+    pub fn compat_mode(mut self, mode: CompatMode) -> Self {
+        self.compat = mode;
+        self
+    }
+
+    /// Use the specfied low-level WebSocket configuration options.
+    pub fn config(mut self, config: WebSocketConfig) -> Self {
+        self.transport_config = Some(config);
+        self
+    }
+
+    /// Try to create a client with the options specified for this builder.
+    pub async fn build(self) -> Result<(WebSocketClient, WebSocketClientDriver), Error> {
+        let url = self.url.0;
+        let compat = self.compat;
+        let (inner, driver) = if url.is_secure() {
+            sealed::WebSocketClient::new_secure(url, compat, self.transport_config).await?
+        } else {
+            sealed::WebSocketClient::new_unsecure(url, compat, self.transport_config).await?
+        };
+
+        Ok((WebSocketClient { inner, compat }, driver))
+    }
 }
 
 impl WebSocketClient {
@@ -148,7 +189,8 @@ impl WebSocketClient {
     where
         U: TryInto<WebSocketClientUrl, Error = Error>,
     {
-        Self::new_with_config(url, None).await
+        let url = url.try_into()?;
+        Self::builder(url).build().await
     }
 
     /// Construct a new WebSocket-based client connecting to the given
@@ -157,30 +199,115 @@ impl WebSocketClient {
     /// Supports both `ws://` and `wss://` protocols.
     pub async fn new_with_config<U>(
         url: U,
-        config: Option<WebSocketConfig>,
+        config: WebSocketConfig,
     ) -> Result<(Self, WebSocketClientDriver), Error>
     where
         U: TryInto<WebSocketClientUrl, Error = Error>,
     {
         let url = url.try_into()?;
+        Self::builder(url).config(config).build().await
+    }
 
-        let (inner, driver) = if url.0.is_secure() {
-            sealed::WebSocketClient::new_secure(url.0, config).await?
-        } else {
-            sealed::WebSocketClient::new_unsecure(url.0, config).await?
-        };
+    /// Initiate a builder for a WebSocket-based client connecting to the given
+    /// Tendermint node's RPC endpoint.
+    ///
+    /// Supports both `ws://` and `wss://` protocols.
+    pub fn builder(url: WebSocketClientUrl) -> Builder {
+        Builder {
+            url,
+            compat: Default::default(),
+            transport_config: Default::default(),
+        }
+    }
 
-        Ok((Self { inner }, driver))
+    async fn perform_v0_34<R>(&self, request: R) -> Result<R::Output, Error>
+    where
+        R: SimpleRequest<v0_34::Dialect>,
+    {
+        self.inner.perform(request).await
     }
 }
 
 #[async_trait]
 impl Client for WebSocketClient {
-    async fn perform<R>(&self, request: R) -> Result<<R as Request>::Response, Error>
+    async fn perform<R>(&self, request: R) -> Result<R::Output, Error>
     where
         R: SimpleRequest,
     {
         self.inner.perform(request).await
+    }
+
+    async fn block_results<H>(&self, height: H) -> Result<endpoint::block_results::Response, Error>
+    where
+        H: Into<Height> + Send,
+    {
+        perform_with_compat!(self, endpoint::block_results::Request::new(height.into()))
+    }
+
+    async fn header<H>(&self, height: H) -> Result<endpoint::header::Response, Error>
+    where
+        H: Into<Height> + Send,
+    {
+        let height = height.into();
+        match self.compat {
+            CompatMode::V0_37 => self.perform(endpoint::header::Request::new(height)).await,
+            CompatMode::V0_34 => {
+                // Back-fill with a request to /block endpoint and
+                // taking just the header from the response.
+                let resp = self
+                    .perform_v0_34(endpoint::block::Request::new(height))
+                    .await?;
+                Ok(resp.into())
+            },
+        }
+    }
+
+    async fn header_by_hash(
+        &self,
+        hash: Hash,
+    ) -> Result<endpoint::header_by_hash::Response, Error> {
+        match self.compat {
+            CompatMode::V0_37 => {
+                self.perform(endpoint::header_by_hash::Request::new(hash))
+                    .await
+            },
+            CompatMode::V0_34 => {
+                // Back-fill with a request to /block_by_hash endpoint and
+                // taking just the header from the response.
+                let resp = self
+                    .perform_v0_34(endpoint::block_by_hash::Request::new(hash))
+                    .await?;
+                Ok(resp.into())
+            },
+        }
+    }
+
+    async fn tx(&self, hash: Hash, prove: bool) -> Result<endpoint::tx::Response, Error> {
+        perform_with_compat!(self, endpoint::tx::Request::new(hash, prove))
+    }
+
+    async fn tx_search(
+        &self,
+        query: Query,
+        prove: bool,
+        page: u32,
+        per_page: u8,
+        order: Order,
+    ) -> Result<endpoint::tx_search::Response, Error> {
+        perform_with_compat!(
+            self,
+            endpoint::tx_search::Request::new(query, prove, page, per_page, order)
+        )
+    }
+
+    async fn broadcast_tx_commit<T>(
+        &self,
+        tx: T,
+    ) -> Result<endpoint::broadcast::tx_commit::Response, Error>
+    where
+        T: Into<Vec<u8>> + Send,
+    {
+        perform_with_compat!(self, endpoint::broadcast::tx_commit::Request::new(tx))
     }
 }
 
@@ -202,7 +329,8 @@ impl SubscriptionClient for WebSocketClient {
 /// A URL limited to use with WebSocket clients.
 ///
 /// Facilitates useful type conversions and inferences.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct WebSocketClientUrl(Url);
 
 impl TryFrom<Url> for WebSocketClientUrl {
@@ -224,6 +352,12 @@ impl FromStr for WebSocketClientUrl {
     fn from_str(s: &str) -> Result<Self, Error> {
         let url: Url = s.parse()?;
         url.try_into()
+    }
+}
+
+impl fmt::Display for WebSocketClientUrl {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
     }
 }
 
@@ -261,19 +395,21 @@ impl From<WebSocketClientUrl> for Url {
 mod sealed {
     use async_tungstenite::{
         tokio::{connect_async_with_config, connect_async_with_tls_connector_and_config},
-        tungstenite::{client::IntoClientRequest, protocol::WebSocketConfig},
+        tungstenite::client::IntoClientRequest,
     };
     use tracing::debug;
 
     use super::{
         DriverCommand, SimpleRequestCommand, SubscribeCommand, UnsubscribeCommand,
-        WebSocketClientDriver,
+        WebSocketClientDriver, WebSocketConfig,
     };
     use crate::{
         client::{
             sync::{unbounded, ChannelTx},
             transport::auth::authorize,
+            CompatMode,
         },
+        dialect::Dialect,
         prelude::*,
         query::Query,
         request::Wrapper,
@@ -314,6 +450,7 @@ mod sealed {
         /// doesn't block the client.
         pub async fn new(
             url: Url,
+            compat: CompatMode,
             config: Option<WebSocketConfig>,
         ) -> Result<(Self, WebSocketClientDriver), Error> {
             debug!("Connecting to unsecure WebSocket endpoint: {}", url);
@@ -323,7 +460,7 @@ mod sealed {
                 .map_err(Error::tungstenite)?;
 
             let (cmd_tx, cmd_rx) = unbounded();
-            let driver = WebSocketClientDriver::new(stream, cmd_rx);
+            let driver = WebSocketClientDriver::new(stream, cmd_rx, compat);
             let client = Self {
                 cmd_tx,
                 _client_type: Default::default(),
@@ -345,6 +482,7 @@ mod sealed {
         /// doesn't block the client.
         pub async fn new(
             url: Url,
+            compat: CompatMode,
             config: Option<WebSocketConfig>,
         ) -> Result<(Self, WebSocketClientDriver), Error> {
             debug!("Connecting to secure WebSocket endpoint: {}", url);
@@ -357,7 +495,7 @@ mod sealed {
                     .map_err(Error::tungstenite)?;
 
             let (cmd_tx, cmd_rx) = unbounded();
-            let driver = WebSocketClientDriver::new(stream, cmd_rx);
+            let driver = WebSocketClientDriver::new(stream, cmd_rx, compat);
             let client = Self {
                 cmd_tx,
                 _client_type: Default::default(),
@@ -372,9 +510,17 @@ mod sealed {
             self.cmd_tx.send(cmd)
         }
 
-        pub async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
+        /// Signals to the driver that it must terminate.
+        pub fn close(self) -> Result<(), Error> {
+            self.send_cmd(DriverCommand::Terminate)
+        }
+    }
+
+    impl<C> AsyncTungsteniteClient<C> {
+        pub async fn perform<R, S>(&self, request: R) -> Result<R::Output, Error>
         where
-            R: SimpleRequest,
+            R: SimpleRequest<S>,
+            S: Dialect,
         {
             let wrapper = Wrapper::new(request);
             let id = wrapper.id().to_string();
@@ -396,7 +542,7 @@ mod sealed {
 
             tracing::debug!("Incoming response: {}", response);
 
-            R::Response::from_string(response)
+            R::Response::from_string(response).map(Into::into)
         }
 
         pub async fn subscribe(&self, query: Query) -> Result<Subscription, Error> {
@@ -428,11 +574,6 @@ mod sealed {
             })??;
             Ok(())
         }
-
-        /// Signals to the driver that it must terminate.
-        pub fn close(self) -> Result<(), Error> {
-            self.send_cmd(DriverCommand::Terminate)
-        }
     }
 
     /// Allows us to erase the type signatures associated with the different
@@ -446,23 +587,37 @@ mod sealed {
     impl WebSocketClient {
         pub async fn new_unsecure(
             url: Url,
+            compat: CompatMode,
             config: Option<WebSocketConfig>,
         ) -> Result<(Self, WebSocketClientDriver), Error> {
-            let (client, driver) = AsyncTungsteniteClient::<Unsecure>::new(url, config).await?;
+            let (client, driver) =
+                AsyncTungsteniteClient::<Unsecure>::new(url, compat, config).await?;
             Ok((Self::Unsecure(client), driver))
         }
 
         pub async fn new_secure(
             url: Url,
+            compat: CompatMode,
             config: Option<WebSocketConfig>,
         ) -> Result<(Self, WebSocketClientDriver), Error> {
-            let (client, driver) = AsyncTungsteniteClient::<Secure>::new(url, config).await?;
+            let (client, driver) =
+                AsyncTungsteniteClient::<Secure>::new(url, compat, config).await?;
             Ok((Self::Secure(client), driver))
         }
 
-        pub async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
+        pub fn close(self) -> Result<(), Error> {
+            match self {
+                WebSocketClient::Unsecure(c) => c.close(),
+                WebSocketClient::Secure(c) => c.close(),
+            }
+        }
+    }
+
+    impl WebSocketClient {
+        pub async fn perform<R, S>(&self, request: R) -> Result<R::Output, Error>
         where
-            R: SimpleRequest,
+            R: SimpleRequest<S>,
+            S: Dialect,
         {
             match self {
                 WebSocketClient::Unsecure(c) => c.perform(request).await,
@@ -481,13 +636,6 @@ mod sealed {
             match self {
                 WebSocketClient::Unsecure(c) => c.unsubscribe(query).await,
                 WebSocketClient::Secure(c) => c.unsubscribe(query).await,
-            }
-        }
-
-        pub fn close(self) -> Result<(), Error> {
-            match self {
-                WebSocketClient::Unsecure(c) => c.close(),
-                WebSocketClient::Secure(c) => c.close(),
             }
         }
     }
@@ -589,16 +737,42 @@ pub struct WebSocketClientDriver {
     // Commands we've received but have not yet completed, indexed by their ID.
     // A Terminate command is executed immediately.
     pending_commands: HashMap<SubscriptionId, DriverCommand>,
+    // The compatibility mode directing how to parse subscription events.
+    compat: CompatMode,
 }
 
 impl WebSocketClientDriver {
-    fn new(stream: WebSocketStream<ConnectStream>, cmd_rx: ChannelRx<DriverCommand>) -> Self {
+    fn new(
+        stream: WebSocketStream<ConnectStream>,
+        cmd_rx: ChannelRx<DriverCommand>,
+        compat: CompatMode,
+    ) -> Self {
         Self {
             stream,
             router: SubscriptionRouter::default(),
             cmd_rx,
             pending_commands: HashMap::new(),
+            compat,
         }
+    }
+
+    async fn send_msg(&mut self, msg: Message) -> Result<(), Error> {
+        self.stream.send(msg).await.map_err(|e| {
+            Error::web_socket("failed to write to WebSocket connection".to_string(), e)
+        })
+    }
+
+    async fn simple_request(&mut self, cmd: SimpleRequestCommand) -> Result<(), Error> {
+        if let Err(e) = self
+            .send_msg(Message::Text(cmd.wrapped_request.clone()))
+            .await
+        {
+            cmd.response_tx.send(Err(e.clone()))?;
+            return Err(e);
+        }
+        self.pending_commands
+            .insert(cmd.id.clone(), DriverCommand::SimpleRequest(cmd));
+        Ok(())
     }
 
     /// Executes the WebSocket driver, which manages the underlying WebSocket
@@ -638,12 +812,6 @@ impl WebSocketClientDriver {
                 }
             }
         }
-    }
-
-    async fn send_msg(&mut self, msg: Message) -> Result<(), Error> {
-        self.stream.send(msg).await.map_err(|e| {
-            Error::web_socket("failed to write to WebSocket connection".to_string(), e)
-        })
     }
 
     async fn send_request<R>(&mut self, wrapper: Wrapper<R>) -> Result<(), Error>
@@ -705,19 +873,6 @@ impl WebSocketClientDriver {
         Ok(())
     }
 
-    async fn simple_request(&mut self, cmd: SimpleRequestCommand) -> Result<(), Error> {
-        if let Err(e) = self
-            .send_msg(Message::Text(cmd.wrapped_request.clone()))
-            .await
-        {
-            cmd.response_tx.send(Err(e.clone()))?;
-            return Err(e);
-        }
-        self.pending_commands
-            .insert(cmd.id.clone(), DriverCommand::SimpleRequest(cmd));
-        Ok(())
-    }
-
     async fn handle_incoming_msg(&mut self, msg: Message) -> Result<(), Error> {
         match msg {
             Message::Text(s) => self.handle_text_msg(s).await,
@@ -727,7 +882,12 @@ impl WebSocketClientDriver {
     }
 
     async fn handle_text_msg(&mut self, msg: String) -> Result<(), Error> {
-        if let Ok(ev) = Event::from_string(&msg) {
+        let parse_res = match self.compat {
+            CompatMode::V0_37 => DialectEvent::<v0_37::Event>::from_string(&msg).map(Into::into),
+            CompatMode::V0_34 => DialectEvent::<v0_34::Event>::from_string(&msg).map(Into::into),
+        };
+        if let Ok(ev) = parse_res {
+            debug!("JSON-RPC event: {}", msg);
             self.publish_event(ev).await;
             return Ok(());
         }
@@ -864,7 +1024,7 @@ mod test {
     };
 
     use super::*;
-    use crate::{client::sync::unbounded, query::EventType, request, Id, Method};
+    use crate::{client::sync::unbounded, dialect, query::EventType, request, Id, Method};
 
     // Interface to a driver that manages all incoming WebSocket connections.
     struct TestServer {
@@ -875,7 +1035,7 @@ mod test {
     }
 
     impl TestServer {
-        async fn new(addr: &str) -> Self {
+        async fn new(addr: &str, compat: CompatMode) -> Self {
             let listener = TcpListener::bind(addr).await.unwrap();
             let local_addr = listener.local_addr().unwrap();
             let node_addr = net::Address::Tcp {
@@ -885,7 +1045,7 @@ mod test {
             };
             let (terminate_tx, terminate_rx) = unbounded();
             let (event_tx, event_rx) = unbounded();
-            let driver = TestServerDriver::new(listener, event_rx, terminate_rx);
+            let driver = TestServerDriver::new(listener, compat, event_rx, terminate_rx);
             let driver_hdl = tokio::spawn(async move { driver.run().await });
             Self {
                 node_addr,
@@ -908,6 +1068,7 @@ mod test {
     // Manages all incoming WebSocket connections.
     struct TestServerDriver {
         listener: TcpListener,
+        compat: CompatMode,
         event_rx: ChannelRx<Event>,
         terminate_rx: ChannelRx<Result<(), Error>>,
         handlers: Vec<TestServerHandler>,
@@ -916,11 +1077,13 @@ mod test {
     impl TestServerDriver {
         fn new(
             listener: TcpListener,
+            compat: CompatMode,
             event_rx: ChannelRx<Event>,
             terminate_rx: ChannelRx<Result<(), Error>>,
         ) -> Self {
             Self {
                 listener,
+                compat,
                 event_rx,
                 terminate_rx,
                 handlers: Vec::new(),
@@ -952,7 +1115,8 @@ mod test {
         }
 
         async fn handle_incoming(&mut self, stream: TcpStream) {
-            self.handlers.push(TestServerHandler::new(stream).await);
+            self.handlers
+                .push(TestServerHandler::new(stream, self.compat).await);
         }
 
         async fn terminate(&mut self) {
@@ -975,12 +1139,12 @@ mod test {
     }
 
     impl TestServerHandler {
-        async fn new(stream: TcpStream) -> Self {
+        async fn new(stream: TcpStream, compat: CompatMode) -> Self {
             let conn: WebSocketStream<TokioAdapter<TcpStream>> =
                 accept_async(stream).await.unwrap();
             let (terminate_tx, terminate_rx) = unbounded();
             let (event_tx, event_rx) = unbounded();
-            let driver = TestServerHandlerDriver::new(conn, event_rx, terminate_rx);
+            let driver = TestServerHandlerDriver::new(conn, compat, event_rx, terminate_rx);
             let driver_hdl = tokio::spawn(async move { driver.run().await });
             Self {
                 driver_hdl,
@@ -1002,6 +1166,7 @@ mod test {
     // Manages interaction with a single incoming WebSocket connection.
     struct TestServerHandlerDriver {
         conn: WebSocketStream<TokioAdapter<TcpStream>>,
+        compat: CompatMode,
         event_rx: ChannelRx<Event>,
         terminate_rx: ChannelRx<Result<(), Error>>,
         // A mapping of subscription queries to subscription IDs for this
@@ -1012,11 +1177,13 @@ mod test {
     impl TestServerHandlerDriver {
         fn new(
             conn: WebSocketStream<TokioAdapter<TcpStream>>,
+            compat: CompatMode,
             event_rx: ChannelRx<Event>,
             terminate_rx: ChannelRx<Result<(), Error>>,
         ) -> Self {
             Self {
                 conn,
+                compat,
                 event_rx,
                 terminate_rx,
                 subscriptions: HashMap::new(),
@@ -1042,10 +1209,19 @@ mod test {
 
         async fn publish_event(&mut self, ev: Event) {
             let subs_id = match self.subscriptions.get(&ev.query) {
-                Some(id) => id.clone(),
+                Some(id) => Id::Str(id.clone()),
                 None => return,
             };
-            self.send(Id::Str(subs_id), ev).await;
+            match self.compat {
+                CompatMode::V0_37 => {
+                    let ev: DialectEvent<dialect::v0_37::Event> = ev.into();
+                    self.send(subs_id, ev).await;
+                },
+                CompatMode::V0_34 => {
+                    let ev: DialectEvent<dialect::v0_34::Event> = ev.into();
+                    self.send(subs_id, ev).await;
+                },
+            }
         }
 
         async fn handle_incoming_msg(&mut self, msg: Message) -> Option<Result<(), Error>> {
@@ -1144,68 +1320,148 @@ mod test {
         }
     }
 
-    async fn read_json_fixture(name: &str) -> String {
+    async fn read_json_fixture(version: &str, name: &str) -> String {
         fs::read_to_string(
-            PathBuf::from("./tests/kvstore_fixtures/incoming/").join(name.to_owned() + ".json"),
+            PathBuf::from("./tests/kvstore_fixtures")
+                .join(version)
+                .join("incoming")
+                .join(name.to_owned() + ".json"),
         )
         .await
         .unwrap()
     }
 
-    async fn read_event(name: &str) -> Event {
-        Event::from_string(read_json_fixture(name).await).unwrap()
-    }
+    mod v0_34 {
+        use super::*;
+        use crate::dialect::v0_34::Event as RpcEvent;
 
-    #[tokio::test]
-    async fn websocket_client_happy_path() {
-        let event1 = read_event("subscribe_newblock_0").await;
-        let event2 = read_event("subscribe_newblock_1").await;
-        let event3 = read_event("subscribe_newblock_2").await;
-        let test_events = vec![event1, event2, event3];
-
-        println!("Starting WebSocket server...");
-        let mut server = TestServer::new("127.0.0.1:0").await;
-        println!("Creating client RPC WebSocket connection...");
-        let (client, driver) = WebSocketClient::new(server.node_addr.clone())
-            .await
-            .unwrap();
-        let driver_handle = tokio::spawn(async move { driver.run().await });
-
-        println!("Initiating subscription for new blocks...");
-        let mut subs = client.subscribe(EventType::NewBlock.into()).await.unwrap();
-
-        // Collect all the events from the subscription.
-        let subs_collector_hdl = tokio::spawn(async move {
-            let mut results = Vec::new();
-            while let Some(res) = subs.next().await {
-                results.push(res);
-                if results.len() == 3 {
-                    break;
-                }
-            }
-            results
-        });
-
-        println!("Publishing events");
-        // Publish the events from this context
-        for ev in &test_events {
-            server.publish_event(ev.clone()).unwrap();
+        async fn read_event(name: &str) -> Event {
+            DialectEvent::<RpcEvent>::from_string(read_json_fixture("v0_34", name).await)
+                .unwrap()
+                .into()
         }
 
-        println!("Collecting results from subscription...");
-        let collected_results = subs_collector_hdl.await.unwrap();
+        #[tokio::test]
+        async fn websocket_client_happy_path() {
+            let event1 = read_event("subscribe_newblock_0").await;
+            let event2 = read_event("subscribe_newblock_1").await;
+            let event3 = read_event("subscribe_newblock_2").await;
+            let test_events = vec![event1, event2, event3];
 
-        client.close().unwrap();
-        server.terminate().await.unwrap();
-        let _ = driver_handle.await.unwrap();
-        println!("Closed client and terminated server");
+            println!("Starting WebSocket server...");
+            let mut server = TestServer::new("127.0.0.1:0", CompatMode::V0_34).await;
+            println!("Creating client RPC WebSocket connection...");
+            let url = server.node_addr.clone().try_into().unwrap();
+            let (client, driver) = WebSocketClient::builder(url)
+                .compat_mode(CompatMode::V0_34)
+                .build()
+                .await
+                .unwrap();
+            let driver_handle = tokio::spawn(async move { driver.run().await });
 
-        assert_eq!(3, collected_results.len());
-        for i in 0..3 {
-            assert_eq!(
-                test_events[i],
-                collected_results[i].as_ref().unwrap().clone()
-            );
+            println!("Initiating subscription for new blocks...");
+            let mut subs = client.subscribe(EventType::NewBlock.into()).await.unwrap();
+
+            // Collect all the events from the subscription.
+            let subs_collector_hdl = tokio::spawn(async move {
+                let mut results = Vec::new();
+                while let Some(res) = subs.next().await {
+                    results.push(res);
+                    if results.len() == 3 {
+                        break;
+                    }
+                }
+                results
+            });
+
+            println!("Publishing events");
+            // Publish the events from this context
+            for ev in &test_events {
+                server.publish_event(ev.clone()).unwrap();
+            }
+
+            println!("Collecting results from subscription...");
+            let collected_results = subs_collector_hdl.await.unwrap();
+
+            client.close().unwrap();
+            server.terminate().await.unwrap();
+            let _ = driver_handle.await.unwrap();
+            println!("Closed client and terminated server");
+
+            assert_eq!(3, collected_results.len());
+            for i in 0..3 {
+                assert_eq!(
+                    test_events[i],
+                    collected_results[i].as_ref().unwrap().clone()
+                );
+            }
+        }
+    }
+
+    mod v0_37 {
+        use super::*;
+        use crate::dialect::v0_37::Event as RpcEvent;
+
+        async fn read_event(name: &str) -> Event {
+            DialectEvent::<RpcEvent>::from_string(read_json_fixture("v0_37", name).await)
+                .unwrap()
+                .into()
+        }
+
+        #[tokio::test]
+        async fn websocket_client_happy_path() {
+            let event1 = read_event("subscribe_newblock_0").await;
+            let event2 = read_event("subscribe_newblock_1").await;
+            let event3 = read_event("subscribe_newblock_2").await;
+            let test_events = vec![event1, event2, event3];
+
+            println!("Starting WebSocket server...");
+            let mut server = TestServer::new("127.0.0.1:0", CompatMode::V0_37).await;
+            println!("Creating client RPC WebSocket connection...");
+            let url = server.node_addr.clone().try_into().unwrap();
+            let (client, driver) = WebSocketClient::builder(url)
+                .compat_mode(CompatMode::V0_37)
+                .build()
+                .await
+                .unwrap();
+            let driver_handle = tokio::spawn(async move { driver.run().await });
+
+            println!("Initiating subscription for new blocks...");
+            let mut subs = client.subscribe(EventType::NewBlock.into()).await.unwrap();
+
+            // Collect all the events from the subscription.
+            let subs_collector_hdl = tokio::spawn(async move {
+                let mut results = Vec::new();
+                while let Some(res) = subs.next().await {
+                    results.push(res);
+                    if results.len() == 3 {
+                        break;
+                    }
+                }
+                results
+            });
+
+            println!("Publishing events");
+            // Publish the events from this context
+            for ev in &test_events {
+                server.publish_event(ev.clone()).unwrap();
+            }
+
+            println!("Collecting results from subscription...");
+            let collected_results = subs_collector_hdl.await.unwrap();
+
+            client.close().unwrap();
+            server.terminate().await.unwrap();
+            let _ = driver_handle.await.unwrap();
+            println!("Closed client and terminated server");
+
+            assert_eq!(3, collected_results.len());
+            for i in 0..3 {
+                assert_eq!(
+                    test_events[i],
+                    collected_results[i].as_ref().unwrap().clone()
+                );
+            }
         }
     }
 

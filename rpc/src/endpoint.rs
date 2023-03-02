@@ -13,6 +13,8 @@ pub mod consensus_params;
 pub mod consensus_state;
 pub mod evidence;
 pub mod genesis;
+pub mod header;
+pub mod header_by_hash;
 pub mod health;
 pub mod net_info;
 pub mod status;

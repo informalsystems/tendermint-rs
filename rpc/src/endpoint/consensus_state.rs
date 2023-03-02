@@ -10,7 +10,7 @@ use tendermint::{
     hash, vote, Hash, Time,
 };
 
-use crate::{prelude::*, Error, Method};
+use crate::{dialect::Dialect, prelude::*, request::RequestMessage, Error, Method};
 
 // From <https://github.com/tendermint/tendermint/blob/e820e68acd69737cfb63bc9ccca5f5450a42b5cf/types/vote.go#L16>
 const NIL_VOTE_STR: &str = "nil-Vote";
@@ -25,15 +25,19 @@ impl Request {
     }
 }
 
-impl crate::Request for Request {
-    type Response = Response;
-
+impl RequestMessage for Request {
     fn method(&self) -> Method {
         Method::ConsensusState
     }
 }
 
-impl crate::SimpleRequest for Request {}
+impl<S: Dialect> crate::Request<S> for Request {
+    type Response = Response;
+}
+
+impl<S: Dialect> crate::SimpleRequest<S> for Request {
+    type Output = Response;
+}
 
 /// The current consensus state (UNSTABLE).
 ///

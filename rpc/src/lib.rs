@@ -33,7 +33,7 @@ extern crate std;
 mod prelude;
 
 #[cfg(any(feature = "http-client", feature = "websocket-client"))]
-mod client;
+pub mod client;
 #[cfg(any(feature = "http-client", feature = "websocket-client"))]
 pub use client::{
     Client, MockClient, MockRequestMatcher, MockRequestMethodMatcher, Subscription,
@@ -44,6 +44,7 @@ pub use client::{HttpClient, HttpClientUrl};
 #[cfg(feature = "websocket-client")]
 pub use client::{WebSocketClient, WebSocketClientDriver, WebSocketClientUrl, WebSocketConfig};
 
+pub mod dialect;
 pub mod endpoint;
 pub mod error;
 pub mod event;

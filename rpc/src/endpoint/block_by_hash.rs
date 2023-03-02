@@ -6,6 +6,8 @@ use tendermint::{
     Hash,
 };
 
+use crate::{dialect::Dialect, request::RequestMessage};
+
 /// Get information about a specific block by its hash
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request {
@@ -30,15 +32,19 @@ impl Request {
     }
 }
 
-impl crate::Request for Request {
-    type Response = Response;
-
+impl RequestMessage for Request {
     fn method(&self) -> crate::Method {
         crate::Method::BlockByHash
     }
 }
 
-impl crate::SimpleRequest for Request {}
+impl<S: Dialect> crate::Request<S> for Request {
+    type Response = Response;
+}
+
+impl<S: Dialect> crate::SimpleRequest<S> for Request {
+    type Output = Response;
+}
 
 /// Block responses
 #[derive(Clone, Debug, Deserialize, Serialize)]

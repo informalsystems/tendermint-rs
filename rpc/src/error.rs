@@ -203,6 +203,21 @@ define_error! {
                     e.version, e.supported)
             },
 
+        InvalidTendermintVersion
+            {
+                version: String,
+            }
+            | e | {
+                format_args!("invalid Tendermint version reported by the node: {}", e.version)
+            },
+
+        UnsupportedTendermintVersion
+            {
+                version: String,
+            }
+            | e | {
+                format_args!("unsupported Tendermint version reported by the node: {}", e.version)
+            },
     }
 }
 

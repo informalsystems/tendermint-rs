@@ -1,0 +1,8 @@
+{
+  "id": "56d4851a-1f30-4d73-9f86-c1a084e8aa97",
+  "jsonrpc": "2.0",
+  "method": "block_by_hash",
+  "params": {
+    "hash": "/PnCU3/DU0ynEAH+HxTE92kJCUjBpSFoL2EufPc65jk="
+  }
+}

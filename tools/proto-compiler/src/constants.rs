@@ -2,11 +2,30 @@
 
 /// Tendermint repository URL.
 pub const TENDERMINT_REPO: &str = "https://github.com/tendermint/tendermint";
-// Commitish formats:
-// Tag: v0.34.0-rc4
-// Branch: master
-// Commit ID (full length): d7d0ffea13c60c98b812d243ba5a2c375f341c15
-pub const TENDERMINT_COMMITISH: &str = "v0.34.21";
+
+/// Information on a Tendermint snapshot to generate prost structures from.
+pub struct TendermintVersion {
+    /// Identifier to use in module names.
+    pub ident: &'static str,
+    /// A commitish reference in the tendermint git repository, for example:
+    ///
+    /// - Tag: `v0.34.0-rc4`
+    /// - Branch: `main`
+    /// - Commit ID (full length): `d7d0ffea13c60c98b812d243ba5a2c375f341c15`
+    pub commitish: &'static str,
+}
+
+/// All Tendermint versions to generate code for
+pub const TENDERMINT_VERSIONS: &[TendermintVersion] = &[
+    TendermintVersion {
+        ident: "v0_34",
+        commitish: "v0.34.24",
+    },
+    TendermintVersion {
+        ident: "v0_37",
+        commitish: "v0.37.0-alpha.1",
+    },
+];
 
 /// Predefined custom attributes for message annotations
 const PRIMITIVE_ENUM: &str = r#"#[derive(::num_derive::FromPrimitive, ::num_derive::ToPrimitive)]"#;
@@ -34,7 +53,6 @@ const RENAME_SRPUBKEY: &str = r#"#[serde(rename = "tendermint/PubKeySr25519", wi
 const RENAME_DUPLICATEVOTE: &str = r#"#[serde(rename = "tendermint/DuplicateVoteEvidence")]"#;
 const RENAME_LIGHTCLIENTATTACK: &str =
     r#"#[serde(rename = "tendermint/LightClientAttackEvidence")]"#;
-const EVIDENCE_VARIANT: &str = r#"#[serde(from = "crate::serializers::evidence::EvidenceVariant", into = "crate::serializers::evidence::EvidenceVariant")]"#;
 const ALIAS_VALIDATOR_POWER_QUOTED: &str =
     r#"#[serde(alias = "ValidatorPower", with = "crate::serializers::from_str")]"#;
 const ALIAS_TOTAL_VOTING_POWER_QUOTED: &str =
@@ -53,8 +71,9 @@ pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.BlockIDFlag", PRIMITIVE_ENUM),
     (".tendermint.types.Block", SERIALIZED),
     (".tendermint.types.Data", SERIALIZED),
+    (".tendermint.types.Evidence.sum", SERIALIZED),
+    (".tendermint.types.Evidence.sum", TYPE_TAG),
     (".tendermint.types.EvidenceList", SERIALIZED),
-    (".tendermint.types.Evidence", SERIALIZED),
     (".tendermint.types.DuplicateVoteEvidence", SERIALIZED),
     (".tendermint.types.Vote", SERIALIZED),
     (".tendermint.types.BlockID", SERIALIZED),
@@ -69,14 +88,12 @@ pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.ValidatorSet", SERIALIZED),
     (".tendermint.crypto.PublicKey", SERIALIZED),
     (".tendermint.crypto.PublicKey.sum", TYPE_TAG),
-    (".tendermint.types.Evidence.sum", TYPE_TAG),
     (".tendermint.abci.ResponseInfo", SERIALIZED),
     (".tendermint.types.CanonicalBlockID", SERIALIZED),
     (".tendermint.types.CanonicalPartSetHeader", SERIALIZED),
     (".tendermint.types.Validator", SERIALIZED),
     (".tendermint.types.CanonicalVote", SERIALIZED),
     (".tendermint.types.BlockMeta", SERIALIZED),
-    (".tendermint.types.Evidence", EVIDENCE_VARIANT),
     (".tendermint.types.TxProof", SERIALIZED),
     (".tendermint.crypto.Proof", SERIALIZED),
 ];

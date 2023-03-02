@@ -44,12 +44,15 @@ pub mod request;
 pub mod response;
 pub mod types;
 
+pub use crate::v0_37::abci::request::Request;
+pub use crate::v0_37::abci::response::Response;
+
 pub use event::{Event, EventAttribute, EventAttributeIndexExt};
 
 #[doc(inline)]
 pub use self::{
     code::Code,
     kind::MethodKind,
-    request::{ConsensusRequest, InfoRequest, MempoolRequest, Request, SnapshotRequest},
-    response::{ConsensusResponse, InfoResponse, MempoolResponse, Response, SnapshotResponse},
+    request::{ConsensusRequest, InfoRequest, MempoolRequest, SnapshotRequest},
+    response::{ConsensusResponse, InfoResponse, MempoolResponse, SnapshotResponse},
 };

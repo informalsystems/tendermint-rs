@@ -1,7 +1,5 @@
-use crate::{block, prelude::*, AppHash, Error};
-use core::convert::TryFrom;
-use tendermint_proto::abci as pb;
-use tendermint_proto::Protobuf;
+use crate::{block, prelude::*, AppHash};
+use tendermint_proto::v0_37::abci as pb;
 
 use serde::{Deserialize, Serialize};
 
@@ -25,30 +23,34 @@ pub struct Info {
 // Protobuf conversions
 // =============================================================================
 
-impl From<Info> for pb::ResponseInfo {
-    fn from(info: Info) -> Self {
-        Self {
-            data: info.data,
-            version: info.version,
-            app_version: info.app_version,
-            last_block_height: info.last_block_height.into(),
-            last_block_app_hash: info.last_block_app_hash.into(),
+tendermint_pb_modules! {
+    use super::Info;
+
+    impl From<Info> for pb::abci::ResponseInfo {
+        fn from(info: Info) -> Self {
+            Self {
+                data: info.data,
+                version: info.version,
+                app_version: info.app_version,
+                last_block_height: info.last_block_height.into(),
+                last_block_app_hash: info.last_block_app_hash.into(),
+            }
         }
     }
-}
 
-impl TryFrom<pb::ResponseInfo> for Info {
-    type Error = Error;
+    impl TryFrom<pb::abci::ResponseInfo> for Info {
+        type Error = crate::Error;
 
-    fn try_from(info: pb::ResponseInfo) -> Result<Self, Self::Error> {
-        Ok(Self {
-            data: info.data,
-            version: info.version,
-            app_version: info.app_version,
-            last_block_height: info.last_block_height.try_into()?,
-            last_block_app_hash: info.last_block_app_hash.try_into()?,
-        })
+        fn try_from(info: pb::abci::ResponseInfo) -> Result<Self, Self::Error> {
+            Ok(Self {
+                data: info.data,
+                version: info.version,
+                app_version: info.app_version,
+                last_block_height: info.last_block_height.try_into()?,
+                last_block_app_hash: info.last_block_app_hash.try_into()?,
+            })
+        }
     }
-}
 
-impl Protobuf<pb::ResponseInfo> for Info {}
+    impl Protobuf<pb::abci::ResponseInfo> for Info {}
+}

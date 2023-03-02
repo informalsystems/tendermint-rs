@@ -5,13 +5,11 @@ use core::fmt::Debug;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use super::{Id, Method, Version};
+use crate::dialect::{Dialect, LatestDialect};
 use crate::{prelude::*, Error};
 
-/// JSON-RPC requests
-pub trait Request: Debug + DeserializeOwned + Serialize + Sized + Send {
-    /// Response type for this command
-    type Response: super::response::Response;
-
+/// Serialization for JSON-RPC requests
+pub trait RequestMessage: DeserializeOwned + Serialize + Sized {
     /// Request method
     fn method(&self) -> Method;
 
@@ -27,6 +25,12 @@ pub trait Request: Debug + DeserializeOwned + Serialize + Sized + Send {
     }
 }
 
+/// JSON-RPC requests
+pub trait Request<S: Dialect = LatestDialect>: RequestMessage + Send {
+    /// Response type for this command
+    type Response: super::response::Response;
+}
+
 /// Simple JSON-RPC requests which correlate with a single response from the
 /// remote endpoint.
 ///
@@ -35,7 +39,10 @@ pub trait Request: Debug + DeserializeOwned + Serialize + Sized + Send {
 /// simple, singular response.
 ///
 /// [`Subscription`]: struct.Subscription.html
-pub trait SimpleRequest: Request {}
+pub trait SimpleRequest<S: Dialect = LatestDialect>: Request<S> {
+    /// The output data, converted from Response.
+    type Output: From<Self::Response>;
+}
 
 /// JSON-RPC request wrapper (i.e. message envelope)
 #[derive(Debug, Deserialize, Serialize)]
@@ -55,7 +62,7 @@ pub struct Wrapper<R> {
 
 impl<R> Wrapper<R>
 where
-    R: Request,
+    R: RequestMessage,
 {
     /// Create a new request wrapper from the given request.
     ///
