@@ -105,15 +105,10 @@ approach is expected to be eventually deprecated.
 
 ### tendermint-abci
 
-This crate is not actively supported and we should only make minimal effort
-to make it work with the proposed changes in a single chosen version of the
-protocol.
-
-## Open questions
-
-* Should we migrate tendermint-abci to 0.37, freeze it at 0.34 and declare
-  end of life, or commit to the same level of multi-version support as in
-  other crates?
+This crate is not actively supported and we should only make the minimal effort
+to update it to the 0.37 version of ABCI. No backward compatibility with 0.34
+or multi-versoin support is to be implemented; the consumers should be steered
+towards [tower-abci](https://github.com/penumbra-zone/tower-abci).
 
 ## Status
 
