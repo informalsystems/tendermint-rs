@@ -17,7 +17,7 @@ Previously, it was feasible for tendermint-rs to support a single version of
 the CometBFT Core protocols and expect all chain and relayer operators to
 upgrade their software in sync. But now there is a number of established chains
 using CometBFT 0.34 in production, and new chains using future versions of the
-protocol are expected to be deployed alongside the shared Cosmos ecosystem
+protocol are expected to be deployed into the shared Cosmos ecosystem
 so that relaying is possible between the old and the new chains.
 
 The approach to protocol evolution and versioning in CometBFT has not been
