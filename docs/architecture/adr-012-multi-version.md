@@ -91,6 +91,18 @@ mode is selected. There is no need to deprecate any methods. All data types
 in the public client API are the domain types of `tendermint`, so the
 difference in encoding is confined to the crate internals.
 
+Protocol version discovery is not implemented in the library in a way that
+would be invisible to the API user. To discover the Tendermint version, a client
+needs to make a `status` request and process the version data from the response.
+The format of the response is not divergent between the supported protocol
+versions, which is why this should succeed regardless of the compatibility mode
+initially selected. As the RPC client API represents individual endpoint requests,
+it would be wrong to have the implementation perform a hidden RPC roundtrip to
+discover the version when needed, and have the client exhibit interior
+mutability that is otherwise not needed. In the future, a more formalized way
+to discover the protocol version in use should be provided, so this ad-hoc
+approach is expected to be eventually deprecated.
+
 ### tendermint-abci
 
 This crate is not actively supported and we should only make minimal effort
