@@ -6,7 +6,7 @@
 
 ## Context
 
-As new releases of CometBFT Core come out, tendermint-rs should have a
+As new releases of CometBFT come out, tendermint-rs should have a
 viable way to support the versions of the protocol in use by the Cosmos
 community. Hermes presents a particular challenge of needing to support
 multiple different versions of the protocol within a single software agent
@@ -14,7 +14,7 @@ that performs IBC relaying across chains that are not necessarily using the
 same CometBFT version.
 
 Previously, it was feasible for tendermint-rs to support a single version of
-the CometBFT Core protocols and expect all chain and relayer operators to
+the CometBFT protocols and expect all chain and relayer operators to
 upgrade their software in sync. But now there is a number of established chains
 using CometBFT 0.34 in production, and new chains using future versions of the
 protocol are expected to be deployed into the shared Cosmos ecosystem
@@ -32,19 +32,18 @@ experience for chain and relayer operators and should be avoided.
 
 Another motivation for multi-version support is versioning of tendermint-rs
 itself: previously, the semver compatibility of tendermint-rs releases was
-tied with corresponding CometBFT Core version sequences in a none too obvious
-way. It's desirable to decouple tendermint-rs versioning from that of CometBFT
-Core, making it solely a matter of Rust crate API evolution. In the long term,
+tied with corresponding CometBFT version sequences in a none too obvious way.
+It's desirable to decouple tendermint-rs versioning from that of CometBFT,
+making it solely a matter of Rust crate API evolution. In the long term,
 a single version of the tendermint-rs libraries should be able to support all
-versions of CometBFT Core protocols that are relevant to the community.
+versions of CometBFT protocols that are relevant to the community.
 The developers of CometBFT protocols should take versioning practices into use
 for future revisions that support backward compatibility on the source code level.
 
 ## Decision
 
 The tendermint-rs library API will be modified to provide support for
-multiple versions of CometBFT Core protocol, at this moment being 0.34 and
-0.37.
+multiple versions of CometBFT APIs, at this moment being 0.34 and 0.37.
 
 ### tendermint-proto
 
