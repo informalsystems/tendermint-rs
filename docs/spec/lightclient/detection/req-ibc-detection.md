@@ -12,7 +12,7 @@ In the following, I distilled what I considered relevant from
 
 https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics
 
-### Components and their interface 
+### Components and their interface
 
 #### Tendermint Blockchains
 
@@ -23,7 +23,7 @@ https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics
 | IBC Term | Tendermint-RS Spec Term | Comment |
 |----------|-------------------------| --------|
 | `CommitmentRoot` | AppState | app hash |
-| `ConsensusState` | Lightblock | not all fields are there. NextValidator is definitly needed |
+| `ConsensusState` | Lightblock | not all fields are there. NextValidator is definitely needed |
 | `ClientState` | latest light block + configuration parameters (e.g., trusting period + `frozenHeight` |  NextValidators missing; what is `proofSpecs`?|
 | `frozenHeight` | height of fork | set when a fork is detected |
 | "would-have-been-fooled" | light node fork detection | light node may submit proof of fork to IBC component to halt it |
@@ -101,13 +101,13 @@ type checkValidityAndUpdateState = (Header) => Void
 
   For Tendermint, it will perform
   `ValidandVerified`, that is, it does the trusting period check and the
-  +1/3 check (+2/3 for sequential headers). 
+  +1/3 check (+2/3 for sequential headers).
   If it verifies a header, it adds it to its lightstore,
   if it does not pass verification it drops it.
   Right now it only accepts a header more recent then the latest
   header,
   and drops older
-  ones or ones that could not be verified. 
+  ones or ones that could not be verified.
 
 > The above paragraph captures what I believe what is the current
   logic of `checkValidityAndUpdateState`. It may be subject to
@@ -123,7 +123,7 @@ type checkMisbehaviourAndUpdateState = (bytes) => Void
   We have to design this, and the data that the handler can use to
   check that there was some misbehavior (fork) in order react on
   it, e.g., flagging a situation and
-  stop the protocol. 
+  stop the protocol.
 	  
 - The following function is used to query the light store (`ConsensusState`)
 
@@ -133,7 +133,7 @@ type queryChainConsensusState = (height: uint64) => ConsensusState
  
 #### Relayer
 
-- The active components are called **relayer**. 
+- The active components are called **relayer**.
 
 - a relayer contains light clients to two (or more?) blockchains
 
@@ -142,7 +142,7 @@ type queryChainConsensusState = (height: uint64) => ConsensusState
   `checkMisbehaviourAndUpdateState`. It may also query
   `queryChainConsensusState`.
   
-- multiple relayers may talk to one handler. Some relayers might be 
+- multiple relayers may talk to one handler. Some relayers might be
   faulty. We assume existence of at least single correct relayer.
 
 
@@ -151,11 +151,11 @@ type queryChainConsensusState = (height: uint64) => ConsensusState
 ### Relayer requirement: Evidence for Handler
 
 - The relayer should provide the handler with
-  "evidence" that there was a fork. 
+  "evidence" that there was a fork.
   
 - The relayer can read the handler's consensus state. Thus the relayer can
   feed the handler precisely the information the handler needs to detect a
-  fork. 
+  fork.
   What is this
   information needs to be specified.
   
@@ -178,13 +178,13 @@ relayer can figure that out:
    is on a different branch than the relayer
 
 
-- in both detection scenarios, the relayer should submit evidence to 
+- in both detection scenarios, the relayer should submit evidence to
   full nodes of chain A where there is a fork. As we assume a fullnode
   has a complete list of blocks, it is sufficient to send "Bucky's
   evidence" (https://github.com/tendermint/tendermint/issues/5083),
-  that is, 
-     - two lightblocks from different branches + 
-	 - a lightblock (perhaps just a height) from which both blocks 
+  that is,
+     - two lightblocks from different branches +
+	 - a lightblock (perhaps just a height) from which both blocks
 	   can be verified.
   
 - in the scenario 2., the relayer must feed the A-handler (on chain B)
@@ -194,12 +194,12 @@ relayer can figure that out:
   
 - there are potentially many relayers, some correct some faulty
 
-- a handler cannot trust the information provided by the relayer, 
-  but must verify 
+- a handler cannot trust the information provided by the relayer,
+  but must verify
   (Доверя́й, но проверя́й)
 
 - in case of a fork, we accept that the handler temporarily stores
-  headers (tagged as verified). 
+  headers (tagged as verified).
   
 - eventually, a handler should be informed
  (`checkMisbehaviourAndUpdateState`)
@@ -226,7 +226,7 @@ relayer can figure that out:
 
 - we would like to assume that every now and then (smaller than the
   trusting period) a correct relayer checks whether the handler is on a
-  different branch than the relayer. 
+  different branch than the relayer.
   And we would like that this is enough to achieve
   the Handler requirement.
   
@@ -238,7 +238,7 @@ relayer can figure that out:
 
    - if the light client does not provide this interface, in the case of
      a fork, we need some assumption about a correct relayer being on a
-     different branch than the handler, and we need such a relayer to 
+     different branch than the handler, and we need such a relayer to
 	 check-in not too late. Also
      what happens if the relayer's light client is forced to roll-back
      its lightstore?
@@ -252,7 +252,7 @@ relayer can figure that out:
 In the broader discussion of so-called "fork accountability" there are
 several subproblems
 
-- Fork detection 
+- Fork detection
 
 - Evidence creation and submission
 
@@ -273,8 +273,8 @@ validators of some smaller height.
 
 In principle everyone can detect a fork
 
-- ./detection talks about the Tendermint light client with a focus on 
-  light nodes. A relayer runs such light clients and may detect 
+- ./detection talks about the Tendermint light client with a focus on
+  light nodes. A relayer runs such light clients and may detect
   forks in this way
 
 - in IBC, a relayer can see that a handler is on a conflicting branch

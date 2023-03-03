@@ -264,7 +264,7 @@ mod tests {
             datetime in pbt::time::arb_protobuf_safe_datetime()
         ) {
             // If `from_value` is the inverse of `to_value`, then it will always
-            // map the JSON `encoded_time` to back to the inital `time`.
+            // map the JSON `encoded_time` to back to the initial `time`.
             let time: Time = datetime.try_into().unwrap();
             let json_encoded_time = serde_json::to_value(time).unwrap();
             let decoded_time: Time = serde_json::from_value(json_encoded_time).unwrap();
@@ -279,7 +279,7 @@ mod tests {
             ]
         ) {
             // ser/de of rfc3339 timestamps is safe if it never panics.
-            // This differes from the the inverse test in that we are testing on
+            // This differs from the the inverse test in that we are testing on
             // arbitrarily generated textual timestamps, rather than times in a
             // range. Tho we do incidentally test the inversion as well.
             let time: Time = stamp.parse().unwrap();

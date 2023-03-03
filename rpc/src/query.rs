@@ -431,7 +431,7 @@ pub struct Condition {
 }
 
 impl Condition {
-    /// Create a new condition that apllies the given `operation` to the `key`
+    /// Create a new condition that applies the given `operation` to the `key`
     pub fn new(key: String, operation: Operation) -> Self {
         Self { key, operation }
     }

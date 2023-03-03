@@ -44,7 +44,7 @@ In addition to those messages, a node in this spec receives additional input mes
 - RemovePeer
 - SyncTimeout.
 
-These are the control messages that are provided to the node by its execution enviornment. AddPeer
+These are the control messages that are provided to the node by its execution environment. AddPeer
 is for the case when a connection is established with a peer; similarly RemovePeer is for the case
 a connection with the peer is terminated. Finally SyncTimeout is used to model a timeout trigger.
 
@@ -485,7 +485,7 @@ HandleResponse(msg, bPool) ==
     2) pruning logic is called
     3) block execution is triggered (we try to execute block at next height)
     4) a request to a peer is made (if possible) and
-    5) we decide if termination condition is satisifed so we stop.
+    5) we decide if termination condition is satisfied so we stop.
 *)
 NodeStep ==
    \E suspectedSet \in SUBSET AllPeerIds:                        \* suspectedSet is a nondeterministic set of peers
@@ -595,7 +595,7 @@ UnforgeableBlockId(height, block) ==
     block.hashEqRef => block = chain[height]
 
 \* A faulty peer cannot forge enough of the validators signatures.
-\* A more precise rule should have checked that the commiters have over 2/3 of the VS's voting power.
+\* A more precise rule should have checked that the committers have over 2/3 of the VS's voting power.
 NoFork(height, block) ==
     (height > 1 /\ block.lastCommit.committers = chain[height - 1].VS)
         => block.lastCommit.blockIdEqRef

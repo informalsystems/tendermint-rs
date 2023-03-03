@@ -37,7 +37,7 @@ The current API of `Time` has the following problems:
 
 * Arithmetic operators have been provided for `Time` via `Add`/`Sub` trait
   implementations. However, the `Result` output type is
-  [suprising][guideline-overload] and makes for poor usability of overloaded
+  [surprising][guideline-overload] and makes for poor usability of overloaded
   operators.
 
 * Arithmetic and comparison operations are much slower on parsed date/time

@@ -10,7 +10,7 @@ EXTENDS Integers, FiniteSets
 
 Min(a, b) == IF a < b THEN a ELSE b
 
-\* @typeAlias: BLOCKHEADER = [hight: Int, time: Int, lastCommit: Set(Str), VS: Set(Str), NextVS: Set(Str)];
+\* @typeAlias: BLOCKHEADER = [height: Int, time: Int, lastCommit: Set(Str), VS: Set(Str), NextVS: Set(Str)];
 \* @typeAlias: BLOCKCHAIN = Int -> BLOCKHEADER;
 \* @typeAlias: BLOCK = [header: BLOCKHEADER, Commits: Set(Str)];
 BCTypeAliases == TRUE
@@ -45,7 +45,7 @@ BlockHeaders ==
     (* in the implementation, only the hashes of V and NextV are stored in a block,
        as V and NextV are stored in the application state *) 
     VS: SUBSET AllNodes,
-      \* the validators of this bloc. We store the validators instead of the hash.
+      \* the validators of this block. We store the validators instead of the hash.
     NextVS: SUBSET AllNodes
       \* the validators of the next block. We store the next validators instead of the hash.
   ]
