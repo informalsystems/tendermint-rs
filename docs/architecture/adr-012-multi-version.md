@@ -106,7 +106,7 @@ approach is expected to be eventually deprecated.
 
 This crate is not actively supported and we should only make the minimal effort
 to update it to the 0.37 version of ABCI. No backward compatibility with 0.34
-or multi-versoin support is to be implemented; the consumers should be steered
+or multi-version support is to be implemented; the consumers should be steered
 towards [tower-abci](https://github.com/penumbra-zone/tower-abci).
 
 ## Status
