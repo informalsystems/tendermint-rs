@@ -131,6 +131,7 @@ pub trait VerificationPredicates: Send + Sync {
             Err(VerificationError::header_from_the_future(
                 untrusted_header_time,
                 now,
+                clock_drift,
             ))
         }
     }
