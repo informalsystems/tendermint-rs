@@ -1,5 +1,60 @@
 # CHANGELOG
 
+## v0.30.0
+
+This release introduces support for multiple versions of CometBFT protocols.
+Consumers of tendermint-rs crates, with the exception of `tendermint-abci`,
+should be able to interoperate with CometBFT nodes based on 0.34.x and
+0.37.x releases, or a combination of these.
+
+### BREAKING CHANGES
+
+- [`tendermint`] Version-specific definitions for ABCI `Request` and `Response`
+  enums under `v0_34::abci` and `v0_37::abci`, containing only the method variants
+  present in each of the respective protocol versions.
+  `Request` and `Response` defined under `v0_37` are re-exported under
+  the non-versioned `abci` module name, but the `SetOption` variant is not present
+  in these latest versions of the enums.
+  ([#1193](https://github.com/informalsystems/tendermint-rs/pull/1193))
+- [`tendermint-abci`] Change the frame length encoding in the ABCI wire protocol
+  to unsigned varint, to correspond to the changes in Tendermint Core 0.37.
+  No compatibility with 0.34 is provided at the moment.
+  ([#1193](https://github.com/informalsystems/tendermint-rs/pull/1193))
+- [`tendermint-rpc`] Changed the signature of `WebSocketClient::new_with_config`
+  to accept a `WebSocketConfig` struct value rather than an `Option`.
+  ([#1193](https://github.com/informalsystems/tendermint-rs/pull/1193))
+- [`tendermint-proto`] The `serializers::evidence` module has been made private.
+  ([#1193](https://github.com/informalsystems/tendermint-rs/pull/1193))
+- [`tendermint-rpc`] Bump `async-tungstenite` dependency version to 0.20,
+  re-exporting `WebSocketConfig` from `tungstenite` 0.18
+  ([\#1276](https://github.com/informalsystems/tendermint-rs/pull/1276)).
+
+### IMPROVEMENTS
+
+- [`tendermint-proto`] Generate prost bindings for Tendermint 0.34 and 0.37 side by side.
+  The version-specific structs are placed under the `tendermint::v0_34` and 
+  `tendermint::v0_37` module namespaces, respectively. The names under
+  `tendermint::v0_37` are also re-exported under `tendermint`.
+  ([#1193](https://github.com/informalsystems/tendermint-rs/pull/1193))
+- [`tendermint`] New and updated ABCI domain types for Tendermint Core v0.37
+  ([#1193](https://github.com/informalsystems/tendermint-rs/pull/1193)).
+- [`tendermint`] Protobuf conversions provided for both `v0_34` and `v0_37`
+  versions of the generated [`tendermint-proto`] structs, where applicable.
+  ([#1193](https://github.com/informalsystems/tendermint-rs/pull/1193)).
+- [`tendermint-rpc`] Introduce `client::CompatMode`, enumerating protocol
+  compatibility modes specifying the RPC data encoding used by the client.
+  An `HttpClient` can be created with a selected mode specified in the new
+  `builder` API, or have the mode changed afterwards (usually after
+  version discovery) by the added `set_compat_mode` method.
+  For `WebSocketClient`, the mode can only be specified at creation via the new
+  `builder` API.
+  ([#1193](https://github.com/informalsystems/tendermint-rs/pull/1193))
+- [`tendermint-abci`] Port ABCI application support to 0.37 Tendermint Core API.
+  No legacy support for 0.34 is provided at the moment.
+  ([#1193](https://github.com/informalsystems/tendermint-rs/pull/1193)).
+- Derive `Hash` on `tendermint::Time`
+  ([#1278](https://github.com/informalsystems/tendermint-rs/issues/1278))
+
 ## v0.29.1
 
 Improve debug output for Ed25519 keys.
@@ -470,18 +525,18 @@ not yet support `no_std`.
 - Upgraded Prost to the official v0.9 release to finally resolve the security
   issue introduced by v0.7
   ([#925](https://github.com/informalsystems/tendermint-rs/issues/925))
-- `[tendermint]` The `tendermint::node::info::ListenAddress::to_net_address`
-  method was replaced with a simple `as_str` method toward facilitating
-  `no_std` compatibility ([#983](https://github.com/informalsystems/tendermint-
-  rs/issues/983))
-- `[tendermint]` The `tendermint::node::info::OtherInfo::rpc_address`
-  field type has been changed from `tendermint::net::Address`
-  to `String` toward facilitating `no_std` compatibility
-  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
 - `[tendermint, tendermint-config]` The `tendermint::config`
   module has now been broken out into its own crate (`tendermint-
   config`) to help towards facilitating `no_std` compatibility
   ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
+- `[tendermint]` The `tendermint::node::info::OtherInfo::rpc_address`
+  field type has been changed from `tendermint::net::Address`
+  to `String` toward facilitating `no_std` compatibility
+  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
+- `[tendermint]` The `tendermint::node::info::ListenAddress::to_net_address`
+  method was replaced with a simple `as_str` method toward facilitating
+  `no_std` compatibility ([#983](https://github.com/informalsystems/tendermint-
+  rs/issues/983))
 
 ### FEATURES
 

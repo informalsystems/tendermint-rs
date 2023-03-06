@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint-light-client"
-version    = "0.29.1"
+version    = "0.30.0"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -35,9 +35,9 @@ unstable = ["rust-crypto"]
 mbt = ["rust-crypto"]
 
 [dependencies]
-tendermint = { version = "0.29.1", path = "../tendermint", default-features = false }
-tendermint-rpc = { version = "0.29.1", path = "../rpc", default-features = false }
-tendermint-light-client-verifier = { version = "0.29.1", path = "../light-client-verifier", default-features = false }
+tendermint = { version = "0.30.0", path = "../tendermint", default-features = false }
+tendermint-rpc = { version = "0.30.0", path = "../rpc", default-features = false }
+tendermint-light-client-verifier = { version = "0.30.0", path = "../light-client-verifier", default-features = false }
 
 contracts = { version = "0.6.2", default-features = false }
 crossbeam-channel = { version = "0.4.2", default-features = false }
