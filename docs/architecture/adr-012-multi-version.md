@@ -102,6 +102,39 @@ mutability that is otherwise not needed. In the future, a more formalized way
 to discover the protocol version in use should be provided, so this ad-hoc
 approach is expected to be eventually deprecated.
 
+#### Examples
+
+Connecting to the WebSocket endpoint with a specified compatibility mode:
+
+```rust
+use tendermint_rpc::client::{CompatMode, WebSocketClient};
+
+// ...
+
+let client = WebSocketClient::builder(rpc_url)
+    .compat_mode(CompatMode::V0_34)
+    .build()
+    .await?;
+```
+
+Discovery of the RPC compatibility mode while preserving the HTTP connection:
+
+```rust
+use tendermint_rpc::client::{Client, CompatMode, HttpClient, HttpClientUrl};
+use tendermint_rpc::error::Error;
+
+async fn rpc_client_with_version_discovery<U>(url: U) -> Result<HttpClient, Error>
+where
+    U: TryInto<HttpClientUrl, Error = Error>,
+{
+    let mut rpc_client = HttpClient::new(url)?;
+    let status = rpc_client.status().await?;
+    let compat_mode = CompatMode::from_version(status.node_info.version)?;
+    rpc_client.set_compat_mode(compat_mode);
+    Ok(rpc_client)
+}
+```
+
 ### tendermint-abci
 
 This crate is not actively supported and we should only make the minimal effort
