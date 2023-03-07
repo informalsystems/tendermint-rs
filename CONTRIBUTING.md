@@ -186,14 +186,21 @@ Our release process is as follows:
    documentation compiles and seems up-to-date and coherent. Fix any potential
    issues here and push them to the release PR.
 5. Mark the PR as **Ready for Review** and incorporate feedback on the release.
-6. Once approved, run the [`release.sh`] script. Fix any problems that may arise
-   during this process and push the changes to the release PR.  This step
-   requires the appropriate privileges to push crates to [crates.io].
-7. Once all crates have been successfully released, merge the PR to `main` and
-   tag the repo at the new version (e.g. `v0.17.0`).
+6. Once approved, merge the PR to `main`, create a signed tag with the new version
+   (e.g. `v0.31.0`) and push the tag. The [release workflow][release.yml]
+   will run the [`release.sh`] script in a CI worker.
+7. If some crates have not been released, check the cause of the failure and
+   act accordingly:
+   1. In case of intermittent problems with the registry, rerun the script
+      locally to publish any missing crates from this release.
+      This step requires the appropriate privileges to push crates to [crates.io].
+   2. In case the problems arise from the source files, fix them,
+      bump a new patch version (e.g. `v0.31.1`) and repeat the process
+      with its corresponding new tag.
 
 [CHANGELOG.md]: https://github.com/informalsystems/tendermint-rs/blob/main/CHANGELOG.md
 [`release.sh`]: https://github.com/informalsystems/tendermint-rs/blob/main/release.sh
 [crates.io]: https://crates.io
 [unclog]: https://github.com/informalsystems/unclog
 [Tendermint]: https://tendermint.com
+[release.yml]: https://github.com/informalsystems/tendermint-rs/blob/main/.github/workflows/release.yml
