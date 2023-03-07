@@ -23,10 +23,11 @@ define_error! {
             {
                 header_time: Time,
                 now: Time,
+                max_clock_drift: Duration,
             }
             | e | {
-                format_args!("header from the future: header_time={0} now={1}",
-                    e.header_time, e.now)
+                format_args!("header from the future: header_time={0} now={1} max_clock_drift={2:?}",
+                    e.header_time, e.now, e.max_clock_drift)
             },
 
         NotEnoughTrust
