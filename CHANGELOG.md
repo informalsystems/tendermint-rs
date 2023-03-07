@@ -55,7 +55,8 @@ should be able to interoperate with CometBFT nodes based on 0.34.x and
 - [`tendermint`] Derive `Hash` on `tendermint::Time`
   ([#1278](https://github.com/informalsystems/tendermint-rs/issues/1278))
 - [`tendermint-light-client`] Show `max_clock_drift` in error raised when header
-  is from the future ([\#1280](https://github.com/informalsystems/tendermint-rs/issues/1280))
+  is from the future
+  ([\#1280](https://github.com/informalsystems/tendermint-rs/issues/1280))
 
 ## v0.29.1
 
