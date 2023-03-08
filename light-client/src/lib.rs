@@ -19,13 +19,11 @@ pub mod builder;
 pub mod components;
 pub mod contracts;
 pub mod errors;
-pub mod evidence;
-pub mod fork_detector;
+pub mod instance;
 pub mod light_client;
-pub mod peer_list;
+pub mod misbehavior;
 pub mod state;
 pub mod store;
-pub mod supervisor;
 
 pub(crate) mod utils;
 

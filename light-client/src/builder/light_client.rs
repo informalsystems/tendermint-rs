@@ -19,10 +19,10 @@ use crate::{
         io::{AtHeight, Io},
         scheduler::Scheduler,
     },
+    instance::Instance,
     light_client::LightClient,
     state::{State, VerificationTrace},
     store::LightStore,
-    supervisor::Instance,
     verifier::{
         options::Options,
         predicates::VerificationPredicates,

@@ -5,14 +5,8 @@ use std::collections::HashMap;
 #[cfg(feature = "rust-crypto")]
 use std::time::Duration;
 
-use contracts::contract_trait;
 use serde::{Deserialize, Serialize};
-use tendermint::{
-    block::Height as HeightStr,
-    evidence::{Duration as DurationStr, Evidence},
-    hash::Algorithm,
-    Hash,
-};
+use tendermint::{block::Height as HeightStr, evidence::Duration as DurationStr};
 use tendermint_rpc as rpc;
 
 use crate::{
@@ -21,12 +15,9 @@ use crate::{
         io::{AtHeight, Io, IoError},
     },
     errors::Error,
-    evidence::EvidenceReporter,
     light_client::LightClient,
     state::State,
-    verifier::types::{
-        Height, LightBlock, PeerId, SignedHeader, Time, TrustThreshold, ValidatorSet,
-    },
+    verifier::types::{Height, LightBlock, SignedHeader, Time, TrustThreshold, ValidatorSet},
 };
 
 #[cfg(feature = "rust-crypto")]
@@ -131,22 +122,6 @@ impl Io for MockIo {
                 rpc::response_error::ResponseError::new((-32600).into(), None),
             ))
         })
-    }
-}
-
-#[derive(Clone, Debug, Default)]
-pub struct MockEvidenceReporter;
-
-#[contract_trait]
-impl EvidenceReporter for MockEvidenceReporter {
-    fn report(&self, _e: Evidence, _peer: PeerId) -> Result<Hash, IoError> {
-        Ok(Hash::from_bytes(Algorithm::Sha256, &[0; 32]).unwrap())
-    }
-}
-
-impl MockEvidenceReporter {
-    pub fn new() -> Self {
-        Self
     }
 }
 

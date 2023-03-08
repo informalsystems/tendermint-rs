@@ -60,7 +60,3 @@ gumdrop = { version = "0.8.0", default-features = false }
 rand = { version = "0.7.3", default-features = false }
 tempfile = { version = "3.2.0", default-features = false }
 proptest = { version = "0.10.1", default-features = false, features = ["std"] }
-
-[[example]]
-name = "light_client"
-required-features = ["rpc-client", "tendermint-rpc/http-client", "flex-error/std"]
