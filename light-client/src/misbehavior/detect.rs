@@ -49,18 +49,17 @@ pub fn handle_conflicting_headers(
     Ok(Some(evidence_against_primary))
 }
 
-enum Examination {
+enum Conflict {
     Continue(LightBlock),
-    Bifurcation(Vec<LightBlock>, LightBlock),
+    Divergence(Vec<LightBlock>, LightBlock),
 }
 
 fn examine_conflicting_header_against_trace_block(
     source: &Instance,
-    index: usize,
     trace_block: &LightBlock,
     target_block: &LightBlock,
     prev_verified_block: Option<LightBlock>,
-) -> Result<Examination, DetectorError> {
+) -> Result<Conflict, DetectorError> {
     // This case only happens in a forward lunatic attack. We treat the block with the
     // height directly after the targetBlock as the divergent block
     if trace_block.height() > target_block.height() {
@@ -82,7 +81,7 @@ fn examine_conflicting_header_against_trace_block(
                 let source_trace =
                     verify_skipping(source, prev_verified_block.clone(), target_block.clone())?;
 
-                return Ok(Examination::Bifurcation(source_trace, trace_block.clone()));
+                return Ok(Conflict::Divergence(source_trace, trace_block.clone()));
             }
         }
     }
@@ -91,49 +90,52 @@ fn examine_conflicting_header_against_trace_block(
     let source_block = if trace_block.height() == target_block.height() {
         target_block.clone()
     } else {
-        let mut state = State::new(MemoryStore::new());
-        source
-            .light_client
-            .get_or_fetch_block(trace_block.height(), &mut state)
-            .map(|(lb, _)| lb)
-            .map_err(DetectorError::light_client)?
+        fetch_block(source, trace_block)?
     };
 
-    // The first block in the trace MUST be the same to the light block that the source produces
-    // else we cannot continue with verification.
-    if index == 0 {
-        if source_block.signed_header.header.hash_with::<Hasher>()
-            != trace_block.signed_header.header.hash_with::<Hasher>()
-        {
-            return Err(
-                DetectorError::trusted_hash_different_from_source_first_block(
-                    source_block.signed_header.header.hash_with::<Hasher>(),
-                    trace_block.signed_header.header.hash_with::<Hasher>(),
-                ),
-            );
-        }
+    let source_block_hash = source_block.signed_header.header.hash_with::<Hasher>();
+    let trace_block_hash = trace_block.signed_header.header.hash_with::<Hasher>();
 
-        return Ok(Examination::Continue(source_block));
+    match prev_verified_block {
+        None => {
+            // the first block in the trace MUST be the same to the light block that the source produces
+            // else we cannot continue with verification.
+            if source_block_hash != trace_block_hash {
+                Err(
+                    DetectorError::trusted_hash_different_from_source_first_block(
+                        source_block_hash,
+                        trace_block_hash,
+                    ),
+                )
+            } else {
+                Ok(Conflict::Continue(source_block))
+            }
+        },
+        Some(prev_verified_block) => {
+            // we check that the source provider can verify a block at the same height of the
+            // intermediate height
+            let source_trace = verify_skipping(source, prev_verified_block, source_block.clone())?;
+
+            // check if the headers verified by the source has diverged from the trace
+            if source_block_hash != trace_block_hash {
+                // Bifurcation point found!
+                return Ok(Conflict::Divergence(source_trace, trace_block.clone()));
+            }
+
+            // headers are still the same, continue
+            Ok(Conflict::Continue(source_block))
+        },
     }
+}
 
-    // we check that the source provider can verify a block at the same height of the
-    // intermediate height
-    let source_trace = verify_skipping(
-        source,
-        prev_verified_block.unwrap(), // FIXME
-        source_block.clone(),
-    )?;
+fn fetch_block(source: &Instance, trace_block: &LightBlock) -> Result<LightBlock, DetectorError> {
+    let mut state = State::new(MemoryStore::new());
 
-    // check if the headers verified by the source has diverged from the trace
-    if source_block.signed_header.header.hash_with::<Hasher>()
-        != trace_block.signed_header.header.hash_with::<Hasher>()
-    {
-        // Bifurcation point found!
-        return Ok(Examination::Bifurcation(source_trace, trace_block.clone()));
-    }
-
-    // headers are still the same, continue
-    Ok(Examination::Continue(source_block))
+    source
+        .light_client
+        .get_or_fetch_block(trace_block.height(), &mut state)
+        .map(|(lb, _)| lb)
+        .map_err(DetectorError::light_client)
 }
 
 fn examine_conflicting_header_against_trace(
@@ -151,21 +153,20 @@ fn examine_conflicting_header_against_trace(
 
     let mut previously_verified_block: Option<LightBlock> = None;
 
-    for (index, &trace_block) in [trusted_block, verified_block].iter().enumerate() {
+    for trace_block in [trusted_block, verified_block] {
         let result = examine_conflicting_header_against_trace_block(
             source,
-            index,
             trace_block,
             target_block,
             previously_verified_block,
         )?;
 
         match result {
-            Examination::Continue(prev_verified_block) => {
+            Conflict::Continue(prev_verified_block) => {
                 previously_verified_block = Some(prev_verified_block);
                 continue;
             },
-            Examination::Bifurcation(source_trace, trace_block) => {
+            Conflict::Divergence(source_trace, trace_block) => {
                 return Ok((source_trace, trace_block));
             },
         }
@@ -173,7 +174,8 @@ fn examine_conflicting_header_against_trace(
 
     // We have reached the end of the trace. This should never happen. This can only happen if one of the stated
     // prerequisites to this function were not met.
-    // Namely that either trace[len(trace)-1].Height < targetBlock.Height or that trace[i].Hash() != targetBlock.Hash()
+    // Namely that either trace[len(trace)-1].Height < targetBlock.Height
+    // or that trace[i].Hash() != targetBlock.Hash()
     Err(DetectorError::no_divergence())
 }
 
