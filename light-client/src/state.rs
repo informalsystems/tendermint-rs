@@ -39,12 +39,18 @@ impl State {
     pub fn trace_block(&mut self, target_height: Height, height: Height) {
         self.verification_trace
             .entry(target_height)
-            .or_insert_with(HashSet::new)
+            .or_insert_with(|| {
+                let mut trace = HashSet::new();
+                trace.insert(target_height);
+                trace
+            })
             .insert(height);
     }
 
     /// Get the verification trace for the block at `target_height`.
     pub fn get_trace(&self, target_height: Height) -> Vec<LightBlock> {
+        use std::cmp::Reverse;
+
         let mut trace = self
             .verification_trace
             .get(&target_height)
@@ -53,8 +59,7 @@ impl State {
             .flat_map(|h| self.light_store.get(*h, Status::Verified))
             .collect::<Vec<_>>();
 
-        trace.sort_by_key(|lb| lb.height());
-        trace.reverse();
+        trace.sort_by_key(|lb| Reverse(lb.height()));
         trace
     }
 }

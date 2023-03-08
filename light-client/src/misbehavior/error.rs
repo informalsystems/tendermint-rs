@@ -1,5 +1,6 @@
 use flex_error::define_error;
 use tendermint::{block::Height, Hash, Time};
+use tendermint_light_client_verifier::types::LightBlock;
 
 use crate::{components::io::IoError, errors::Error as LightClientError};
 
@@ -35,6 +36,17 @@ define_error! {
                 format_args!(
                     "trusted block is different to the source's first block. Expected hash: {}, got: {}",
                     e.expected_hash, e.got_hash
+                )
+            },
+
+        TraceTooShort
+            {
+                trace: Vec<LightBlock>,
+            }
+            |e| {
+                format_args!(
+                    "trace is too short. Expected at least 2 blocks, got {} block",
+                    e.trace.len()
                 )
             },
 

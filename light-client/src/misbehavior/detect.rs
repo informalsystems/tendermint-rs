@@ -29,8 +29,8 @@ pub fn handle_conflicting_headers(
         witness,
     )?;
 
-    let common_block = witness_trace.first().unwrap(); // FIXME
-    let trusted_block = witness_trace.last().unwrap(); // FIXME
+    let common_block = witness_trace.common();
+    let trusted_block = witness_trace.trusted();
 
     let evidence_against_primary = make_evidence(
         primary_block.clone(),
@@ -51,7 +51,7 @@ pub fn handle_conflicting_headers(
 
 enum Conflict {
     Continue(LightBlock),
-    Divergence(Vec<LightBlock>, LightBlock),
+    Divergence(Trace, LightBlock),
 }
 
 fn examine_conflicting_header_against_trace_block(
@@ -143,7 +143,7 @@ fn examine_conflicting_header_against_trace(
     verified_block: &LightBlock,
     target_block: &LightBlock,
     source: &Instance,
-) -> Result<(Vec<LightBlock>, LightBlock), DetectorError> {
+) -> Result<(Trace, LightBlock), DetectorError> {
     if target_block.height() < trusted_block.height() {
         return Err(DetectorError::target_block_lower_than_trusted(
             target_block.height(),
@@ -183,7 +183,7 @@ fn verify_skipping(
     source: &Instance,
     trusted: LightBlock,
     target: LightBlock,
-) -> Result<Vec<LightBlock>, DetectorError> {
+) -> Result<Trace, DetectorError> {
     let target_height = target.height();
 
     let mut store = MemoryStore::new();
@@ -197,7 +197,30 @@ fn verify_skipping(
         .verify_to_target(target_height, &mut state)
         .map_err(DetectorError::light_client)?;
 
-    let source_trace = state.get_trace(target_height);
+    let blocks = state.get_trace(target_height);
+    let source_trace = Trace::new(blocks)?;
 
     Ok(source_trace)
+}
+
+struct Trace(Vec<LightBlock>);
+
+impl Trace {
+    fn new(trace: Vec<LightBlock>) -> Result<Self, DetectorError> {
+        if trace.len() < 2 {
+            return Err(DetectorError::trace_too_short(trace));
+        }
+
+        Ok(Self(trace))
+    }
+
+    fn common(&self) -> &LightBlock {
+        self.0
+            .first()
+            .expect("trace is empty, which cannot happend")
+    }
+
+    fn trusted(&self) -> &LightBlock {
+        self.0.last().expect("trace is empty, which cannot happen")
+    }
 }
