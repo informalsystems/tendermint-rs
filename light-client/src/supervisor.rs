@@ -1,7 +1,6 @@
 //! Supervisor and Handle implementation.
 
 use crossbeam_channel as channel;
-use tendermint::evidence::Evidence;
 
 use crate::{
     errors::Error,
@@ -287,15 +286,14 @@ impl Supervisor {
     // TODO: rework to supply LightClientAttackEvidence data
     fn report_evidence(
         &mut self,
-        provider: PeerId,
+        _provider: PeerId,
         _primary: &LightBlock,
         _witness: &LightBlock,
     ) -> Result<(), Error> {
-        self.evidence_reporter
-            .report(Evidence::LightClientAttackEvidence, provider)
-            .map_err(Error::io)?;
+        // Silence unused variable warnings
+        let _reporter = &self.evidence_reporter;
 
-        Ok(())
+        unimplemented!()
     }
 
     /// Perform fork detection with the given verified block and trusted block.

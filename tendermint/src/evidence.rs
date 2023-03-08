@@ -10,22 +10,36 @@ use tendermint_proto::google::protobuf::Duration as RawDuration;
 use tendermint_proto::v0_37::types::Evidence as RawEvidence;
 use tendermint_proto::Protobuf;
 
-use crate::{error::Error, prelude::*, serializers, vote::Power, Time, Vote};
+use crate::{
+    block::{signed_header::SignedHeader, Height},
+    error::Error,
+    prelude::*,
+    serializers, validator,
+    vote::Power,
+    Time, Vote,
+};
 
-/// Evidence of malfeasance by validators (i.e. signing conflicting votes).
-/// encoded using an Amino prefix. There is currently only a single type of
-/// evidence: `DuplicateVoteEvidence`.
-///
-/// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#evidence>
+/// Evidence of malfeasance by validators (i.e. signing conflicting votes or light client attack).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "RawEvidence", into = "RawEvidence")] // Used by RPC /broadcast_evidence endpoint
-#[allow(clippy::large_enum_variant)]
 pub enum Evidence {
     /// Duplicate vote evidence
-    DuplicateVote(DuplicateVoteEvidence),
+    DuplicateVote(Box<DuplicateVoteEvidence>),
 
-    /// LightClient attack evidence - Todo: Implement details
-    LightClientAttackEvidence,
+    /// LightClient attack evidence
+    LightClientAttack(Box<LightClientAttackEvidence>),
+}
+
+impl From<LightClientAttackEvidence> for Evidence {
+    fn from(ev: LightClientAttackEvidence) -> Self {
+        Self::LightClientAttack(Box::new(ev))
+    }
+}
+
+impl From<DuplicateVoteEvidence> for Evidence {
+    fn from(ev: DuplicateVoteEvidence) -> Self {
+        Self::DuplicateVote(Box::new(ev))
+    }
 }
 
 /// Duplicate vote evidence
@@ -59,6 +73,23 @@ impl DuplicateVoteEvidence {
     pub fn votes(&self) -> (&Vote, &Vote) {
         (&self.vote_a, &self.vote_b)
     }
+}
+
+/// Conflicting block detected in light client attack
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ConflictingBlock {
+    pub signed_header: SignedHeader,
+    pub validator_set: validator::Set,
+}
+
+/// Light client attack evidence
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LightClientAttackEvidence {
+    pub conflicting_block: ConflictingBlock,
+    pub common_height: Height,
+    pub byzantine_validators: Vec<validator::Info>,
+    pub total_voting_power: Power,
+    pub timestamp: Time,
 }
 
 /// A list of `Evidence`.
@@ -126,11 +157,11 @@ pub struct Params {
 tendermint_pb_modules! {
     use pb::types::{
         evidence::Sum as RawSum, DuplicateVoteEvidence as RawDuplicateVoteEvidence,
-        Evidence as RawEvidence, EvidenceList as RawEvidenceList,
-        EvidenceParams as RawEvidenceParams,
+        Evidence as RawEvidence, EvidenceList as RawEvidenceList, LightClientAttackEvidence as RawLightClientAttackEvidence,
+        EvidenceParams as RawEvidenceParams, LightBlock as RawLightBlock
     };
 
-    use super::{List, DuplicateVoteEvidence, Evidence, Params};
+    use super::{List, LightClientAttackEvidence, DuplicateVoteEvidence, ConflictingBlock, Evidence, Params};
     use crate::{error::Error, prelude::*};
 
     impl Protobuf<RawEvidence> for Evidence {}
@@ -138,22 +169,28 @@ tendermint_pb_modules! {
     impl TryFrom<RawEvidence> for Evidence {
         type Error = Error;
 
-        fn try_from(message: RawEvidence) -> Result<Self, Self::Error> {
-            use RawSum::*;
-            match message.sum.ok_or_else(Error::invalid_evidence)? {
-                DuplicateVoteEvidence(ev) => Ok(Evidence::DuplicateVote(ev.try_into()?)),
-                LightClientAttackEvidence(_ev) => Ok(Evidence::LightClientAttackEvidence),
+        fn try_from(value: RawEvidence) -> Result<Self, Self::Error> {
+            match value.sum.ok_or_else(Error::invalid_evidence)? {
+                RawSum::DuplicateVoteEvidence(ev) => {
+                    Ok(Evidence::DuplicateVote(Box::new(ev.try_into()?)))
+                },
+                RawSum::LightClientAttackEvidence(ev) => {
+                    Ok(Evidence::LightClientAttack(Box::new(ev.try_into()?)))
+                },
             }
         }
     }
 
     impl From<Evidence> for RawEvidence {
         fn from(value: Evidence) -> Self {
-            let sum = match value {
-                Evidence::DuplicateVote(ev) => Some(RawSum::DuplicateVoteEvidence(ev.into())),
-                Evidence::LightClientAttackEvidence => None,
-            };
-            RawEvidence { sum }
+            match value {
+                Evidence::DuplicateVote(ev) => RawEvidence {
+                    sum: Some(RawSum::DuplicateVoteEvidence((*ev).into())),
+                },
+                Evidence::LightClientAttack(ev) => RawEvidence {
+                    sum: Some(RawSum::LightClientAttackEvidence((*ev).into())),
+                },
+            }
         }
     }
 
@@ -190,6 +227,76 @@ tendermint_pb_modules! {
                 total_voting_power: value.total_voting_power.into(),
                 validator_power: value.total_voting_power.into(),
                 timestamp: Some(value.timestamp.into()),
+            }
+        }
+    }
+
+    impl Protobuf<RawLightBlock> for ConflictingBlock {}
+
+    impl TryFrom<RawLightBlock> for ConflictingBlock {
+        type Error = Error;
+
+        fn try_from(value: RawLightBlock) -> Result<Self, Self::Error> {
+            Ok(ConflictingBlock {
+                signed_header: value
+                    .signed_header
+                    .ok_or_else(Error::missing_evidence)?
+                    .try_into()?,
+                validator_set: value
+                    .validator_set
+                    .ok_or_else(Error::missing_evidence)?
+                    .try_into()?,
+            })
+        }
+    }
+
+    impl From<ConflictingBlock> for RawLightBlock {
+        fn from(value: ConflictingBlock) -> Self {
+            RawLightBlock {
+                signed_header: Some(value.signed_header.into()),
+                validator_set: Some(value.validator_set.into()),
+            }
+        }
+    }
+
+    impl Protobuf<RawLightClientAttackEvidence> for LightClientAttackEvidence {}
+
+    impl TryFrom<RawLightClientAttackEvidence> for LightClientAttackEvidence {
+        type Error = Error;
+
+        fn try_from(ev: RawLightClientAttackEvidence) -> Result<Self, Self::Error> {
+            Ok(LightClientAttackEvidence {
+                conflicting_block: ev
+                    .conflicting_block
+                    .ok_or_else(Error::missing_evidence)?
+                    .try_into()?,
+                common_height: ev.common_height.try_into()?,
+                byzantine_validators: ev
+                    .byzantine_validators
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<Vec<_>, _>>()?,
+                total_voting_power: ev.total_voting_power.try_into()?,
+                timestamp: ev
+                    .timestamp
+                    .ok_or_else(Error::missing_timestamp)?
+                    .try_into()?,
+            })
+        }
+    }
+
+    impl From<LightClientAttackEvidence> for RawLightClientAttackEvidence {
+        fn from(ev: LightClientAttackEvidence) -> Self {
+            RawLightClientAttackEvidence {
+                conflicting_block: Some(ev.conflicting_block.into()),
+                common_height: ev.common_height.into(),
+                byzantine_validators: ev
+                    .byzantine_validators
+                    .into_iter()
+                    .map(Into::into)
+                    .collect(),
+                total_voting_power: ev.total_voting_power.into(),
+                timestamp: Some(ev.timestamp.into()),
             }
         }
     }
