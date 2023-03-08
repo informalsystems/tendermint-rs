@@ -44,6 +44,7 @@ impl DuplicateVoteEvidence {
         if vote_a.height != vote_b.height {
             return Err(Error::invalid_evidence());
         }
+
         // Todo: make more assumptions about what is considered a valid evidence for duplicate vote
         Ok(Self {
             vote_a,
@@ -53,25 +54,26 @@ impl DuplicateVoteEvidence {
             timestamp: Time::unix_epoch(),
         })
     }
+
     /// Get votes
     pub fn votes(&self) -> (&Vote, &Vote) {
         (&self.vote_a, &self.vote_b)
     }
 }
 
-/// Evidence data is a wrapper for a list of `Evidence`.
+/// A list of `Evidence`.
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#evidencedata>
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Data(Vec<Evidence>);
+pub struct List(Vec<Evidence>);
 
-impl Data {
+impl List {
     /// Create a new evidence data collection
-    pub fn new<I>(into_evidence: I) -> Data
+    pub fn new<I>(into_evidence: I) -> List
     where
         I: Into<Vec<Evidence>>,
     {
-        Data(into_evidence.into())
+        List(into_evidence.into())
     }
 
     /// Convert this evidence data into a vector
@@ -85,7 +87,7 @@ impl Data {
     }
 }
 
-impl AsRef<[Evidence]> for Data {
+impl AsRef<[Evidence]> for List {
     fn as_ref(&self) -> &[Evidence] {
         &self.0
     }
@@ -128,8 +130,10 @@ tendermint_pb_modules! {
         EvidenceParams as RawEvidenceParams,
     };
 
-    use super::{Data, DuplicateVoteEvidence, Evidence, Params};
+    use super::{List, DuplicateVoteEvidence, Evidence, Params};
     use crate::{error::Error, prelude::*};
+
+    impl Protobuf<RawEvidence> for Evidence {}
 
     impl TryFrom<RawEvidence> for Evidence {
         type Error = Error;
@@ -152,6 +156,8 @@ tendermint_pb_modules! {
             RawEvidence { sum }
         }
     }
+
+    impl Protobuf<RawDuplicateVoteEvidence> for DuplicateVoteEvidence {}
 
     impl TryFrom<RawDuplicateVoteEvidence> for DuplicateVoteEvidence {
         type Error = Error;
@@ -188,7 +194,9 @@ tendermint_pb_modules! {
         }
     }
 
-    impl TryFrom<RawEvidenceList> for Data {
+    impl Protobuf<RawEvidenceList> for List {}
+
+    impl TryFrom<RawEvidenceList> for List {
         type Error = Error;
         fn try_from(value: RawEvidenceList) -> Result<Self, Self::Error> {
             let evidence = value
@@ -200,8 +208,8 @@ tendermint_pb_modules! {
         }
     }
 
-    impl From<Data> for RawEvidenceList {
-        fn from(value: Data) -> Self {
+    impl From<List> for RawEvidenceList {
+        fn from(value: List) -> Self {
             RawEvidenceList {
                 evidence: value.0.into_iter().map(Into::into).collect(),
             }
