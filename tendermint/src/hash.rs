@@ -24,11 +24,12 @@ pub enum Algorithm {
 }
 
 /// Hash digests
-#[derive(Copy, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Hash, Eq, PartialEq, PartialOrd, Ord, Default)]
 pub enum Hash {
     /// SHA-256 hashes
     Sha256([u8; SHA256_HASH_SIZE]),
     /// Empty hash
+    #[default]
     None,
 }
 
@@ -141,12 +142,6 @@ impl Debug for Hash {
             Hash::Sha256(_) => write!(f, "Hash::Sha256({self})"),
             Hash::None => write!(f, "Hash::None"),
         }
-    }
-}
-
-impl Default for Hash {
-    fn default() -> Self {
-        Hash::None
     }
 }
 

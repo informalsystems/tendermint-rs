@@ -82,21 +82,16 @@ pub struct OtherInfo {
 }
 
 /// Transaction index status
-#[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Default)]
 pub enum TxIndexStatus {
     /// Index is on
     #[serde(rename = "on")]
+    #[default]
     On,
 
     /// Index is off
     #[serde(rename = "off")]
     Off,
-}
-
-impl Default for TxIndexStatus {
-    fn default() -> TxIndexStatus {
-        TxIndexStatus::On
-    }
 }
 
 impl From<TxIndexStatus> for bool {

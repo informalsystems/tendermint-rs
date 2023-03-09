@@ -611,7 +611,7 @@ pub struct TxIndexConfig {
 }
 
 /// What indexer to use for transactions
-#[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+#[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize, Default)]
 pub enum TxIndexer {
     /// "null"
     // TODO(tarcieri): use an `Option` type here?
@@ -621,13 +621,8 @@ pub enum TxIndexer {
     /// "kv" (default) - the simplest possible indexer, backed by key-value storage (defaults to
     /// levelDB; see DBBackend).
     #[serde(rename = "kv")]
+    #[default]
     Kv,
-}
-
-impl Default for TxIndexer {
-    fn default() -> TxIndexer {
-        TxIndexer::Kv
-    }
 }
 
 /// instrumentation configuration options
