@@ -1,0 +1,23 @@
+[package]
+name        = "light-client-cli"
+version     = "0.1.0"
+edition     = "2021"
+license     = "Apache-2.0"
+readme      = "README.md"
+keywords    = ["blockchain", "bft", "consensus", "cosmos", "tendermint"]
+categories  = ["cryptography::cryptocurrencies", "network-programming"]
+repository  = "https://github.com/informalsystems/tendermint-rs"
+authors     = ["Informal Systems <hello@informal.systems>"]
+description = "CLI for Tendermint Light Client"
+
+[dependencies]
+clap = { version = "4.1.8", features = ["derive"] }
+color-eyre = "0.6.2"
+serde_json = "1.0.94"
+tendermint = { version = "0.30.0", path = "../../tendermint" }
+tendermint-light-client = { version = "0.30.0", path = ".." }
+tendermint-proto = { version = "0.30.0", path = "../../proto" }
+tendermint-rpc = { version = "0.30.0", path = "../../rpc", features = ["http-client"] }
+tokio = { version = "1.26.0", features = ["full"] }
+tracing = "0.1.37"
+tracing-subscriber = "0.3.16"
