@@ -153,7 +153,7 @@ tendermint_pb_modules! {
                 #[cfg(feature = "secp256k1")]
                 PublicKey::Secp256k1(ref pk) => RawPublicKey {
                     sum: Some(Sum::Secp256k1(
-                        pk.to_bytes().to_vec(),
+                        pk.to_sec1_bytes().into(),
                     )),
                 },
             }
@@ -200,7 +200,7 @@ impl PublicKey {
         match self {
             PublicKey::Ed25519(pk) => pk.as_bytes().to_vec(),
             #[cfg(feature = "secp256k1")]
-            PublicKey::Secp256k1(pk) => pk.to_bytes().to_vec(),
+            PublicKey::Secp256k1(pk) => pk.to_sec1_bytes().into(),
         }
     }
 
@@ -215,7 +215,7 @@ impl PublicKey {
             #[cfg(feature = "secp256k1")]
             PublicKey::Secp256k1(ref pk) => {
                 let mut key_bytes = vec![0xEB, 0x5A, 0xE9, 0x87, 0x21];
-                key_bytes.extend(pk.to_bytes());
+                key_bytes.extend(pk.to_sec1_bytes().as_ref());
                 key_bytes
             },
         };
@@ -373,7 +373,7 @@ fn serialize_secp256k1_base64<S>(pk: &Secp256k1, serializer: S) -> Result<S::Ok,
 where
     S: ser::Serializer,
 {
-    String::from_utf8(base64::encode(pk.to_bytes()))
+    String::from_utf8(base64::encode(pk.to_sec1_bytes()))
         .unwrap()
         .serialize(serializer)
 }
