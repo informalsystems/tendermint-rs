@@ -7,7 +7,7 @@ use core::{
 
 use serde::{Deserialize, Serialize};
 use tendermint_proto::google::protobuf::Duration as RawDuration;
-use tendermint_proto::v0_37::types as raw;
+use tendermint_proto::v0_34::types as raw;
 use tendermint_proto::Protobuf;
 
 use crate::{

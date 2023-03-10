@@ -1,12 +1,13 @@
 use std::{convert::Infallible, str::FromStr, time::Duration};
 
+use tendermint::evidence::Evidence;
 use tendermint_light_client::{
     builder::LightClientBuilder,
     instance::Instance,
     light_client::Options,
     misbehavior::handle_conflicting_headers,
     store::memory::MemoryStore,
-    types::{Hash, Height, TrustThreshold},
+    types::{Hash, Height, LightBlock, TrustThreshold},
 };
 
 use clap::Parser;
@@ -93,43 +94,67 @@ async fn main() -> Result<()> {
         .light_client
         .verify_to_target(args.height, &mut primary.state)?;
 
-    let primary_hash = primary_block.signed_header.header.hash();
-
     for witness_addr in args.witnesses.0 {
-        let mut witness =
-            create_light_client(&witness_addr, args.trusted_height, args.trusted_hash).await?;
+        let evidence =
+            detect_attack(&witness_addr, args.height, &primary_block, &trusted_block).await?;
 
-        let witness_block = witness
-            .light_client
-            .verify_to_target(args.height, &mut witness.state)?;
+        if let Some(evidence) = evidence {
+            let json = serde_json::to_string_pretty(&evidence)?;
+            warn!("Evidence found:\n{}", json);
 
-        let witness_hash = witness_block.signed_header.header.hash();
-
-        if primary_hash != witness_hash {
-            warn!(
-                "Hash mismatch between primary and witness: {} != {}",
-                primary_hash, witness_hash
-            );
-
-            info!("Performing misbehavior detection against witness '{witness_addr}'...");
-
-            let attack = handle_conflicting_headers(
-                &witness,
-                &primary_block,
-                &trusted_block,
-                &witness_block,
-            )?;
-
-            if let Some(attack) = attack {
-                use tendermint::evidence::Evidence;
-                let evidence = Evidence::from(attack);
-                let json = serde_json::to_string_pretty(&evidence)?;
-                warn!("Evidence found:\n{}", json);
-            } else {
-                error!("No evidence found");
-            }
+            report_evidence(&witness_addr, evidence).await?;
+        } else {
+            error!("No evidence found");
         }
     }
 
     Ok(())
+}
+
+async fn report_evidence(rpc_addr: &str, evidence: Evidence) -> Result<()> {
+    info!("Reporting evidence to witness '{rpc_addr}'...");
+
+    let rpc_client = HttpClient::new(rpc_addr)?;
+    let response = rpc_client.broadcast_evidence(evidence).await?;
+
+    info!("Reported evidence! Hash: {}", response.hash);
+
+    Ok(())
+}
+
+async fn detect_attack(
+    witness_addr: &str,
+    height: Height,
+    primary_block: &LightBlock,
+    trusted_block: &LightBlock,
+) -> Result<Option<Evidence>> {
+    let mut witness = create_light_client(
+        witness_addr,
+        trusted_block.height(),
+        trusted_block.signed_header.header.hash(),
+    )
+    .await?;
+
+    let witness_block = witness
+        .light_client
+        .verify_to_target(height, &mut witness.state)?;
+
+    let primary_hash = primary_block.signed_header.header.hash();
+    let witness_hash = witness_block.signed_header.header.hash();
+
+    if primary_hash != witness_hash {
+        warn!(
+            "Hash mismatch between primary and witness: {} != {}",
+            primary_hash, witness_hash
+        );
+
+        info!("Performing misbehavior detection against witness '{witness_addr}'...");
+
+        let attack =
+            handle_conflicting_headers(&witness, primary_block, trusted_block, &witness_block)?;
+
+        Ok(attack.map(Evidence::from))
+    } else {
+        Ok(None)
+    }
 }
