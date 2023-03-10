@@ -34,7 +34,7 @@ pub fn make_evidence(
     );
 
     let witness = if conflicting_header_is_invalid {
-        common
+        Some(trusted).unwrap() // common
     } else {
         trusted
     };
