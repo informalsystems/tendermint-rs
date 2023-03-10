@@ -224,6 +224,9 @@ impl LightClient {
                     // the `Verified` status or higher if already trusted.
                     let new_status = Status::most_trusted(Status::Verified, status);
                     state.light_store.update(&current_block, new_status);
+
+                    // Log the trusted height as a dependency of the block at the current height
+                    state.trace_block(current_height, trusted_block.height());
                 },
                 Verdict::Invalid(e) => {
                     // Verification failed, add the block to the light store with `Failed` status,

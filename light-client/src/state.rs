@@ -6,7 +6,7 @@ use contracts::*;
 
 use crate::{
     store::LightStore,
-    verifier::types::{Height, LightBlock, Status},
+    verifier::types::{Height, LightBlock},
 };
 
 /// Records which blocks were needed to verify a target block, eg. during bisection.
@@ -56,7 +56,7 @@ impl State {
             .get(&target_height)
             .unwrap_or(&HashSet::new())
             .iter()
-            .flat_map(|h| self.light_store.get(*h, Status::Verified))
+            .flat_map(|&height| self.light_store.get_trusted_or_verified(height))
             .collect::<Vec<_>>();
 
         trace.sort_by_key(|lb| Reverse(lb.height()));
