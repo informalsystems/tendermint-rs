@@ -3,17 +3,12 @@ use crate::prelude::*;
 #[doc = include_str!("../doc/response-processproposal.md")]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[repr(i32)]
+#[derive(Default)]
 pub enum ProcessProposal {
+    #[default]
     Unknown = 0,
     Accept = 1,
     Reject = 2,
-}
-
-impl Default for ProcessProposal {
-    #[inline]
-    fn default() -> Self {
-        ProcessProposal::Unknown
-    }
 }
 
 // =============================================================================

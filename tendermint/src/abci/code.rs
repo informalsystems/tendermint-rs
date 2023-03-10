@@ -12,19 +12,14 @@ use serde::{
 /// <https://tendermint.com/docs/spec/abci/abci.html#errors>
 ///
 /// Note that in the future there may potentially be non-zero success codes.
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord, Default)]
 pub enum Code {
     /// Success
+    #[default]
     Ok,
 
     /// Error codes
     Err(NonZeroU32),
-}
-
-impl Default for Code {
-    fn default() -> Code {
-        Code::Ok
-    }
 }
 
 impl Code {

@@ -22,17 +22,13 @@ pub struct CheckTx {
 /// to avoid confusion with Rust types.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[repr(i32)]
+#[derive(Default)]
 pub enum CheckTxKind {
     /// A full check is required (the default).
+    #[default]
     New = 0,
     /// Indicates that the mempool is initiating a recheck of the transaction.
     Recheck = 1,
-}
-
-impl Default for CheckTxKind {
-    fn default() -> Self {
-        CheckTxKind::New
-    }
 }
 
 // =============================================================================

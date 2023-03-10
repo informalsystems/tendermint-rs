@@ -15,7 +15,7 @@ use crate::{error::Error, prelude::*};
 pub const LENGTH: usize = 20;
 
 /// Node IDs
-#[allow(clippy::derive_hash_xor_eq)]
+#[allow(clippy::derived_hash_with_manual_eq)]
 #[derive(Copy, Clone, Eq, Hash, PartialOrd, Ord)]
 pub struct Id([u8; LENGTH]);
 
