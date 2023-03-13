@@ -30,9 +30,6 @@ impl FromStr for List<String> {
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
-    /// Chain moniker
-    chain: String,
-
     /// Primary RPC address
     #[clap(short, long)]
     primary: String,
@@ -102,7 +99,11 @@ async fn main() -> Result<()> {
             let json = serde_json::to_string_pretty(&evidence)?;
             warn!("Evidence found:\n{}", json);
 
-            report_evidence(&witness_addr, evidence).await?;
+            let result = report_evidence(&witness_addr, evidence).await;
+
+            if let Err(err) = result {
+                error!("Failed to report evidence: {}", err);
+            }
         } else {
             error!("No evidence found");
         }
