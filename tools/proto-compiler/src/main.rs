@@ -33,7 +33,7 @@ fn main() {
             "[info] => Fetching {TENDERMINT_REPO} at {} into {tendermint_dir:?}",
             &version.commitish,
         );
-        get_commitish(&tendermint_dir, TENDERMINT_REPO, &version.commitish); // This panics if it fails.
+        get_commitish(&tendermint_dir, TENDERMINT_REPO, version.commitish); // This panics if it fails.
 
         let proto_paths = vec![tendermint_dir.join("proto")];
         let proto_includes_paths = vec![
@@ -43,18 +43,18 @@ fn main() {
         // List available proto files
         let protos = find_proto_files(proto_paths);
 
-        let ver_target_dir = target_dir.join("prost").join(&version.ident);
+        let ver_target_dir = target_dir.join("prost").join(version.ident);
         let ver_module_dir = target_dir.join("tendermint");
 
         let out_dir = var("OUT_DIR")
-            .map(|d| Path::new(&d).join(&version.ident))
+            .map(|d| Path::new(&d).join(version.ident))
             .or_else(|_| tempdir().map(|d| d.into_path()))
             .unwrap();
 
         let mut pb = prost_build::Config::new();
 
         // Use shared Bytes buffers for ABCI messages:
-        pb.bytes(&[".tendermint.abci"]);
+        pb.bytes([".tendermint.abci"]);
 
         // Compile proto files with added annotations, exchange prost_types to our own
         pb.out_dir(&out_dir);
@@ -89,7 +89,7 @@ fn main() {
             ver_target_dir.to_string_lossy(),
         );
         copy_files(&out_dir, &ver_target_dir); // This panics if it fails.
-        generate_tendermint_mod(&out_dir, &version, &ver_module_dir);
+        generate_tendermint_mod(&out_dir, version, &ver_module_dir);
     }
     generate_tendermint_lib(TENDERMINT_VERSIONS, &target_dir.join("tendermint.rs"));
 

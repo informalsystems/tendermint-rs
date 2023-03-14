@@ -7,6 +7,7 @@ pub struct ValidatorSet {
     #[prost(message, optional, tag = "2")]
     pub proposer: ::core::option::Option<Validator>,
     #[prost(int64, tag = "3")]
+    #[serde(skip)]
     pub total_voting_power: i64,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]
@@ -64,7 +65,7 @@ pub struct BlockId {
     #[serde(with = "crate::serializers::bytes::hexstring")]
     pub hash: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "2")]
-    #[serde(alias = "parts")]
+    #[serde(rename = "parts")]
     pub part_set_header: ::core::option::Option<PartSetHeader>,
 }
 /// Header defines the structure of a Tendermint block header.
@@ -489,7 +490,7 @@ pub struct CanonicalBlockId {
     #[prost(bytes = "vec", tag = "1")]
     pub hash: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "2")]
-    #[serde(alias = "parts")]
+    #[serde(rename = "parts")]
     pub part_set_header: ::core::option::Option<CanonicalPartSetHeader>,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]

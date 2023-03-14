@@ -7,6 +7,7 @@ pub struct ValidatorSet {
     #[prost(message, optional, tag = "2")]
     pub proposer: ::core::option::Option<Validator>,
     #[prost(int64, tag = "3")]
+    #[serde(skip)]
     pub total_voting_power: i64,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]
@@ -433,6 +434,7 @@ pub mod evidence {
 }
 /// DuplicateVoteEvidence contains evidence of a validator signed two conflicting votes.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
+#[serde(rename_all = "PascalCase")]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DuplicateVoteEvidence {
@@ -441,28 +443,30 @@ pub struct DuplicateVoteEvidence {
     #[prost(message, optional, tag = "2")]
     pub vote_b: ::core::option::Option<Vote>,
     #[prost(int64, tag = "3")]
-    #[serde(alias = "TotalVotingPower", with = "crate::serializers::from_str")]
+    #[serde(rename = "TotalVotingPower", with = "crate::serializers::from_str")]
     pub total_voting_power: i64,
     #[prost(int64, tag = "4")]
-    #[serde(alias = "ValidatorPower", with = "crate::serializers::from_str")]
+    #[serde(rename = "ValidatorPower", with = "crate::serializers::from_str")]
     pub validator_power: i64,
     #[prost(message, optional, tag = "5")]
-    #[serde(alias = "Timestamp")]
+    #[serde(rename = "Timestamp")]
     pub timestamp: ::core::option::Option<crate::google::protobuf::Timestamp>,
 }
 /// LightClientAttackEvidence contains evidence of a set of validators attempting to mislead a light client.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
+#[serde(rename_all = "PascalCase")]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[serde(rename_all = "PascalCase")]
 pub struct LightClientAttackEvidence {
     #[prost(message, optional, tag = "1")]
     pub conflicting_block: ::core::option::Option<LightBlock>,
     #[prost(int64, tag = "2")]
+    #[serde(with = "crate::serializers::from_str")]
     pub common_height: i64,
     #[prost(message, repeated, tag = "3")]
     pub byzantine_validators: ::prost::alloc::vec::Vec<Validator>,
     #[prost(int64, tag = "4")]
+    #[serde(with = "crate::serializers::from_str")]
     pub total_voting_power: i64,
     #[prost(message, optional, tag = "5")]
     pub timestamp: ::core::option::Option<crate::google::protobuf::Timestamp>,
