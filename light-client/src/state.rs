@@ -49,8 +49,6 @@ impl State {
 
     /// Get the verification trace for the block at `target_height`.
     pub fn get_trace(&self, target_height: Height) -> Vec<LightBlock> {
-        use std::cmp::Reverse;
-
         let mut trace = self
             .verification_trace
             .get(&target_height)
@@ -59,7 +57,7 @@ impl State {
             .flat_map(|&height| self.light_store.get_trusted_or_verified(height))
             .collect::<Vec<_>>();
 
-        trace.sort_by_key(|lb| Reverse(lb.height()));
+        trace.sort_by_key(|lb| lb.height());
         trace
     }
 }

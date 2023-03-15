@@ -66,6 +66,16 @@ define_error! {
                     e.target_height, e.trusted_height)
             },
 
+        HeightTooHigh
+            {
+                height: Height,
+                latest_height: Height,
+            }
+            |e| {
+                format_args!("height ({0}) is higher than latest height ({1})",
+                    e.height, e.latest_height)
+            },
+
         TrustedStateOutsideTrustingPeriod
             {
                 trusted_state: Box<LightBlock>,

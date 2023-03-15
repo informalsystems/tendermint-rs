@@ -1,7 +1,10 @@
 //! Supervisor and Handle implementation.
 
+use tendermint::block::Height;
+
 use crate::{
-    light_client::LightClient,
+    errors::Error,
+    light_client::{LightClient, TargetOrLatest},
     state::State,
     verifier::types::{LightBlock, Status},
 };
@@ -25,6 +28,11 @@ impl Instance {
         }
     }
 
+    /// Return the peer id of this instance.
+    pub fn peer_id(&self) -> &tendermint::node::Id {
+        &self.light_client.peer
+    }
+
     /// Get the latest trusted block.
     pub fn latest_trusted(&self) -> Option<LightBlock> {
         self.state.light_store.highest(Status::Trusted)
@@ -33,5 +41,32 @@ impl Instance {
     /// Trust the given block.
     pub fn trust_block(&mut self, lb: &LightBlock) {
         self.state.light_store.update(lb, Status::Trusted);
+    }
+
+    /// Get or fetch the block at the given height
+    pub fn get_or_fetch_block(&mut self, height: Height) -> Result<LightBlock, Error> {
+        let (block, _) = self
+            .light_client
+            .get_or_fetch_block(height, &mut self.state)
+            .map_err(|e| {
+                // FIXME: Move this to the light client method
+                if e.to_string()
+                    .contains("must be less than or equal to the current blockchain height")
+                {
+                    // FIXME: Fetch latest height from error message
+                    Error::height_too_high(height, Height::default())
+                } else {
+                    e
+                }
+            })?;
+
+        Ok(block)
+    }
+
+    /// Get the block at the given height or the latest block from the chain if the given height is
+    /// lower than the latest height.
+    pub fn get_target_block_or_latest(&mut self, height: Height) -> Result<TargetOrLatest, Error> {
+        self.light_client
+            .get_target_block_or_latest(height, &mut self.state)
     }
 }

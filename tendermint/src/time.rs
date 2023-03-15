@@ -141,6 +141,16 @@ impl Time {
         let t = self.0.checked_sub(duration)?;
         Self::from_utc(t.assume_utc()).ok()
     }
+
+    /// Check whether this time is before the given time.
+    pub fn before(&self, other: Time) -> bool {
+        self.0.assume_utc() < other.0.assume_utc()
+    }
+
+    /// Check whether this time is after the given time.
+    pub fn after(&self, other: Time) -> bool {
+        self.0.assume_utc() > other.0.assume_utc()
+    }
 }
 
 impl fmt::Display for Time {

@@ -43,7 +43,11 @@ impl From<DuplicateVoteEvidence> for Evidence {
 }
 
 /// Duplicate vote evidence
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    try_from = "raw::DuplicateVoteEvidence",
+    into = "raw::DuplicateVoteEvidence"
+)]
 pub struct DuplicateVoteEvidence {
     pub vote_a: Vote,
     pub vote_b: Vote,
@@ -76,14 +80,18 @@ impl DuplicateVoteEvidence {
 }
 
 /// Conflicting block detected in light client attack
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ConflictingBlock {
     pub signed_header: SignedHeader,
     pub validator_set: validator::Set,
 }
 
 /// Light client attack evidence
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    try_from = "raw::LightClientAttackEvidence",
+    into = "raw::LightClientAttackEvidence"
+)]
 pub struct LightClientAttackEvidence {
     pub conflicting_block: ConflictingBlock,
     pub common_height: Height,

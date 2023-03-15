@@ -45,6 +45,16 @@ define_error! {
                 "invalid height: given height must be greater than 0"
             },
 
+        HeightTooHigh
+        {
+            height: Height,
+            latest_height: Height,
+        }
+        |e| {
+            format_args!("height ({0}) is higher than latest height ({1})",
+                e.height, e.latest_height)
+        },
+
         InvalidValidatorSet
             [ tendermint::Error ]
             | _ | { "fetched validator set is invalid" },
@@ -115,6 +125,7 @@ mod prod {
     }
 
     impl Io for ProdIo {
+        // FIXME(romac): Handle HeightTooHigh error
         fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
             let signed_header = self.fetch_signed_header(height)?;
             let height = signed_header.header.height;

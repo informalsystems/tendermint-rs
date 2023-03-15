@@ -62,6 +62,9 @@ define_error! {
                 )
             },
 
+        NoWitnesses
+            |_| { "no witnesses provided" },
+
         NoDivergence
             |_| { "expected divergence between conflicting headers but none found" },
     }

@@ -13,6 +13,7 @@ description = "CLI for Tendermint Light Client"
 [dependencies]
 clap = { version = "4.1.8", features = ["derive"] }
 color-eyre = "0.6.2"
+futures = "0.3.27"
 serde_json = "1.0.94"
 tendermint = { version = "0.30.0", path = "../../tendermint" }
 tendermint-light-client = { version = "0.30.0", path = ".." }
@@ -20,4 +21,4 @@ tendermint-proto = { version = "0.30.0", path = "../../proto" }
 tendermint-rpc = { version = "0.30.0", path = "../../rpc", features = ["http-client"] }
 tokio = { version = "1.26.0", features = ["full"] }
 tracing = "0.1.37"
-tracing-subscriber = "0.3.16"
+tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }

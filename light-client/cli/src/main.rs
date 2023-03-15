@@ -1,20 +1,23 @@
+#![allow(unused)]
+
 use std::{convert::Infallible, str::FromStr, time::Duration};
 
-use tendermint::evidence::Evidence;
+use tendermint::{evidence::Evidence, Time};
 use tendermint_light_client::{
     builder::LightClientBuilder,
     instance::Instance,
     light_client::Options,
-    misbehavior::handle_conflicting_headers,
+    misbehavior::{detect_divergence, Peer},
     store::memory::MemoryStore,
     types::{Hash, Height, LightBlock, TrustThreshold},
 };
+use tendermint_rpc::{Client, HttpClient};
 
 use clap::Parser;
 use color_eyre::eyre::{eyre, Result};
-use tendermint_rpc::{Client, HttpClient};
+use futures::future::join_all;
 use tracing::{error, info, warn};
-use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::{util::SubscriberInitExt, EnvFilter};
 
 #[derive(Clone, Debug)]
 struct List<T>(Vec<T>);
@@ -30,6 +33,9 @@ impl FromStr for List<String> {
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
+    /// Identifier of the chain
+    chain_id: String,
+
     /// Primary RPC address
     #[clap(short, long)]
     primary: String,
@@ -40,23 +46,20 @@ struct Cli {
 
     /// Height of trusted header
     #[clap(long)]
-    trusted_height: Height,
+    height: Height,
 
     /// Hash of trusted header
     #[clap(long)]
-    trusted_hash: Hash,
-
-    /// Height of target header
-    #[clap(long)]
-    height: Height,
+    hash: Hash,
 }
 
-async fn create_light_client(
-    rpc_addr: &str,
-    trusted_height: Height,
-    trusted_hash: Hash,
-) -> Result<Instance> {
-    let rpc_client = HttpClient::new(rpc_addr)?;
+async fn make_peer(rpc_addr: &str, trusted_height: Height, trusted_hash: Hash) -> Result<Peer> {
+    use tendermint_rpc::client::CompatMode;
+
+    let rpc_client = HttpClient::builder(rpc_addr.parse().unwrap())
+        .compat_mode(CompatMode::V0_34)
+        .build()?;
+
     let node_id = rpc_client.status().await?.node_info.id;
     let light_store = Box::new(MemoryStore::new());
     let options = Options {
@@ -65,97 +68,78 @@ async fn create_light_client(
         clock_drift: Duration::from_secs(60),
     };
 
-    let instance = LightClientBuilder::prod(node_id, rpc_client, light_store, options, None)
-        .trust_primary_at(trusted_height, trusted_hash)?
-        .build();
+    let instance =
+        LightClientBuilder::prod(node_id, rpc_client.clone(), light_store, options, None)
+            .trust_primary_at(trusted_height, trusted_hash)?
+            .build();
 
-    Ok(instance)
+    Ok(Peer::new(instance, rpc_client))
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     color_eyre::install()?;
-    tracing_subscriber::fmt().with_target(false).finish().init();
+
+    let rust_log = std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string());
+
+    tracing_subscriber::fmt()
+        .with_target(false)
+        .with_env_filter(EnvFilter::new(format!(
+            "tendermint_light_client={rust_log},light_client_cli={rust_log}",
+        )))
+        .finish()
+        .init();
 
     let args = Cli::parse();
 
-    let mut primary =
-        create_light_client(&args.primary, args.trusted_height, args.trusted_hash).await?;
+    let mut primary = make_peer(&args.primary, args.height, args.hash).await?;
+
     let trusted_block = primary
+        .instance
         .latest_trusted()
         .ok_or_else(|| eyre!("No trusted state found for primary"))?;
 
-    info!("Verifying to height {} on primary...", args.height);
+    info!("Verifying to latest height on primary...");
 
     let primary_block = primary
+        .instance
         .light_client
-        .verify_to_target(args.height, &mut primary.state)?;
+        .verify_to_highest(&mut primary.instance.state)?;
 
-    for witness_addr in args.witnesses.0 {
-        let evidence =
-            detect_attack(&witness_addr, args.height, &primary_block, &trusted_block).await?;
+    let primary_trace = primary.instance.state.get_trace(primary_block.height());
 
-        if let Some(evidence) = evidence {
-            let json = serde_json::to_string_pretty(&evidence)?;
-            warn!("Evidence found:\n{}", json);
+    info!("Verified to height {} on primary", primary_block.height());
 
-            let result = report_evidence(&witness_addr, evidence).await;
+    let witnesses = join_all(args.witnesses.0.iter().map(|addr| {
+        make_peer(
+            addr,
+            trusted_block.height(),
+            trusted_block.signed_header.header.hash(),
+        )
+    }))
+    .await;
 
-            if let Err(err) = result {
-                error!("Failed to report evidence: {}", err);
-            }
-        } else {
-            error!("No evidence found");
-        }
-    }
+    let mut witnesses = witnesses.into_iter().collect::<Result<Vec<_>>>()?;
 
-    Ok(())
-}
+    info!(
+        "Running misbehavior detection against {} witnesses...",
+        witnesses.len()
+    );
 
-async fn report_evidence(rpc_addr: &str, evidence: Evidence) -> Result<()> {
-    info!("Reporting evidence to witness '{rpc_addr}'...");
+    // FIXME
+    let max_clock_drift = Duration::from_secs(5);
+    let max_block_lag = Duration::from_secs(10);
+    let now = Time::now();
 
-    let rpc_client = HttpClient::new(rpc_addr)?;
-    let response = rpc_client.broadcast_evidence(evidence).await?;
-
-    info!("Reported evidence! Hash: {}", response.hash);
-
-    Ok(())
-}
-
-async fn detect_attack(
-    witness_addr: &str,
-    height: Height,
-    primary_block: &LightBlock,
-    trusted_block: &LightBlock,
-) -> Result<Option<Evidence>> {
-    let mut witness = create_light_client(
-        witness_addr,
-        trusted_block.height(),
-        trusted_block.signed_header.header.hash(),
+    detect_divergence(
+        &mut primary,
+        witnesses.as_mut_slice(),
+        primary_trace,
+        max_clock_drift,
+        max_block_lag,
+        now,
     )
     .await?;
 
-    let witness_block = witness
-        .light_client
-        .verify_to_target(height, &mut witness.state)?;
-
-    let primary_hash = primary_block.signed_header.header.hash();
-    let witness_hash = witness_block.signed_header.header.hash();
-
-    if primary_hash != witness_hash {
-        warn!(
-            "Hash mismatch between primary and witness: {} != {}",
-            primary_hash, witness_hash
-        );
-
-        info!("Performing misbehavior detection against witness '{witness_addr}'...");
-
-        let attack =
-            handle_conflicting_headers(&witness, primary_block, trusted_block, &witness_block)?;
-
-        Ok(attack.map(Evidence::from))
-    } else {
-        Ok(None)
-    }
+    Ok(())
 }

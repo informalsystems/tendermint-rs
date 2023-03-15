@@ -6,16 +6,16 @@ use tendermint::{evidence::Evidence, Hash};
 use crate::{dialect::Dialect, request::RequestMessage, Method};
 
 /// `/broadcast_evidence`: broadcast an evidence.
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Request {
     /// Evidence to broadcast
-    pub ev: Evidence,
+    pub evidence: Evidence,
 }
 
 impl Request {
     /// Create a new evidence broadcast RPC request
-    pub fn new(ev: Evidence) -> Request {
-        Request { ev }
+    pub fn new(evidence: Evidence) -> Request {
+        Request { evidence }
     }
 }
 
@@ -37,6 +37,7 @@ impl<S: Dialect> crate::SimpleRequest<S> for Request {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {
     /// Evidence hash
+    #[serde(with = "crate::serializers::tm_hash_base64")]
     pub hash: Hash,
 }
 

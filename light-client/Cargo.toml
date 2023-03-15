@@ -52,6 +52,7 @@ time = { version = "0.3", default-features = false, features = ["std"] }
 tokio = { version = "1.0", default-features = false, features = ["rt"], optional = true }
 flex-error = { version = "0.4.4", default-features = false }
 tracing = { version = "0.1", default-features = false }
+serde_json = { version = "1.0.51", default-features = false }
 
 [dev-dependencies]
 tendermint-testgen = { path = "../testgen", default-features = false }

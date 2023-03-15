@@ -1,5 +1,7 @@
-use tendermint::{crypto::default::Sha256, evidence::LightClientAttackEvidence};
+use tendermint::{crypto::default::Sha256, evidence::Evidence};
 use tendermint_light_client_verifier::types::Status;
+use tendermint_rpc::Client;
+use tracing::{debug, error, error_span, info, warn};
 
 use crate::{
     instance::Instance,
@@ -8,45 +10,121 @@ use crate::{
     verifier::types::LightBlock,
 };
 
-use super::error::DetectorError;
-use super::evidence::make_evidence;
+use super::{error::DetectorError, evidence::make_evidence, peer::Peer, trace::Trace};
 
 // FIXME: Allow the hasher to be configured
 type Hasher = Sha256;
 
 /// Handles the primary style of attack, which is where a primary and witness have
 /// two headers of the same height but with different hashes
-pub fn handle_conflicting_headers(
-    witness: &Instance,
-    verified_block: &LightBlock,
-    trusted_block: &LightBlock,
-    witness_block: &LightBlock,
-) -> Result<Option<LightClientAttackEvidence>, DetectorError> {
+pub async fn handle_conflicting_headers(
+    primary: &Peer,
+    witness: &Peer,
+    primary_trace: &Trace,
+    challenging_block: &LightBlock,
+) -> Result<(), DetectorError> {
+    let _span =
+        error_span!("handle_conflicting_headers", primary = %primary.id(), witness = %witness.id())
+            .entered();
+
     let (witness_trace, primary_block) = examine_conflicting_header_against_trace(
-        trusted_block,
-        verified_block,
-        witness_block,
-        witness,
-    )?;
+        primary_trace,
+        challenging_block,
+        &witness.instance,
+    )
+    .map_err(|e| {
+        error!("Error validating witness's divergent header: {e}");
 
-    let common_block = witness_trace.common();
-    let trusted_block = witness_trace.trusted();
+        e // FIXME: Return special error
+    })?;
 
-    let evidence_against_primary = make_evidence(
+    let common_block = witness_trace.first();
+    let trusted_block = witness_trace.last();
+
+    let evidence_against_primary = Evidence::from(make_evidence(
         primary_block.clone(),
         trusted_block.clone(),
         common_block.clone(),
+    ));
+
+    warn!("ATTEMPTED ATTACK DETECTED. Sending evidence against primary by witness");
+
+    debug!(
+        "Evidence against primary: {}",
+        serde_json::to_string_pretty(&evidence_against_primary).unwrap()
     );
 
+    let result = witness
+        .rpc_client
+        .broadcast_evidence(evidence_against_primary)
+        .await;
+
+    match result {
+        Ok(response) => {
+            info!(
+                "Successfully submitted evidence against primary. Hash: {}",
+                response.hash
+            );
+        },
+        Err(e) => {
+            error!("Failed to submit evidence against primary: {e}");
+        },
+    }
+
     if primary_block.signed_header.commit.round != trusted_block.signed_header.commit.round {
-        tracing::error!(
+        error!(
             "The light client has detected, and prevented, an attempted amnesia attack.
             We think this attack is pretty unlikely, so if you see it, that's interesting to us.
             Can you let us know by opening an issue through https://github.com/tendermint/tendermint/issues/new"
         );
     }
 
-    Ok(Some(evidence_against_primary))
+    // This may not be valid because the witness itself is at fault. So now we reverse it, examining the
+    // trace provided by the witness and holding the primary as the source of truth. Note: primary may not
+    // respond but this is okay as we will halt anyway.
+    let (primary_trace, witness_block) =
+        examine_conflicting_header_against_trace(&witness_trace, &primary_block, &primary.instance)
+            .map_err(|e| {
+                error!("Error validating primary's divergent header: {e}");
+
+                e // FIXME: Return special error
+            })?;
+
+    // We now use the primary trace to create evidence against the witness and send it to the primary
+    let common_block = primary_trace.first();
+    let trusted_block = primary_trace.last();
+
+    let evidence_against_witness = Evidence::from(make_evidence(
+        witness_block,
+        trusted_block.clone(),
+        common_block.clone(),
+    ));
+
+    warn!("Sending evidence against witness by primary");
+
+    debug!(
+        "Evidence against witness: {}",
+        serde_json::to_string_pretty(&evidence_against_witness).unwrap()
+    );
+
+    let result = primary
+        .rpc_client
+        .broadcast_evidence(evidence_against_witness)
+        .await;
+
+    match result {
+        Ok(response) => {
+            info!(
+                "Successfully submitted evidence against witness. Hash: {}",
+                response.hash
+            );
+        },
+        Err(e) => {
+            error!("Failed to submit evidence against witness: {e}");
+        },
+    }
+
+    Ok(()) // FIXME: Return error
 }
 
 enum Conflict {
@@ -139,11 +217,12 @@ fn fetch_block(source: &Instance, trace_block: &LightBlock) -> Result<LightBlock
 }
 
 fn examine_conflicting_header_against_trace(
-    trusted_block: &LightBlock,
-    verified_block: &LightBlock,
+    trace: &Trace,
     target_block: &LightBlock,
     source: &Instance,
 ) -> Result<(Trace, LightBlock), DetectorError> {
+    let trusted_block = trace.first();
+
     if target_block.height() < trusted_block.height() {
         return Err(DetectorError::target_block_lower_than_trusted(
             target_block.height(),
@@ -153,7 +232,7 @@ fn examine_conflicting_header_against_trace(
 
     let mut previously_verified_block: Option<LightBlock> = None;
 
-    for trace_block in [trusted_block, verified_block] {
+    for trace_block in trace.iter() {
         let result = examine_conflicting_header_against_trace_block(
             source,
             trace_block,
@@ -201,26 +280,4 @@ fn verify_skipping(
     let source_trace = Trace::new(blocks)?;
 
     Ok(source_trace)
-}
-
-struct Trace(Vec<LightBlock>);
-
-impl Trace {
-    fn new(trace: Vec<LightBlock>) -> Result<Self, DetectorError> {
-        if trace.len() < 2 {
-            return Err(DetectorError::trace_too_short(trace));
-        }
-
-        Ok(Self(trace))
-    }
-
-    fn common(&self) -> &LightBlock {
-        self.0
-            .first()
-            .expect("trace is empty, which cannot happend")
-    }
-
-    fn trusted(&self) -> &LightBlock {
-        self.0.last().expect("trace is empty, which cannot happen")
-    }
 }
