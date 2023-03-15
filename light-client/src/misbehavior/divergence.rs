@@ -7,11 +7,16 @@ use tendermint::{
     Time,
 };
 use tendermint_light_client_verifier::types::LightBlock;
-use tracing::{debug, info};
+use tracing::{debug, error, info, warn};
 
-use super::{handle_conflicting_headers, provider::Provider, trace::Trace, DetectorError};
-
-pub enum Divergence {}
+use super::{
+    conflict::ReportedEvidence,
+    error::detector::Error as DetectorError,
+    error::divergence::Error as DivergenceError,
+    handle_conflicting_headers,
+    provider::Provider,
+    trace::{Trace, TraceTooShort},
+};
 
 pub async fn detect_divergence(
     primary: &mut Provider,
@@ -20,11 +25,12 @@ pub async fn detect_divergence(
     max_clock_drift: Duration,
     max_block_lag: Duration,
     now: Time,
-) -> Result<(), DetectorError> {
-    let primary_trace = Trace::new(primary_trace)?;
+) -> Result<(), DivergenceError> {
+    let primary_trace =
+        Trace::new(primary_trace).map_err(|e| DivergenceError::trace_too_short(e.trace))?;
 
     if witnesses.is_empty() {
-        return Err(DetectorError::no_witnesses());
+        return Err(DivergenceError::no_witnesses());
     }
 
     let last_verified_block = primary_trace.last();
@@ -37,7 +43,9 @@ pub async fn detect_divergence(
         "Running detector against primary trace"
     );
 
-    // TODO: Do this in parallel
+    let mut header_matched = false;
+    let mut witnesses_to_remove = Vec::new();
+
     for mut witness in witnesses {
         let result = compare_new_header_with_witness(
             last_verified_header,
@@ -45,9 +53,6 @@ pub async fn detect_divergence(
             max_clock_drift,
             max_block_lag,
         );
-
-        let mut header_matched = false;
-        let mut witnesses_to_remove = Vec::new();
 
         match result {
             // At least one header matched
@@ -62,20 +67,47 @@ pub async fn detect_divergence(
             // We combine these actions together, verifying the witnesses headers and outputting the trace
             // which captures the bifurcation point and if successful provides the information to create valid evidence.
             Err(CompareError::ConflictingHeaders(challenging_block)) => {
-                // Return information of the attack
-                handle_conflicting_headers(primary, witness, &primary_trace, &challenging_block)
-                    .await?;
+                warn!(
+                    primary = %primary.peer_id(),
+                    witness = %witness.peer_id(),
+                    height  = %challenging_block.height(),
+                    "Found conflicting headers between primary and witness"
+                );
 
-                // If attempt to generate conflicting headers failed then remove witness
-                witnesses_to_remove.push(witness.peer_id());
+                // Handle the conflicting headers, generate evidence and report it to both the primary and witness
+                let result = handle_conflicting_headers(
+                    primary,
+                    witness,
+                    &primary_trace,
+                    &challenging_block,
+                )
+                .await;
+
+                match result {
+                    Ok(reported_evidence) => {
+                        info!(
+                            primary = %primary.peer_id(),
+                            witness = %witness.peer_id(),
+                            "Generated evidence and reported it to both primary and witness"
+                        );
+
+                        return Err(DivergenceError::divergence(reported_evidence));
+                    },
+
+                    Err(e) => {
+                        error!("Failed to handle conflicting headers: {e}");
+
+                        // If attempt to generate conflicting headers failed then remove witness
+                        witnesses_to_remove.push(witness.peer_id());
+                    },
+                }
             },
 
             Err(CompareError::BadWitness) => {
                 // These are all melevolent errors and should result in removing the witness
-                witnesses_to_remove.push(witness.peer_id());
-
                 debug!(witness = %witness.peer_id(), "witness returned an error during header comparison, removing...");
-                // FIXME: Add error
+
+                witnesses_to_remove.push(witness.peer_id());
             },
 
             Err(CompareError::Other(e)) => {
@@ -85,7 +117,16 @@ pub async fn detect_divergence(
         }
     }
 
-    Ok(())
+    // TODO: Report back the witnesses to remove
+
+    if header_matched {
+        // 1. If we had at least one witness that returned the same header then we
+        // conclude that we can trust the header
+        Ok(())
+    } else {
+        // 2. Else all witnesses have either not responded, don't have the block or sent invalid blocks.
+        Err(DivergenceError::failed_header_cross_referencing())
+    }
 }
 
 #[derive(Debug)]

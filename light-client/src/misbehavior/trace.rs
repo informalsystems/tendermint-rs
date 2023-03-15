@@ -1,14 +1,17 @@
 use tendermint_light_client_verifier::types::LightBlock;
 
-use super::DetectorError;
+#[derive(Clone, Debug)]
+pub struct TraceTooShort {
+    pub trace: Vec<LightBlock>,
+}
 
 #[derive(Clone, Debug)]
 pub struct Trace(Vec<LightBlock>);
 
 impl Trace {
-    pub fn new(mut trace: Vec<LightBlock>) -> Result<Self, DetectorError> {
+    pub fn new(mut trace: Vec<LightBlock>) -> Result<Self, TraceTooShort> {
         if trace.len() < 2 {
-            return Err(DetectorError::trace_too_short(trace));
+            return Err(TraceTooShort { trace });
         }
 
         trace.sort_unstable_by_key(|lb| lb.height());

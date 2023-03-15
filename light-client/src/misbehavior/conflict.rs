@@ -8,10 +8,19 @@ use crate::{
     verifier::types::LightBlock,
 };
 
-use super::{error::DetectorError, evidence::make_evidence, provider::Provider, trace::Trace};
+use super::{
+    error::detector::Error as DetectorError, evidence::make_evidence, provider::Provider,
+    trace::Trace,
+};
 
 // FIXME: Allow the hasher to be configured
 type Hasher = Sha256;
+
+#[derive(Debug)]
+pub struct ReportedEvidence {
+    pub against_primary: Evidence, // FIXME: Change this to LightClientAttackEvidence
+    pub against_witness: Evidence, // FIXME: Change this to LightClientAttackEvidence
+}
 
 /// Handles the primary style of attack, which is where a primary and witness have
 /// two headers of the same height but with different hashes
@@ -20,7 +29,7 @@ pub async fn handle_conflicting_headers(
     witness: &Provider,
     primary_trace: &Trace,
     challenging_block: &LightBlock,
-) -> Result<(), DetectorError> {
+) -> Result<ReportedEvidence, DetectorError> {
     let _span =
         error_span!("handle_conflicting_headers", primary = %primary.peer_id(), witness = %witness.peer_id())
             .entered();
@@ -33,6 +42,9 @@ pub async fn handle_conflicting_headers(
                 e // FIXME: Return special error
             })?;
 
+    // We are suspecting that the primary is faulty, hence we hold the witness as the source of truth
+    // and generate evidence against the primary that we can send to the witness
+
     let common_block = witness_trace.first();
     let trusted_block = witness_trace.last();
 
@@ -42,21 +54,20 @@ pub async fn handle_conflicting_headers(
         common_block.clone(),
     ));
 
-    warn!("ATTEMPTED ATTACK DETECTED. Sending evidence against primary by witness");
+    warn!("ATTEMPTED ATTACK DETECTED. Sending evidence against primary by witness...");
 
     debug!(
         "Evidence against primary: {}",
         serde_json::to_string_pretty(&evidence_against_primary).unwrap()
     );
 
-    let result = witness.report_evidence(evidence_against_primary).await;
+    let result = witness
+        .report_evidence(evidence_against_primary.clone())
+        .await;
 
     match result {
         Ok(hash) => {
-            info!(
-                "Successfully submitted evidence against primary. Evidence hash: {}",
-                hash
-            );
+            info!("Successfully submitted evidence against primary. Evidence hash: {hash}",);
         },
         Err(e) => {
             error!("Failed to submit evidence against primary: {e}");
@@ -93,31 +104,34 @@ pub async fn handle_conflicting_headers(
         common_block.clone(),
     ));
 
-    warn!("Sending evidence against witness by primary");
+    warn!("Sending evidence against witness by primary...");
 
     debug!(
         "Evidence against witness: {}",
         serde_json::to_string_pretty(&evidence_against_witness).unwrap()
     );
 
-    let result = primary.report_evidence(evidence_against_witness).await;
+    let result = primary
+        .report_evidence(evidence_against_witness.clone())
+        .await;
 
     match result {
         Ok(hash) => {
-            info!(
-                "Successfully submitted evidence against witness. Evidence hash: {}",
-                hash
-            );
+            info!("Successfully submitted evidence against witness. Evidence hash: {hash}",);
         },
         Err(e) => {
             error!("Failed to submit evidence against witness: {e}");
         },
     }
 
-    Ok(()) // FIXME: Return error
+    Ok(ReportedEvidence {
+        against_primary: evidence_against_primary,
+        against_witness: evidence_against_witness,
+    })
 }
 
-enum Conflict {
+#[derive(Debug)]
+enum ExaminationResult {
     Continue(LightBlock),
     Divergence(Trace, LightBlock),
 }
@@ -127,7 +141,7 @@ fn examine_conflicting_header_against_trace_block(
     trace_block: &LightBlock,
     target_block: &LightBlock,
     prev_verified_block: Option<LightBlock>,
-) -> Result<Conflict, DetectorError> {
+) -> Result<ExaminationResult, DetectorError> {
     // This case only happens in a forward lunatic attack. We treat the block with the
     // height directly after the targetBlock as the divergent block
     if trace_block.height() > target_block.height() {
@@ -149,7 +163,10 @@ fn examine_conflicting_header_against_trace_block(
                 let source_trace =
                     verify_skipping(source, prev_verified_block.clone(), target_block.clone())?;
 
-                return Ok(Conflict::Divergence(source_trace, trace_block.clone()));
+                return Ok(ExaminationResult::Divergence(
+                    source_trace,
+                    trace_block.clone(),
+                ));
             }
         }
     }
@@ -178,7 +195,7 @@ fn examine_conflicting_header_against_trace_block(
                     ),
                 )
             } else {
-                Ok(Conflict::Continue(source_block))
+                Ok(ExaminationResult::Continue(source_block))
             }
         },
         Some(prev_verified_block) => {
@@ -189,11 +206,14 @@ fn examine_conflicting_header_against_trace_block(
             // check if the headers verified by the source has diverged from the trace
             if source_block_hash != trace_block_hash {
                 // Bifurcation point found!
-                return Ok(Conflict::Divergence(source_trace, trace_block.clone()));
+                return Ok(ExaminationResult::Divergence(
+                    source_trace,
+                    trace_block.clone(),
+                ));
             }
 
             // headers are still the same, continue
-            Ok(Conflict::Continue(source_block))
+            Ok(ExaminationResult::Continue(source_block))
         },
     }
 }
@@ -223,11 +243,11 @@ fn examine_conflicting_header_against_trace(
         )?;
 
         match result {
-            Conflict::Continue(prev_verified_block) => {
+            ExaminationResult::Continue(prev_verified_block) => {
                 previously_verified_block = Some(prev_verified_block);
                 continue;
             },
-            Conflict::Divergence(source_trace, trace_block) => {
+            ExaminationResult::Divergence(source_trace, trace_block) => {
                 return Ok((source_trace, trace_block));
             },
         }
@@ -258,7 +278,7 @@ fn verify_skipping(
         .map_err(DetectorError::light_client)?;
 
     let blocks = state.get_trace(target_height);
-    let source_trace = Trace::new(blocks)?;
+    let source_trace = Trace::new(blocks).map_err(|e| DetectorError::trace_too_short(e.trace))?;
 
     Ok(source_trace)
 }

@@ -104,7 +104,7 @@ async fn main() -> Result<()> {
     let max_block_lag = Duration::from_secs(1);
     let now = Time::now();
 
-    detect_divergence(
+    let result = detect_divergence(
         &mut primary,
         witnesses.as_mut_slice(),
         primary_trace,
@@ -112,7 +112,29 @@ async fn main() -> Result<()> {
         max_block_lag,
         now,
     )
-    .await?;
+    .await;
+
+    use tendermint_light_client::misbehavior::error::divergence::ErrorDetail;
+
+    match result {
+        Ok(()) => {
+            info!("No misbehavior detected");
+        },
+        Err(e) => match e.detail() {
+            ErrorDetail::Divergence(_) => {
+                warn!("Found divergence! See log above for details.");
+            },
+            ErrorDetail::NoWitnesses(_) => {
+                error!("No witnesses provided");
+            },
+            ErrorDetail::FailedHeaderCrossReferencing(e) => {
+                error!("Failed to cross-reference headers: {}", e)
+            },
+            ErrorDetail::TraceTooShort(_) => {
+                error!("Found a trace that is too short to detect misbehavior")
+            },
+        },
+    }
 
     Ok(())
 }
