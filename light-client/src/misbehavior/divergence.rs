@@ -9,15 +9,13 @@ use tendermint::{
 use tendermint_light_client_verifier::types::LightBlock;
 use tracing::{debug, info};
 
-use crate::instance::Instance;
-
-use super::{handle_conflicting_headers, peer::Peer, trace::Trace, DetectorError};
+use super::{handle_conflicting_headers, provider::Provider, trace::Trace, DetectorError};
 
 pub enum Divergence {}
 
 pub async fn detect_divergence(
-    primary: &mut Peer,
-    witnesses: &mut [Peer],
+    primary: &mut Provider,
+    witnesses: &mut [Provider],
     primary_trace: Vec<LightBlock>,
     max_clock_drift: Duration,
     max_block_lag: Duration,
@@ -40,10 +38,10 @@ pub async fn detect_divergence(
     );
 
     // TODO: Do this in parallel
-    for witness in witnesses {
+    for mut witness in witnesses {
         let result = compare_new_header_with_witness(
             last_verified_header,
-            &mut witness.instance,
+            witness,
             max_clock_drift,
             max_block_lag,
         );
@@ -69,20 +67,20 @@ pub async fn detect_divergence(
                     .await?;
 
                 // If attempt to generate conflicting headers failed then remove witness
-                witnesses_to_remove.push(witness.id());
+                witnesses_to_remove.push(witness.peer_id());
             },
 
             Err(CompareError::BadWitness) => {
                 // These are all melevolent errors and should result in removing the witness
-                witnesses_to_remove.push(witness.id());
+                witnesses_to_remove.push(witness.peer_id());
 
-                debug!(witness = %witness.id(), "witness returned an error during header comparison, removing...");
+                debug!(witness = %witness.peer_id(), "witness returned an error during header comparison, removing...");
                 // FIXME: Add error
             },
 
             Err(CompareError::Other(e)) => {
                 // Benign errors which can be ignored
-                debug!(witness = %witness.id(), "error in light block request to witness: {e}");
+                debug!(witness = %witness.peer_id(), "error in light block request to witness: {e}");
             },
         }
     }
@@ -108,7 +106,7 @@ pub enum CompareError {
 /// 3: nil -> the hashes of the two headers match
 fn compare_new_header_with_witness(
     new_header: &SignedHeader,
-    witness: &mut Instance,
+    witness: &mut Provider,
     max_clock_drift: Duration,
     max_block_lag: Duration,
 ) -> Result<(), CompareError> {
@@ -123,7 +121,7 @@ fn compare_new_header_with_witness(
 
 fn check_against_witness(
     sh: &SignedHeader,
-    witness: &mut Instance,
+    witness: &mut Provider,
     max_clock_drift: Duration,
     max_block_lag: Duration,
 ) -> Result<LightBlock, CompareError> {
@@ -134,7 +132,7 @@ fn check_against_witness(
         tracing::debug_span!("check_against_witness", witness = %witness.peer_id()).entered();
 
     let light_block = witness
-        .get_or_fetch_block(sh.header.height)
+        .fetch_light_block(sh.header.height)
         .map_err(|e| e.into_detail());
 
     match light_block {

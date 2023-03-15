@@ -4,7 +4,7 @@ use tendermint::block::Height;
 
 use crate::{
     errors::Error,
-    light_client::{LightClient, TargetOrLatest},
+    light_client::LightClient,
     state::State,
     verifier::types::{LightBlock, Status},
 };
@@ -61,12 +61,5 @@ impl Instance {
             })?;
 
         Ok(block)
-    }
-
-    /// Get the block at the given height or the latest block from the chain if the given height is
-    /// lower than the latest height.
-    pub fn get_target_block_or_latest(&mut self, height: Height) -> Result<TargetOrLatest, Error> {
-        self.light_client
-            .get_target_block_or_latest(height, &mut self.state)
     }
 }

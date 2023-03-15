@@ -1,16 +1,14 @@
 use tendermint::{crypto::default::Sha256, evidence::Evidence};
 use tendermint_light_client_verifier::types::Status;
-use tendermint_rpc::Client;
 use tracing::{debug, error, error_span, info, warn};
 
 use crate::{
-    instance::Instance,
     state::State,
     store::{memory::MemoryStore, LightStore},
     verifier::types::LightBlock,
 };
 
-use super::{error::DetectorError, evidence::make_evidence, peer::Peer, trace::Trace};
+use super::{error::DetectorError, evidence::make_evidence, provider::Provider, trace::Trace};
 
 // FIXME: Allow the hasher to be configured
 type Hasher = Sha256;
@@ -18,25 +16,22 @@ type Hasher = Sha256;
 /// Handles the primary style of attack, which is where a primary and witness have
 /// two headers of the same height but with different hashes
 pub async fn handle_conflicting_headers(
-    primary: &Peer,
-    witness: &Peer,
+    primary: &Provider,
+    witness: &Provider,
     primary_trace: &Trace,
     challenging_block: &LightBlock,
 ) -> Result<(), DetectorError> {
     let _span =
-        error_span!("handle_conflicting_headers", primary = %primary.id(), witness = %witness.id())
+        error_span!("handle_conflicting_headers", primary = %primary.peer_id(), witness = %witness.peer_id())
             .entered();
 
-    let (witness_trace, primary_block) = examine_conflicting_header_against_trace(
-        primary_trace,
-        challenging_block,
-        &witness.instance,
-    )
-    .map_err(|e| {
-        error!("Error validating witness's divergent header: {e}");
+    let (witness_trace, primary_block) =
+        examine_conflicting_header_against_trace(primary_trace, challenging_block, witness)
+            .map_err(|e| {
+                error!("Error validating witness's divergent header: {e}");
 
-        e // FIXME: Return special error
-    })?;
+                e // FIXME: Return special error
+            })?;
 
     let common_block = witness_trace.first();
     let trusted_block = witness_trace.last();
@@ -54,16 +49,13 @@ pub async fn handle_conflicting_headers(
         serde_json::to_string_pretty(&evidence_against_primary).unwrap()
     );
 
-    let result = witness
-        .rpc_client
-        .broadcast_evidence(evidence_against_primary)
-        .await;
+    let result = witness.report_evidence(evidence_against_primary).await;
 
     match result {
-        Ok(response) => {
+        Ok(hash) => {
             info!(
-                "Successfully submitted evidence against primary. Hash: {}",
-                response.hash
+                "Successfully submitted evidence against primary. Evidence hash: {}",
+                hash
             );
         },
         Err(e) => {
@@ -83,12 +75,13 @@ pub async fn handle_conflicting_headers(
     // trace provided by the witness and holding the primary as the source of truth. Note: primary may not
     // respond but this is okay as we will halt anyway.
     let (primary_trace, witness_block) =
-        examine_conflicting_header_against_trace(&witness_trace, &primary_block, &primary.instance)
-            .map_err(|e| {
+        examine_conflicting_header_against_trace(&witness_trace, &primary_block, primary).map_err(
+            |e| {
                 error!("Error validating primary's divergent header: {e}");
 
                 e // FIXME: Return special error
-            })?;
+            },
+        )?;
 
     // We now use the primary trace to create evidence against the witness and send it to the primary
     let common_block = primary_trace.first();
@@ -107,16 +100,13 @@ pub async fn handle_conflicting_headers(
         serde_json::to_string_pretty(&evidence_against_witness).unwrap()
     );
 
-    let result = primary
-        .rpc_client
-        .broadcast_evidence(evidence_against_witness)
-        .await;
+    let result = primary.report_evidence(evidence_against_witness).await;
 
     match result {
-        Ok(response) => {
+        Ok(hash) => {
             info!(
-                "Successfully submitted evidence against witness. Hash: {}",
-                response.hash
+                "Successfully submitted evidence against witness. Evidence hash: {}",
+                hash
             );
         },
         Err(e) => {
@@ -133,7 +123,7 @@ enum Conflict {
 }
 
 fn examine_conflicting_header_against_trace_block(
-    source: &Instance,
+    source: &Provider,
     trace_block: &LightBlock,
     target_block: &LightBlock,
     prev_verified_block: Option<LightBlock>,
@@ -168,7 +158,9 @@ fn examine_conflicting_header_against_trace_block(
     let source_block = if trace_block.height() == target_block.height() {
         target_block.clone()
     } else {
-        fetch_block(source, trace_block)?
+        source
+            .fetch_light_block(trace_block.height())
+            .map_err(DetectorError::light_client)?
     };
 
     let source_block_hash = source_block.signed_header.header.hash_with::<Hasher>();
@@ -206,20 +198,10 @@ fn examine_conflicting_header_against_trace_block(
     }
 }
 
-fn fetch_block(source: &Instance, trace_block: &LightBlock) -> Result<LightBlock, DetectorError> {
-    let mut state = State::new(MemoryStore::new());
-
-    source
-        .light_client
-        .get_or_fetch_block(trace_block.height(), &mut state)
-        .map(|(lb, _)| lb)
-        .map_err(DetectorError::light_client)
-}
-
 fn examine_conflicting_header_against_trace(
     trace: &Trace,
     target_block: &LightBlock,
-    source: &Instance,
+    source: &Provider,
 ) -> Result<(Trace, LightBlock), DetectorError> {
     let trusted_block = trace.first();
 
@@ -259,7 +241,7 @@ fn examine_conflicting_header_against_trace(
 }
 
 fn verify_skipping(
-    source: &Instance,
+    source: &Provider,
     trusted: LightBlock,
     target: LightBlock,
 ) -> Result<Trace, DetectorError> {
@@ -272,8 +254,7 @@ fn verify_skipping(
     let mut state = State::new(store);
 
     let _ = source
-        .light_client
-        .verify_to_target(target_height, &mut state)
+        .verify_to_height_with_state(target_height, &mut state)
         .map_err(DetectorError::light_client)?;
 
     let blocks = state.get_trace(target_height);

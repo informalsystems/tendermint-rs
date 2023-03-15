@@ -7,7 +7,7 @@ use tendermint_light_client::{
     builder::LightClientBuilder,
     instance::Instance,
     light_client::Options,
-    misbehavior::{detect_divergence, Peer},
+    misbehavior::{detect_divergence, Provider},
     store::memory::MemoryStore,
     types::{Hash, Height, LightBlock, TrustThreshold},
 };
@@ -53,7 +53,76 @@ struct Cli {
     hash: Hash,
 }
 
-async fn make_peer(rpc_addr: &str, trusted_height: Height, trusted_hash: Hash) -> Result<Peer> {
+#[tokio::main]
+async fn main() -> Result<()> {
+    color_eyre::install()?;
+
+    let rust_log = std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string());
+
+    tracing_subscriber::fmt()
+        .with_target(false)
+        .with_env_filter(EnvFilter::new(format!(
+            "tendermint_light_client={rust_log},light_client_cli={rust_log}",
+        )))
+        .finish()
+        .init();
+
+    let args = Cli::parse();
+
+    let mut primary = make_provider(&args.chain_id, &args.primary, args.height, args.hash).await?;
+
+    let trusted_block = primary
+        .latest_trusted()
+        .ok_or_else(|| eyre!("No trusted state found for primary"))?;
+
+    info!("Verifying to latest height on primary...");
+
+    let primary_block = primary.verify_to_highest()?;
+    let primary_trace = primary.get_trace(primary_block.height());
+
+    info!("Verified to height {} on primary", primary_block.height());
+
+    let witnesses = join_all(args.witnesses.0.iter().map(|addr| {
+        make_provider(
+            &args.chain_id,
+            addr,
+            trusted_block.height(),
+            trusted_block.signed_header.header.hash(),
+        )
+    }))
+    .await;
+
+    let mut witnesses = witnesses.into_iter().collect::<Result<Vec<_>>>()?;
+
+    info!(
+        "Running misbehavior detection against {} witnesses...",
+        witnesses.len()
+    );
+
+    // FIXME
+    let max_clock_drift = Duration::from_secs(1);
+    let max_block_lag = Duration::from_secs(1);
+    let now = Time::now();
+
+    detect_divergence(
+        &mut primary,
+        witnesses.as_mut_slice(),
+        primary_trace,
+        max_clock_drift,
+        max_block_lag,
+        now,
+    )
+    .await?;
+
+    Ok(())
+}
+
+async fn make_provider(
+    chain_id: &str,
+    rpc_addr: &str,
+    trusted_height: Height,
+    trusted_hash: Hash,
+) -> Result<Provider> {
     use tendermint_rpc::client::CompatMode;
 
     let rpc_client = HttpClient::builder(rpc_addr.parse().unwrap())
@@ -73,73 +142,5 @@ async fn make_peer(rpc_addr: &str, trusted_height: Height, trusted_hash: Hash) -
             .trust_primary_at(trusted_height, trusted_hash)?
             .build();
 
-    Ok(Peer::new(instance, rpc_client))
-}
-
-#[tokio::main]
-async fn main() -> Result<()> {
-    color_eyre::install()?;
-
-    let rust_log = std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string());
-
-    tracing_subscriber::fmt()
-        .with_target(false)
-        .with_env_filter(EnvFilter::new(format!(
-            "tendermint_light_client={rust_log},light_client_cli={rust_log}",
-        )))
-        .finish()
-        .init();
-
-    let args = Cli::parse();
-
-    let mut primary = make_peer(&args.primary, args.height, args.hash).await?;
-
-    let trusted_block = primary
-        .instance
-        .latest_trusted()
-        .ok_or_else(|| eyre!("No trusted state found for primary"))?;
-
-    info!("Verifying to latest height on primary...");
-
-    let primary_block = primary
-        .instance
-        .light_client
-        .verify_to_highest(&mut primary.instance.state)?;
-
-    let primary_trace = primary.instance.state.get_trace(primary_block.height());
-
-    info!("Verified to height {} on primary", primary_block.height());
-
-    let witnesses = join_all(args.witnesses.0.iter().map(|addr| {
-        make_peer(
-            addr,
-            trusted_block.height(),
-            trusted_block.signed_header.header.hash(),
-        )
-    }))
-    .await;
-
-    let mut witnesses = witnesses.into_iter().collect::<Result<Vec<_>>>()?;
-
-    info!(
-        "Running misbehavior detection against {} witnesses...",
-        witnesses.len()
-    );
-
-    // FIXME
-    let max_clock_drift = Duration::from_secs(5);
-    let max_block_lag = Duration::from_secs(10);
-    let now = Time::now();
-
-    detect_divergence(
-        &mut primary,
-        witnesses.as_mut_slice(),
-        primary_trace,
-        max_clock_drift,
-        max_block_lag,
-        now,
-    )
-    .await?;
-
-    Ok(())
+    Ok(Provider::new(chain_id.to_string(), instance, rpc_client))
 }
