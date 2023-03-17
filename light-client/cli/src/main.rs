@@ -46,11 +46,15 @@ struct Cli {
 
     /// Height of trusted header
     #[clap(long)]
-    height: Height,
+    trusted_height: Height,
 
     /// Hash of trusted header
     #[clap(long)]
-    hash: Hash,
+    trusted_hash: Hash,
+
+    /// Height of the header to verify
+    #[clap(long)]
+    height: Option<Height>,
 }
 
 #[tokio::main]
@@ -69,18 +73,28 @@ async fn main() -> Result<()> {
 
     let args = Cli::parse();
 
-    let mut primary = make_provider(&args.chain_id, &args.primary, args.height, args.hash).await?;
+    let mut primary = make_provider(
+        &args.chain_id,
+        &args.primary,
+        args.trusted_height,
+        args.trusted_hash,
+    )
+    .await?;
 
     let trusted_block = primary
         .latest_trusted()
         .ok_or_else(|| eyre!("No trusted state found for primary"))?;
 
-    info!("Verifying to latest height on primary...");
-
-    let primary_block = primary.verify_to_highest()?;
-    let primary_trace = primary.get_trace(primary_block.height());
+    let primary_block = if let Some(target_height) = args.height {
+        info!("Verifying to height {} on primary...", target_height);
+        primary.verify_to_height(target_height)
+    } else {
+        info!("Verifying to latest height on primary...");
+        primary.verify_to_highest()
+    }?;
 
     info!("Verified to height {} on primary", primary_block.height());
+    let primary_trace = primary.get_trace(primary_block.height());
 
     let witnesses = join_all(args.witnesses.0.iter().map(|addr| {
         make_provider(
