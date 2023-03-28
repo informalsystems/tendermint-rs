@@ -1,11 +1,12 @@
 mod conflict;
-mod divergence;
+mod detect;
 pub mod error;
 mod evidence;
+mod examine;
 mod provider;
 mod trace;
 
-pub use conflict::handle_conflicting_headers;
-pub use divergence::detect_divergence;
+pub use conflict::gather_evidence_from_conflicting_headers;
+pub use detect::detect_divergence;
 pub use provider::Provider;
-pub use tendermint::evidence::LightClientAttackEvidence;
+pub use tendermint::evidence::{Evidence, LightClientAttackEvidence};

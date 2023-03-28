@@ -8,7 +8,7 @@ use tendermint::{
 
 use crate::verifier::types::LightBlock;
 
-pub use super::error::detector::Error as DetectorError;
+pub use super::error::DetectorError;
 
 /// Determines the type of attack and then forms the evidence filling out
 /// all the fields such that it is ready to be sent to a full node.

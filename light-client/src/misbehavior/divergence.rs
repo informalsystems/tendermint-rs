@@ -13,7 +13,7 @@ use super::{
     conflict::ReportedEvidence,
     error::detector::Error as DetectorError,
     error::divergence::Error as DivergenceError,
-    handle_conflicting_headers,
+    gather_evidence_from_conflicting_headers,
     provider::Provider,
     trace::{Trace, TraceTooShort},
 };
@@ -75,7 +75,7 @@ pub async fn detect_divergence(
                 );
 
                 // Handle the conflicting headers, generate evidence and report it to both the primary and witness
-                let result = handle_conflicting_headers(
+                let result = gather_evidence_from_conflicting_headers(
                     primary,
                     witness,
                     &primary_trace,

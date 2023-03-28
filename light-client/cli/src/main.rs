@@ -118,37 +118,39 @@ async fn main() -> Result<()> {
     let max_block_lag = Duration::from_secs(1);
     let now = Time::now();
 
-    let result = detect_divergence(
-        &mut primary,
-        witnesses.as_mut_slice(),
-        primary_trace,
-        max_clock_drift,
-        max_block_lag,
-        now,
-    )
-    .await;
+    todo!();
 
-    use tendermint_light_client::misbehavior::error::divergence::ErrorDetail;
+    // let result = detect_divergence(
+    //     &mut primary,
+    //     witnesses.as_mut_slice(),
+    //     primary_trace,
+    //     max_clock_drift,
+    //     max_block_lag,
+    //     now,
+    // )
+    // .await;
 
-    match result {
-        Ok(()) => {
-            info!("No misbehavior detected");
-        },
-        Err(e) => match e.detail() {
-            ErrorDetail::Divergence(_) => {
-                warn!("Found divergence! See log above for details.");
-            },
-            ErrorDetail::NoWitnesses(_) => {
-                error!("No witnesses provided");
-            },
-            ErrorDetail::FailedHeaderCrossReferencing(e) => {
-                error!("Failed to cross-reference headers: {}", e)
-            },
-            ErrorDetail::TraceTooShort(_) => {
-                error!("Found a trace that is too short to detect misbehavior")
-            },
-        },
-    }
+    // use tendermint_light_client::misbehavior::error::DivergenceErrorDetail;
+
+    // match result {
+    //     Ok(()) => {
+    //         info!("No misbehavior detected");
+    //     },
+    //     Err(e) => match e.detail() {
+    //         DivergenceErrorDetail::Divergence(_) => {
+    //             warn!("Found divergence! See log above for details.");
+    //         },
+    //         DivergenceErrorDetail::NoWitnesses(_) => {
+    //             error!("No witnesses provided");
+    //         },
+    //         DivergenceErrorDetail::FailedHeaderCrossReferencing(e) => {
+    //             error!("Failed to cross-reference headers: {}", e)
+    //         },
+    //         DivergenceErrorDetail::TraceTooShort(_) => {
+    //             error!("Found a trace that is too short to detect misbehavior")
+    //         },
+    //     },
+    // }
 
     Ok(())
 }
