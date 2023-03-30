@@ -162,7 +162,7 @@ mod prod {
             }
         }
 
-        fn fetch_signed_header(&self, height: AtHeight) -> Result<TMSignedHeader, IoError> {
+        pub fn fetch_signed_header(&self, height: AtHeight) -> Result<TMSignedHeader, IoError> {
             let client = self.rpc_client.clone();
             let res = block_on(self.timeout, async move {
                 match height {
@@ -177,7 +177,7 @@ mod prod {
             }
         }
 
-        fn fetch_validator_set(
+        pub fn fetch_validator_set(
             &self,
             height: AtHeight,
             proposer_address: Option<TMAccountId>,

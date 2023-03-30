@@ -13,7 +13,10 @@ flex_error::define_error! {
         |_| { format_args!("Bad witness") },
 
         Divergence
-            { evidence: GatheredEvidence }
+            {
+                evidence: GatheredEvidence,
+                challenging_block: LightBlock,
+            }
             |e| { format_args!("Divergence detected, found evidence: {:#?}", e.evidence) },
 
         FailedHeaderCrossReferencing
@@ -28,7 +31,7 @@ flex_error::define_error! {
             |_| { format_args!("Detector error") },
 
         Other
-            { detail: crate::errors::ErrorDetail }
-            |e| { format_args!("Other error: {}", e.detail) },
+            [ crate::errors::Error ]
+            |_| { "Other error" },
     }
 }

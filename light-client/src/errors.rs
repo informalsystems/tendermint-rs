@@ -155,6 +155,14 @@ impl ErrorExt for ErrorDetail {
             None
         }
     }
+
+    fn is_io(&self) -> bool {
+        matches!(self, Self::Io(_))
+    }
+
+    fn is_height_too_high(&self) -> bool {
+        matches!(self, Self::HeightTooHigh { .. })
+    }
 }
 
 impl Error {

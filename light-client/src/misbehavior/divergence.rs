@@ -88,10 +88,13 @@ pub async fn detect_divergence(
                         info!(
                             primary = %primary.peer_id(),
                             witness = %witness.peer_id(),
-                            "Generated evidence and reported it to both primary and witness"
+                            "Generated evidence"
                         );
 
-                        return Err(DivergenceError::divergence(reported_evidence));
+                        return Err(DivergenceError::divergence(
+                            reported_evidence,
+                            challenging_block,
+                        ));
                     },
 
                     Err(e) => {

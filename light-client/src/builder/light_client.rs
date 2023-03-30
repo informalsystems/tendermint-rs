@@ -128,13 +128,11 @@ where
     }
 
     /// Set the given light block as the initial trusted state.
-    fn trust_light_block(
+    pub fn trust_light_block(
         mut self,
         trusted_state: LightBlock,
     ) -> Result<LightClientBuilder<HasTrustedState, H>, Error> {
         self.validate(&trusted_state)?;
-
-        // TODO(liamsi, romac): it is unclear if this should be Trusted or only Verified
         self.light_store.insert(trusted_state, Status::Trusted);
 
         Ok(self.with_state(HasTrustedState))
