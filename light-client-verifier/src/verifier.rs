@@ -252,7 +252,7 @@ where
     /// **NOTE**: If the untrusted state's `next_validators` field is `None`,
     /// this will not (and will not be able to) check whether the untrusted
     /// state's `next_validators_hash` field is valid.
-    /// 
+    ///
     /// **NOTE**: It is the caller's responsibility to ensure that
     /// `trusted.next_validators.hash() == trusted.next_validators_hash`,
     /// as typically the `trusted.next_validators` validator set comes from the relayer,
