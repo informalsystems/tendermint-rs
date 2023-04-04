@@ -24,9 +24,3 @@ exclude = [
 [profile.release.package.tendermint-light-client-js]
 # Tell `rustc` to optimize for small code size.
 opt-level = "s"
-
-# WORKAROUND for fizyk20/generic-array#133
-# Docs build is broken without this until above PR is merged/released
-[patch.crates-io.generic-array]
-git = "https://github.com/fjarri/generic-array"
-branch = "zeroize-docs"
