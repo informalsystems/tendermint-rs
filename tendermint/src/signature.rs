@@ -1,10 +1,9 @@
 //! Cryptographic (a.k.a. digital) signatures
 
-use core::convert::TryFrom;
-
 pub use ed25519::Signature as Ed25519Signature;
 #[cfg(feature = "secp256k1")]
 pub use k256::ecdsa::Signature as Secp256k1Signature;
+
 use tendermint_proto::Protobuf;
 
 use crate::{error::Error, prelude::*};
@@ -83,7 +82,7 @@ impl AsRef<[u8]> for Signature {
 
 impl From<Ed25519Signature> for Signature {
     fn from(sig: Ed25519Signature) -> Signature {
-        Self(sig.as_ref().to_vec())
+        Self(sig.to_vec())
     }
 }
 
@@ -96,7 +95,7 @@ impl From<ed25519_consensus::Signature> for Signature {
 
 #[cfg(feature = "secp256k1")]
 impl From<Secp256k1Signature> for Signature {
-    fn from(pk: Secp256k1Signature) -> Signature {
-        Self(pk.as_ref().to_vec())
+    fn from(sig: Secp256k1Signature) -> Signature {
+        Self(sig.to_vec())
     }
 }

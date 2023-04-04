@@ -117,7 +117,7 @@ mod key_conversions {
         fn from(pk: Secp256k1) -> Id {
             use ripemd::Ripemd160;
 
-            let sha_digest = Sha256::digest(pk.to_bytes());
+            let sha_digest = Sha256::digest(pk.to_sec1_bytes());
             let ripemd_digest = Ripemd160::digest(&sha_digest[..]);
             let mut bytes = [0u8; LENGTH];
             bytes.copy_from_slice(&ripemd_digest[..LENGTH]);

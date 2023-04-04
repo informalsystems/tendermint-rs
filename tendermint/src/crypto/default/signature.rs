@@ -283,8 +283,8 @@ mod tests {
                 _ => panic!("expected public key to be secp256k1: {:?}", public_key),
             }
             let der_sig = k256::ecdsa::Signature::from_der(sig).unwrap();
-            let sig = der_sig.as_ref();
-            let sig = Signature::try_from(sig).unwrap();
+            let sig = der_sig.to_bytes();
+            let sig = Signature::try_from(sig.as_slice()).unwrap();
             Verifier::verify(public_key, msg, &sig)
                 .unwrap_or_else(|_| panic!("signature should be valid for test vector {}", i));
         }
