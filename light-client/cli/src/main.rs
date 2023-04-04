@@ -5,18 +5,25 @@ use std::{convert::Infallible, str::FromStr, time::Duration};
 use tendermint::{evidence::Evidence, Time};
 use tendermint_light_client::{
     builder::LightClientBuilder,
+    detector::{
+        compare_new_header_with_witness, detect_divergence,
+        gather_evidence_from_conflicting_headers, CompareError, Error, ErrorDetail, Provider,
+        Trace,
+    },
     instance::Instance,
     light_client::Options,
-    misbehavior::{detect_divergence, Provider},
     store::memory::MemoryStore,
     types::{Hash, Height, LightBlock, TrustThreshold},
 };
 use tendermint_rpc::{Client, HttpClient};
 
 use clap::Parser;
-use color_eyre::eyre::{eyre, Result};
+use color_eyre::{
+    eyre::{eyre, Result},
+    Report,
+};
 use futures::future::join_all;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 use tracing_subscriber::{util::SubscriberInitExt, EnvFilter};
 
 #[derive(Clone, Debug)]
@@ -108,49 +115,109 @@ async fn main() -> Result<()> {
 
     let mut witnesses = witnesses.into_iter().collect::<Result<Vec<_>>>()?;
 
+    // FIXME: Make this configurable
+    let max_clock_drift = Duration::from_secs(1);
+    let max_block_lag = Duration::from_secs(1);
+    let now = Time::now();
+
+    run_detector(
+        &mut primary,
+        witnesses.as_mut_slice(),
+        primary_trace,
+        max_clock_drift,
+        max_block_lag,
+        now,
+    )
+    .await?;
+
+    Ok(())
+}
+
+async fn run_detector(
+    primary: &mut Provider,
+    witnesses: &mut [Provider],
+    primary_trace: Vec<LightBlock>,
+    max_clock_drift: Duration,
+    max_block_lag: Duration,
+    now: Time,
+) -> Result<(), Report> {
+    if witnesses.is_empty() {
+        return Err(Error::no_witnesses().into());
+    }
+
     info!(
         "Running misbehavior detection against {} witnesses...",
         witnesses.len()
     );
 
-    // FIXME
-    let max_clock_drift = Duration::from_secs(1);
-    let max_block_lag = Duration::from_secs(1);
-    let now = Time::now();
+    let primary_trace = Trace::new(primary_trace)?;
 
-    todo!();
+    let last_verified_block = primary_trace.last();
+    let last_verified_header = &last_verified_block.signed_header;
 
-    // let result = detect_divergence(
-    //     &mut primary,
-    //     witnesses.as_mut_slice(),
-    //     primary_trace,
-    //     max_clock_drift,
-    //     max_block_lag,
-    //     now,
-    // )
-    // .await;
+    for witness in witnesses {
+        debug!(
+            end_block_height = %last_verified_header.header.height,
+            end_block_hash = %last_verified_header.header.hash(),
+            length = primary_trace.len(),
+            "Running detector against primary trace"
+        );
 
-    // use tendermint_light_client::misbehavior::error::DivergenceErrorDetail;
+        let result = compare_new_header_with_witness(
+            last_verified_header,
+            witness,
+            max_clock_drift,
+            max_block_lag,
+        );
 
-    // match result {
-    //     Ok(()) => {
-    //         info!("No misbehavior detected");
-    //     },
-    //     Err(e) => match e.detail() {
-    //         DivergenceErrorDetail::Divergence(_) => {
-    //             warn!("Found divergence! See log above for details.");
-    //         },
-    //         DivergenceErrorDetail::NoWitnesses(_) => {
-    //             error!("No witnesses provided");
-    //         },
-    //         DivergenceErrorDetail::FailedHeaderCrossReferencing(e) => {
-    //             error!("Failed to cross-reference headers: {}", e)
-    //         },
-    //         DivergenceErrorDetail::TraceTooShort(_) => {
-    //             error!("Found a trace that is too short to detect misbehavior")
-    //         },
-    //     },
-    // }
+        match result {
+            Ok(()) => {
+                info!(
+                    witness = %witness.peer_id(),
+                    "No misbehavior detected"
+                );
+            },
+            Err(CompareError::ConflictingHeaders(challenging_block)) => {
+                warn!(
+                    witness = %witness.peer_id(),
+                    conflicting_height = %challenging_block.height(),
+                    "Found conflicting headers between primary and witness"
+                );
+
+                // Gather the evidence to report from the conflicting headers
+                let evidence = gather_evidence_from_conflicting_headers(
+                    Some(primary),
+                    witness,
+                    &primary_trace,
+                    &challenging_block,
+                )
+                .await?;
+
+                // Report the evidence to the witness
+                witness
+                    .report_evidence(Evidence::from(evidence.against_primary))
+                    .await
+                    .map_err(|e| eyre!("failed to report evidence to witness: {}", e))?;
+
+                if let Some(against_witness) = evidence.against_witness {
+                    // Report the evidence to the primary
+                    primary
+                        .report_evidence(Evidence::from(against_witness))
+                        .await
+                        .map_err(|e| eyre!("failed to report evidence to primary: {}", e))?;
+                }
+            },
+            Err(CompareError::BadWitness) => {
+                // These are all melevolent errors and should result in removing the witness
+                error!(witness = %witness.peer_id(), "witness returned an error during header comparison");
+            },
+
+            Err(CompareError::Other(e)) => {
+                // Benign errors which can be ignored
+                warn!(witness = %witness.peer_id(), "error in light block request to witness: {e}");
+            },
+        }
+    }
 
     Ok(())
 }
@@ -169,6 +236,8 @@ async fn make_provider(
 
     let node_id = rpc_client.status().await?.node_info.id;
     let light_store = Box::new(MemoryStore::new());
+
+    // FIXME: Make this configurable
     let options = Options {
         trust_threshold: TrustThreshold::TWO_THIRDS,
         trusting_period: Duration::from_secs(60 * 60 * 24 * 14),

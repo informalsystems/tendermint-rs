@@ -37,7 +37,7 @@ pub async fn detect_divergence(
     max_clock_drift: Duration,
     max_block_lag: Duration,
 ) -> Result<Option<Divergence>, Error> {
-    let primary_trace = Trace::new(primary_trace).map_err(|e| Error::trace_too_short(e.trace))?;
+    let primary_trace = Trace::new(primary_trace)?;
 
     let last_verified_block = primary_trace.last();
     let last_verified_header = &last_verified_block.signed_header;
@@ -120,7 +120,7 @@ pub enum CompareError {
 /// Note: In the case of an invalid header we remove the witness
 ///
 /// 3: nil -> the hashes of the two headers match
-fn compare_new_header_with_witness(
+pub fn compare_new_header_with_witness(
     new_header: &SignedHeader,
     witness: &mut Provider,
     max_clock_drift: Duration,

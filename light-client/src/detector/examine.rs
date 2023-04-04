@@ -158,7 +158,7 @@ fn verify_skipping(
         .map_err(Error::light_client)?;
 
     let blocks = state.get_trace(target_height);
-    let source_trace = Trace::new(blocks).map_err(|e| Error::trace_too_short(e.trace))?;
+    let source_trace = Trace::new(blocks)?;
 
     Ok(source_trace)
 }
