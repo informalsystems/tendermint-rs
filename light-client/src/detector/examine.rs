@@ -7,7 +7,7 @@ use crate::{
     verifier::types::LightBlock,
 };
 
-use super::{error::DetectorError, provider::Provider, trace::Trace};
+use super::{error::Error, provider::Provider, trace::Trace};
 
 // FIXME: Allow the hasher to be configured
 type Hasher = Sha256;
@@ -16,11 +16,11 @@ pub fn examine_conflicting_header_against_trace(
     trace: &Trace,
     target_block: &LightBlock,
     source: &Provider,
-) -> Result<(Trace, LightBlock), DetectorError> {
+) -> Result<(Trace, LightBlock), Error> {
     let trusted_block = trace.first();
 
     if target_block.height() < trusted_block.height() {
-        return Err(DetectorError::target_block_lower_than_trusted(
+        return Err(Error::target_block_lower_than_trusted(
             target_block.height(),
             trusted_block.height(),
         ));
@@ -51,7 +51,7 @@ pub fn examine_conflicting_header_against_trace(
     // prerequisites to this function were not met.
     // Namely that either trace[len(trace)-1].Height < targetBlock.Height
     // or that trace[i].Hash() != targetBlock.Hash()
-    Err(DetectorError::no_divergence())
+    Err(Error::no_divergence())
 }
 
 #[derive(Debug)]
@@ -65,7 +65,7 @@ fn examine_conflicting_header_against_trace_block(
     trace_block: &LightBlock,
     target_block: &LightBlock,
     prev_verified_block: Option<LightBlock>,
-) -> Result<ExaminationResult, DetectorError> {
+) -> Result<ExaminationResult, Error> {
     // This case only happens in a forward lunatic attack. We treat the block with the
     // height directly after the targetBlock as the divergent block
     if trace_block.height() > target_block.height() {
@@ -74,7 +74,7 @@ fn examine_conflicting_header_against_trace_block(
         // the end of the trace has a lesser time than the target block then all blocks in the trace should have a
         // lesser time
         if trace_block.time() > target_block.time() {
-            return Err(DetectorError::trace_block_after_target_block(
+            return Err(Error::trace_block_after_target_block(
                 trace_block.time(),
                 target_block.time(),
             ));
@@ -101,7 +101,7 @@ fn examine_conflicting_header_against_trace_block(
     } else {
         source
             .fetch_light_block(trace_block.height())
-            .map_err(DetectorError::light_client)?
+            .map_err(Error::light_client)?
     };
 
     let source_block_hash = source_block.signed_header.header.hash_with::<Hasher>();
@@ -112,12 +112,10 @@ fn examine_conflicting_header_against_trace_block(
             // the first block in the trace MUST be the same to the light block that the source produces
             // else we cannot continue with verification.
             if source_block_hash != trace_block_hash {
-                Err(
-                    DetectorError::trusted_hash_different_from_source_first_block(
-                        source_block_hash,
-                        trace_block_hash,
-                    ),
-                )
+                Err(Error::trusted_hash_different_from_source_first_block(
+                    source_block_hash,
+                    trace_block_hash,
+                ))
             } else {
                 Ok(ExaminationResult::Continue(source_block))
             }
@@ -146,7 +144,7 @@ fn verify_skipping(
     source: &Provider,
     trusted: LightBlock,
     target: LightBlock,
-) -> Result<Trace, DetectorError> {
+) -> Result<Trace, Error> {
     let target_height = target.height();
 
     let mut store = MemoryStore::new();
@@ -157,10 +155,10 @@ fn verify_skipping(
 
     let _ = source
         .verify_to_height_with_state(target_height, &mut state)
-        .map_err(DetectorError::light_client)?;
+        .map_err(Error::light_client)?;
 
     let blocks = state.get_trace(target_height);
-    let source_trace = Trace::new(blocks).map_err(|e| DetectorError::trace_too_short(e.trace))?;
+    let source_trace = Trace::new(blocks).map_err(|e| Error::trace_too_short(e.trace))?;
 
     Ok(source_trace)
 }

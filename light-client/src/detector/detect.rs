@@ -10,8 +10,7 @@ use tendermint_light_client_verifier::types::LightBlock;
 use crate::light_client::TargetOrLatest;
 
 use super::{
-    error::DivergenceError, gather_evidence_from_conflicting_headers, provider::Provider,
-    trace::Trace,
+    error::Error, gather_evidence_from_conflicting_headers, provider::Provider, trace::Trace,
 };
 
 #[derive(Clone, Debug)]
@@ -20,14 +19,25 @@ pub struct Divergence {
     pub challenging_block: LightBlock,
 }
 
+/// Given a primary trace and a witness, detect any divergence between the two,
+/// by querying the witness for the same header as the last header in the primary trace
+/// (ie. the target block), and comparing the hashes.
+///
+/// If the hashes match, then no divergence has been detected and the target block can be trusted.
+///
+/// If the hashes do not match, then the witness has provided a conflicting header.
+/// This could possibly imply an attack on the light client.
+/// In this case, we need to verify the witness's header using the same skipping verification
+/// and then we need to find the point that the headers diverge and examine this for any evidence of an attack.
+/// We then attempt to find the bifurcation point and if successful construct the evidence of an
+/// attack to report to the witness.
 pub async fn detect_divergence(
     witness: &mut Provider,
     primary_trace: Vec<LightBlock>,
     max_clock_drift: Duration,
     max_block_lag: Duration,
-) -> Result<Option<Divergence>, DivergenceError> {
-    let primary_trace =
-        Trace::new(primary_trace).map_err(|e| DivergenceError::trace_too_short(e.trace))?;
+) -> Result<Option<Divergence>, Error> {
+    let primary_trace = Trace::new(primary_trace).map_err(|e| Error::trace_too_short(e.trace))?;
 
     let last_verified_block = primary_trace.last();
     let last_verified_header = &last_verified_block.signed_header;
@@ -70,8 +80,7 @@ pub async fn detect_divergence(
                 &primary_trace,
                 &challenging_block,
             )
-            .await
-            .map_err(DivergenceError::detector_error)?;
+            .await?;
 
             Ok(Some(Divergence {
                 evidence: evidence.against_primary,
@@ -83,14 +92,14 @@ pub async fn detect_divergence(
             // These are all melevolent errors and should result in removing the witness
             debug!(witness = %witness.peer_id(), "witness returned an error during header comparison, removing...");
 
-            Err(DivergenceError::bad_witness())
+            Err(Error::bad_witness())
         },
 
         Err(CompareError::Other(e)) => {
             // Benign errors which can be ignored
             debug!(witness = %witness.peer_id(), "error in light block request to witness: {e}");
 
-            Err(DivergenceError::other(e))
+            Err(Error::other(e))
         },
     }
 }

@@ -17,10 +17,10 @@
 pub mod builder;
 pub mod components;
 pub mod contracts;
+pub mod detector;
 pub mod errors;
 pub mod instance;
 pub mod light_client;
-pub mod misbehavior;
 pub mod state;
 pub mod store;
 

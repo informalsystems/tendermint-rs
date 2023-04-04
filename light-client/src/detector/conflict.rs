@@ -5,8 +5,8 @@ use tendermint::evidence::LightClientAttackEvidence;
 use crate::verifier::types::LightBlock;
 
 use super::{
-    error::DetectorError, evidence::make_evidence,
-    examine::examine_conflicting_header_against_trace, provider::Provider, trace::Trace,
+    error::Error, evidence::make_evidence, examine::examine_conflicting_header_against_trace,
+    provider::Provider, trace::Trace,
 };
 
 #[derive(Debug)]
@@ -16,13 +16,16 @@ pub struct GatheredEvidence {
 }
 
 /// Handles the primary style of attack, which is where a primary and witness have
-/// two headers of the same height but with different hashes
+/// two headers of the same height but with different hashes.
+///
+/// If a primary provider is available, then we will also attempt to gather evidence against the witness
+/// by examining the witness's trace and holding the primary as the source of truth.
 pub async fn gather_evidence_from_conflicting_headers(
     primary: Option<&Provider>,
     witness: &Provider,
     primary_trace: &Trace,
     challenging_block: &LightBlock,
-) -> Result<GatheredEvidence, DetectorError> {
+) -> Result<GatheredEvidence, Error> {
     let _span =
         error_span!("gather_evidence_from_conflicting_headers", witness = %witness.peer_id())
             .entered();

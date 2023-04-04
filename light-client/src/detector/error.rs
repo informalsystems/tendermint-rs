@@ -2,11 +2,16 @@ use tendermint::{block::Height, Hash, Time};
 use tendermint_light_client_verifier::types::LightBlock;
 
 use crate::components::io::IoError;
+use crate::detector::conflict::GatheredEvidence;
 use crate::errors::Error as LightClientError;
 
 flex_error::define_error! {
     #[derive(Debug)]
     Error {
+        Other
+            [ crate::errors::Error ]
+            |_| { "other error" },
+
         Io
             [ IoError ]
             |_| { "I/O error" },
@@ -14,6 +19,22 @@ flex_error::define_error! {
         LightClient
             [ LightClientError ]
             |_| { "light client error" },
+
+        NoDivergence
+            |_| { "expected divergence between conflicting headers but none found" },
+
+        Divergence
+            {
+                evidence: GatheredEvidence,
+                challenging_block: LightBlock,
+            }
+            |e| { format_args!("divergence detected, found evidence: {:#?}", e.evidence) },
+
+        NoWitnesses
+            |_| { "no witnesses provided" },
+
+        BadWitness
+            |_| { "bad witness" },
 
         TargetBlockLowerThanTrusted
             {
@@ -62,10 +83,7 @@ flex_error::define_error! {
                 )
             },
 
-        NoWitnesses
-            |_| { "no witnesses provided" },
-
-        NoDivergence
-            |_| { "expected divergence between conflicting headers but none found" },
+        FailedHeaderCrossReferencing
+            |_| { format_args!("failed to cross-reference header with witness") },
     }
 }
