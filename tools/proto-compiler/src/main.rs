@@ -12,9 +12,7 @@ use functions::{
 };
 
 mod constants;
-use constants::{
-    CUSTOM_FIELD_ATTRIBUTES, CUSTOM_TYPE_ATTRIBUTES, TENDERMINT_REPO, TENDERMINT_VERSIONS,
-};
+use constants::{CUSTOM_FIELD_ATTRIBUTES, CUSTOM_TYPE_ATTRIBUTES, TENDERMINT_VERSIONS};
 
 fn main() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -30,10 +28,10 @@ fn main() {
 
     for version in TENDERMINT_VERSIONS {
         println!(
-            "[info] => Fetching {TENDERMINT_REPO} at {} into {tendermint_dir:?}",
-            &version.commitish,
+            "[info] => Fetching {} at {} into {tendermint_dir:?}",
+            version.repo, version.commitish,
         );
-        get_commitish(&tendermint_dir, TENDERMINT_REPO, &version.commitish); // This panics if it fails.
+        get_commitish(&tendermint_dir, &version.repo, &version.commitish); // This panics if it fails.
 
         let proto_paths = vec![tendermint_dir.join("proto")];
         let proto_includes_paths = vec![

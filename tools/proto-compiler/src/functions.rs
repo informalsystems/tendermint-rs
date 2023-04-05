@@ -266,9 +266,9 @@ pub fn generate_tendermint_mod(prost_dir: &Path, version: &TendermintVersion, ta
         "{}\npub mod meta {{\n{}pub const REPOSITORY: &str = \"{}\";\n{}pub const COMMITISH: &str = \"{}\";\n}}\n",
         content,
         tab,
-        crate::constants::TENDERMINT_REPO,
+        version.repo,
         tab,
-        &version.commitish,
+        version.commitish,
     );
 
     let tendermint_mod_target = target_dir.join(format!("{}.rs", version.ident));
