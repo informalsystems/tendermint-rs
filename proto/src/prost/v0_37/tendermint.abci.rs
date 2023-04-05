@@ -367,7 +367,7 @@ pub struct ResponseCheckTx {
     pub sender: ::prost::alloc::string::String,
     #[prost(int64, tag = "10")]
     pub priority: i64,
-    /// mempool_error is set by Tendermint.
+    /// mempool_error is set by CometBFT.
     /// ABCI applictions creating a ResponseCheckTX should not set mempool_error.
     #[prost(string, tag = "11")]
     pub mempool_error: ::prost::alloc::string::String,
@@ -469,6 +469,18 @@ pub mod response_offer_snapshot {
                 Result::RejectSender => "REJECT_SENDER",
             }
         }
+        /// Creates an enum from field names used in the ProtoBuf definition.
+        pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+            match value {
+                "UNKNOWN" => Some(Self::Unknown),
+                "ACCEPT" => Some(Self::Accept),
+                "ABORT" => Some(Self::Abort),
+                "REJECT" => Some(Self::Reject),
+                "REJECT_FORMAT" => Some(Self::RejectFormat),
+                "REJECT_SENDER" => Some(Self::RejectSender),
+                _ => None,
+            }
+        }
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -532,6 +544,18 @@ pub mod response_apply_snapshot_chunk {
                 Result::RejectSnapshot => "REJECT_SNAPSHOT",
             }
         }
+        /// Creates an enum from field names used in the ProtoBuf definition.
+        pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+            match value {
+                "UNKNOWN" => Some(Self::Unknown),
+                "ACCEPT" => Some(Self::Accept),
+                "ABORT" => Some(Self::Abort),
+                "RETRY" => Some(Self::Retry),
+                "RETRY_SNAPSHOT" => Some(Self::RetrySnapshot),
+                "REJECT_SNAPSHOT" => Some(Self::RejectSnapshot),
+                _ => None,
+            }
+        }
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -575,6 +599,15 @@ pub mod response_process_proposal {
                 ProposalStatus::Unknown => "UNKNOWN",
                 ProposalStatus::Accept => "ACCEPT",
                 ProposalStatus::Reject => "REJECT",
+            }
+        }
+        /// Creates an enum from field names used in the ProtoBuf definition.
+        pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+            match value {
+                "UNKNOWN" => Some(Self::Unknown),
+                "ACCEPT" => Some(Self::Accept),
+                "REJECT" => Some(Self::Reject),
+                _ => None,
             }
         }
     }
@@ -734,6 +767,14 @@ impl CheckTxType {
             CheckTxType::Recheck => "RECHECK",
         }
     }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "NEW" => Some(Self::New),
+            "RECHECK" => Some(Self::Recheck),
+            _ => None,
+        }
+    }
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
@@ -752,6 +793,15 @@ impl MisbehaviorType {
             MisbehaviorType::Unknown => "UNKNOWN",
             MisbehaviorType::DuplicateVote => "DUPLICATE_VOTE",
             MisbehaviorType::LightClientAttack => "LIGHT_CLIENT_ATTACK",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "UNKNOWN" => Some(Self::Unknown),
+            "DUPLICATE_VOTE" => Some(Self::DuplicateVote),
+            "LIGHT_CLIENT_ATTACK" => Some(Self::LightClientAttack),
+            _ => None,
         }
     }
 }

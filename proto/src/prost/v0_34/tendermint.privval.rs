@@ -120,4 +120,16 @@ impl Errors {
             Errors::WriteTimeout => "ERRORS_WRITE_TIMEOUT",
         }
     }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "ERRORS_UNKNOWN" => Some(Self::Unknown),
+            "ERRORS_UNEXPECTED_RESPONSE" => Some(Self::UnexpectedResponse),
+            "ERRORS_NO_CONNECTION" => Some(Self::NoConnection),
+            "ERRORS_CONNECTION_TIMEOUT" => Some(Self::ConnectionTimeout),
+            "ERRORS_READ_TIMEOUT" => Some(Self::ReadTimeout),
+            "ERRORS_WRITE_TIMEOUT" => Some(Self::WriteTimeout),
+            _ => None,
+        }
+    }
 }
