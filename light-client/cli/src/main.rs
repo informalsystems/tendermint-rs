@@ -23,7 +23,7 @@ use color_eyre::{
     Report,
 };
 use futures::future::join_all;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info, metadata::LevelFilter, warn};
 use tracing_subscriber::{util::SubscriberInitExt, EnvFilter};
 
 #[derive(Clone, Debug)]
@@ -34,6 +34,23 @@ impl FromStr for List<String> {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self(s.split(',').map(|s| s.to_string()).collect()))
+    }
+}
+
+#[derive(clap::Args, Debug, Clone)]
+struct Verbosity {
+    /// Increase verbosity, can be repeated up to 2 times
+    #[arg(long, short, action = clap::ArgAction::Count)]
+    verbose: u8,
+}
+
+impl Verbosity {
+    fn to_level_filter(&self) -> LevelFilter {
+        match self.verbose {
+            0 => LevelFilter::INFO,
+            1 => LevelFilter::DEBUG,
+            _ => LevelFilter::TRACE,
+        }
     }
 }
 
@@ -62,23 +79,27 @@ struct Cli {
     /// Height of the header to verify
     #[clap(long)]
     height: Option<Height>,
+
+    /// Increase verbosity
+    #[clap(flatten)]
+    verbose: Verbosity,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     color_eyre::install()?;
 
-    let rust_log = std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string());
+    let args = Cli::parse();
+
+    let env_filter = EnvFilter::builder()
+        .with_default_directive(args.verbose.to_level_filter().into())
+        .from_env_lossy();
 
     tracing_subscriber::fmt()
         .with_target(false)
-        .with_env_filter(EnvFilter::new(format!(
-            "tendermint_light_client={rust_log},light_client_cli={rust_log}",
-        )))
+        .with_env_filter(env_filter)
         .finish()
         .init();
-
-    let args = Cli::parse();
 
     let mut primary = make_provider(
         &args.chain_id,
