@@ -55,11 +55,6 @@ const RENAME_SRPUBKEY: &str = r#"#[serde(rename = "tendermint/PubKeySr25519", wi
 const RENAME_DUPLICATEVOTE: &str = r#"#[serde(rename = "tendermint/DuplicateVoteEvidence")]"#;
 const RENAME_LIGHTCLIENTATTACK: &str =
     r#"#[serde(rename = "tendermint/LightClientAttackEvidence")]"#;
-const RENAME_VALIDATOR_POWER_QUOTED: &str =
-    r#"#[serde(rename = "ValidatorPower", with = "crate::serializers::from_str")]"#;
-const RENAME_TOTAL_VOTING_POWER_QUOTED: &str =
-    r#"#[serde(rename = "TotalVotingPower", with = "crate::serializers::from_str")]"#;
-const RENAME_TIMESTAMP: &str = r#"#[serde(rename = "Timestamp")]"#;
 const RENAME_PARTS: &str = r#"#[serde(rename = "parts")]"#;
 
 /// Custom type attributes applied on top of protobuf structs
@@ -166,15 +161,11 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.CommitSig.signature", BASE64STRING),
     (
         ".tendermint.types.DuplicateVoteEvidence.total_voting_power",
-        RENAME_TOTAL_VOTING_POWER_QUOTED,
+        QUOTED,
     ),
     (
         ".tendermint.types.DuplicateVoteEvidence.validator_power",
-        RENAME_VALIDATOR_POWER_QUOTED,
-    ),
-    (
-        ".tendermint.types.DuplicateVoteEvidence.timestamp",
-        RENAME_TIMESTAMP,
+        QUOTED,
     ),
     (
         ".tendermint.types.LightClientAttackEvidence.common_height",
