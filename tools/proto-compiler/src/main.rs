@@ -1,10 +1,14 @@
 use std::{
     env::var,
+    fs,
     path::{Path, PathBuf},
     process,
 };
 
 use tempfile::tempdir;
+
+mod buf_build;
+use crate::buf_build::{export_dep_module, read_locked_deps};
 
 mod functions;
 use functions::{
@@ -33,13 +37,43 @@ fn main() {
         );
         get_commitish(&tendermint_dir, &version.repo, &version.commitish); // This panics if it fails.
 
-        let proto_paths = vec![tendermint_dir.join("proto")];
-        let proto_includes_paths = vec![
-            tendermint_dir.join("proto"),
-            tendermint_dir.join("third_party").join("proto"),
-        ];
+        let proto_path = tendermint_dir.join("proto");
+
+        let mut proto_includes_paths = vec![tendermint_dir.join("proto")];
+
+        let buf_lock_path = proto_path.join("buf.lock");
+        let _temp_dirs = if fs::metadata(&buf_lock_path).is_ok() {
+            // A new-style proto module with buf dependencies.
+            // Fetch the dependencies and add them to include paths.
+            match read_locked_deps(&buf_lock_path) {
+                Ok(deps) => deps
+                    .iter()
+                    .map(|dep| {
+                        let mod_dir = tempdir().unwrap();
+                        if let Err(e) = export_dep_module(dep, mod_dir.path()) {
+                            eprintln!(
+                                "Failed to export module {}/{}/{}: {}",
+                                dep.remote, dep.owner, dep.repository, e,
+                            );
+                            process::exit(1);
+                        }
+                        proto_includes_paths.push(mod_dir.path().to_owned());
+                        mod_dir
+                    })
+                    .collect::<Vec<_>>(),
+                Err(e) => {
+                    eprintln!("Failed to read {}: {}", buf_lock_path.display(), e);
+                    process::exit(1);
+                },
+            }
+        } else {
+            // Old school, assume the dependency protos are bundled in the tree.
+            proto_includes_paths.push(tendermint_dir.join("third_party").join("proto"));
+            vec![]
+        };
+
         // List available proto files
-        let protos = find_proto_files(proto_paths);
+        let protos = find_proto_files(&proto_path);
 
         let ver_target_dir = target_dir.join("prost").join(&version.ident);
         let ver_module_dir = target_dir.join("tendermint");
