@@ -5,15 +5,14 @@ use std::{convert::Infallible, str::FromStr, time::Duration};
 use tendermint::{evidence::Evidence, Time};
 use tendermint_light_client::{
     builder::LightClientBuilder,
-    detector::{
-        compare_new_header_with_witness, detect_divergence,
-        gather_evidence_from_conflicting_headers, CompareError, Error, ErrorDetail, Provider,
-        Trace,
-    },
     instance::Instance,
     light_client::Options,
     store::memory::MemoryStore,
     types::{Hash, Height, LightBlock, TrustThreshold},
+};
+use tendermint_light_client_detector::{
+    compare_new_header_with_witness, detect_divergence, gather_evidence_from_conflicting_headers,
+    CompareError, Error, ErrorDetail, Provider, Trace,
 };
 use tendermint_rpc::{Client, HttpClient};
 

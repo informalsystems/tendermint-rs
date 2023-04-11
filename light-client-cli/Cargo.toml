@@ -1,0 +1,37 @@
+[package]
+name       = "tendermint-light-client-cli"
+version    = "0.30.0"
+edition    = "2021"
+license    = "Apache-2.0"
+readme     = "README.md"
+keywords   = ["blockchain", "bft", "consensus", "cosmos", "tendermint"]
+categories = ["cryptography::cryptocurrencies", "network-programming"]
+repository = "https://github.com/informalsystems/tendermint-rs"
+authors    = [
+  "Informal Systems <hello@informal.systems>",
+]
+
+description = """
+    Implementation of the Tendermint Light Client CLI.
+"""
+
+# docs.rs-specific configuration
+[package.metadata.docs.rs]
+# document all features
+all-features = true
+# defines the configuration attribute `docsrs`
+rustdoc-args = ["--cfg", "docsrs"]
+
+[dependencies]
+tendermint = { version = "0.30.0", path = "../tendermint" }
+tendermint-rpc = { version = "0.30.0", path = "../rpc", features = ["http-client"] }
+tendermint-light-client = { version = "0.30.0", path = "../light-client" }
+tendermint-light-client-detector = { version = "0.30.0", path = "../light-client-detector" }
+
+clap = { version = "4.1.8", features = ["derive"] }
+color-eyre = "0.6.2"
+futures = "0.3.27"
+serde_json = "1.0.94"
+tokio = { version = "1.26.0", features = ["full"] }
+tracing = "0.1.37"
+tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }

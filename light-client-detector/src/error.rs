@@ -1,17 +1,13 @@
 use tendermint::{block::Height, Hash, Time};
-use tendermint_light_client_verifier::types::LightBlock;
+use tendermint_light_client::components::io::IoError;
+use tendermint_light_client::errors::Error as LightClientError;
+use tendermint_light_client::verifier::types::LightBlock;
 
-use crate::components::io::IoError;
-use crate::detector::conflict::GatheredEvidence;
-use crate::errors::Error as LightClientError;
+use crate::conflict::GatheredEvidence;
 
 flex_error::define_error! {
     #[derive(Debug)]
     Error {
-        Other
-            [ crate::errors::Error ]
-            |_| { "other error" },
-
         Io
             [ IoError ]
             |_| { "I/O error" },

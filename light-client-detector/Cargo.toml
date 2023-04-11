@@ -1,0 +1,45 @@
+[package]
+name       = "tendermint-light-client-detector"
+version    = "0.30.0"
+edition    = "2021"
+license    = "Apache-2.0"
+readme     = "README.md"
+keywords   = ["blockchain", "bft", "consensus", "cosmos", "tendermint"]
+categories = ["cryptography::cryptocurrencies", "network-programming"]
+repository = "https://github.com/informalsystems/tendermint-rs"
+authors    = [
+  "Informal Systems <hello@informal.systems>",
+]
+
+description = """
+    Implementation of the Tendermint Light Client Attack Detector.
+"""
+
+# docs.rs-specific configuration
+[package.metadata.docs.rs]
+# document all features
+all-features = true
+# defines the configuration attribute `docsrs`
+rustdoc-args = ["--cfg", "docsrs"]
+
+[dependencies]
+tendermint = { version = "0.30.0", path = "../tendermint" }
+tendermint-rpc = { version = "0.30.0", path = "../rpc", features = ["http-client"] }
+tendermint-proto = { version = "0.30.0", path = "../proto" }
+tendermint-light-client = { version = "0.30.0", path = "../light-client" }
+
+contracts = { version = "0.6.2", default-features = false }
+crossbeam-channel = { version = "0.4.2", default-features = false }
+derive_more = { version = "0.99.5", default-features = false, features = ["display"] }
+futures = { version = "0.3.4", default-features = false }
+serde = { version = "1.0.106", default-features = false }
+serde_cbor = { version = "0.11.1", default-features = false, features = ["alloc", "std"] }
+serde_derive = { version = "1.0.106", default-features = false }
+sled = { version = "0.34.3", optional = true, default-features = false }
+static_assertions = { version = "1.1.0", default-features = false }
+time = { version = "0.3", default-features = false, features = ["std"] }
+tokio = { version = "1.0", default-features = false, features = ["rt"], optional = true }
+flex-error = { version = "0.4.4", default-features = false }
+tracing = { version = "0.1", default-features = false }
+serde_json = { version = "1.0.51", default-features = false }
+

@@ -1,8 +1,7 @@
 use tracing::{error, error_span, warn};
 
 use tendermint::evidence::LightClientAttackEvidence;
-
-use crate::verifier::types::LightBlock;
+use tendermint_light_client::verifier::types::LightBlock;
 
 use super::{
     error::Error, evidence::make_evidence, examine::examine_conflicting_header_against_trace,

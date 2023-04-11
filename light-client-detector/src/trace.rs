@@ -1,4 +1,4 @@
-use tendermint_light_client_verifier::types::LightBlock;
+use tendermint_light_client::verifier::types::LightBlock;
 
 use super::Error;
 

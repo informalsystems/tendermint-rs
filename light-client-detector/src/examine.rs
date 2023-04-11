@@ -1,10 +1,9 @@
 use tendermint::crypto::default::Sha256;
-use tendermint_light_client_verifier::types::Status;
-
-use crate::{
+use tendermint_light_client::{
     state::State,
     store::{memory::MemoryStore, LightStore},
     verifier::types::LightBlock,
+    verifier::types::Status,
 };
 
 use super::{error::Error, provider::Provider, trace::Trace};

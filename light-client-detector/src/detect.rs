@@ -4,10 +4,9 @@ use tracing::{debug, warn};
 
 use tendermint::block::signed_header::SignedHeader;
 use tendermint::evidence::LightClientAttackEvidence;
-use tendermint_light_client_verifier::errors::ErrorExt;
-use tendermint_light_client_verifier::types::LightBlock;
-
-use crate::light_client::TargetOrLatest;
+use tendermint_light_client::light_client::TargetOrLatest;
+use tendermint_light_client::verifier::errors::ErrorExt;
+use tendermint_light_client::verifier::types::LightBlock;
 
 use super::{
     error::Error, gather_evidence_from_conflicting_headers, provider::Provider, trace::Trace,
@@ -99,7 +98,7 @@ pub async fn detect_divergence(
             // Benign errors which can be ignored
             debug!(witness = %witness.peer_id(), "error in light block request to witness: {e}");
 
-            Err(Error::other(e))
+            Err(Error::light_client(e))
         },
     }
 }
@@ -107,7 +106,7 @@ pub async fn detect_divergence(
 #[derive(Debug)]
 pub enum CompareError {
     BadWitness,
-    Other(crate::errors::Error),
+    Other(tendermint_light_client::errors::Error),
     ConflictingHeaders(Box<LightBlock>),
 }
 

@@ -1,12 +1,13 @@
+use tendermint::block::Height;
+use tendermint::evidence::Evidence;
 use tendermint::hash::Hash;
-use tendermint::{block::Height, evidence::Evidence};
-use tendermint_light_client_verifier::types::LightBlock;
+use tendermint_light_client::errors::Error;
+use tendermint_light_client::instance::Instance;
+use tendermint_light_client::light_client::TargetOrLatest;
+use tendermint_light_client::state::State;
+use tendermint_light_client::store::memory::MemoryStore;
+use tendermint_light_client::verifier::types::LightBlock;
 use tendermint_rpc::{Client, Error as RpcError, HttpClient};
-
-use crate::light_client::TargetOrLatest;
-use crate::state::State;
-use crate::store::memory::MemoryStore;
-use crate::{errors::Error, instance::Instance};
 
 #[derive(Debug)]
 pub struct Provider {

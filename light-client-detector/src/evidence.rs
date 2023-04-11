@@ -6,7 +6,7 @@ use tendermint::{
     validator,
 };
 
-use crate::verifier::types::LightBlock;
+use tendermint_light_client::verifier::types::LightBlock;
 
 /// Determines the type of attack and then forms the evidence filling out
 /// all the fields such that it is ready to be sent to a full node.
