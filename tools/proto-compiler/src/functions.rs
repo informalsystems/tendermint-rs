@@ -172,7 +172,7 @@ pub fn copy_files(src_dir: &Path, target_dir: &Path) {
             e.file_type().is_file()
                 && e.file_name()
                     .to_str()
-                    .map(|name| name.starts_with("tendermint."))
+                    .map(|name| name.starts_with("cometbft."))
                     .unwrap_or(false)
         })
         .map(|res| {
@@ -210,27 +210,25 @@ pub fn find_proto_files(proto_path: &Path) -> Vec<PathBuf> {
 
 /// Create a module including generated content for the specified
 /// Tendermint source version.
-pub fn generate_tendermint_mod(prost_dir: &Path, version: &TendermintVersion, target_dir: &Path) {
-    create_dir_all(target_dir).unwrap();
+pub fn generate_cometbft_mod(prost_dir: &Path, version: &TendermintVersion, target_mod: &Path) {
     let file_names = WalkDir::new(prost_dir)
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| {
             e.file_type().is_file()
-                && e.file_name().to_str().unwrap().starts_with("tendermint.")
+                && e.file_name().to_str().unwrap().starts_with("cometbft.")
                 && e.file_name().to_str().unwrap().ends_with(".rs")
         })
         .map(|d| d.file_name().to_str().unwrap().to_owned())
         .collect::<BTreeSet<_>>();
     let file_names = Vec::from_iter(file_names);
 
-    let mut content =
-        String::from("//! Tendermint-proto auto-generated sub-modules for Tendermint\n");
+    let mut content = String::from("//! Auto-generated sub-modules for CometBFT\n");
     let tab = "    ".to_string();
 
     for file_name in file_names {
         let parts: Vec<_> = file_name
-            .strip_prefix("tendermint.")
+            .strip_prefix("cometbft.")
             .unwrap()
             .strip_suffix(".rs")
             .unwrap()
@@ -241,9 +239,8 @@ pub fn generate_tendermint_mod(prost_dir: &Path, version: &TendermintVersion, ta
         let mut tab_count = parts.len();
 
         let mut inner_content = format!(
-            "{}include!(\"../prost/{}/{}\");",
+            "{}include!(\"prost/{}\");",
             tab.repeat(tab_count),
-            &version.ident,
             file_name
         );
 
@@ -269,19 +266,7 @@ pub fn generate_tendermint_mod(prost_dir: &Path, version: &TendermintVersion, ta
         version.commitish,
     );
 
-    let tendermint_mod_target = target_dir.join(format!("{}.rs", version.ident));
-    let mut file =
-        File::create(tendermint_mod_target).expect("tendermint module file create failed");
+    let mut file = File::create(target_mod).expect("cometbft module file create failed");
     file.write_all(content.as_bytes())
-        .expect("tendermint module file write failed");
-}
-
-pub fn generate_tendermint_lib(versions: &[TendermintVersion], tendermint_lib_target: &Path) {
-    let mut file =
-        File::create(tendermint_lib_target).expect("tendermint library file create failed");
-    for version in versions {
-        writeln!(&mut file, "pub mod {};", version.ident).unwrap();
-    }
-    let last_version = versions.last().unwrap();
-    writeln!(&mut file, "pub use {}::*;", last_version.ident).unwrap();
+        .expect("cometbft module file write failed");
 }
