@@ -162,6 +162,18 @@ mod prod {
             }
         }
 
+        pub fn peer_id(&self) -> PeerId {
+            self.peer_id
+        }
+
+        pub fn rpc_client(&self) -> &rpc::HttpClient {
+            &self.rpc_client
+        }
+
+        pub fn timeout(&self) -> Option<Duration> {
+            self.timeout
+        }
+
         pub fn fetch_signed_header(&self, height: AtHeight) -> Result<TMSignedHeader, IoError> {
             let client = self.rpc_client.clone();
             let res = block_on(self.timeout, async move {
