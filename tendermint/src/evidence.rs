@@ -137,8 +137,8 @@ impl AsRef<[Evidence]> for List {
 ///
 /// [Tendermint documentation](https://docs.tendermint.com/master/spec/core/data_structures.html#evidenceparams)
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(try_from = "raw::EvidenceParams", into = "raw::EvidenceParams")]
-// Todo: This struct is ready to be converted through tendermint_proto::types::EvidenceParams.
+// #[serde(try_from = "raw::EvidenceParams", into = "raw::EvidenceParams")]
+// TODO: This struct is ready to be converted through tendermint_proto::types::EvidenceParams.
 // https://github.com/informalsystems/tendermint-rs/issues/741
 pub struct Params {
     /// Max age of evidence, in blocks.
