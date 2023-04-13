@@ -65,7 +65,7 @@ pub struct BlockId {
     #[serde(with = "crate::serializers::bytes::hexstring")]
     pub hash: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "2")]
-    #[serde(alias = "parts")]
+    #[serde(rename = "parts", alias = "part_set_header")]
     pub part_set_header: ::core::option::Option<PartSetHeader>,
 }
 /// Header defines the structure of a Tendermint block header.
@@ -513,7 +513,6 @@ pub struct CanonicalBlockId {
     #[prost(bytes = "vec", tag = "1")]
     pub hash: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "2")]
-    #[serde(alias = "parts")]
     pub part_set_header: ::core::option::Option<CanonicalPartSetHeader>,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]

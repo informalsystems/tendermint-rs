@@ -65,7 +65,7 @@ pub struct BlockId {
     #[serde(with = "crate::serializers::bytes::hexstring")]
     pub hash: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "2")]
-    #[serde(alias = "parts")]
+    #[serde(rename = "parts", alias = "part_set_header")]
     pub part_set_header: ::core::option::Option<PartSetHeader>,
 }
 /// Header defines the structure of a Tendermint block header.
@@ -291,6 +291,16 @@ impl BlockIdFlag {
             BlockIdFlag::Nil => "BLOCK_ID_FLAG_NIL",
         }
     }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "BLOCK_ID_FLAG_UNKNOWN" => Some(Self::Unknown),
+            "BLOCK_ID_FLAG_ABSENT" => Some(Self::Absent),
+            "BLOCK_ID_FLAG_COMMIT" => Some(Self::Commit),
+            "BLOCK_ID_FLAG_NIL" => Some(Self::Nil),
+            _ => None,
+        }
+    }
 }
 /// SignedMsgType is a type of signed message in the consensus.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
@@ -316,6 +326,26 @@ impl SignedMsgType {
             SignedMsgType::Proposal => "SIGNED_MSG_TYPE_PROPOSAL",
         }
     }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "SIGNED_MSG_TYPE_UNKNOWN" => Some(Self::Unknown),
+            "SIGNED_MSG_TYPE_PREVOTE" => Some(Self::Prevote),
+            "SIGNED_MSG_TYPE_PRECOMMIT" => Some(Self::Precommit),
+            "SIGNED_MSG_TYPE_PROPOSAL" => Some(Self::Proposal),
+            _ => None,
+        }
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventDataRoundState {
+    #[prost(int64, tag = "1")]
+    pub height: i64,
+    #[prost(int32, tag = "2")]
+    pub round: i32,
+    #[prost(string, tag = "3")]
+    pub step: ::prost::alloc::string::String,
 }
 /// ConsensusParams contains consensus critical parameters that determine the
 /// validity of blocks.
@@ -404,16 +434,6 @@ pub struct HashedParams {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventDataRoundState {
-    #[prost(int64, tag = "1")]
-    pub height: i64,
-    #[prost(int32, tag = "2")]
-    pub round: i32,
-    #[prost(string, tag = "3")]
-    pub step: ::prost::alloc::string::String,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Evidence {
     #[prost(oneof = "evidence::Sum", tags = "1, 2")]
     pub sum: ::core::option::Option<evidence::Sum>,
@@ -486,7 +506,6 @@ pub struct CanonicalBlockId {
     #[prost(bytes = "vec", tag = "1")]
     pub hash: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "2")]
-    #[serde(alias = "parts")]
     pub part_set_header: ::core::option::Option<CanonicalPartSetHeader>,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]

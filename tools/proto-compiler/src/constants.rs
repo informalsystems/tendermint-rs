@@ -60,7 +60,7 @@ const RENAME_TOTAL_VOTING_POWER_QUOTED: &str =
 const RENAME_VALIDATOR_POWER_QUOTED: &str =
     r#"#[serde(rename = "ValidatorPower", with = "crate::serializers::from_str")]"#;
 const RENAME_TIMESTAMP: &str = r#"#[serde(rename = "Timestamp")]"#;
-const ALIAS_PARTS: &str = r#"#[serde(alias = "parts")]"#;
+const RENAME_PARTS: &str = r#"#[serde(rename = "parts", alias = "part_set_header")]"#;
 
 /// Custom type attributes applied on top of protobuf structs
 /// The first item in the tuple defines the message where the annotation should apply and
@@ -136,11 +136,7 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         BYTES_SKIP_IF_EMPTY,
     ),
     (".tendermint.types.BlockID.hash", HEXSTRING),
-    (".tendermint.types.BlockID.part_set_header", ALIAS_PARTS),
-    (
-        ".tendermint.types.CanonicalBlockID.part_set_header",
-        ALIAS_PARTS,
-    ),
+    (".tendermint.types.BlockID.part_set_header", RENAME_PARTS),
     (
         ".tendermint.types.PartSetHeader.total",
         PART_SET_HEADER_TOTAL,
