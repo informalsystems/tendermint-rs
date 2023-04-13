@@ -44,10 +44,10 @@ fn incoming_fixtures() {
                 assert!(endpoint::block::Response::from_string(content).is_err())
             },
             "block_at_height_1" => {
-                assert!(endpoint::block::Response::from_string(content).is_ok())
+                endpoint::block::Response::from_string(content).unwrap();
             },
             "block_at_height_10" => {
-                assert!(endpoint::block::Response::from_string(content).is_ok())
+                endpoint::block::Response::from_string(content).unwrap();
             },
             "block_at_height_4555980" => {
                 let r = endpoint::block::Response::from_string(content);
@@ -62,27 +62,25 @@ fn incoming_fixtures() {
                 assert!(r.is_ok(), "block_results_at_height_4555980: {r:?}");
             },
             "blockchain_from_1_to_10" => {
-                assert!(endpoint::blockchain::Response::from_string(content).is_ok())
+                endpoint::blockchain::Response::from_string(content).unwrap();
             },
             "commit_at_height_10" => {
-                assert!(endpoint::commit::Response::from_string(content).is_ok())
+                endpoint::commit::Response::from_string(content).unwrap();
             },
             "consensus_params" => {
-                assert!(endpoint::consensus_params::Response::from_string(content).is_ok())
+                endpoint::consensus_params::Response::from_string(content).unwrap();
             },
             "consensus_state" => {
-                assert!(endpoint::consensus_state::Response::from_string(content).is_ok())
+                endpoint::consensus_state::Response::from_string(content).unwrap();
             },
             "genesis" => {
-                assert!(
-                    endpoint::genesis::Response::<serde_json::Value>::from_string(content).is_ok()
-                )
+                endpoint::genesis::Response::<serde_json::Value>::from_string(content).unwrap();
             },
             "net_info" => {
-                assert!(endpoint::net_info::Response::from_string(content).is_ok())
+                endpoint::net_info::Response::from_string(content).unwrap();
             },
             "status" => {
-                assert!(endpoint::status::Response::from_string(content).is_ok())
+                endpoint::status::Response::from_string(content).unwrap();
             },
             "subscribe_newblock" => {
                 let r = endpoint::subscribe::Response::from_string(content);
@@ -117,16 +115,16 @@ fn outgoing_fixtures() {
                 assert!(r.is_ok(), "{r:?}")
             },
             "block_at_height_0" => {
-                assert!(endpoint::block::Request::from_string(content).is_ok())
+                endpoint::block::Request::from_string(content).unwrap();
             },
             "block_at_height_1" => {
-                assert!(endpoint::block::Request::from_string(content).is_ok())
+                endpoint::block::Request::from_string(content).unwrap();
             },
             "block_at_height_10" => {
-                assert!(endpoint::block::Request::from_string(content).is_ok())
+                endpoint::block::Request::from_string(content).unwrap();
             },
             "block_at_height_4555980" => {
-                assert!(endpoint::block::Request::from_string(content).is_ok())
+                endpoint::block::Request::from_string(content).unwrap();
             },
             "block_results_at_height_10" => {
                 let r = endpoint::block_results::Request::from_string(content);
@@ -137,28 +135,26 @@ fn outgoing_fixtures() {
                 assert!(r.is_ok(), "block_results_at_height_4555980: {r:?}");
             },
             "blockchain_from_1_to_10" => {
-                assert!(endpoint::blockchain::Request::from_string(content).is_ok())
+                endpoint::blockchain::Request::from_string(content).unwrap();
             },
             "commit_at_height_10" => {
-                assert!(endpoint::commit::Request::from_string(content).is_ok())
+                endpoint::commit::Request::from_string(content).unwrap();
             },
             "consensus_params" => {
-                assert!(endpoint::consensus_params::Request::from_string(content).is_ok())
+                endpoint::consensus_params::Request::from_string(content).unwrap();
             },
             "consensus_state" => {
-                assert!(endpoint::consensus_state::Request::from_string(content).is_ok())
+                endpoint::consensus_state::Request::from_string(content).unwrap();
             },
             "genesis" => {
-                assert!(
-                    endpoint::genesis::Request::<Option<serde_json::Value>>::from_string(content)
-                        .is_ok()
-                )
+                endpoint::genesis::Request::<Option<serde_json::Value>>::from_string(content)
+                    .unwrap();
             },
             "net_info" => {
-                assert!(endpoint::net_info::Request::from_string(content).is_ok())
+                endpoint::net_info::Request::from_string(content).unwrap();
             },
             "status" => {
-                assert!(endpoint::status::Request::from_string(content).is_ok())
+                endpoint::status::Request::from_string(content).unwrap();
             },
             "subscribe_newblock" => {
                 let r = endpoint::subscribe::Request::from_string(content);
