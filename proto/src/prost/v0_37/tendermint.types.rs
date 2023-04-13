@@ -65,7 +65,7 @@ pub struct BlockId {
     #[serde(with = "crate::serializers::bytes::hexstring")]
     pub hash: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "2")]
-    #[serde(rename = "parts")]
+    #[serde(alias = "parts")]
     pub part_set_header: ::core::option::Option<PartSetHeader>,
 }
 /// Header defines the structure of a Tendermint block header.
@@ -291,6 +291,16 @@ impl BlockIdFlag {
             BlockIdFlag::Nil => "BLOCK_ID_FLAG_NIL",
         }
     }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "BLOCK_ID_FLAG_UNKNOWN" => Some(Self::Unknown),
+            "BLOCK_ID_FLAG_ABSENT" => Some(Self::Absent),
+            "BLOCK_ID_FLAG_COMMIT" => Some(Self::Commit),
+            "BLOCK_ID_FLAG_NIL" => Some(Self::Nil),
+            _ => None,
+        }
+    }
 }
 /// SignedMsgType is a type of signed message in the consensus.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
@@ -316,6 +326,106 @@ impl SignedMsgType {
             SignedMsgType::Proposal => "SIGNED_MSG_TYPE_PROPOSAL",
         }
     }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "SIGNED_MSG_TYPE_UNKNOWN" => Some(Self::Unknown),
+            "SIGNED_MSG_TYPE_PREVOTE" => Some(Self::Prevote),
+            "SIGNED_MSG_TYPE_PRECOMMIT" => Some(Self::Precommit),
+            "SIGNED_MSG_TYPE_PROPOSAL" => Some(Self::Proposal),
+            _ => None,
+        }
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Evidence {
+    #[prost(oneof = "evidence::Sum", tags = "1, 2")]
+    pub sum: ::core::option::Option<evidence::Sum>,
+}
+/// Nested message and enum types in `Evidence`.
+pub mod evidence {
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[serde(tag = "type", content = "value")]
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Sum {
+        #[prost(message, tag = "1")]
+        #[serde(rename = "tendermint/DuplicateVoteEvidence")]
+        DuplicateVoteEvidence(super::DuplicateVoteEvidence),
+        #[prost(message, tag = "2")]
+        #[serde(rename = "tendermint/LightClientAttackEvidence")]
+        LightClientAttackEvidence(super::LightClientAttackEvidence),
+    }
+}
+/// DuplicateVoteEvidence contains evidence of a validator signed two conflicting votes.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DuplicateVoteEvidence {
+    #[prost(message, optional, tag = "1")]
+    pub vote_a: ::core::option::Option<Vote>,
+    #[prost(message, optional, tag = "2")]
+    pub vote_b: ::core::option::Option<Vote>,
+    #[prost(int64, tag = "3")]
+    #[serde(rename = "TotalVotingPower", with = "crate::serializers::from_str")]
+    pub total_voting_power: i64,
+    #[prost(int64, tag = "4")]
+    #[serde(rename = "ValidatorPower", with = "crate::serializers::from_str")]
+    pub validator_power: i64,
+    #[prost(message, optional, tag = "5")]
+    #[serde(rename = "Timestamp")]
+    pub timestamp: ::core::option::Option<crate::google::protobuf::Timestamp>,
+}
+/// LightClientAttackEvidence contains evidence of a set of validators attempting to mislead a light client.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[serde(rename_all = "PascalCase")]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LightClientAttackEvidence {
+    #[prost(message, optional, tag = "1")]
+    pub conflicting_block: ::core::option::Option<LightBlock>,
+    #[prost(int64, tag = "2")]
+    #[serde(with = "crate::serializers::from_str")]
+    pub common_height: i64,
+    #[prost(message, repeated, tag = "3")]
+    pub byzantine_validators: ::prost::alloc::vec::Vec<Validator>,
+    #[prost(int64, tag = "4")]
+    #[serde(with = "crate::serializers::from_str")]
+    pub total_voting_power: i64,
+    #[prost(message, optional, tag = "5")]
+    pub timestamp: ::core::option::Option<crate::google::protobuf::Timestamp>,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EvidenceList {
+    #[prost(message, repeated, tag = "1")]
+    #[serde(with = "crate::serializers::nullable")]
+    pub evidence: ::prost::alloc::vec::Vec<Evidence>,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Block {
+    #[prost(message, optional, tag = "1")]
+    pub header: ::core::option::Option<Header>,
+    #[prost(message, optional, tag = "2")]
+    pub data: ::core::option::Option<Data>,
+    #[prost(message, optional, tag = "3")]
+    pub evidence: ::core::option::Option<EvidenceList>,
+    #[prost(message, optional, tag = "4")]
+    pub last_commit: ::core::option::Option<Commit>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventDataRoundState {
+    #[prost(int64, tag = "1")]
+    pub height: i64,
+    #[prost(int32, tag = "2")]
+    pub round: i32,
+    #[prost(string, tag = "3")]
+    pub step: ::prost::alloc::string::String,
 }
 /// ConsensusParams contains consensus critical parameters that determine the
 /// validity of blocks.
@@ -354,6 +464,7 @@ pub struct EvidenceParams {
     /// The basic formula for calculating this is: MaxAgeDuration / {average block
     /// time}.
     #[prost(int64, tag = "1")]
+    #[serde(with = "crate::serializers::from_str", default)]
     pub max_age_num_blocks: i64,
     /// Max age of evidence, in time.
     ///
@@ -395,94 +506,6 @@ pub struct HashedParams {
     #[prost(int64, tag = "2")]
     pub block_max_gas: i64,
 }
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventDataRoundState {
-    #[prost(int64, tag = "1")]
-    pub height: i64,
-    #[prost(int32, tag = "2")]
-    pub round: i32,
-    #[prost(string, tag = "3")]
-    pub step: ::prost::alloc::string::String,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Evidence {
-    #[prost(oneof = "evidence::Sum", tags = "1, 2")]
-    pub sum: ::core::option::Option<evidence::Sum>,
-}
-/// Nested message and enum types in `Evidence`.
-pub mod evidence {
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
-    #[serde(tag = "type", content = "value")]
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Oneof)]
-    pub enum Sum {
-        #[prost(message, tag = "1")]
-        #[serde(rename = "tendermint/DuplicateVoteEvidence")]
-        DuplicateVoteEvidence(super::DuplicateVoteEvidence),
-        #[prost(message, tag = "2")]
-        #[serde(rename = "tendermint/LightClientAttackEvidence")]
-        LightClientAttackEvidence(super::LightClientAttackEvidence),
-    }
-}
-/// DuplicateVoteEvidence contains evidence of a validator signed two conflicting votes.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DuplicateVoteEvidence {
-    #[prost(message, optional, tag = "1")]
-    pub vote_a: ::core::option::Option<Vote>,
-    #[prost(message, optional, tag = "2")]
-    pub vote_b: ::core::option::Option<Vote>,
-    #[prost(int64, tag = "3")]
-    #[serde(alias = "TotalVotingPower", with = "crate::serializers::from_str")]
-    pub total_voting_power: i64,
-    #[prost(int64, tag = "4")]
-    #[serde(alias = "ValidatorPower", with = "crate::serializers::from_str")]
-    pub validator_power: i64,
-    #[prost(message, optional, tag = "5")]
-    #[serde(alias = "Timestamp")]
-    pub timestamp: ::core::option::Option<crate::google::protobuf::Timestamp>,
-}
-/// LightClientAttackEvidence contains evidence of a set of validators attempting to mislead a light client.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-#[serde(rename_all = "PascalCase")]
-pub struct LightClientAttackEvidence {
-    #[prost(message, optional, tag = "1")]
-    pub conflicting_block: ::core::option::Option<LightBlock>,
-    #[prost(int64, tag = "2")]
-    pub common_height: i64,
-    #[prost(message, repeated, tag = "3")]
-    pub byzantine_validators: ::prost::alloc::vec::Vec<Validator>,
-    #[prost(int64, tag = "4")]
-    pub total_voting_power: i64,
-    #[prost(message, optional, tag = "5")]
-    pub timestamp: ::core::option::Option<crate::google::protobuf::Timestamp>,
-}
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EvidenceList {
-    #[prost(message, repeated, tag = "1")]
-    #[serde(with = "crate::serializers::nullable")]
-    pub evidence: ::prost::alloc::vec::Vec<Evidence>,
-}
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Block {
-    #[prost(message, optional, tag = "1")]
-    pub header: ::core::option::Option<Header>,
-    #[prost(message, optional, tag = "2")]
-    pub data: ::core::option::Option<Data>,
-    #[prost(message, optional, tag = "3")]
-    pub evidence: ::core::option::Option<EvidenceList>,
-    #[prost(message, optional, tag = "4")]
-    pub last_commit: ::core::option::Option<Commit>,
-}
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -490,7 +513,7 @@ pub struct CanonicalBlockId {
     #[prost(bytes = "vec", tag = "1")]
     pub hash: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "2")]
-    #[serde(rename = "parts")]
+    #[serde(alias = "parts")]
     pub part_set_header: ::core::option::Option<CanonicalPartSetHeader>,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]

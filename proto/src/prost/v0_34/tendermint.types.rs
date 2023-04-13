@@ -65,7 +65,7 @@ pub struct BlockId {
     #[serde(with = "crate::serializers::bytes::hexstring")]
     pub hash: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "2")]
-    #[serde(rename = "parts")]
+    #[serde(alias = "parts")]
     pub part_set_header: ::core::option::Option<PartSetHeader>,
 }
 /// Header defines the structure of a Tendermint block header.
@@ -360,6 +360,7 @@ pub struct EvidenceParams {
     /// The basic formula for calculating this is: MaxAgeDuration / {average block
     /// time}.
     #[prost(int64, tag = "1")]
+    #[serde(with = "crate::serializers::from_str", default)]
     pub max_age_num_blocks: i64,
     /// Max age of evidence, in time.
     ///
@@ -434,7 +435,6 @@ pub mod evidence {
 }
 /// DuplicateVoteEvidence contains evidence of a validator signed two conflicting votes.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(rename_all = "PascalCase")]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DuplicateVoteEvidence {
@@ -482,24 +482,11 @@ pub struct EvidenceList {
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Block {
-    #[prost(message, optional, tag = "1")]
-    pub header: ::core::option::Option<Header>,
-    #[prost(message, optional, tag = "2")]
-    pub data: ::core::option::Option<Data>,
-    #[prost(message, optional, tag = "3")]
-    pub evidence: ::core::option::Option<EvidenceList>,
-    #[prost(message, optional, tag = "4")]
-    pub last_commit: ::core::option::Option<Commit>,
-}
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CanonicalBlockId {
     #[prost(bytes = "vec", tag = "1")]
     pub hash: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "2")]
-    #[serde(rename = "parts")]
+    #[serde(alias = "parts")]
     pub part_set_header: ::core::option::Option<CanonicalPartSetHeader>,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]
@@ -551,4 +538,17 @@ pub struct CanonicalVote {
     pub timestamp: ::core::option::Option<crate::google::protobuf::Timestamp>,
     #[prost(string, tag = "6")]
     pub chain_id: ::prost::alloc::string::String,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Block {
+    #[prost(message, optional, tag = "1")]
+    pub header: ::core::option::Option<Header>,
+    #[prost(message, optional, tag = "2")]
+    pub data: ::core::option::Option<Data>,
+    #[prost(message, optional, tag = "3")]
+    pub evidence: ::core::option::Option<EvidenceList>,
+    #[prost(message, optional, tag = "4")]
+    pub last_commit: ::core::option::Option<Commit>,
 }

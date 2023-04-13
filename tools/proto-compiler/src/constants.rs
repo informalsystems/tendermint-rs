@@ -55,7 +55,12 @@ const RENAME_SRPUBKEY: &str = r#"#[serde(rename = "tendermint/PubKeySr25519", wi
 const RENAME_DUPLICATEVOTE: &str = r#"#[serde(rename = "tendermint/DuplicateVoteEvidence")]"#;
 const RENAME_LIGHTCLIENTATTACK: &str =
     r#"#[serde(rename = "tendermint/LightClientAttackEvidence")]"#;
-const RENAME_PARTS: &str = r#"#[serde(rename = "parts")]"#;
+const RENAME_TOTAL_VOTING_POWER_QUOTED: &str =
+    r#"#[serde(rename = "TotalVotingPower", with = "crate::serializers::from_str")]"#;
+const RENAME_VALIDATOR_POWER_QUOTED: &str =
+    r#"#[serde(rename = "ValidatorPower", with = "crate::serializers::from_str")]"#;
+const RENAME_TIMESTAMP: &str = r#"#[serde(rename = "Timestamp")]"#;
+const ALIAS_PARTS: &str = r#"#[serde(alias = "parts")]"#;
 
 /// Custom type attributes applied on top of protobuf structs
 /// The first item in the tuple defines the message where the annotation should apply and
@@ -72,10 +77,6 @@ pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.Evidence.sum", TYPE_TAG),
     (".tendermint.types.EvidenceList", SERIALIZED),
     (".tendermint.types.DuplicateVoteEvidence", SERIALIZED),
-    (
-        ".tendermint.types.DuplicateVoteEvidence",
-        RENAME_ALL_PASCALCASE,
-    ),
     (".tendermint.types.Vote", SERIALIZED),
     (".tendermint.types.BlockID", SERIALIZED),
     (".tendermint.types.PartSetHeader", SERIALIZED),
@@ -113,6 +114,10 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         ".tendermint.types.EvidenceParams.max_bytes",
         QUOTED_WITH_DEFAULT,
     ),
+    (
+        ".tendermint.types.EvidenceParams.max_age_num_blocks",
+        QUOTED_WITH_DEFAULT,
+    ),
     (".tendermint.version.Consensus.block", QUOTED),
     (".tendermint.version.Consensus.app", QUOTED_WITH_DEFAULT),
     (".tendermint.abci.ResponseInfo.data", DEFAULT),
@@ -131,10 +136,10 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         BYTES_SKIP_IF_EMPTY,
     ),
     (".tendermint.types.BlockID.hash", HEXSTRING),
-    (".tendermint.types.BlockID.part_set_header", RENAME_PARTS),
+    (".tendermint.types.BlockID.part_set_header", ALIAS_PARTS),
     (
         ".tendermint.types.CanonicalBlockID.part_set_header",
-        RENAME_PARTS,
+        ALIAS_PARTS,
     ),
     (
         ".tendermint.types.PartSetHeader.total",
@@ -161,11 +166,15 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.CommitSig.signature", BASE64STRING),
     (
         ".tendermint.types.DuplicateVoteEvidence.total_voting_power",
-        QUOTED,
+        RENAME_TOTAL_VOTING_POWER_QUOTED,
     ),
     (
         ".tendermint.types.DuplicateVoteEvidence.validator_power",
-        QUOTED,
+        RENAME_VALIDATOR_POWER_QUOTED,
+    ),
+    (
+        ".tendermint.types.DuplicateVoteEvidence.timestamp",
+        RENAME_TIMESTAMP,
     ),
     (
         ".tendermint.types.LightClientAttackEvidence.common_height",
@@ -174,10 +183,6 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (
         ".tendermint.types.LightClientAttackEvidence.total_voting_power",
         QUOTED,
-    ),
-    (
-        ".tendermint.types.LightClientAttackEvidence.part_set_header",
-        RENAME_PARTS,
     ),
     (".tendermint.types.Vote.height", QUOTED),
     (".tendermint.types.Vote.validator_address", HEXSTRING),
