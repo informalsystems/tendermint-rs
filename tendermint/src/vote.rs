@@ -171,9 +171,9 @@ impl Default for Vote {
             validator_index: ValidatorIndex::try_from(0_i32).unwrap(),
             // Could have reused crate::test::dummy_signature, except that
             // this Default impl is defined outside of #[cfg(test)].
-            signature: Some(Signature::from(
-                Ed25519Signature::from_bytes(&[0; Ed25519Signature::BYTE_SIZE]).unwrap(),
-            )),
+            signature: Some(Signature::from(Ed25519Signature::from_bytes(
+                &[0; Ed25519Signature::BYTE_SIZE],
+            ))),
         }
     }
 }

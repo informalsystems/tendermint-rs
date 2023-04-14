@@ -73,6 +73,11 @@ jobs:
           unzip /tmp/protoc.zip -d ${HOME}/.local
           echo "PROTOC=${HOME}/.local/bin/protoc" >> $GITHUB_ENV
           export PATH="${PATH}:${HOME}/.local/bin"
+      - name: Install buf
+        run: |
+          curl -sSL https://github.com/bufbuild/buf/releases/download/v1.15.1/buf-Linux-x86_64 \
+            -o /usr/local/bin/buf
+          chmod +x /usr/local/bin/buf
       - name: Regenerate proto definitions
         working-directory: ./tools/proto-compiler/
         run: cargo run

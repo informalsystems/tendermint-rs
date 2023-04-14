@@ -1,10 +1,9 @@
 /// Tendermint protobuf version
 
-/// Tendermint repository URL.
-pub const TENDERMINT_REPO: &str = "https://github.com/tendermint/tendermint";
-
 /// Information on a Tendermint snapshot to generate prost structures from.
 pub struct TendermintVersion {
+    /// Repository URL.
+    pub repo: &'static str,
     /// Identifier to use in module names.
     pub ident: &'static str,
     /// A commitish reference in the tendermint git repository, for example:
@@ -18,12 +17,14 @@ pub struct TendermintVersion {
 /// All Tendermint versions to generate code for
 pub const TENDERMINT_VERSIONS: &[TendermintVersion] = &[
     TendermintVersion {
+        repo: "https://github.com/cometbft/cometbft",
         ident: "v0_34",
-        commitish: "v0.34.24",
+        commitish: "v0.34.27",
     },
     TendermintVersion {
+        repo: "https://github.com/cometbft/cometbft",
         ident: "v0_37",
-        commitish: "v0.37.0-alpha.1",
+        commitish: "v0.37.0",
     },
 ];
 

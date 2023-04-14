@@ -2,7 +2,7 @@
 //! for a chain environment that provides its own cryptographic API.
 #![cfg(all(feature = "secp256k1", feature = "rust-crypto"))]
 
-use ::signature::{DigestVerifier, Signature as _};
+use ::signature::DigestVerifier;
 use digest::Digest;
 
 use tendermint::crypto::signature::{self, Verifier};
@@ -23,7 +23,7 @@ impl Verifier for SubstrateSignatureVerifier {
     ) -> Result<(), signature::Error> {
         match pubkey {
             PublicKey::Secp256k1(pk) => {
-                let sig = k256::ecdsa::Signature::from_bytes(signature.as_bytes())
+                let sig = k256::ecdsa::Signature::try_from(signature.as_bytes())
                     .map_err(|_| signature::Error::MalformedSignature)?;
                 let mut hasher = sha2::Sha256::new();
                 Digest::update(&mut hasher, msg);

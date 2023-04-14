@@ -31,5 +31,7 @@ where
 
 /// Produces a dummy signature value for use as a placeholder in tests.
 pub fn dummy_signature() -> Signature {
-    Signature::from(Ed25519Signature::from_bytes(&[0; Ed25519Signature::BYTE_SIZE]).unwrap())
+    Signature::from(Ed25519Signature::from_bytes(
+        &[0; Ed25519Signature::BYTE_SIZE],
+    ))
 }
