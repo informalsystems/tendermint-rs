@@ -36,7 +36,7 @@ pub struct DominoOp {
     pub output: ::prost::alloc::string::String,
 }
 /// ProofOp defines an operation used for calculating Merkle root
-/// The data could be arbitrary format, providing necessary data
+/// The data could be arbitrary format, providing nessecary data
 /// for example neighbouring node hash
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -55,7 +55,7 @@ pub struct ProofOps {
     #[prost(message, repeated, tag = "1")]
     pub ops: ::prost::alloc::vec::Vec<ProofOp>,
 }
-/// PublicKey defines the keys available for use with Tendermint Validators
+/// PublicKey defines the keys available for use with Validators
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

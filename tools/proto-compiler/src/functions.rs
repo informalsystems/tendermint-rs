@@ -190,23 +190,21 @@ pub fn copy_files(src_dir: &Path, target_dir: &Path) {
     }
 }
 
-/// Walk through the list of directories and gather all *.proto files
-pub fn find_proto_files(proto_paths: Vec<PathBuf>) -> Vec<PathBuf> {
+/// Walk through the directory recursively and gather all *.proto files
+pub fn find_proto_files(proto_path: &Path) -> Vec<PathBuf> {
     let mut protos: Vec<PathBuf> = vec![];
-    for proto_path in &proto_paths {
-        protos.append(
-            &mut WalkDir::new(proto_path)
-                .into_iter()
-                .filter_map(|e| e.ok())
-                .filter(|e| {
-                    e.file_type().is_file()
-                        && e.path().extension().is_some()
-                        && e.path().extension().unwrap() == "proto"
-                })
-                .map(|e| e.into_path())
-                .collect(),
-        );
-    }
+    protos.append(
+        &mut WalkDir::new(proto_path)
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .filter(|e| {
+                e.file_type().is_file()
+                    && e.path().extension().is_some()
+                    && e.path().extension().unwrap() == "proto"
+            })
+            .map(|e| e.into_path())
+            .collect(),
+    );
     protos
 }
 
@@ -266,9 +264,9 @@ pub fn generate_tendermint_mod(prost_dir: &Path, version: &TendermintVersion, ta
         "{}\npub mod meta {{\n{}pub const REPOSITORY: &str = \"{}\";\n{}pub const COMMITISH: &str = \"{}\";\n}}\n",
         content,
         tab,
-        crate::constants::TENDERMINT_REPO,
+        version.repo,
         tab,
-        &version.commitish,
+        version.commitish,
     );
 
     let tendermint_mod_target = target_dir.join(format!("{}.rs", version.ident));

@@ -1,6 +1,6 @@
 [package]
 name = "tendermint-proto-compiler"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Informal Systems <hello@informal.systems>"]
 edition = "2021"
 publish = false
@@ -9,5 +9,8 @@ publish = false
 walkdir         = { version = "2.3" }
 prost-build     = { version = "0.11.4" }
 git2            = { version = "0.16" }
-tempfile        = { version = "3.2.0" }
+tempfile        = { version = "3.5.0" }
 subtle-encoding = { version = "0.5" }
+serde           = { version = "1.0", features = ["derive"] }
+serde_yaml      = { version = "0.9" }
+thiserror       = { version = "1.0" }
