@@ -1,20 +1,13 @@
 # CHANGELOG
 
-## v0.31.0
+## v0.32.0
 
-Upgrade signature crate versions and add a `TypedEvent` trait for ABCI events.
+This release exposes the `TypedEvent` marker trait.
 
-### BREAKING CHANGES
+### FEATURES
 
-* `[tendermint, tendermint-p2p]` Bump `ed25519` to v2, `k256` to v0.13, and `signature` to v2
-
-### IMPROVEMENTS
-
-- [`tendermint`] Adds a new `TypedEvent` for encoding structured data in ABCI events
-  ([\#1288](https://github.com/informalsystems/tendermint-rs/pull/1288)).
-- [`tools/proto-compiler`] Parse and fetch proto dependencies as listed in the
-  `buf.lock` file
-  ([\#1293](https://github.com/informalsystems/tendermint-rs/pull/1293)).
+- Expose the `tendermint::abci::event::TypedEvent
+  ([\#1288](https://github.com/informalsystems/tendermint-rs/pull/1288))
 
 ## v0.30.0
 
@@ -68,7 +61,7 @@ should be able to interoperate with CometBFT nodes based on 0.34.x and
 - [`tendermint-abci`] Port ABCI application support to 0.37 Tendermint Core API.
   No legacy support for 0.34 is provided at the moment.
   ([#1193](https://github.com/informalsystems/tendermint-rs/pull/1193)).
-- [`tendermint`] Derive `Hash` on `tendermint::Time`
+- Derive `Hash` on `tendermint::Time`
   ([#1278](https://github.com/informalsystems/tendermint-rs/issues/1278))
 - [`tendermint-light-client`] Show `max_clock_drift` in error raised when header
   is from the future
@@ -544,18 +537,18 @@ not yet support `no_std`.
 - Upgraded Prost to the official v0.9 release to finally resolve the security
   issue introduced by v0.7
   ([#925](https://github.com/informalsystems/tendermint-rs/issues/925))
-- `[tendermint, tendermint-config]` The `tendermint::config`
-  module has now been broken out into its own crate (`tendermint-
-  config`) to help towards facilitating `no_std` compatibility
-  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
-- `[tendermint]` The `tendermint::node::info::OtherInfo::rpc_address`
-  field type has been changed from `tendermint::net::Address`
-  to `String` toward facilitating `no_std` compatibility
-  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
 - `[tendermint]` The `tendermint::node::info::ListenAddress::to_net_address`
   method was replaced with a simple `as_str` method toward facilitating
   `no_std` compatibility ([#983](https://github.com/informalsystems/tendermint-
   rs/issues/983))
+- `[tendermint]` The `tendermint::node::info::OtherInfo::rpc_address`
+  field type has been changed from `tendermint::net::Address`
+  to `String` toward facilitating `no_std` compatibility
+  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
+- `[tendermint, tendermint-config]` The `tendermint::config`
+  module has now been broken out into its own crate (`tendermint-
+  config`) to help towards facilitating `no_std` compatibility
+  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
 
 ### FEATURES
 
