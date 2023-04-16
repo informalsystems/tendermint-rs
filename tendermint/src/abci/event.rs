@@ -12,7 +12,7 @@ use crate::prelude::*;
 /// be queried using these events.
 ///
 /// [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#events)
-#[derive(Clone, PartialEq, Eq, Debug, Serialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Hash)]
 pub struct Event {
     /// The kind of event.
     ///
@@ -65,6 +65,18 @@ impl Event {
                 .zip(other.attributes.iter())
                 .all(|(a, b)| a.eq_ignoring_index(b))
     }
+
+    /// A variant of [`core::hash::Hash::hash`] that ignores the `index` field on any attributes.
+    pub fn hash_ignoring_index<H: core::hash::Hasher>(&self, state: &mut H) {
+        use core::hash::Hash;
+        self.kind.hash(state);
+        // We can't forward to the slice impl here, because we need to call `hash_ignoring_index`
+        // on each attribute, so we need to do our own length prefixing.
+        state.write_usize(self.attributes.len());
+        for attr in &self.attributes {
+            attr.hash_ignoring_index(state);
+        }
+    }
 }
 
 /// A marker trait for types that can be converted to and from [`Event`]s.
@@ -103,7 +115,7 @@ where
 /// [`Event::new`] for details.
 ///
 /// [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#events)
-#[derive(Clone, PartialEq, Eq, Debug, Serialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Hash)]
 pub struct EventAttribute {
     /// The event key.
     pub key: String,
@@ -119,6 +131,13 @@ impl EventAttribute {
     /// Checks whether `&self` is equal to `other`, ignoring the `index` field.
     pub fn eq_ignoring_index(&self, other: &Self) -> bool {
         self.key == other.key && self.value == other.value
+    }
+
+    /// A variant of [`core::hash::Hash::hash`] that ignores the `index` field.
+    pub fn hash_ignoring_index<H: core::hash::Hasher>(&self, state: &mut H) {
+        use core::hash::Hash;
+        // Call the `Hash` impl on the (k,v) tuple to avoid prefix collision issues.
+        (&self.key, &self.value).hash(state);
     }
 }
 
