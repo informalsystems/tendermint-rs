@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## v0.31.1
+
+Expose the `TypedEvent` marker trait.
+
+### FEATURES
+
+- Expose the `tendermint::abci::event::TypedEvent
+  ([\#1288](https://github.com/informalsystems/tendermint-rs/pull/1288))
+
 ## v0.31.0
 
 Upgrade signature crate versions and add a `TypedEvent` trait for ABCI events.
