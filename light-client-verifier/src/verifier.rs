@@ -74,21 +74,21 @@ pub trait Verifier: Send + Sync {
 }
 
 macro_rules! verdict {
-    ($e:expr) => {
+    ($e:expr) => {{
         let result = $e;
         if result.is_err() {
             return result.into();
         }
-    };
+    }};
 }
 
 macro_rules! ensure_verdict_success {
-    ($e:expr) => {
+    ($e:expr) => {{
         let verdict = $e;
         if !matches!(verdict, Verdict::Success) {
             return verdict;
         }
-    };
+    }};
 }
 
 /// Predicate verifier encapsulating components necessary to facilitate
@@ -167,35 +167,6 @@ where
         options: &Options,
         now: Time,
     ) -> Verdict {
-        // Ensure the header isn't from a future time
-        verdict!(self.predicates.is_header_from_past(
-            untrusted.signed_header.header.time,
-            options.clock_drift,
-            now,
-        ));
-
-        self.validate_against_trusted_no_future_check(untrusted, trusted, options, now)
-    }
-
-    /// Validate an `UntrustedBlockState` coming from a misbehaviour evidence,
-    /// based on the given `TrustedBlockState`, `Options` and current time.
-    pub fn validate_misbehaviour_against_trusted(
-        &self,
-        untrusted: &UntrustedBlockState<'_>,
-        trusted: &TrustedBlockState<'_>,
-        options: &Options,
-        now: Time,
-    ) -> Verdict {
-        self.validate_against_trusted_no_future_check(untrusted, trusted, options, now)
-    }
-
-    fn validate_against_trusted_no_future_check(
-        &self,
-        untrusted: &UntrustedBlockState<'_>,
-        trusted: &TrustedBlockState<'_>,
-        options: &Options,
-        now: Time,
-    ) -> Verdict {
         // Ensure the latest trusted header hasn't expired
         verdict!(self.predicates.is_within_trust_period(
             trusted.header_time,
@@ -231,6 +202,34 @@ where
         }
 
         Verdict::Success
+    }
+
+    /// Ensure the header isn't from a future time
+    pub fn check_header_is_from_past(
+        &self,
+        untrusted: &UntrustedBlockState<'_>,
+        options: &Options,
+        now: Time,
+    ) -> Verdict {
+        verdict!(self.predicates.is_header_from_past(
+            untrusted.signed_header.header.time,
+            options.clock_drift,
+            now,
+        ));
+
+        Verdict::Success
+    }
+
+    /// Validate an `UntrustedBlockState` coming from a misbehaviour evidence,
+    /// based on the given `TrustedBlockState`, `Options` and current time.
+    pub fn validate_misbehaviour_against_trusted(
+        &self,
+        untrusted: &UntrustedBlockState<'_>,
+        trusted: &TrustedBlockState<'_>,
+        options: &Options,
+        now: Time,
+    ) -> Verdict {
+        self.validate_against_trusted(untrusted, trusted, options, now)
     }
 
     /// Check there is enough overlap between the validator sets of the trusted and untrusted
@@ -300,8 +299,10 @@ where
     ) -> Verdict {
         ensure_verdict_success!(self.verify_validator_sets(&untrusted));
         ensure_verdict_success!(self.validate_against_trusted(&untrusted, &trusted, options, now));
+        ensure_verdict_success!(self.check_header_is_from_past(&untrusted, options, now));
         ensure_verdict_success!(self.verify_commit_against_trusted(&untrusted, &trusted, options));
         ensure_verdict_success!(self.verify_commit(&untrusted));
+
         Verdict::Success
     }
 
