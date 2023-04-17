@@ -176,7 +176,8 @@ Our release process is as follows:
    1. Running `unclog release vX.Y.Z` to create a summary of all of the changes
       in this release.
    2. Running `unclog build > CHANGELOG.md` to update the changelog.
-   3. Committing this updated `CHANGELOG.md` file to the repo.
+   3. Committing this updated `CHANGELOG.md` file, as well as any `.changelog` files,
+      to the repo.
 2. Push this to a branch `release/vX.Y.Z` according to the version number of the
    anticipated release (e.g. `release/v0.17.0`) and open a **draft PR**.
 3. Bump all relevant versions in the codebase to the new version and push these
