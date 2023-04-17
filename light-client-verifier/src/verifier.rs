@@ -51,8 +51,20 @@ impl From<Result<(), VerificationError>> for Verdict {
 /// - [TMBC-VAL-CONTAINS-CORR.1]
 /// - [TMBC-VAL-COMMIT.1]
 pub trait Verifier: Send + Sync {
-    /// Perform the verification.
+    /// Verify a header received in a `MsgUpdateClient`.
     fn verify(
+        &self,
+        untrusted: UntrustedBlockState<'_>,
+        trusted: TrustedBlockState<'_>,
+        options: &Options,
+        now: Time,
+    ) -> Verdict;
+
+    /// Verify a header received in `MsgSubmitMisbehaviour`.
+    /// The verification for these headers is a bit more relaxed in order to catch FLA attacks.
+    /// In particular the "header in the future" check for the header should be skipped
+    /// from `validate_against_trusted`.
+    fn verify_misbehaviour_header(
         &self,
         untrusted: UntrustedBlockState<'_>,
         trusted: TrustedBlockState<'_>,
@@ -146,9 +158,38 @@ where
         Verdict::Success
     }
 
-    /// Validate an `UntrustedBlockState`, based on the given `TrustedBlockState`, `Options` and
-    /// current time.
+    /// Validate an `UntrustedBlockState` coming from a client update,
+    /// based on the given `TrustedBlockState`, `Options` and current time.
     pub fn validate_against_trusted(
+        &self,
+        untrusted: &UntrustedBlockState<'_>,
+        trusted: &TrustedBlockState<'_>,
+        options: &Options,
+        now: Time,
+    ) -> Verdict {
+        // Ensure the header isn't from a future time
+        verdict!(self.predicates.is_header_from_past(
+            untrusted.signed_header.header.time,
+            options.clock_drift,
+            now,
+        ));
+
+        self.validate_against_trusted_no_future_check(untrusted, trusted, options, now)
+    }
+
+    /// Validate an `UntrustedBlockState` coming from a misbehaviour evidence,
+    /// based on the given `TrustedBlockState`, `Options` and current time.
+    pub fn validate_misbehaviour_against_trusted(
+        &self,
+        untrusted: &UntrustedBlockState<'_>,
+        trusted: &TrustedBlockState<'_>,
+        options: &Options,
+        now: Time,
+    ) -> Verdict {
+        self.validate_against_trusted_no_future_check(untrusted, trusted, options, now)
+    }
+
+    fn validate_against_trusted_no_future_check(
         &self,
         untrusted: &UntrustedBlockState<'_>,
         trusted: &TrustedBlockState<'_>,
@@ -159,13 +200,6 @@ where
         verdict!(self.predicates.is_within_trust_period(
             trusted.header_time,
             options.trusting_period,
-            now,
-        ));
-
-        // Ensure the header isn't from a future time
-        verdict!(self.predicates.is_header_from_past(
-            untrusted.signed_header.header.time,
-            options.clock_drift,
             now,
         ));
 
@@ -266,6 +300,26 @@ where
     ) -> Verdict {
         ensure_verdict_success!(self.verify_validator_sets(&untrusted));
         ensure_verdict_success!(self.validate_against_trusted(&untrusted, &trusted, options, now));
+        ensure_verdict_success!(self.verify_commit_against_trusted(&untrusted, &trusted, options));
+        ensure_verdict_success!(self.verify_commit(&untrusted));
+        Verdict::Success
+    }
+
+    /// Verify a header received in `MsgSubmitMisbehaviour`.
+    /// The verification for these headers is a bit more relaxed in order to catch FLA attacks.
+    /// In particular the "header in the future" check for the header should be skipped
+    /// from `validate_against_trusted`.
+    fn verify_misbehaviour_header(
+        &self,
+        untrusted: UntrustedBlockState<'_>,
+        trusted: TrustedBlockState<'_>,
+        options: &Options,
+        now: Time,
+    ) -> Verdict {
+        ensure_verdict_success!(self.verify_validator_sets(&untrusted));
+        ensure_verdict_success!(
+            self.validate_misbehaviour_against_trusted(&untrusted, &trusted, options, now)
+        );
         ensure_verdict_success!(self.verify_commit_against_trusted(&untrusted, &trusted, options));
         ensure_verdict_success!(self.verify_commit(&untrusted));
         Verdict::Success
