@@ -1,5 +1,30 @@
 # CHANGELOG
 
+## v0.31.1
+
+Expose the `TypedEvent` marker trait.
+
+### FEATURES
+
+- Expose the `tendermint::abci::event::TypedEvent
+  ([\#1288](https://github.com/informalsystems/tendermint-rs/pull/1288))
+
+## v0.31.0
+
+Upgrade signature crate versions and add a `TypedEvent` trait for ABCI events.
+
+### BREAKING CHANGES
+
+* `[tendermint, tendermint-p2p]` Bump `ed25519` to v2, `k256` to v0.13, and `signature` to v2
+
+### IMPROVEMENTS
+
+- [`tendermint`] Adds a new `TypedEvent` for encoding structured data in ABCI events
+  ([\#1288](https://github.com/informalsystems/tendermint-rs/pull/1288)).
+- [`tools/proto-compiler`] Parse and fetch proto dependencies as listed in the
+  `buf.lock` file
+  ([\#1293](https://github.com/informalsystems/tendermint-rs/pull/1293)).
+
 ## v0.30.0
 
 This release introduces support for multiple versions of CometBFT protocols.
