@@ -40,3 +40,12 @@ impl Trace {
         self.0
     }
 }
+
+impl IntoIterator for Trace {
+    type Item = LightBlock;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
