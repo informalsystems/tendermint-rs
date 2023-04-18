@@ -17,7 +17,7 @@ pub struct NoBlockResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BlockResponse {
     #[prost(message, optional, tag = "1")]
-    pub block: ::core::option::Option<super::types::Block>,
+    pub block: ::core::option::Option<super::super::types::v1::Block>,
 }
 /// StatusRequest requests the status of a peer.
 #[allow(clippy::derive_partial_eq_without_eq)]

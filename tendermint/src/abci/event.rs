@@ -129,12 +129,12 @@ impl<K: Into<String>, V: Into<String>> From<(K, V)> for EventAttribute {
 // Protobuf conversions
 // =============================================================================
 
-mod v0_34 {
+mod v1 {
     use super::{Event, EventAttribute};
     use crate::prelude::*;
     use core::convert::{TryFrom, TryInto};
 
-    use tendermint_proto::v0_34::abci as pb;
+    use tendermint_proto::abci::v1 as pb;
     use tendermint_proto::Protobuf;
 
     impl From<EventAttribute> for pb::EventAttribute {
@@ -191,12 +191,12 @@ mod v0_34 {
     impl Protobuf<pb::Event> for Event {}
 }
 
-mod v0_37 {
+mod v2 {
     use super::{Event, EventAttribute};
     use crate::prelude::*;
     use core::convert::{TryFrom, TryInto};
 
-    use tendermint_proto::v0_37::abci as pb;
+    use tendermint_proto::abci::v2 as pb;
     use tendermint_proto::Protobuf;
 
     impl From<EventAttribute> for pb::EventAttribute {

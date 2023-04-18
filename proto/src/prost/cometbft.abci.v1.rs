@@ -3,7 +3,7 @@
 pub struct Request {
     #[prost(
         oneof = "request::Value",
-        tags = "1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17"
+        tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15"
     )]
     pub value: ::core::option::Option<request::Value>,
 }
@@ -18,6 +18,8 @@ pub mod request {
         Flush(super::RequestFlush),
         #[prost(message, tag = "3")]
         Info(super::RequestInfo),
+        #[prost(message, tag = "4")]
+        SetOption(super::RequestSetOption),
         #[prost(message, tag = "5")]
         InitChain(super::RequestInitChain),
         #[prost(message, tag = "6")]
@@ -40,10 +42,6 @@ pub mod request {
         LoadSnapshotChunk(super::RequestLoadSnapshotChunk),
         #[prost(message, tag = "15")]
         ApplySnapshotChunk(super::RequestApplySnapshotChunk),
-        #[prost(message, tag = "16")]
-        PrepareProposal(super::RequestPrepareProposal),
-        #[prost(message, tag = "17")]
-        ProcessProposal(super::RequestProcessProposal),
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -64,8 +62,15 @@ pub struct RequestInfo {
     pub block_version: u64,
     #[prost(uint64, tag = "3")]
     pub p2p_version: u64,
-    #[prost(string, tag = "4")]
-    pub abci_version: ::prost::alloc::string::String,
+}
+/// nondeterministic
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RequestSetOption {
+    #[prost(string, tag = "1")]
+    pub key: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub value: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -75,7 +80,7 @@ pub struct RequestInitChain {
     #[prost(string, tag = "2")]
     pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "3")]
-    pub consensus_params: ::core::option::Option<super::types::ConsensusParams>,
+    pub consensus_params: ::core::option::Option<ConsensusParams>,
     #[prost(message, repeated, tag = "4")]
     pub validators: ::prost::alloc::vec::Vec<ValidatorUpdate>,
     #[prost(bytes = "bytes", tag = "5")]
@@ -101,11 +106,11 @@ pub struct RequestBeginBlock {
     #[prost(bytes = "bytes", tag = "1")]
     pub hash: ::prost::bytes::Bytes,
     #[prost(message, optional, tag = "2")]
-    pub header: ::core::option::Option<super::types::Header>,
+    pub header: ::core::option::Option<super::super::types::v1::Header>,
     #[prost(message, optional, tag = "3")]
-    pub last_commit_info: ::core::option::Option<CommitInfo>,
+    pub last_commit_info: ::core::option::Option<LastCommitInfo>,
     #[prost(message, repeated, tag = "4")]
-    pub byzantine_validators: ::prost::alloc::vec::Vec<Misbehavior>,
+    pub byzantine_validators: ::prost::alloc::vec::Vec<Evidence>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -169,56 +174,10 @@ pub struct RequestApplySnapshotChunk {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct RequestPrepareProposal {
-    /// the modified transactions cannot exceed this size.
-    #[prost(int64, tag = "1")]
-    pub max_tx_bytes: i64,
-    /// txs is an array of transactions that will be included in a block,
-    /// sent to the app for possible modifications.
-    #[prost(bytes = "bytes", repeated, tag = "2")]
-    pub txs: ::prost::alloc::vec::Vec<::prost::bytes::Bytes>,
-    #[prost(message, optional, tag = "3")]
-    pub local_last_commit: ::core::option::Option<ExtendedCommitInfo>,
-    #[prost(message, repeated, tag = "4")]
-    pub misbehavior: ::prost::alloc::vec::Vec<Misbehavior>,
-    #[prost(int64, tag = "5")]
-    pub height: i64,
-    #[prost(message, optional, tag = "6")]
-    pub time: ::core::option::Option<crate::google::protobuf::Timestamp>,
-    #[prost(bytes = "bytes", tag = "7")]
-    pub next_validators_hash: ::prost::bytes::Bytes,
-    /// address of the public key of the validator proposing the block.
-    #[prost(bytes = "bytes", tag = "8")]
-    pub proposer_address: ::prost::bytes::Bytes,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct RequestProcessProposal {
-    #[prost(bytes = "bytes", repeated, tag = "1")]
-    pub txs: ::prost::alloc::vec::Vec<::prost::bytes::Bytes>,
-    #[prost(message, optional, tag = "2")]
-    pub proposed_last_commit: ::core::option::Option<CommitInfo>,
-    #[prost(message, repeated, tag = "3")]
-    pub misbehavior: ::prost::alloc::vec::Vec<Misbehavior>,
-    /// hash is the merkle root hash of the fields of the proposed block.
-    #[prost(bytes = "bytes", tag = "4")]
-    pub hash: ::prost::bytes::Bytes,
-    #[prost(int64, tag = "5")]
-    pub height: i64,
-    #[prost(message, optional, tag = "6")]
-    pub time: ::core::option::Option<crate::google::protobuf::Timestamp>,
-    #[prost(bytes = "bytes", tag = "7")]
-    pub next_validators_hash: ::prost::bytes::Bytes,
-    /// address of the public key of the original proposer of the block.
-    #[prost(bytes = "bytes", tag = "8")]
-    pub proposer_address: ::prost::bytes::Bytes,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Response {
     #[prost(
         oneof = "response::Value",
-        tags = "1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18"
+        tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16"
     )]
     pub value: ::core::option::Option<response::Value>,
 }
@@ -235,6 +194,8 @@ pub mod response {
         Flush(super::ResponseFlush),
         #[prost(message, tag = "4")]
         Info(super::ResponseInfo),
+        #[prost(message, tag = "5")]
+        SetOption(super::ResponseSetOption),
         #[prost(message, tag = "6")]
         InitChain(super::ResponseInitChain),
         #[prost(message, tag = "7")]
@@ -257,10 +218,6 @@ pub mod response {
         LoadSnapshotChunk(super::ResponseLoadSnapshotChunk),
         #[prost(message, tag = "16")]
         ApplySnapshotChunk(super::ResponseApplySnapshotChunk),
-        #[prost(message, tag = "17")]
-        PrepareProposal(super::ResponsePrepareProposal),
-        #[prost(message, tag = "18")]
-        ProcessProposal(super::ResponseProcessProposal),
     }
 }
 /// nondeterministic
@@ -300,11 +257,23 @@ pub struct ResponseInfo {
     #[serde(skip_serializing_if = "bytes::Bytes::is_empty")]
     pub last_block_app_hash: ::prost::bytes::Bytes,
 }
+/// nondeterministic
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ResponseSetOption {
+    #[prost(uint32, tag = "1")]
+    pub code: u32,
+    /// bytes data = 2;
+    #[prost(string, tag = "3")]
+    pub log: ::prost::alloc::string::String,
+    #[prost(string, tag = "4")]
+    pub info: ::prost::alloc::string::String,
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseInitChain {
     #[prost(message, optional, tag = "1")]
-    pub consensus_params: ::core::option::Option<super::types::ConsensusParams>,
+    pub consensus_params: ::core::option::Option<ConsensusParams>,
     #[prost(message, repeated, tag = "2")]
     pub validators: ::prost::alloc::vec::Vec<ValidatorUpdate>,
     #[prost(bytes = "bytes", tag = "3")]
@@ -330,7 +299,7 @@ pub struct ResponseQuery {
     #[prost(bytes = "bytes", tag = "7")]
     pub value: ::prost::bytes::Bytes,
     #[prost(message, optional, tag = "8")]
-    pub proof_ops: ::core::option::Option<super::crypto::ProofOps>,
+    pub proof_ops: ::core::option::Option<super::super::crypto::v1::ProofOps>,
     #[prost(int64, tag = "9")]
     pub height: i64,
     #[prost(string, tag = "10")]
@@ -401,7 +370,7 @@ pub struct ResponseEndBlock {
     #[prost(message, repeated, tag = "1")]
     pub validator_updates: ::prost::alloc::vec::Vec<ValidatorUpdate>,
     #[prost(message, optional, tag = "2")]
-    pub consensus_param_updates: ::core::option::Option<super::types::ConsensusParams>,
+    pub consensus_param_updates: ::core::option::Option<ConsensusParams>,
     #[prost(message, repeated, tag = "3")]
     pub events: ::prost::alloc::vec::Vec<Event>,
 }
@@ -558,78 +527,38 @@ pub mod response_apply_snapshot_chunk {
         }
     }
 }
+/// ConsensusParams contains all consensus-relevant parameters
+/// that can be adjusted by the abci app
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ResponsePrepareProposal {
-    #[prost(bytes = "bytes", repeated, tag = "1")]
-    pub txs: ::prost::alloc::vec::Vec<::prost::bytes::Bytes>,
+pub struct ConsensusParams {
+    #[prost(message, optional, tag = "1")]
+    pub block: ::core::option::Option<BlockParams>,
+    #[prost(message, optional, tag = "2")]
+    pub evidence: ::core::option::Option<super::super::types::v1::EvidenceParams>,
+    #[prost(message, optional, tag = "3")]
+    pub validator: ::core::option::Option<super::super::types::v1::ValidatorParams>,
+    #[prost(message, optional, tag = "4")]
+    pub version: ::core::option::Option<super::super::types::v1::VersionParams>,
+}
+/// BlockParams contains limits on the block size.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct BlockParams {
+    /// Note: must be greater than 0
+    #[prost(int64, tag = "1")]
+    pub max_bytes: i64,
+    /// Note: must be greater or equal to -1
+    #[prost(int64, tag = "2")]
+    pub max_gas: i64,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ResponseProcessProposal {
-    #[prost(enumeration = "response_process_proposal::ProposalStatus", tag = "1")]
-    pub status: i32,
-}
-/// Nested message and enum types in `ResponseProcessProposal`.
-pub mod response_process_proposal {
-    #[derive(
-        Clone,
-        Copy,
-        Debug,
-        PartialEq,
-        Eq,
-        Hash,
-        PartialOrd,
-        Ord,
-        ::prost::Enumeration
-    )]
-    #[repr(i32)]
-    pub enum ProposalStatus {
-        Unknown = 0,
-        Accept = 1,
-        Reject = 2,
-    }
-    impl ProposalStatus {
-        /// String value of the enum field names used in the ProtoBuf definition.
-        ///
-        /// The values are not transformed in any way and thus are considered stable
-        /// (if the ProtoBuf definition does not change) and safe for programmatic use.
-        pub fn as_str_name(&self) -> &'static str {
-            match self {
-                ProposalStatus::Unknown => "UNKNOWN",
-                ProposalStatus::Accept => "ACCEPT",
-                ProposalStatus::Reject => "REJECT",
-            }
-        }
-        /// Creates an enum from field names used in the ProtoBuf definition.
-        pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
-            match value {
-                "UNKNOWN" => Some(Self::Unknown),
-                "ACCEPT" => Some(Self::Accept),
-                "REJECT" => Some(Self::Reject),
-                _ => None,
-            }
-        }
-    }
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CommitInfo {
+pub struct LastCommitInfo {
     #[prost(int32, tag = "1")]
     pub round: i32,
     #[prost(message, repeated, tag = "2")]
     pub votes: ::prost::alloc::vec::Vec<VoteInfo>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ExtendedCommitInfo {
-    /// The round at which the block proposer decided in the previous height.
-    #[prost(int32, tag = "1")]
-    pub round: i32,
-    /// List of validators' addresses in the last validator set with their voting
-    /// information, including vote extensions.
-    #[prost(message, repeated, tag = "2")]
-    pub votes: ::prost::alloc::vec::Vec<ExtendedVoteInfo>,
 }
 /// Event allows application developers to attach additional information to
 /// ResponseBeginBlock, ResponseEndBlock, ResponseCheckTx and ResponseDeliverTx.
@@ -646,10 +575,10 @@ pub struct Event {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventAttribute {
-    #[prost(string, tag = "1")]
-    pub key: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub value: ::prost::alloc::string::String,
+    #[prost(bytes = "bytes", tag = "1")]
+    pub key: ::prost::bytes::Bytes,
+    #[prost(bytes = "bytes", tag = "2")]
+    pub value: ::prost::bytes::Bytes,
     /// nondeterministic
     #[prost(bool, tag = "3")]
     pub index: bool,
@@ -669,7 +598,6 @@ pub struct TxResult {
     #[prost(message, optional, tag = "4")]
     pub result: ::core::option::Option<ResponseDeliverTx>,
 }
-/// Validator
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Validator {
@@ -682,16 +610,14 @@ pub struct Validator {
     #[prost(int64, tag = "3")]
     pub power: i64,
 }
-/// ValidatorUpdate
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorUpdate {
     #[prost(message, optional, tag = "1")]
-    pub pub_key: ::core::option::Option<super::crypto::PublicKey>,
+    pub pub_key: ::core::option::Option<super::super::crypto::v1::PublicKey>,
     #[prost(int64, tag = "2")]
     pub power: i64,
 }
-/// VoteInfo
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct VoteInfo {
@@ -702,19 +628,8 @@ pub struct VoteInfo {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ExtendedVoteInfo {
-    #[prost(message, optional, tag = "1")]
-    pub validator: ::core::option::Option<Validator>,
-    #[prost(bool, tag = "2")]
-    pub signed_last_block: bool,
-    /// Reserved for future use
-    #[prost(bytes = "bytes", tag = "3")]
-    pub vote_extension: ::prost::bytes::Bytes,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Misbehavior {
-    #[prost(enumeration = "MisbehaviorType", tag = "1")]
+pub struct Evidence {
+    #[prost(enumeration = "EvidenceType", tag = "1")]
     pub r#type: i32,
     /// The offending validator
     #[prost(message, optional, tag = "2")]
@@ -778,21 +693,21 @@ impl CheckTxType {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
-pub enum MisbehaviorType {
+pub enum EvidenceType {
     Unknown = 0,
     DuplicateVote = 1,
     LightClientAttack = 2,
 }
-impl MisbehaviorType {
+impl EvidenceType {
     /// String value of the enum field names used in the ProtoBuf definition.
     ///
     /// The values are not transformed in any way and thus are considered stable
     /// (if the ProtoBuf definition does not change) and safe for programmatic use.
     pub fn as_str_name(&self) -> &'static str {
         match self {
-            MisbehaviorType::Unknown => "UNKNOWN",
-            MisbehaviorType::DuplicateVote => "DUPLICATE_VOTE",
-            MisbehaviorType::LightClientAttack => "LIGHT_CLIENT_ATTACK",
+            EvidenceType::Unknown => "UNKNOWN",
+            EvidenceType::DuplicateVote => "DUPLICATE_VOTE",
+            EvidenceType::LightClientAttack => "LIGHT_CLIENT_ATTACK",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.

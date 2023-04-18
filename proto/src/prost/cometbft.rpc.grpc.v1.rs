@@ -14,7 +14,9 @@ pub struct ResponsePing {}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseBroadcastTx {
     #[prost(message, optional, tag = "1")]
-    pub check_tx: ::core::option::Option<super::super::abci::ResponseCheckTx>,
+    pub check_tx: ::core::option::Option<super::super::super::abci::v1::ResponseCheckTx>,
     #[prost(message, optional, tag = "2")]
-    pub deliver_tx: ::core::option::Option<super::super::abci::ResponseDeliverTx>,
+    pub deliver_tx: ::core::option::Option<
+        super::super::super::abci::v1::ResponseDeliverTx,
+    >,
 }

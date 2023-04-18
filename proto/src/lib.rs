@@ -18,9 +18,9 @@ pub mod google {
     }
 }
 
-mod error;
 #[allow(warnings)]
-mod tendermint;
+mod cometbft;
+mod error;
 
 use core::{
     convert::{TryFrom, TryInto},
@@ -28,9 +28,9 @@ use core::{
 };
 
 use bytes::{Buf, BufMut};
+pub use cometbft::*;
 pub use error::Error;
 use prost::{encoding::encoded_len_varint, Message};
-pub use tendermint::*;
 
 pub mod serializers;
 

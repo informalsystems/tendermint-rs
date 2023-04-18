@@ -37,7 +37,7 @@ pub mod packet {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthSigMessage {
     #[prost(message, optional, tag = "1")]
-    pub pub_key: ::core::option::Option<super::crypto::PublicKey>,
+    pub pub_key: ::core::option::Option<super::super::crypto::v1::PublicKey>,
     #[prost(bytes = "vec", tag = "2")]
     pub sig: ::prost::alloc::vec::Vec<u8>,
 }

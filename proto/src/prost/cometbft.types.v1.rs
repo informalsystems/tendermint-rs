@@ -17,7 +17,7 @@ pub struct Validator {
     #[serde(with = "crate::serializers::bytes::hexstring")]
     pub address: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "2")]
-    pub pub_key: ::core::option::Option<super::crypto::PublicKey>,
+    pub pub_key: ::core::option::Option<super::super::crypto::v1::PublicKey>,
     #[prost(int64, tag = "3")]
     #[serde(alias = "power", with = "crate::serializers::from_str")]
     pub voting_power: i64,
@@ -29,9 +29,47 @@ pub struct Validator {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SimpleValidator {
     #[prost(message, optional, tag = "1")]
-    pub pub_key: ::core::option::Option<super::crypto::PublicKey>,
+    pub pub_key: ::core::option::Option<super::super::crypto::v1::PublicKey>,
     #[prost(int64, tag = "2")]
     pub voting_power: i64,
+}
+/// BlockIdFlag indicates which BlockID the signature is for
+#[derive(::num_derive::FromPrimitive, ::num_derive::ToPrimitive)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum BlockIdFlag {
+    /// indicates an error condition
+    Unknown = 0,
+    /// the vote was not received
+    Absent = 1,
+    /// voted for the block that received the majority
+    Commit = 2,
+    /// voted for nil
+    Nil = 3,
+}
+impl BlockIdFlag {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            BlockIdFlag::Unknown => "BLOCK_ID_FLAG_UNKNOWN",
+            BlockIdFlag::Absent => "BLOCK_ID_FLAG_ABSENT",
+            BlockIdFlag::Commit => "BLOCK_ID_FLAG_COMMIT",
+            BlockIdFlag::Nil => "BLOCK_ID_FLAG_NIL",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "BLOCK_ID_FLAG_UNKNOWN" => Some(Self::Unknown),
+            "BLOCK_ID_FLAG_ABSENT" => Some(Self::Absent),
+            "BLOCK_ID_FLAG_COMMIT" => Some(Self::Commit),
+            "BLOCK_ID_FLAG_NIL" => Some(Self::Nil),
+            _ => None,
+        }
+    }
 }
 /// PartsetHeader
 #[derive(::serde::Deserialize, ::serde::Serialize)]
@@ -53,7 +91,7 @@ pub struct Part {
     #[prost(bytes = "vec", tag = "2")]
     pub bytes: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "3")]
-    pub proof: ::core::option::Option<super::crypto::Proof>,
+    pub proof: ::core::option::Option<super::super::crypto::v1::Proof>,
 }
 /// BlockID
 #[derive(::serde::Deserialize, ::serde::Serialize)]
@@ -74,7 +112,7 @@ pub struct BlockId {
 pub struct Header {
     /// basic block info
     #[prost(message, optional, tag = "1")]
-    pub version: ::core::option::Option<super::version::Consensus>,
+    pub version: ::core::option::Option<super::super::version::v1::Consensus>,
     #[prost(string, tag = "2")]
     pub chain_id: ::prost::alloc::string::String,
     #[prost(int64, tag = "3")]
@@ -141,16 +179,14 @@ pub struct Data {
     #[serde(with = "crate::serializers::txs")]
     pub txs: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
-/// Vote represents a prevote, precommit, or commit vote from validators for
+/// Vote represents a prevote or precommit vote from validators for
 /// consensus.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Vote {
     #[prost(enumeration = "SignedMsgType", tag = "1")]
     pub r#type: i32,
     #[prost(int64, tag = "2")]
-    #[serde(with = "crate::serializers::from_str")]
     pub height: i64,
     #[prost(int32, tag = "3")]
     pub round: i32,
@@ -158,15 +194,12 @@ pub struct Vote {
     #[prost(message, optional, tag = "4")]
     pub block_id: ::core::option::Option<BlockId>,
     #[prost(message, optional, tag = "5")]
-    #[serde(with = "crate::serializers::optional")]
     pub timestamp: ::core::option::Option<crate::google::protobuf::Timestamp>,
     #[prost(bytes = "vec", tag = "6")]
-    #[serde(with = "crate::serializers::bytes::hexstring")]
     pub validator_address: ::prost::alloc::vec::Vec<u8>,
     #[prost(int32, tag = "7")]
     pub validator_index: i32,
     #[prost(bytes = "vec", tag = "8")]
-    #[serde(with = "crate::serializers::bytes::base64string")]
     pub signature: ::prost::alloc::vec::Vec<u8>,
 }
 /// Commit contains the evidence that a block was committed by a set of validators.
@@ -265,41 +298,7 @@ pub struct TxProof {
     #[serde(with = "crate::serializers::bytes::base64string")]
     pub data: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "3")]
-    pub proof: ::core::option::Option<super::crypto::Proof>,
-}
-/// BlockIdFlag indicates which BlcokID the signature is for
-#[derive(::num_derive::FromPrimitive, ::num_derive::ToPrimitive)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-#[repr(i32)]
-pub enum BlockIdFlag {
-    Unknown = 0,
-    Absent = 1,
-    Commit = 2,
-    Nil = 3,
-}
-impl BlockIdFlag {
-    /// String value of the enum field names used in the ProtoBuf definition.
-    ///
-    /// The values are not transformed in any way and thus are considered stable
-    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
-    pub fn as_str_name(&self) -> &'static str {
-        match self {
-            BlockIdFlag::Unknown => "BLOCK_ID_FLAG_UNKNOWN",
-            BlockIdFlag::Absent => "BLOCK_ID_FLAG_ABSENT",
-            BlockIdFlag::Commit => "BLOCK_ID_FLAG_COMMIT",
-            BlockIdFlag::Nil => "BLOCK_ID_FLAG_NIL",
-        }
-    }
-    /// Creates an enum from field names used in the ProtoBuf definition.
-    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
-        match value {
-            "BLOCK_ID_FLAG_UNKNOWN" => Some(Self::Unknown),
-            "BLOCK_ID_FLAG_ABSENT" => Some(Self::Absent),
-            "BLOCK_ID_FLAG_COMMIT" => Some(Self::Commit),
-            "BLOCK_ID_FLAG_NIL" => Some(Self::Nil),
-            _ => None,
-        }
-    }
+    pub proof: ::core::option::Option<super::super::crypto::v1::Proof>,
 }
 /// SignedMsgType is a type of signed message in the consensus.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
@@ -422,37 +421,22 @@ pub struct HashedParams {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventDataRoundState {
-    #[prost(int64, tag = "1")]
-    pub height: i64,
-    #[prost(int32, tag = "2")]
-    pub round: i32,
-    #[prost(string, tag = "3")]
-    pub step: ::prost::alloc::string::String,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Evidence {
     #[prost(oneof = "evidence::Sum", tags = "1, 2")]
     pub sum: ::core::option::Option<evidence::Sum>,
 }
 /// Nested message and enum types in `Evidence`.
 pub mod evidence {
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
-    #[serde(tag = "type", content = "value")]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Sum {
         #[prost(message, tag = "1")]
-        #[serde(rename = "tendermint/DuplicateVoteEvidence")]
         DuplicateVoteEvidence(super::DuplicateVoteEvidence),
         #[prost(message, tag = "2")]
-        #[serde(rename = "tendermint/LightClientAttackEvidence")]
         LightClientAttackEvidence(super::LightClientAttackEvidence),
     }
 }
 /// DuplicateVoteEvidence contains evidence of a validator signed two conflicting votes.
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DuplicateVoteEvidence {
@@ -461,13 +445,10 @@ pub struct DuplicateVoteEvidence {
     #[prost(message, optional, tag = "2")]
     pub vote_b: ::core::option::Option<Vote>,
     #[prost(int64, tag = "3")]
-    #[serde(alias = "TotalVotingPower", with = "crate::serializers::from_str")]
     pub total_voting_power: i64,
     #[prost(int64, tag = "4")]
-    #[serde(alias = "ValidatorPower", with = "crate::serializers::from_str")]
     pub validator_power: i64,
     #[prost(message, optional, tag = "5")]
-    #[serde(alias = "Timestamp")]
     pub timestamp: ::core::option::Option<crate::google::protobuf::Timestamp>,
 }
 /// LightClientAttackEvidence contains evidence of a set of validators attempting to mislead a light client.
@@ -486,15 +467,12 @@ pub struct LightClientAttackEvidence {
     #[prost(message, optional, tag = "5")]
     pub timestamp: ::core::option::Option<crate::google::protobuf::Timestamp>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EvidenceList {
     #[prost(message, repeated, tag = "1")]
-    #[serde(with = "crate::serializers::nullable")]
     pub evidence: ::prost::alloc::vec::Vec<Evidence>,
 }
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Block {
@@ -506,6 +484,16 @@ pub struct Block {
     pub evidence: ::core::option::Option<EvidenceList>,
     #[prost(message, optional, tag = "4")]
     pub last_commit: ::core::option::Option<Commit>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventDataRoundState {
+    #[prost(int64, tag = "1")]
+    pub height: i64,
+    #[prost(int32, tag = "2")]
+    pub round: i32,
+    #[prost(string, tag = "3")]
+    pub step: ::prost::alloc::string::String,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]

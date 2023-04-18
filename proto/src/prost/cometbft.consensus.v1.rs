@@ -25,9 +25,11 @@ pub struct NewValidBlock {
     #[prost(int32, tag = "2")]
     pub round: i32,
     #[prost(message, optional, tag = "3")]
-    pub block_part_set_header: ::core::option::Option<super::types::PartSetHeader>,
+    pub block_part_set_header: ::core::option::Option<
+        super::super::types::v1::PartSetHeader,
+    >,
     #[prost(message, optional, tag = "4")]
-    pub block_parts: ::core::option::Option<super::libs::bits::BitArray>,
+    pub block_parts: ::core::option::Option<super::super::libs::bits::v1::BitArray>,
     #[prost(bool, tag = "5")]
     pub is_commit: bool,
 }
@@ -36,7 +38,7 @@ pub struct NewValidBlock {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Proposal {
     #[prost(message, optional, tag = "1")]
-    pub proposal: ::core::option::Option<super::types::Proposal>,
+    pub proposal: ::core::option::Option<super::super::types::v1::Proposal>,
 }
 /// ProposalPOL is sent when a previous proposal is re-proposed.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -47,7 +49,7 @@ pub struct ProposalPol {
     #[prost(int32, tag = "2")]
     pub proposal_pol_round: i32,
     #[prost(message, optional, tag = "3")]
-    pub proposal_pol: ::core::option::Option<super::libs::bits::BitArray>,
+    pub proposal_pol: ::core::option::Option<super::super::libs::bits::v1::BitArray>,
 }
 /// BlockPart is sent when gossipping a piece of the proposed block.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -58,14 +60,14 @@ pub struct BlockPart {
     #[prost(int32, tag = "2")]
     pub round: i32,
     #[prost(message, optional, tag = "3")]
-    pub part: ::core::option::Option<super::types::Part>,
+    pub part: ::core::option::Option<super::super::types::v1::Part>,
 }
 /// Vote is sent when voting for a proposal (or lack thereof).
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Vote {
     #[prost(message, optional, tag = "1")]
-    pub vote: ::core::option::Option<super::types::Vote>,
+    pub vote: ::core::option::Option<super::super::types::v1::Vote>,
 }
 /// HasVote is sent to indicate that a particular vote has been received.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -75,7 +77,7 @@ pub struct HasVote {
     pub height: i64,
     #[prost(int32, tag = "2")]
     pub round: i32,
-    #[prost(enumeration = "super::types::SignedMsgType", tag = "3")]
+    #[prost(enumeration = "super::super::types::v1::SignedMsgType", tag = "3")]
     pub r#type: i32,
     #[prost(int32, tag = "4")]
     pub index: i32,
@@ -88,10 +90,10 @@ pub struct VoteSetMaj23 {
     pub height: i64,
     #[prost(int32, tag = "2")]
     pub round: i32,
-    #[prost(enumeration = "super::types::SignedMsgType", tag = "3")]
+    #[prost(enumeration = "super::super::types::v1::SignedMsgType", tag = "3")]
     pub r#type: i32,
     #[prost(message, optional, tag = "4")]
-    pub block_id: ::core::option::Option<super::types::BlockId>,
+    pub block_id: ::core::option::Option<super::super::types::v1::BlockId>,
 }
 /// VoteSetBits is sent to communicate the bit-array of votes seen for the BlockID.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -101,12 +103,12 @@ pub struct VoteSetBits {
     pub height: i64,
     #[prost(int32, tag = "2")]
     pub round: i32,
-    #[prost(enumeration = "super::types::SignedMsgType", tag = "3")]
+    #[prost(enumeration = "super::super::types::v1::SignedMsgType", tag = "3")]
     pub r#type: i32,
     #[prost(message, optional, tag = "4")]
-    pub block_id: ::core::option::Option<super::types::BlockId>,
+    pub block_id: ::core::option::Option<super::super::types::v1::BlockId>,
     #[prost(message, optional, tag = "5")]
-    pub votes: ::core::option::Option<super::libs::bits::BitArray>,
+    pub votes: ::core::option::Option<super::super::libs::bits::v1::BitArray>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -181,7 +183,7 @@ pub mod wal_message {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Sum {
         #[prost(message, tag = "1")]
-        EventDataRoundState(super::super::types::EventDataRoundState),
+        EventDataRoundState(super::super::super::types::v1::EventDataRoundState),
         #[prost(message, tag = "2")]
         MsgInfo(super::MsgInfo),
         #[prost(message, tag = "3")]

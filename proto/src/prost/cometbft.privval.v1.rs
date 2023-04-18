@@ -18,7 +18,7 @@ pub struct PubKeyRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PubKeyResponse {
     #[prost(message, optional, tag = "1")]
-    pub pub_key: ::core::option::Option<super::crypto::PublicKey>,
+    pub pub_key: ::core::option::Option<super::super::crypto::v1::PublicKey>,
     #[prost(message, optional, tag = "2")]
     pub error: ::core::option::Option<RemoteSignerError>,
 }
@@ -27,7 +27,7 @@ pub struct PubKeyResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SignVoteRequest {
     #[prost(message, optional, tag = "1")]
-    pub vote: ::core::option::Option<super::types::Vote>,
+    pub vote: ::core::option::Option<super::super::types::v1::Vote>,
     #[prost(string, tag = "2")]
     pub chain_id: ::prost::alloc::string::String,
 }
@@ -36,7 +36,7 @@ pub struct SignVoteRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SignedVoteResponse {
     #[prost(message, optional, tag = "1")]
-    pub vote: ::core::option::Option<super::types::Vote>,
+    pub vote: ::core::option::Option<super::super::types::v1::Vote>,
     #[prost(message, optional, tag = "2")]
     pub error: ::core::option::Option<RemoteSignerError>,
 }
@@ -45,7 +45,7 @@ pub struct SignedVoteResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SignProposalRequest {
     #[prost(message, optional, tag = "1")]
-    pub proposal: ::core::option::Option<super::types::Proposal>,
+    pub proposal: ::core::option::Option<super::super::types::v1::Proposal>,
     #[prost(string, tag = "2")]
     pub chain_id: ::prost::alloc::string::String,
 }
@@ -54,7 +54,7 @@ pub struct SignProposalRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SignedProposalResponse {
     #[prost(message, optional, tag = "1")]
-    pub proposal: ::core::option::Option<super::types::Proposal>,
+    pub proposal: ::core::option::Option<super::super::types::v1::Proposal>,
     #[prost(message, optional, tag = "2")]
     pub error: ::core::option::Option<RemoteSignerError>,
 }
