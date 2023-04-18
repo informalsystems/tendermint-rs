@@ -35,4 +35,8 @@ impl Trace {
     pub fn iter(&self) -> std::slice::Iter<'_, LightBlock> {
         self.0.iter()
     }
+
+    pub fn into_vec(self) -> Vec<LightBlock> {
+        self.0
+    }
 }
