@@ -15,6 +15,7 @@ use super::{
 #[derive(Clone, Debug)]
 pub struct Divergence {
     pub evidence: LightClientAttackEvidence,
+    pub witness_trace: Trace,
     pub challenging_block: LightBlock,
 }
 
@@ -83,6 +84,7 @@ pub async fn detect_divergence(
 
             Ok(Some(Divergence {
                 evidence: evidence.against_primary,
+                witness_trace: evidence.witness_trace,
                 challenging_block: *challenging_block,
             }))
         },

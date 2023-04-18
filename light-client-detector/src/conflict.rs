@@ -10,6 +10,8 @@ use super::{
 
 #[derive(Debug)]
 pub struct GatheredEvidence {
+    pub witness_trace: Trace,
+
     pub against_primary: LightClientAttackEvidence,
     pub against_witness: Option<LightClientAttackEvidence>,
 }
@@ -61,6 +63,7 @@ pub async fn gather_evidence_from_conflicting_headers(
 
     let Some(primary) = primary else {
         return Ok(GatheredEvidence {
+            witness_trace,
             against_primary: evidence_against_primary,
             against_witness: None,
         });
@@ -88,6 +91,7 @@ pub async fn gather_evidence_from_conflicting_headers(
         make_evidence(witness_block, trusted_block.clone(), common_block.clone());
 
     Ok(GatheredEvidence {
+        witness_trace,
         against_primary: evidence_against_primary,
         against_witness: Some(evidence_against_witness),
     })
