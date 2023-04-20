@@ -74,6 +74,33 @@ define_error! {
     }
 }
 
+impl IoError {
+    pub fn from_rpc(err: rpc::Error) -> Self {
+        Self::from_height_too_high(&err).unwrap_or_else(|| Self::rpc(err))
+    }
+
+    pub fn from_height_too_high(err: &rpc::Error) -> Option<Self> {
+        use regex::Regex;
+
+        let err_str = err.to_string();
+
+        if err_str.contains("must be less than or equal to") {
+            let re = Regex::new(
+                r"height (\d+) must be less than or equal to the current blockchain height (\d+)",
+            )
+            .ok()?;
+
+            let captures = re.captures(&err_str)?;
+            let height = Height::try_from(captures[1].parse::<i64>().ok()?).ok()?;
+            let latest_height = Height::try_from(captures[2].parse::<i64>().ok()?).ok()?;
+
+            Some(Self::height_too_high(height, latest_height))
+        } else {
+            None
+        }
+    }
+}
+
 impl IoErrorDetail {
     /// Whether this error means that a timeout occurred when querying a node.
     pub fn is_timeout(&self) -> Option<Duration> {
@@ -125,7 +152,6 @@ mod prod {
     }
 
     impl Io for ProdIo {
-        // FIXME(romac): Handle HeightTooHigh error
         fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
             let signed_header = self.fetch_signed_header(height)?;
             let height = signed_header.header.height;
@@ -185,7 +211,7 @@ mod prod {
 
             match res {
                 Ok(response) => Ok(response.signed_header),
-                Err(err) => Err(IoError::rpc(err)),
+                Err(err) => Err(IoError::from_rpc(err)),
             }
         }
 
