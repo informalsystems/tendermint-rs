@@ -220,18 +220,6 @@ where
         Verdict::Success
     }
 
-    /// Validate an `UntrustedBlockState` coming from a misbehaviour evidence,
-    /// based on the given `TrustedBlockState`, `Options` and current time.
-    pub fn validate_misbehaviour_against_trusted(
-        &self,
-        untrusted: &UntrustedBlockState<'_>,
-        trusted: &TrustedBlockState<'_>,
-        options: &Options,
-        now: Time,
-    ) -> Verdict {
-        self.validate_against_trusted(untrusted, trusted, options, now)
-    }
-
     /// Check there is enough overlap between the validator sets of the trusted and untrusted
     /// blocks.
     pub fn verify_commit_against_trusted(
@@ -308,8 +296,7 @@ where
 
     /// Verify a header received in `MsgSubmitMisbehaviour`.
     /// The verification for these headers is a bit more relaxed in order to catch FLA attacks.
-    /// In particular the "header in the future" check for the header should be skipped
-    /// from `validate_against_trusted`.
+    /// In particular the "header in the future" check for the header should be skipped.
     fn verify_misbehaviour_header(
         &self,
         untrusted: UntrustedBlockState<'_>,
@@ -318,9 +305,7 @@ where
         now: Time,
     ) -> Verdict {
         ensure_verdict_success!(self.verify_validator_sets(&untrusted));
-        ensure_verdict_success!(
-            self.validate_misbehaviour_against_trusted(&untrusted, &trusted, options, now)
-        );
+        ensure_verdict_success!(self.validate_against_trusted(&untrusted, &trusted, options, now));
         ensure_verdict_success!(self.verify_commit_against_trusted(&untrusted, &trusted, options));
         ensure_verdict_success!(self.verify_commit(&untrusted));
         Verdict::Success
