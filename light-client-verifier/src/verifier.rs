@@ -51,8 +51,20 @@ impl From<Result<(), VerificationError>> for Verdict {
 /// - [TMBC-VAL-CONTAINS-CORR.1]
 /// - [TMBC-VAL-COMMIT.1]
 pub trait Verifier: Send + Sync {
-    /// Perform the verification.
-    fn verify(
+    /// Verify a header received in a `MsgUpdateClient`.
+    fn verify_update_header(
+        &self,
+        untrusted: UntrustedBlockState<'_>,
+        trusted: TrustedBlockState<'_>,
+        options: &Options,
+        now: Time,
+    ) -> Verdict;
+
+    /// Verify a header received in `MsgSubmitMisbehaviour`.
+    /// The verification for these headers is a bit more relaxed in order to catch FLA attacks.
+    /// In particular the "header in the future" check for the header should be skipped
+    /// from `validate_against_trusted`.
+    fn verify_misbehaviour_header(
         &self,
         untrusted: UntrustedBlockState<'_>,
         trusted: TrustedBlockState<'_>,
@@ -62,21 +74,21 @@ pub trait Verifier: Send + Sync {
 }
 
 macro_rules! verdict {
-    ($e:expr) => {
+    ($e:expr) => {{
         let result = $e;
         if result.is_err() {
             return result.into();
         }
-    };
+    }};
 }
 
 macro_rules! ensure_verdict_success {
-    ($e:expr) => {
+    ($e:expr) => {{
         let verdict = $e;
         if !matches!(verdict, Verdict::Success) {
             return verdict;
         }
-    };
+    }};
 }
 
 /// Predicate verifier encapsulating components necessary to facilitate
@@ -146,8 +158,8 @@ where
         Verdict::Success
     }
 
-    /// Validate an `UntrustedBlockState`, based on the given `TrustedBlockState`, `Options` and
-    /// current time.
+    /// Validate an `UntrustedBlockState` coming from a client update,
+    /// based on the given `TrustedBlockState`, `Options` and current time.
     pub fn validate_against_trusted(
         &self,
         untrusted: &UntrustedBlockState<'_>,
@@ -159,13 +171,6 @@ where
         verdict!(self.predicates.is_within_trust_period(
             trusted.header_time,
             options.trusting_period,
-            now,
-        ));
-
-        // Ensure the header isn't from a future time
-        verdict!(self.predicates.is_header_from_past(
-            untrusted.signed_header.header.time,
-            options.clock_drift,
             now,
         ));
 
@@ -195,6 +200,22 @@ where
                 .predicates
                 .is_monotonic_height(untrusted.signed_header.header.height, trusted.height));
         }
+
+        Verdict::Success
+    }
+
+    /// Ensure the header isn't from a future time
+    pub fn check_header_is_from_past(
+        &self,
+        untrusted: &UntrustedBlockState<'_>,
+        options: &Options,
+        now: Time,
+    ) -> Verdict {
+        verdict!(self.predicates.is_header_from_past(
+            untrusted.signed_header.header.time,
+            options.clock_drift,
+            now,
+        ));
 
         Verdict::Success
     }
@@ -257,7 +278,26 @@ where
     /// `trusted.next_validators.hash() == trusted.next_validators_hash`,
     /// as typically the `trusted.next_validators` validator set comes from the relayer,
     /// and `trusted.next_validators_hash` is the hash stored on chain.
-    fn verify(
+    fn verify_update_header(
+        &self,
+        untrusted: UntrustedBlockState<'_>,
+        trusted: TrustedBlockState<'_>,
+        options: &Options,
+        now: Time,
+    ) -> Verdict {
+        ensure_verdict_success!(self.verify_validator_sets(&untrusted));
+        ensure_verdict_success!(self.validate_against_trusted(&untrusted, &trusted, options, now));
+        ensure_verdict_success!(self.check_header_is_from_past(&untrusted, options, now));
+        ensure_verdict_success!(self.verify_commit_against_trusted(&untrusted, &trusted, options));
+        ensure_verdict_success!(self.verify_commit(&untrusted));
+
+        Verdict::Success
+    }
+
+    /// Verify a header received in `MsgSubmitMisbehaviour`.
+    /// The verification for these headers is a bit more relaxed in order to catch FLA attacks.
+    /// In particular the "header in the future" check for the header should be skipped.
+    fn verify_misbehaviour_header(
         &self,
         untrusted: UntrustedBlockState<'_>,
         trusted: TrustedBlockState<'_>,
@@ -329,7 +369,7 @@ mod tests {
             clock_drift: Default::default(),
         };
 
-        let verdict = vp.verify(
+        let verdict = vp.verify_update_header(
             light_block_2.as_untrusted_state(),
             light_block_1.as_trusted_state(),
             &opt,

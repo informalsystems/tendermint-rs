@@ -211,7 +211,7 @@ impl LightClient {
             let (current_block, status) = self.get_or_fetch_block(current_height, state)?;
 
             // Validate and verify the current block
-            let verdict = self.verifier.verify(
+            let verdict = self.verifier.verify_update_header(
                 current_block.as_untrusted_state(),
                 trusted_block.as_trusted_state(),
                 &self.options,
