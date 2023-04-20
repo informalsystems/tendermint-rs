@@ -100,6 +100,14 @@ struct Cli {
     #[clap(long, default_value = "1209600")]
     trusting_period: u64,
 
+    /// Maximum clock drift, in seconds (default: 5 seconds)
+    #[clap(long, default_value = "5")]
+    max_clock_drift: u64,
+
+    /// Maximum block lag, in seconds (default: 5 seconds)
+    #[clap(long, default_value = "5")]
+    max_block_lag: u64,
+
     /// Increase verbosity
     #[clap(flatten)]
     verbose: Verbosity,
@@ -124,7 +132,7 @@ async fn main() -> Result<()> {
     let options = Options {
         trust_threshold: args.trust_threshold,
         trusting_period: Duration::from_secs(args.trusting_period),
-        clock_drift: Duration::from_secs(60),
+        clock_drift: Duration::from_secs(args.max_clock_drift),
     };
 
     let mut primary = make_provider(
@@ -164,9 +172,8 @@ async fn main() -> Result<()> {
 
     let mut witnesses = witnesses.into_iter().collect::<Result<Vec<_>>>()?;
 
-    // FIXME: Make this configurable
-    let max_clock_drift = Duration::from_secs(1);
-    let max_block_lag = Duration::from_secs(1);
+    let max_clock_drift = Duration::from_secs(args.max_clock_drift);
+    let max_block_lag = Duration::from_secs(args.max_block_lag);
     let now = Time::now();
 
     run_detector(
