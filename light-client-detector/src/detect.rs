@@ -13,9 +13,12 @@ use super::{
     error::Error, gather_evidence_from_conflicting_headers, provider::Provider, trace::Trace,
 };
 
+/// A divergence between the primary and a witness that has been detected in [`detect_divergence`].
 #[derive(Clone, Debug)]
 pub struct Divergence {
+    /// The evidence of a misbehaviour that has been gathered from the conflicting headers
     pub evidence: GatheredEvidence,
+    /// The conflicting light block that was returned by the witness
     pub challenging_block: LightBlock,
 }
 
@@ -105,18 +108,24 @@ pub async fn detect_divergence(
     }
 }
 
+/// An error that arised when comparing a header from the primary with a header from a witness
+/// with [`compare_new_header_with_witness`].
 #[derive(Debug)]
 pub enum CompareError {
-    BadWitness,
-    Other(tendermint_light_client::errors::Error),
+    /// There may have been an attack on this light client
     ConflictingHeaders(Box<LightBlock>),
+    /// The witness has either not responded, doesn't have the header or has given us an invalid one
+    BadWitness,
+    /// Some other error has occurred, this is likely a benign error
+    Other(tendermint_light_client::errors::Error),
 }
 
-/// compareNewHeaderWithWitness takes the verified header from the primary and compares it with a
+/// Takes the verified header from the primary and compares it with a
 /// header from a specified witness. The function can return one of three errors:
 ///
-/// 1: errConflictingHeaders -> there may have been an attack on this light client
-/// 2: errBadWitness -> the witness has either not responded, doesn't have the header or has given us an invalid one
+/// 1: `CompareError::ConflictingHeaders`: there may have been an attack on this light client
+/// 2: `CompareError::BadWitness`: the witness has either not responded, doesn't have the header or has given us an invalid one
+/// 3: `CompareError::Other`: some other error has occurred, this is likely a benign error
 ///
 /// Note: In the case of an invalid header we remove the witness
 ///

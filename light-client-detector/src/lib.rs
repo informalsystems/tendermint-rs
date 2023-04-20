@@ -1,3 +1,7 @@
+//! The detector component of the light client detects and handles attacks on the light client.
+//!
+//! See [`detect_divergence`] for the main entry point.
+
 mod conflict;
 mod detect;
 mod error;

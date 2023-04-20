@@ -2,6 +2,10 @@ use tendermint_light_client::verifier::types::LightBlock;
 
 use super::Error;
 
+/// A trace of the light blocks that were used by the light client to verify a particular header,
+/// in the case of bisection or sequential verification.
+///
+/// The trace always contains at least two light blocks, the trusted block and the target block.
 #[derive(Clone, Debug)]
 pub struct Trace(Vec<LightBlock>);
 

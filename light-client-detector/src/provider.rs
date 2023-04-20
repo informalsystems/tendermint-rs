@@ -9,6 +9,7 @@ use tendermint_light_client::store::memory::MemoryStore;
 use tendermint_light_client::verifier::types::LightBlock;
 use tendermint_rpc::{Client, Error as RpcError, HttpClient};
 
+/// A interface over a light client instance and its RPC client.
 #[derive(Debug)]
 pub struct Provider {
     chain_id: String,

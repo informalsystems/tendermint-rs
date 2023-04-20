@@ -6,6 +6,9 @@ use tendermint_light_client::verifier::types::LightBlock;
 use crate::conflict::GatheredEvidence;
 
 flex_error::define_error! {
+    /// Error type for the light client detector. See [`ErrorDetail`] for all the possible error variants.
+    ///
+    /// All the possible error variants.
     #[derive(Debug)]
     Error {
         Io
