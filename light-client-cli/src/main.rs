@@ -25,6 +25,16 @@ use futures::future::join_all;
 use tracing::{debug, error, info, metadata::LevelFilter, warn};
 use tracing_subscriber::{util::SubscriberInitExt, EnvFilter};
 
+fn parse_trust_threshold(s: &str) -> Result<TrustThreshold> {
+    if let Some((l, r)) = s.split_once('/') {
+        TrustThreshold::new(l.parse()?, r.parse()?).map_err(Into::into)
+    } else {
+        Err(eyre!(
+            "invalid trust threshold: {s}, format must be X/Y where X and Y are integers"
+        ))
+    }
+}
+
 #[derive(Clone, Debug)]
 struct List<T>(Vec<T>);
 
@@ -82,6 +92,14 @@ struct Cli {
     #[clap(long)]
     height: Option<Height>,
 
+    /// Trust threshold
+    #[clap(long, value_parser = parse_trust_threshold, default_value_t = TrustThreshold::TWO_THIRDS)]
+    trust_threshold: TrustThreshold,
+
+    /// Trusting period, in seconds (default: two weeks)
+    #[clap(long, default_value = "1209600")]
+    trusting_period: u64,
+
     /// Increase verbosity
     #[clap(flatten)]
     verbose: Verbosity,
@@ -103,11 +121,18 @@ async fn main() -> Result<()> {
         .finish()
         .init();
 
+    let options = Options {
+        trust_threshold: args.trust_threshold,
+        trusting_period: Duration::from_secs(args.trusting_period),
+        clock_drift: Duration::from_secs(60),
+    };
+
     let mut primary = make_provider(
         &args.chain_id,
         args.primary,
         args.trusted_height,
         args.trusted_hash,
+        options,
     )
     .await?;
 
@@ -132,6 +157,7 @@ async fn main() -> Result<()> {
             addr,
             trusted_block.height(),
             trusted_block.signed_header.header.hash(),
+            options,
         )
     }))
     .await;
@@ -250,6 +276,7 @@ async fn make_provider(
     rpc_addr: HttpClientUrl,
     trusted_height: Height,
     trusted_hash: Hash,
+    options: Options,
 ) -> Result<Provider> {
     use tendermint_rpc::client::CompatMode;
 
@@ -259,13 +286,6 @@ async fn make_provider(
 
     let node_id = rpc_client.status().await?.node_info.id;
     let light_store = Box::new(MemoryStore::new());
-
-    // FIXME: Make this configurable
-    let options = Options {
-        trust_threshold: TrustThreshold::TWO_THIRDS,
-        trusting_period: Duration::from_secs(60 * 60 * 24 * 14),
-        clock_drift: Duration::from_secs(60),
-    };
 
     let instance =
         LightClientBuilder::prod(node_id, rpc_client.clone(), light_store, options, None)
