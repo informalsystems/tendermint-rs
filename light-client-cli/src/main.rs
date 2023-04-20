@@ -14,7 +14,7 @@ use tendermint_light_client_detector::{
     compare_new_header_with_witness, detect_divergence, gather_evidence_from_conflicting_headers,
     CompareError, Error, ErrorDetail, Provider, Trace,
 };
-use tendermint_rpc::{Client, HttpClient};
+use tendermint_rpc::{Client, HttpClient, HttpClientUrl, Url};
 
 use clap::Parser;
 use color_eyre::{
@@ -28,11 +28,14 @@ use tracing_subscriber::{util::SubscriberInitExt, EnvFilter};
 #[derive(Clone, Debug)]
 struct List<T>(Vec<T>);
 
-impl FromStr for List<String> {
-    type Err = Infallible;
+impl<E, T: FromStr<Err = E>> FromStr for List<T> {
+    type Err = E;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(s.split(',').map(|s| s.to_string()).collect()))
+        s.split(',')
+            .map(|s| s.parse())
+            .collect::<Result<Vec<_>, _>>()
+            .map(Self)
     }
 }
 
@@ -61,11 +64,11 @@ struct Cli {
 
     /// Primary RPC address
     #[clap(short, long)]
-    primary: String,
+    primary: HttpClientUrl,
 
     /// Comma-separated list of witnesses RPC addresses
     #[clap(short, long)]
-    witnesses: List<String>,
+    witnesses: List<HttpClientUrl>,
 
     /// Height of trusted header
     #[clap(long)]
@@ -102,7 +105,7 @@ async fn main() -> Result<()> {
 
     let mut primary = make_provider(
         &args.chain_id,
-        &args.primary,
+        args.primary,
         args.trusted_height,
         args.trusted_hash,
     )
@@ -123,7 +126,7 @@ async fn main() -> Result<()> {
     info!("Verified to height {} on primary", primary_block.height());
     let primary_trace = primary.get_trace(primary_block.height());
 
-    let witnesses = join_all(args.witnesses.0.iter().map(|addr| {
+    let witnesses = join_all(args.witnesses.0.into_iter().map(|addr| {
         make_provider(
             &args.chain_id,
             addr,
@@ -244,13 +247,13 @@ async fn run_detector(
 
 async fn make_provider(
     chain_id: &str,
-    rpc_addr: &str,
+    rpc_addr: HttpClientUrl,
     trusted_height: Height,
     trusted_hash: Hash,
 ) -> Result<Provider> {
     use tendermint_rpc::client::CompatMode;
 
-    let rpc_client = HttpClient::builder(rpc_addr.parse().unwrap())
+    let rpc_client = HttpClient::builder(rpc_addr)
         .compat_mode(CompatMode::V0_34)
         .build()?;
 
