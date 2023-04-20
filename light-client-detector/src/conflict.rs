@@ -8,7 +8,7 @@ use super::{
     provider::Provider, trace::Trace,
 };
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct GatheredEvidence {
     pub witness_trace: Trace,
 

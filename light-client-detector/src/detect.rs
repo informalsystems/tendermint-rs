@@ -3,10 +3,11 @@ use std::{thread, time::Duration};
 use tracing::{debug, warn};
 
 use tendermint::block::signed_header::SignedHeader;
-use tendermint::evidence::LightClientAttackEvidence;
 use tendermint_light_client::light_client::TargetOrLatest;
 use tendermint_light_client::verifier::errors::ErrorExt;
 use tendermint_light_client::verifier::types::LightBlock;
+
+use crate::conflict::GatheredEvidence;
 
 use super::{
     error::Error, gather_evidence_from_conflicting_headers, provider::Provider, trace::Trace,
@@ -14,8 +15,7 @@ use super::{
 
 #[derive(Clone, Debug)]
 pub struct Divergence {
-    pub evidence: LightClientAttackEvidence,
-    pub witness_trace: Trace,
+    pub evidence: GatheredEvidence,
     pub challenging_block: LightBlock,
 }
 
@@ -32,6 +32,7 @@ pub struct Divergence {
 /// We then attempt to find the bifurcation point and if successful construct the evidence of an
 /// attack to report to the witness.
 pub async fn detect_divergence(
+    primary: Option<&Provider>,
     witness: &mut Provider,
     primary_trace: Vec<LightBlock>,
     max_clock_drift: Duration,
@@ -75,7 +76,7 @@ pub async fn detect_divergence(
 
             // Gather the evidence to report from the conflicting headers
             let evidence = gather_evidence_from_conflicting_headers(
-                None,
+                primary,
                 witness,
                 &primary_trace,
                 &challenging_block,
@@ -83,8 +84,7 @@ pub async fn detect_divergence(
             .await?;
 
             Ok(Some(Divergence {
-                evidence: evidence.against_primary,
-                witness_trace: evidence.witness_trace,
+                evidence,
                 challenging_block: *challenging_block,
             }))
         },

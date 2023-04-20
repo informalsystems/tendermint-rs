@@ -213,66 +213,47 @@ async fn run_detector(
     let last_verified_header = &last_verified_block.signed_header;
 
     for witness in witnesses {
-        debug!(
-            end_block_height = %last_verified_header.header.height,
-            end_block_hash = %last_verified_header.header.hash(),
-            length = primary_trace.len(),
-            "Running detector against primary trace"
-        );
-
-        let result = compare_new_header_with_witness(
-            last_verified_header,
+        let divergence = detect_divergence(
+            Some(primary),
             witness,
+            primary_trace.clone().into_vec(),
             max_clock_drift,
             max_block_lag,
-        );
+        )
+        .await;
 
-        match result {
-            Ok(()) => {
+        let evidence = match divergence {
+            Ok(Some(divergence)) => divergence.evidence,
+            Ok(None) => {
                 info!(
-                    witness = %witness.peer_id(),
-                    "No misbehavior detected"
-                );
-            },
-            Err(CompareError::ConflictingHeaders(challenging_block)) => {
-                warn!(
-                    witness = %witness.peer_id(),
-                    conflicting_height = %challenging_block.height(),
-                    "Found conflicting headers between primary and witness"
+                    "no divergence found between primary and witness {}",
+                    witness.peer_id()
                 );
 
-                // Gather the evidence to report from the conflicting headers
-                let evidence = gather_evidence_from_conflicting_headers(
-                    Some(primary),
-                    witness,
-                    &primary_trace,
-                    &challenging_block,
-                )
-                .await?;
-
-                // Report the evidence to the witness
-                witness
-                    .report_evidence(Evidence::from(evidence.against_primary))
-                    .await
-                    .map_err(|e| eyre!("failed to report evidence to witness: {}", e))?;
-
-                if let Some(against_witness) = evidence.against_witness {
-                    // Report the evidence to the primary
-                    primary
-                        .report_evidence(Evidence::from(against_witness))
-                        .await
-                        .map_err(|e| eyre!("failed to report evidence to primary: {}", e))?;
-                }
+                continue;
             },
-            Err(CompareError::BadWitness) => {
-                // These are all melevolent errors and should result in removing the witness
-                error!(witness = %witness.peer_id(), "witness returned an error during header comparison");
-            },
+            Err(e) => {
+                error!(
+                    "failed to run attack detector against witness {}: {e}",
+                    witness.peer_id()
+                );
 
-            Err(CompareError::Other(e)) => {
-                // Benign errors which can be ignored
-                warn!(witness = %witness.peer_id(), "error in light block request to witness: {e}");
+                continue;
             },
+        };
+
+        // Report the evidence to the witness
+        witness
+            .report_evidence(Evidence::from(evidence.against_primary))
+            .await
+            .map_err(|e| eyre!("failed to report evidence to witness: {}", e))?;
+
+        if let Some(against_witness) = evidence.against_witness {
+            // Report the evidence to the primary
+            primary
+                .report_evidence(Evidence::from(against_witness))
+                .await
+                .map_err(|e| eyre!("failed to report evidence to primary: {}", e))?;
         }
     }
 
