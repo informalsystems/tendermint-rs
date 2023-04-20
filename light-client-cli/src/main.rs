@@ -70,14 +70,15 @@ impl Verbosity {
 #[command(author, version, about, long_about = None)]
 struct Cli {
     /// Identifier of the chain
+    #[clap(long)]
     chain_id: String,
 
     /// Primary RPC address
-    #[clap(short, long)]
+    #[clap(long)]
     primary: HttpClientUrl,
 
     /// Comma-separated list of witnesses RPC addresses
-    #[clap(short, long)]
+    #[clap(long)]
     witnesses: List<HttpClientUrl>,
 
     /// Height of trusted header
@@ -100,11 +101,11 @@ struct Cli {
     #[clap(long, default_value = "1209600")]
     trusting_period: u64,
 
-    /// Maximum clock drift, in seconds (default: 5 seconds)
+    /// Maximum clock drift, in seconds
     #[clap(long, default_value = "5")]
     max_clock_drift: u64,
 
-    /// Maximum block lag, in seconds (default: 5 seconds)
+    /// Maximum block lag, in seconds
     #[clap(long, default_value = "5")]
     max_block_lag: u64,
 
