@@ -52,7 +52,7 @@ impl From<Result<(), VerificationError>> for Verdict {
 /// - [TMBC-VAL-COMMIT.1]
 pub trait Verifier: Send + Sync {
     /// Verify a header received in a `MsgUpdateClient`.
-    fn verify(
+    fn verify_update_header(
         &self,
         untrusted: UntrustedBlockState<'_>,
         trusted: TrustedBlockState<'_>,
@@ -278,7 +278,7 @@ where
     /// `trusted.next_validators.hash() == trusted.next_validators_hash`,
     /// as typically the `trusted.next_validators` validator set comes from the relayer,
     /// and `trusted.next_validators_hash` is the hash stored on chain.
-    fn verify(
+    fn verify_update_header(
         &self,
         untrusted: UntrustedBlockState<'_>,
         trusted: TrustedBlockState<'_>,
@@ -369,7 +369,7 @@ mod tests {
             clock_drift: Default::default(),
         };
 
-        let verdict = vp.verify(
+        let verdict = vp.verify_update_header(
             light_block_2.as_untrusted_state(),
             light_block_1.as_trusted_state(),
             &opt,
