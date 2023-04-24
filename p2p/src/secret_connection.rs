@@ -19,7 +19,7 @@ use chacha20poly1305::{
 use merlin::Transcript;
 use rand_core::OsRng;
 use subtle::ConstantTimeEq;
-use tendermint_proto::v0_37 as proto;
+use tendermint_proto::v0_38 as proto;
 use tendermint_std_ext::TryClone;
 use x25519_dalek::{EphemeralSecret, PublicKey as EphemeralPublic};
 
