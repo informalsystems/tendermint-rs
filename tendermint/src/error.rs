@@ -6,7 +6,7 @@ use core::num::TryFromIntError;
 use flex_error::{define_error, DisplayOnly};
 use serde::{Deserialize, Serialize};
 
-use crate::{account, vote};
+use crate::account;
 
 define_error! {
     #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -190,10 +190,6 @@ define_error! {
 
         UnsupportedProcessProposalStatus
             |_| { format_args!("unsupported ProcessProposal status value" ) },
-
-        RawVotingPowerMismatch
-            { raw: vote::Power, computed: vote::Power }
-            |e| { format_args!("mismatch between raw voting ({0:?}) and computed one ({1:?})", e.raw, e.computed) },
 
         NegativeMaxAgeNum
             [ DisplayOnly<TryFromIntError> ]
