@@ -26,6 +26,11 @@ pub const TENDERMINT_VERSIONS: &[TendermintVersion] = &[
         ident: "v0_37",
         commitish: "v0.37.0",
     },
+    TendermintVersion {
+        repo: "https://github.com/cometbft/cometbft",
+        ident: "v0_38",
+        commitish: "v0.38.0-alpha.1",
+    },
 ];
 
 /// Predefined custom attributes for message annotations
