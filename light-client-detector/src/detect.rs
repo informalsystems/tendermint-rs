@@ -31,16 +31,19 @@ pub struct Divergence {
 /// If the hashes do not match, then the witness has provided a conflicting header.
 /// This could possibly imply an attack on the light client.
 /// In this case, we need to verify the witness's header using the same skipping verification
-/// and then we need to find the point that the headers diverge and examine this for any evidence of an attack.
-/// We then attempt to find the bifurcation point and if successful construct the evidence of an
-/// attack to report to the witness.
-pub async fn detect_divergence(
+/// and then we need to find the point that the headers diverge and examine this for any evidence of
+/// an attack. We then attempt to find the bifurcation point and if successful construct the
+/// evidence of an attack to report to the witness.
+pub async fn detect_divergence<H>(
     primary: Option<&Provider>,
     witness: &mut Provider,
     primary_trace: Vec<LightBlock>,
     max_clock_drift: Duration,
     max_block_lag: Duration,
-) -> Result<Option<Divergence>, Error> {
+) -> Result<Option<Divergence>, Error>
+where
+    H: Sha256 + MerkleHash + Default,
+{
     let primary_trace = Trace::new(primary_trace)?;
 
     let last_verified_block = primary_trace.last();
@@ -78,7 +81,7 @@ pub async fn detect_divergence(
             );
 
             // Gather the evidence to report from the conflicting headers
-            let evidence = gather_evidence_from_conflicting_headers(
+            let evidence = gather_evidence_from_conflicting_headers::<H>(
                 primary,
                 witness,
                 &primary_trace,

@@ -1,15 +1,11 @@
-use tendermint::crypto::default::Sha256;
+use tendermint::{crypto::Sha256, merkle::MerkleHash};
 use tendermint_light_client::{
     state::State,
     store::{memory::MemoryStore, LightStore},
-    verifier::types::LightBlock,
-    verifier::types::Status,
+    verifier::types::{LightBlock, Status},
 };
 
 use super::{error::Error, provider::Provider, trace::Trace};
-
-// FIXME: Allow the hasher to be configured
-type Hasher = Sha256;
 
 // examineConflictingHeaderAgainstTrace takes a trace from one provider and a divergent header that
 // it has received from another and preforms verifySkipping at the heights of each of the intermediate
@@ -25,11 +21,14 @@ type Hasher = Sha256;
 //  2. The last block in the trace can not be of a lower height than the target block
 //     trace[len(trace)-1].Height >= targetBlock.Height
 //  3. The last block in the trace is conflicting with the target block
-pub fn examine_conflicting_header_against_trace(
+pub fn examine_conflicting_header_against_trace<H>(
     trace: &Trace,
     target_block: &LightBlock,
     source: &Provider,
-) -> Result<(Trace, LightBlock), Error> {
+) -> Result<(Trace, LightBlock), Error>
+where
+    H: Sha256 + MerkleHash + Default,
+{
     let trusted_block = trace.first();
 
     if target_block.height() < trusted_block.height() {
@@ -39,10 +38,11 @@ pub fn examine_conflicting_header_against_trace(
         ));
     };
 
-    let mut previously_verified_block = check_trusted_block(source, trusted_block, target_block)?;
+    let mut previously_verified_block =
+        check_trusted_block::<H>(source, trusted_block, target_block)?;
 
     for trace_block in trace.iter().skip(1) {
-        let result = examine_conflicting_header_against_trace_block(
+        let result = examine_conflicting_header_against_trace_block::<H>(
             source,
             trace_block,
             target_block,
@@ -102,8 +102,8 @@ fn check_trusted_block(
             .map_err(Error::light_client)?
     };
 
-    let source_block_hash = source_block.signed_header.header.hash_with::<Hasher>();
-    let trace_block_hash = trusted_block.signed_header.header.hash_with::<Hasher>();
+    let source_block_hash = source_block.signed_header.header.hash_with::<H>();
+    let trace_block_hash = trusted_block.signed_header.header.hash_with::<H>();
 
     // the first block in the trace MUST be the same to the light block that the source produces
     // else we cannot continue with verification.
@@ -160,8 +160,8 @@ fn examine_conflicting_header_against_trace_block(
             .map_err(Error::light_client)?
     };
 
-    let source_block_hash = source_block.signed_header.header.hash_with::<Hasher>();
-    let trace_block_hash = trace_block.signed_header.header.hash_with::<Hasher>();
+    let source_block_hash = source_block.signed_header.header.hash_with::<H>();
+    let trace_block_hash = trace_block.signed_header.header.hash_with::<H>();
 
     // we check that the source provider can verify a block at the same height of the
     // intermediate height

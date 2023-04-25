@@ -2,7 +2,13 @@
 
 use std::{convert::Infallible, str::FromStr, time::Duration};
 
-use tendermint::{evidence::Evidence, Time};
+use clap::Parser;
+use color_eyre::{
+    eyre::{eyre, Result},
+    Report,
+};
+use futures::future::join_all;
+use tendermint::{crypto::default::Sha256, evidence::Evidence, Time};
 use tendermint_light_client::{
     builder::LightClientBuilder,
     instance::Instance,
@@ -15,13 +21,6 @@ use tendermint_light_client_detector::{
     CompareError, Error, ErrorDetail, Provider, Trace,
 };
 use tendermint_rpc::{Client, HttpClient, HttpClientUrl, Url};
-
-use clap::Parser;
-use color_eyre::{
-    eyre::{eyre, Result},
-    Report,
-};
-use futures::future::join_all;
 use tracing::{debug, error, info, metadata::LevelFilter, warn};
 use tracing_subscriber::{util::SubscriberInitExt, EnvFilter};
 
@@ -213,7 +212,7 @@ async fn run_detector(
     let last_verified_header = &last_verified_block.signed_header;
 
     for witness in witnesses {
-        let divergence = detect_divergence(
+        let divergence = detect_divergence::<Sha256>(
             Some(primary),
             witness,
             primary_trace.clone().into_vec(),

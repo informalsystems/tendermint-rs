@@ -1,7 +1,6 @@
-use tracing::{error, error_span, warn};
-
-use tendermint::evidence::LightClientAttackEvidence;
+use tendermint::{crypto::Sha256, evidence::LightClientAttackEvidence, merkle::MerkleHash};
 use tendermint_light_client::verifier::types::LightBlock;
+use tracing::{error, error_span, warn};
 
 use super::{
     error::Error, evidence::make_evidence, examine::examine_conflicting_header_against_trace,
@@ -19,20 +18,23 @@ pub struct GatheredEvidence {
 /// Handles the primary style of attack, which is where a primary and witness have
 /// two headers of the same height but with different hashes.
 ///
-/// If a primary provider is available, then we will also attempt to gather evidence against the witness
-/// by examining the witness's trace and holding the primary as the source of truth.
-pub async fn gather_evidence_from_conflicting_headers(
+/// If a primary provider is available, then we will also attempt to gather evidence against the
+/// witness by examining the witness's trace and holding the primary as the source of truth.
+pub async fn gather_evidence_from_conflicting_headers<H>(
     primary: Option<&Provider>,
     witness: &Provider,
     primary_trace: &Trace,
     challenging_block: &LightBlock,
-) -> Result<GatheredEvidence, Error> {
+) -> Result<GatheredEvidence, Error>
+where
+    H: Sha256 + MerkleHash + Default,
+{
     let _span =
         error_span!("gather_evidence_from_conflicting_headers", witness = %witness.peer_id())
             .entered();
 
     let (witness_trace, primary_block) =
-        examine_conflicting_header_against_trace(primary_trace, challenging_block, witness)
+        examine_conflicting_header_against_trace::<H>(primary_trace, challenging_block, witness)
             .map_err(|e| {
                 error!("Error validating witness's divergent header: {e}");
 
