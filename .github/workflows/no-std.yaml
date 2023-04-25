@@ -18,16 +18,18 @@ jobs:
           cd tools/no-std-check
           make check-panic-conflict
 
-  check-substrate:
-    name: Check no_std substrate support
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          target: wasm32-unknown-unknown
-          override: true
-      - run: |
-          cd tools/no-std-check
-          make check-substrate
+  # Disabled until sp-io removes this feature which was removed in latest nightlies:
+  #   https://github.com/paritytech/substrate/blob/b5846ccc8480806aa6035ae4d2e89d61930f697e/primitives/io/src/lib.rs#L22
+  # check-substrate:
+  #   name: Check no_std substrate support
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: actions-rs/toolchain@v1
+  #       with:
+  #         toolchain: nightly
+  #         target: wasm32-unknown-unknown
+  #         override: true
+  #     - run: |
+  #         cd tools/no-std-check
+  #         make check-substrate
