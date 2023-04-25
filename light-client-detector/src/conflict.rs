@@ -37,8 +37,7 @@ where
         examine_conflicting_header_against_trace::<H>(primary_trace, challenging_block, witness)
             .map_err(|e| {
                 error!("Error validating witness's divergent header: {e}");
-
-                e // FIXME: Return special error
+                e
             })?;
 
     warn!("ATTEMPTED ATTACK DETECTED. Gathering evidence against primary by witness...");
@@ -78,8 +77,7 @@ where
         examine_conflicting_header_against_trace(&witness_trace, &primary_block, primary).map_err(
             |e| {
                 error!("Error validating primary's divergent header: {e}");
-
-                e // FIXME: Return special error
+                e
             },
         )?;
 
