@@ -16,6 +16,6 @@ tendermint-light-client = { version = "0.31.1", path = "../../light-client", fea
 tendermint-rpc = { version = "0.31.1", path = "../../rpc", features = [ "http-client", "websocket-client" ] }
 tokio = { version = "1.0", features = [ "rt-multi-thread", "macros" ] }
 tracing = "0.1"
-tracing-subscriber = "0.2"
+tracing-subscriber = "0.3"
 contracts = "0.4.0"
 serde_json = "1"

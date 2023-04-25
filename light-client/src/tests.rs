@@ -144,7 +144,7 @@ pub fn verify_single(
         clock_drift,
     };
 
-    let result = verifier.verify(
+    let result = verifier.verify_update_header(
         input.as_untrusted_state(),
         trusted_block.as_trusted_state(),
         &options,
