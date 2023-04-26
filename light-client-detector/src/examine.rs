@@ -73,11 +73,14 @@ pub enum ExaminationResult {
     Divergence(Trace, LightBlock),
 }
 
-fn check_trusted_block(
+fn check_trusted_block<H>(
     source: &Provider,
     trusted_block: &LightBlock,
     target_block: &LightBlock,
-) -> Result<LightBlock, Error> {
+) -> Result<LightBlock, Error>
+where
+    H: Sha256 + MerkleHash + Default,
+{
     // This case only happens in a forward lunatic attack. We treat the block with the
     // height directly after the targetBlock as the divergent block
     if trusted_block.height() > target_block.height() {
@@ -119,12 +122,15 @@ fn check_trusted_block(
 
 // check of primary is same as witness block at that height
 
-fn examine_conflicting_header_against_trace_block(
+fn examine_conflicting_header_against_trace_block<H>(
     source: &Provider,
     trace_block: &LightBlock,
     target_block: &LightBlock,
     prev_verified_block: LightBlock,
-) -> Result<ExaminationResult, Error> {
+) -> Result<ExaminationResult, Error>
+where
+    H: Sha256 + MerkleHash + Default,
+{
     // This case only happens in a forward lunatic attack. We treat the block with the
     // height directly after the targetBlock as the divergent block
     if trace_block.height() > target_block.height() {

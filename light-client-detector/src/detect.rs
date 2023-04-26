@@ -2,7 +2,7 @@ use std::{thread, time::Duration};
 
 use tracing::{debug, warn};
 
-use tendermint::block::signed_header::SignedHeader;
+use tendermint::{block::signed_header::SignedHeader, crypto::Sha256, merkle::MerkleHash};
 use tendermint_light_client::light_client::TargetOrLatest;
 use tendermint_light_client::verifier::errors::ErrorExt;
 use tendermint_light_client::verifier::types::LightBlock;

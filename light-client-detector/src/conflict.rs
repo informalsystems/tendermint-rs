@@ -74,12 +74,11 @@ where
     // trace provided by the witness and holding the primary as the source of truth. Note: primary may not
     // respond but this is okay as we will halt anyway.
     let (primary_trace, witness_block) =
-        examine_conflicting_header_against_trace(&witness_trace, &primary_block, primary).map_err(
-            |e| {
+        examine_conflicting_header_against_trace::<H>(&witness_trace, &primary_block, primary)
+            .map_err(|e| {
                 error!("Error validating primary's divergent header: {e}");
                 e
-            },
-        )?;
+            })?;
 
     warn!("Gathering evidence against witness by primary...");
 
