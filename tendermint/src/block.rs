@@ -1,5 +1,6 @@
 //! Blocks within the chains of a Tendermint network
 
+mod block_id_flag;
 mod commit;
 pub mod commit_sig;
 pub mod header;
@@ -15,6 +16,7 @@ use serde::{Deserialize, Serialize};
 use tendermint_proto::v0_37::types::Block as RawBlock;
 
 pub use self::{
+    block_id_flag::BlockIdFlag,
     commit::*,
     commit_sig::*,
     header::Header,
