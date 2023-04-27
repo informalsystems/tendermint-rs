@@ -28,7 +28,33 @@ pub struct VoteInfo {
     /// Identifies the validator.
     pub validator: Validator,
     /// Whether or not the validator signed the last block.
-    pub signed_last_block: bool,
+    pub sig_info: BlockSignatureInfo,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+/// Information on how the validator voted for a block.
+pub enum BlockSignatureInfo {
+    /// Full information available, as determined by the `BlockIdFlag` value.
+    Flag(block::BlockIdFlag),
+    /// In CometBFT versions before 0.38, the `signed_last_block` field has
+    /// the value of true.
+    ///
+    /// This variant should not be used in CometBFT 0.38 or later
+    /// and will result in the "undefined" encoding in protobuf.
+    LegacySigned,
+}
+
+impl BlockSignatureInfo {
+    /// Whether the validator has signed the block accordingly to this information.
+    pub fn is_signed(&self) -> bool {
+        use block::BlockIdFlag::*;
+
+        match self {
+            BlockSignatureInfo::Flag(Commit) | BlockSignatureInfo::Flag(Nil) => true,
+            BlockSignatureInfo::Flag(Absent) => false,
+            BlockSignatureInfo::LegacySigned => true,
+        }
+    }
 }
 
 /// The possible kinds of [`Misbehavior`].
@@ -119,8 +145,10 @@ pub struct Snapshot {
 // =============================================================================
 
 mod v0_34 {
-    use super::{CommitInfo, Misbehavior, MisbehaviorKind, Snapshot, Validator, VoteInfo};
-    use crate::{prelude::*, Error};
+    use super::{
+        BlockSignatureInfo, CommitInfo, Misbehavior, MisbehaviorKind, Snapshot, Validator, VoteInfo,
+    };
+    use crate::{block::BlockIdFlag, prelude::*, Error};
     use tendermint_proto::v0_34::abci as pb;
     use tendermint_proto::Protobuf;
 
@@ -160,7 +188,7 @@ mod v0_34 {
         fn from(vi: VoteInfo) -> Self {
             Self {
                 validator: Some(vi.validator.into()),
-                signed_last_block: vi.signed_last_block,
+                signed_last_block: vi.sig_info.is_signed(),
             }
         }
     }
@@ -169,12 +197,17 @@ mod v0_34 {
         type Error = Error;
 
         fn try_from(vi: pb::VoteInfo) -> Result<Self, Self::Error> {
+            let sig_info = if vi.signed_last_block {
+                BlockSignatureInfo::LegacySigned
+            } else {
+                BlockSignatureInfo::Flag(BlockIdFlag::Absent)
+            };
             Ok(Self {
                 validator: vi
                     .validator
                     .ok_or_else(Error::missing_validator)?
                     .try_into()?,
-                signed_last_block: vi.signed_last_block,
+                sig_info,
             })
         }
     }
@@ -278,8 +311,10 @@ mod v0_34 {
 }
 
 mod v0_37 {
-    use super::{CommitInfo, Misbehavior, MisbehaviorKind, Snapshot, Validator, VoteInfo};
-    use crate::{prelude::*, Error};
+    use super::{
+        BlockSignatureInfo, CommitInfo, Misbehavior, MisbehaviorKind, Snapshot, Validator, VoteInfo,
+    };
+    use crate::{block::BlockIdFlag, prelude::*, Error};
     use tendermint_proto::v0_37::abci as pb;
     use tendermint_proto::Protobuf;
 
@@ -319,7 +354,7 @@ mod v0_37 {
         fn from(vi: VoteInfo) -> Self {
             Self {
                 validator: Some(vi.validator.into()),
-                signed_last_block: vi.signed_last_block,
+                signed_last_block: vi.sig_info.is_signed(),
             }
         }
     }
@@ -328,12 +363,17 @@ mod v0_37 {
         type Error = Error;
 
         fn try_from(vi: pb::VoteInfo) -> Result<Self, Self::Error> {
+            let sig_info = if vi.signed_last_block {
+                BlockSignatureInfo::LegacySigned
+            } else {
+                BlockSignatureInfo::Flag(BlockIdFlag::Absent)
+            };
             Ok(Self {
                 validator: vi
                     .validator
                     .ok_or_else(Error::missing_validator)?
                     .try_into()?,
-                signed_last_block: vi.signed_last_block,
+                sig_info,
             })
         }
     }
@@ -347,7 +387,7 @@ mod v0_37 {
         fn from(vi: VoteInfo) -> Self {
             Self {
                 validator: Some(vi.validator.into()),
-                signed_last_block: vi.signed_last_block,
+                signed_last_block: vi.sig_info.is_signed(),
                 vote_extension: Default::default(),
             }
         }
@@ -357,12 +397,17 @@ mod v0_37 {
         type Error = Error;
 
         fn try_from(vi: pb::ExtendedVoteInfo) -> Result<Self, Self::Error> {
+            let sig_info = if vi.signed_last_block {
+                BlockSignatureInfo::LegacySigned
+            } else {
+                BlockSignatureInfo::Flag(BlockIdFlag::Absent)
+            };
             Ok(Self {
                 validator: vi
                     .validator
                     .ok_or_else(Error::missing_validator)?
                     .try_into()?,
-                signed_last_block: vi.signed_last_block,
+                sig_info,
             })
         }
     }
@@ -464,6 +509,181 @@ mod v0_37 {
     }
 
     impl Protobuf<pb::ExtendedCommitInfo> for CommitInfo {}
+
+    impl From<Snapshot> for pb::Snapshot {
+        fn from(snapshot: Snapshot) -> Self {
+            Self {
+                height: snapshot.height.into(),
+                format: snapshot.format,
+                chunks: snapshot.chunks,
+                hash: snapshot.hash,
+                metadata: snapshot.metadata,
+            }
+        }
+    }
+
+    impl TryFrom<pb::Snapshot> for Snapshot {
+        type Error = Error;
+
+        fn try_from(snapshot: pb::Snapshot) -> Result<Self, Self::Error> {
+            Ok(Self {
+                height: snapshot.height.try_into()?,
+                format: snapshot.format,
+                chunks: snapshot.chunks,
+                hash: snapshot.hash,
+                metadata: snapshot.metadata,
+            })
+        }
+    }
+
+    impl Protobuf<pb::Snapshot> for Snapshot {}
+}
+
+mod v0_38 {
+    use super::{
+        BlockSignatureInfo, CommitInfo, Misbehavior, MisbehaviorKind, Snapshot, Validator, VoteInfo,
+    };
+    use crate::{prelude::*, Error};
+    use tendermint_proto::v0_38::abci as pb;
+    use tendermint_proto::v0_38::types::BlockIdFlag as RawBlockIdFlag;
+    use tendermint_proto::Protobuf;
+
+    use bytes::Bytes;
+
+    impl From<Validator> for pb::Validator {
+        fn from(v: Validator) -> Self {
+            Self {
+                address: Bytes::copy_from_slice(&v.address[..]),
+                power: v.power.into(),
+            }
+        }
+    }
+
+    impl TryFrom<pb::Validator> for Validator {
+        type Error = Error;
+
+        fn try_from(vu: pb::Validator) -> Result<Self, Self::Error> {
+            let address = if vu.address.len() == 20 {
+                let mut bytes = [0u8; 20];
+                bytes.copy_from_slice(&vu.address);
+                bytes
+            } else {
+                return Err(Error::invalid_account_id_length());
+            };
+
+            Ok(Self {
+                address,
+                power: vu.power.try_into()?,
+            })
+        }
+    }
+
+    impl Protobuf<pb::Validator> for Validator {}
+
+    impl From<VoteInfo> for pb::VoteInfo {
+        fn from(vi: VoteInfo) -> Self {
+            // The API user should not use the LegacySigned flag in
+            // values for 0.38-based chains. As this conversion is infallible,
+            // silently convert it to the undefined value.
+            let block_id_flag = match vi.sig_info {
+                BlockSignatureInfo::Flag(flag) => flag.into(),
+                BlockSignatureInfo::LegacySigned => RawBlockIdFlag::Unknown,
+            };
+            Self {
+                validator: Some(vi.validator.into()),
+                block_id_flag: block_id_flag as i32,
+            }
+        }
+    }
+
+    impl TryFrom<pb::VoteInfo> for VoteInfo {
+        type Error = Error;
+
+        fn try_from(vi: pb::VoteInfo) -> Result<Self, Self::Error> {
+            let block_id_flag =
+                RawBlockIdFlag::from_i32(vi.block_id_flag).ok_or_else(Error::block_id_flag)?;
+            Ok(Self {
+                validator: vi
+                    .validator
+                    .ok_or_else(Error::missing_validator)?
+                    .try_into()?,
+                sig_info: BlockSignatureInfo::Flag(block_id_flag.try_into()?),
+            })
+        }
+    }
+
+    impl Protobuf<pb::VoteInfo> for VoteInfo {}
+
+    // TODO: introduce ExtendedVoteInfo domain type.
+
+    impl From<Misbehavior> for pb::Misbehavior {
+        fn from(evidence: Misbehavior) -> Self {
+            Self {
+                r#type: evidence.kind as i32,
+                validator: Some(evidence.validator.into()),
+                height: evidence.height.into(),
+                time: Some(evidence.time.into()),
+                total_voting_power: evidence.total_voting_power.into(),
+            }
+        }
+    }
+
+    impl TryFrom<pb::Misbehavior> for Misbehavior {
+        type Error = Error;
+
+        fn try_from(evidence: pb::Misbehavior) -> Result<Self, Self::Error> {
+            let kind = match evidence.r#type {
+                0 => MisbehaviorKind::Unknown,
+                1 => MisbehaviorKind::DuplicateVote,
+                2 => MisbehaviorKind::LightClientAttack,
+                _ => return Err(Error::invalid_evidence()),
+            };
+
+            Ok(Self {
+                kind,
+                validator: evidence
+                    .validator
+                    .ok_or_else(Error::missing_validator)?
+                    .try_into()?,
+                height: evidence.height.try_into()?,
+                time: evidence
+                    .time
+                    .ok_or_else(Error::missing_timestamp)?
+                    .try_into()?,
+                total_voting_power: evidence.total_voting_power.try_into()?,
+            })
+        }
+    }
+
+    impl Protobuf<pb::Misbehavior> for Misbehavior {}
+
+    impl From<CommitInfo> for pb::CommitInfo {
+        fn from(lci: CommitInfo) -> Self {
+            Self {
+                round: lci.round.into(),
+                votes: lci.votes.into_iter().map(Into::into).collect(),
+            }
+        }
+    }
+
+    impl TryFrom<pb::CommitInfo> for CommitInfo {
+        type Error = Error;
+
+        fn try_from(lci: pb::CommitInfo) -> Result<Self, Self::Error> {
+            Ok(Self {
+                round: lci.round.try_into()?,
+                votes: lci
+                    .votes
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<_, _>>()?,
+            })
+        }
+    }
+
+    impl Protobuf<pb::CommitInfo> for CommitInfo {}
+
+    // TODO: introduce the ExtendedCommitInfo domain type.
 
     impl From<Snapshot> for pb::Snapshot {
         fn from(snapshot: Snapshot) -> Self {
