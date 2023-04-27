@@ -31,21 +31,21 @@ pub struct CheckTx {
     pub events: Vec<Event>,
     /// The namespace for the `code`.
     pub codespace: String,
-    /// The transaction's sender (e.g. the signer).
-    pub sender: String,
-    /// The transaction's priority (for mempool ordering).
-    pub priority: i64,
-    /// mempool_error is set by Tendermint.
-    /// ABCI applications should not set mempool_error.
-    pub mempool_error: String,
+    // FIXME: Should we still support these fields for older protocol versions?
+    // Does anybody use them?
+    //pub sender: String,
+    //pub priority: i64,
+    //pub mempool_error: String,
 }
 
 // =============================================================================
 // Protobuf conversions
 // =============================================================================
 
-tendermint_pb_modules! {
+mod v0_34 {
     use super::CheckTx;
+    use tendermint_proto::v0_34 as pb;
+    use tendermint_proto::Protobuf;
 
     impl From<CheckTx> for pb::abci::ResponseCheckTx {
         fn from(check_tx: CheckTx) -> Self {
@@ -58,9 +58,9 @@ tendermint_pb_modules! {
                 gas_used: check_tx.gas_used,
                 events: check_tx.events.into_iter().map(Into::into).collect(),
                 codespace: check_tx.codespace,
-                sender: check_tx.sender,
-                priority: check_tx.priority,
-                mempool_error: check_tx.mempool_error,
+                sender: Default::default(),
+                priority: Default::default(),
+                mempool_error: Default::default(),
             }
         }
     }
@@ -82,9 +82,97 @@ tendermint_pb_modules! {
                     .map(TryInto::try_into)
                     .collect::<Result<_, _>>()?,
                 codespace: check_tx.codespace,
-                sender: check_tx.sender,
-                priority: check_tx.priority,
-                mempool_error: check_tx.mempool_error,
+            })
+        }
+    }
+
+    impl Protobuf<pb::abci::ResponseCheckTx> for CheckTx {}
+}
+
+mod v0_37 {
+    use super::CheckTx;
+    use tendermint_proto::v0_37 as pb;
+    use tendermint_proto::Protobuf;
+
+    impl From<CheckTx> for pb::abci::ResponseCheckTx {
+        fn from(check_tx: CheckTx) -> Self {
+            Self {
+                code: check_tx.code.into(),
+                data: check_tx.data,
+                log: check_tx.log,
+                info: check_tx.info,
+                gas_wanted: check_tx.gas_wanted,
+                gas_used: check_tx.gas_used,
+                events: check_tx.events.into_iter().map(Into::into).collect(),
+                codespace: check_tx.codespace,
+                sender: Default::default(),
+                priority: Default::default(),
+                mempool_error: Default::default(),
+            }
+        }
+    }
+
+    impl TryFrom<pb::abci::ResponseCheckTx> for CheckTx {
+        type Error = crate::Error;
+
+        fn try_from(check_tx: pb::abci::ResponseCheckTx) -> Result<Self, Self::Error> {
+            Ok(Self {
+                code: check_tx.code.into(),
+                data: check_tx.data,
+                log: check_tx.log,
+                info: check_tx.info,
+                gas_wanted: check_tx.gas_wanted,
+                gas_used: check_tx.gas_used,
+                events: check_tx
+                    .events
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<_, _>>()?,
+                codespace: check_tx.codespace,
+            })
+        }
+    }
+
+    impl Protobuf<pb::abci::ResponseCheckTx> for CheckTx {}
+}
+
+mod v0_38 {
+    use super::CheckTx;
+    use tendermint_proto::v0_38 as pb;
+    use tendermint_proto::Protobuf;
+
+    impl From<CheckTx> for pb::abci::ResponseCheckTx {
+        fn from(check_tx: CheckTx) -> Self {
+            Self {
+                code: check_tx.code.into(),
+                data: check_tx.data,
+                log: check_tx.log,
+                info: check_tx.info,
+                gas_wanted: check_tx.gas_wanted,
+                gas_used: check_tx.gas_used,
+                events: check_tx.events.into_iter().map(Into::into).collect(),
+                codespace: check_tx.codespace,
+            }
+        }
+    }
+
+    impl TryFrom<pb::abci::ResponseCheckTx> for CheckTx {
+        type Error = crate::Error;
+
+        fn try_from(check_tx: pb::abci::ResponseCheckTx) -> Result<Self, Self::Error> {
+            Ok(Self {
+                code: check_tx.code.into(),
+                data: check_tx.data,
+                log: check_tx.log,
+                info: check_tx.info,
+                gas_wanted: check_tx.gas_wanted,
+                gas_used: check_tx.gas_used,
+                events: check_tx
+                    .events
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<_, _>>()?,
+                codespace: check_tx.codespace,
             })
         }
     }
