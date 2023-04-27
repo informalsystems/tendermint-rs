@@ -2,14 +2,14 @@
 
 use std::net::{TcpStream, ToSocketAddrs};
 
-use tendermint_proto::v0_37::abci::{
-    request, response, Request, RequestApplySnapshotChunk, RequestBeginBlock, RequestCheckTx,
-    RequestCommit, RequestDeliverTx, RequestEcho, RequestEndBlock, RequestFlush, RequestInfo,
+use tendermint_proto::v0_38::abci::{
+    request, response, Request, RequestApplySnapshotChunk, RequestCheckTx, RequestCommit,
+    RequestEcho, RequestExtendVote, RequestFinalizeBlock, RequestFlush, RequestInfo,
     RequestInitChain, RequestListSnapshots, RequestLoadSnapshotChunk, RequestOfferSnapshot,
-    RequestQuery, ResponseApplySnapshotChunk, ResponseBeginBlock, ResponseCheckTx, ResponseCommit,
-    ResponseDeliverTx, ResponseEcho, ResponseEndBlock, ResponseFlush, ResponseInfo,
-    ResponseInitChain, ResponseListSnapshots, ResponseLoadSnapshotChunk, ResponseOfferSnapshot,
-    ResponseQuery,
+    RequestQuery, RequestVerifyVoteExtension, ResponseApplySnapshotChunk, ResponseCheckTx,
+    ResponseCommit, ResponseEcho, ResponseExtendVote, ResponseFinalizeBlock, ResponseFlush,
+    ResponseInfo, ResponseInitChain, ResponseListSnapshots, ResponseLoadSnapshotChunk,
+    ResponseOfferSnapshot, ResponseQuery, ResponseVerifyVoteExtension,
 };
 
 use crate::{codec::ClientCodec, Error};
@@ -89,21 +89,6 @@ impl Client {
         perform!(self, CheckTx, req)
     }
 
-    /// Signal the beginning of a new block, prior to any `DeliverTx` calls.
-    pub fn begin_block(&mut self, req: RequestBeginBlock) -> Result<ResponseBeginBlock, Error> {
-        perform!(self, BeginBlock, req)
-    }
-
-    /// Apply a transaction to the application's state.
-    pub fn deliver_tx(&mut self, req: RequestDeliverTx) -> Result<ResponseDeliverTx, Error> {
-        perform!(self, DeliverTx, req)
-    }
-
-    /// Signal the end of a block.
-    pub fn end_block(&mut self, req: RequestEndBlock) -> Result<ResponseEndBlock, Error> {
-        perform!(self, EndBlock, req)
-    }
-
     pub fn flush(&mut self) -> Result<ResponseFlush, Error> {
         perform!(self, Flush, RequestFlush {})
     }
@@ -140,6 +125,24 @@ impl Client {
         req: RequestApplySnapshotChunk,
     ) -> Result<ResponseApplySnapshotChunk, Error> {
         perform!(self, ApplySnapshotChunk, req)
+    }
+
+    pub fn extend_vote(&mut self, req: RequestExtendVote) -> Result<ResponseExtendVote, Error> {
+        perform!(self, ExtendVote, req)
+    }
+
+    pub fn verify_vote_extension(
+        &mut self,
+        req: RequestVerifyVoteExtension,
+    ) -> Result<ResponseVerifyVoteExtension, Error> {
+        perform!(self, VerifyVoteExtension, req)
+    }
+
+    pub fn finalize_block(
+        &mut self,
+        req: RequestFinalizeBlock,
+    ) -> Result<ResponseFinalizeBlock, Error> {
+        perform!(self, FinalizeBlock, req)
     }
 
     fn perform(&mut self, req: request::Value) -> Result<response::Value, Error> {
