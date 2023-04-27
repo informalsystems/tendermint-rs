@@ -151,7 +151,7 @@ tendermint_pb_modules! {
                     block_id_flag: BlockIdFlag::Nil.to_i32().unwrap(),
                     validator_address: validator_address.into(),
                     timestamp: Some(timestamp.into()),
-                    signature: signature.map(|s| s.to_bytes()).unwrap_or_default(),
+                    signature: signature.map(|s| s.into_bytes()).unwrap_or_default(),
                 },
                 CommitSig::BlockIdFlagCommit {
                     validator_address,
@@ -161,7 +161,7 @@ tendermint_pb_modules! {
                     block_id_flag: BlockIdFlag::Commit.to_i32().unwrap(),
                     validator_address: validator_address.into(),
                     timestamp: Some(timestamp.into()),
-                    signature: signature.map(|s| s.to_bytes()).unwrap_or_default(),
+                    signature: signature.map(|s| s.into_bytes()).unwrap_or_default(),
                 },
             }
         }

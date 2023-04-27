@@ -94,7 +94,7 @@ tendermint_pb_modules! {
                 timestamp: value.timestamp.map(Into::into),
                 validator_address: value.validator_address.into(),
                 validator_index: value.validator_index.into(),
-                signature: value.signature.map(|s| s.to_bytes()).unwrap_or_default(),
+                signature: value.signature.map(|s| s.into_bytes()).unwrap_or_default(),
             }
         }
     }

@@ -77,7 +77,7 @@ tendermint_pb_modules! {
                 pol_round: value.pol_round.map_or(-1, Into::into),
                 block_id: value.block_id.map(Into::into),
                 timestamp: value.timestamp.map(Into::into),
-                signature: value.signature.map(|s| s.to_bytes()).unwrap_or_default(),
+                signature: value.signature.map(|s| s.into_bytes()).unwrap_or_default(),
             }
         }
     }

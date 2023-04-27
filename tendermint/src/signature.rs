@@ -69,7 +69,7 @@ impl Signature {
     }
 
     /// Return the underlying byte array
-    pub fn to_bytes(self) -> Vec<u8> {
+    pub fn into_bytes(self) -> Vec<u8> {
         self.0
     }
 }
