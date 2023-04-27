@@ -124,3 +124,37 @@ mod v0_37 {
         }
     }
 }
+
+mod v0_38 {
+    use super::Size;
+    use crate::error::Error;
+    use tendermint_proto::v0_38::types::BlockParams as RawSize;
+    use tendermint_proto::Protobuf;
+
+    impl Protobuf<RawSize> for Size {}
+
+    impl TryFrom<RawSize> for Size {
+        type Error = Error;
+
+        fn try_from(value: RawSize) -> Result<Self, Self::Error> {
+            Ok(Self {
+                max_bytes: value
+                    .max_bytes
+                    .try_into()
+                    .map_err(Error::integer_overflow)?,
+                max_gas: value.max_gas,
+                time_iota_ms: Size::default_time_iota_ms(),
+            })
+        }
+    }
+
+    impl From<Size> for RawSize {
+        fn from(value: Size) -> Self {
+            // Todo: make the struct more robust so this can become infallible.
+            RawSize {
+                max_bytes: value.max_bytes as i64,
+                max_gas: value.max_gas,
+            }
+        }
+    }
+}
