@@ -9,7 +9,7 @@ use core::{fmt, str::FromStr};
 
 use bytes::BufMut;
 use serde::{Deserialize, Serialize};
-use tendermint_proto::v0_37::types::{CanonicalVote as RawCanonicalVote, Vote as RawVote};
+use tendermint_proto::v0_38::types::{CanonicalVote as RawCanonicalVote, Vote as RawVote};
 use tendermint_proto::{Error as ProtobufError, Protobuf};
 
 pub use self::{
@@ -17,7 +17,7 @@ pub use self::{
 };
 use crate::{
     account, block, chain::Id as ChainId, consensus::State, error::Error, hash, prelude::*,
-    signature::Ed25519Signature, Signature, Time,
+    Signature, Time,
 };
 
 /// Votes are signed messages from validators for a particular block which
@@ -50,12 +50,25 @@ pub struct Vote {
 
     /// Signature
     pub signature: Option<Signature>,
+
+    /// Vote extension provided by the application.
+    /// Only valid for precommit messages.
+    pub extension: Vec<u8>,
+
+    /// Vote extension signature by the validator
+    /// Only valid for precommit messages.
+    pub extension_signature: Option<Signature>,
 }
 
-tendermint_pb_modules! {
+// =============================================================================
+// Protobuf conversions
+// =============================================================================
+
+mod v0_34 {
     use super::Vote;
-    use crate::{prelude::*, block, Error, Signature};
-    use pb::types::Vote as RawVote;
+    use crate::{block, prelude::*, Error, Signature};
+    use tendermint_proto::v0_34::types::Vote as RawVote;
+    use tendermint_proto::Protobuf;
 
     impl Protobuf<RawVote> for Vote {}
 
@@ -80,6 +93,8 @@ tendermint_pb_modules! {
                 validator_address: value.validator_address.try_into()?,
                 validator_index: value.validator_index.try_into()?,
                 signature: Signature::new(value.signature)?,
+                extension: Default::default(),
+                extension_signature: None,
             })
         }
     }
@@ -95,6 +110,113 @@ tendermint_pb_modules! {
                 validator_address: value.validator_address.into(),
                 validator_index: value.validator_index.into(),
                 signature: value.signature.map(|s| s.into_bytes()).unwrap_or_default(),
+            }
+        }
+    }
+}
+
+mod v0_37 {
+    use super::Vote;
+    use crate::{block, prelude::*, Error, Signature};
+    use tendermint_proto::v0_37::types::Vote as RawVote;
+    use tendermint_proto::Protobuf;
+
+    impl Protobuf<RawVote> for Vote {}
+
+    impl TryFrom<RawVote> for Vote {
+        type Error = Error;
+
+        fn try_from(value: RawVote) -> Result<Self, Self::Error> {
+            if value.timestamp.is_none() {
+                return Err(Error::missing_timestamp());
+            }
+            Ok(Vote {
+                vote_type: value.r#type.try_into()?,
+                height: value.height.try_into()?,
+                round: value.round.try_into()?,
+                // block_id can be nil in the Go implementation
+                block_id: value
+                    .block_id
+                    .map(TryInto::try_into)
+                    .transpose()?
+                    .filter(|i| i != &block::Id::default()),
+                timestamp: value.timestamp.map(|t| t.try_into()).transpose()?,
+                validator_address: value.validator_address.try_into()?,
+                validator_index: value.validator_index.try_into()?,
+                signature: Signature::new(value.signature)?,
+                extension: Default::default(),
+                extension_signature: None,
+            })
+        }
+    }
+
+    impl From<Vote> for RawVote {
+        fn from(value: Vote) -> Self {
+            RawVote {
+                r#type: value.vote_type.into(),
+                height: value.height.into(),
+                round: value.round.into(),
+                block_id: value.block_id.map(Into::into),
+                timestamp: value.timestamp.map(Into::into),
+                validator_address: value.validator_address.into(),
+                validator_index: value.validator_index.into(),
+                signature: value.signature.map(|s| s.into_bytes()).unwrap_or_default(),
+            }
+        }
+    }
+}
+
+mod v0_38 {
+    use super::Vote;
+    use crate::{block, prelude::*, Error, Signature};
+    use tendermint_proto::v0_38::types::Vote as RawVote;
+    use tendermint_proto::Protobuf;
+
+    impl Protobuf<RawVote> for Vote {}
+
+    impl TryFrom<RawVote> for Vote {
+        type Error = Error;
+
+        fn try_from(value: RawVote) -> Result<Self, Self::Error> {
+            if value.timestamp.is_none() {
+                return Err(Error::missing_timestamp());
+            }
+            Ok(Vote {
+                vote_type: value.r#type.try_into()?,
+                height: value.height.try_into()?,
+                round: value.round.try_into()?,
+                // block_id can be nil in the Go implementation
+                block_id: value
+                    .block_id
+                    .map(TryInto::try_into)
+                    .transpose()?
+                    .filter(|i| i != &block::Id::default()),
+                timestamp: value.timestamp.map(|t| t.try_into()).transpose()?,
+                validator_address: value.validator_address.try_into()?,
+                validator_index: value.validator_index.try_into()?,
+                signature: Signature::new(value.signature)?,
+                extension: value.extension,
+                extension_signature: Signature::new(value.extension_signature)?,
+            })
+        }
+    }
+
+    impl From<Vote> for RawVote {
+        fn from(value: Vote) -> Self {
+            RawVote {
+                r#type: value.vote_type.into(),
+                height: value.height.into(),
+                round: value.round.into(),
+                block_id: value.block_id.map(Into::into),
+                timestamp: value.timestamp.map(Into::into),
+                validator_address: value.validator_address.into(),
+                validator_index: value.validator_index.into(),
+                signature: value.signature.map(|s| s.into_bytes()).unwrap_or_default(),
+                extension: value.extension,
+                extension_signature: value
+                    .extension_signature
+                    .map(|s| s.into_bytes())
+                    .unwrap_or_default(),
             }
         }
     }
@@ -157,26 +279,6 @@ impl Vote {
     }
 }
 
-/// Default trait. Used in tests.
-// FIXME: Does it need to be in public crate API? If not, replace with a helper fn in crate::test?
-impl Default for Vote {
-    fn default() -> Self {
-        Vote {
-            vote_type: Type::Prevote,
-            height: Default::default(),
-            round: Default::default(),
-            block_id: None,
-            timestamp: Some(Time::unix_epoch()),
-            validator_address: account::Id::new([0; account::LENGTH]),
-            validator_index: ValidatorIndex::try_from(0_i32).unwrap(),
-            // Could have reused crate::test::dummy_signature, except that
-            // this Default impl is defined outside of #[cfg(test)].
-            signature: Some(Signature::from(Ed25519Signature::from_bytes(
-                &[0; Ed25519Signature::BYTE_SIZE],
-            ))),
-        }
-    }
-}
 /// SignedVote is the union of a canonicalized vote, the signature on
 /// the sign bytes of that vote and the id of the validator who signed it.
 pub struct SignedVote {
