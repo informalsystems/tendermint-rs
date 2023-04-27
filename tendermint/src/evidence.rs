@@ -7,7 +7,6 @@ use core::{
 
 use serde::{Deserialize, Serialize};
 use tendermint_proto::google::protobuf::Duration as RawDuration;
-use tendermint_proto::v0_34::types as raw;
 use tendermint_proto::Protobuf;
 
 use crate::{
@@ -20,8 +19,7 @@ use crate::{
 };
 
 /// Evidence of malfeasance by validators (i.e. signing conflicting votes or light client attack).
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(try_from = "raw::Evidence", into = "raw::Evidence")] // Used by RPC /broadcast_evidence endpoint
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Evidence {
     /// Duplicate vote evidence
     DuplicateVote(Box<DuplicateVoteEvidence>),
@@ -43,11 +41,7 @@ impl From<DuplicateVoteEvidence> for Evidence {
 }
 
 /// Duplicate vote evidence
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(
-    try_from = "raw::DuplicateVoteEvidence",
-    into = "raw::DuplicateVoteEvidence"
-)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DuplicateVoteEvidence {
     pub vote_a: Vote,
     pub vote_b: Vote,
@@ -88,10 +82,6 @@ pub struct ConflictingBlock {
 
 /// Light client attack evidence
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(
-    try_from = "raw::LightClientAttackEvidence",
-    into = "raw::LightClientAttackEvidence"
-)]
 pub struct LightClientAttackEvidence {
     pub conflicting_block: ConflictingBlock,
     pub common_height: Height,
@@ -103,8 +93,7 @@ pub struct LightClientAttackEvidence {
 /// A list of `Evidence`.
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#evidencedata>
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(try_from = "raw::EvidenceList", into = "raw::EvidenceList")]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct List(Vec<Evidence>);
 
 impl List {
@@ -136,10 +125,7 @@ impl AsRef<[Evidence]> for List {
 /// EvidenceParams determine how we handle evidence of malfeasance.
 ///
 /// [Tendermint documentation](https://docs.tendermint.com/master/spec/core/data_structures.html#evidenceparams)
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
-// #[serde(try_from = "raw::EvidenceParams", into = "raw::EvidenceParams")]
-// TODO: This struct is ready to be converted through tendermint_proto::types::EvidenceParams.
-// https://github.com/informalsystems/tendermint-rs/issues/741
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Params {
     /// Max age of evidence, in blocks.
     #[serde(with = "serializers::from_str")]

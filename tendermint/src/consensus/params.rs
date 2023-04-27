@@ -7,7 +7,7 @@ use crate::{block, evidence, prelude::*, public_key};
 /// All consensus-relevant parameters that can be adjusted by the ABCI app.
 ///
 /// [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#consensusparams)
-#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Params {
     /// Parameters limiting the size of a block and time between consecutive blocks.
     pub block: block::Size,
@@ -16,8 +16,7 @@ pub struct Params {
     /// Parameters limiting the types of public keys validators can use.
     pub validator: ValidatorParams,
     /// The ABCI application version.
-    /// Version parameters
-    #[serde(skip)] // Todo: FIXME kvstore /genesis returns '{}' instead of '{app_version: "0"}'
+    #[serde(skip)] // FIXME: kvstore /genesis returns '{}' instead of '{app_version: "0"}'
     pub version: Option<VersionParams>,
 }
 

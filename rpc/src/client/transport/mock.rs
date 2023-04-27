@@ -4,6 +4,7 @@ use alloc::collections::BTreeMap as HashMap;
 
 use async_trait::async_trait;
 
+use crate::client::CompatMode;
 use crate::dialect::{v0_37, Dialect};
 use crate::{
     client::{
@@ -63,6 +64,10 @@ pub struct MockClient<M: MockRequestMatcher> {
 
 #[async_trait]
 impl<M: MockRequestMatcher> Client for MockClient<M> {
+    fn compat_mode(&self) -> CompatMode {
+        CompatMode::V0_34
+    }
+
     async fn perform<R>(&self, request: R) -> Result<R::Output, Error>
     where
         R: SimpleRequest<v0_37::Dialect>,

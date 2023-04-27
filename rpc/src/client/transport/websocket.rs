@@ -230,6 +230,10 @@ impl WebSocketClient {
 
 #[async_trait]
 impl Client for WebSocketClient {
+    fn compat_mode(&self) -> CompatMode {
+        self.compat
+    }
+
     async fn perform<R>(&self, request: R) -> Result<R::Output, Error>
     where
         R: SimpleRequest,

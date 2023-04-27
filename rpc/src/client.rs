@@ -47,6 +47,9 @@ use crate::{
 /// [`SubscriptionClient`]: trait.SubscriptionClient.html
 #[async_trait]
 pub trait Client {
+    /// The compatibility mode in which this client is operating.
+    fn compat_mode(&self) -> CompatMode;
+
     /// `/abci_info`: get information about the ABCI application.
     async fn abci_info(&self) -> Result<abci::response::Info, Error> {
         Ok(self.perform(abci_info::Request).await?.response)
@@ -283,7 +286,8 @@ pub trait Client {
 
     /// `/broadcast_evidence`: broadcast an evidence.
     async fn broadcast_evidence(&self, e: Evidence) -> Result<evidence::Response, Error> {
-        self.perform(evidence::Request::new(e)).await
+        self.perform(evidence::Request::new(e, self.compat_mode()))
+            .await
     }
 
     /// `/tx`: find transaction by hash.
