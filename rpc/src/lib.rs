@@ -32,8 +32,8 @@ extern crate std;
 
 mod prelude;
 
-#[cfg(any(feature = "http-client", feature = "websocket-client"))]
 pub mod client;
+
 #[cfg(any(feature = "http-client", feature = "websocket-client"))]
 pub use client::{
     Client, MockClient, MockRequestMatcher, MockRequestMethodMatcher, Subscription,

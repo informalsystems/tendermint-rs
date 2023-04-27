@@ -2,26 +2,33 @@
 
 mod compat;
 pub use compat::CompatMode;
+
+#[cfg(any(feature = "http-client", feature = "websocket-client"))]
 mod subscription;
+#[cfg(any(feature = "http-client", feature = "websocket-client"))]
 pub use subscription::{Subscription, SubscriptionClient};
+
+#[cfg(any(feature = "http-client", feature = "websocket-client"))]
 pub mod sync;
 
+#[cfg(any(feature = "http-client", feature = "websocket-client"))]
 mod transport;
 
 #[cfg(feature = "http-client")]
 pub use transport::http::{HttpClient, HttpClientUrl};
-pub use transport::mock::{MockClient, MockRequestMatcher, MockRequestMethodMatcher};
 #[cfg(feature = "websocket-client")]
 pub use transport::websocket::{
     WebSocketClient, WebSocketClientDriver, WebSocketClientUrl, WebSocketConfig,
 };
 
-use core::{fmt, time::Duration};
+#[cfg(any(feature = "http-client", feature = "websocket-client"))]
+pub use transport::mock::{MockClient, MockRequestMatcher, MockRequestMethodMatcher};
+
+use core::fmt;
 
 use async_trait::async_trait;
 use serde::{de::DeserializeOwned, Serialize};
 use tendermint::{abci, block::Height, evidence::Evidence, Genesis, Hash};
-use tokio::time;
 
 use crate::{
     endpoint::{validators::DEFAULT_VALIDATORS_PER_PAGE, *},
@@ -297,14 +304,15 @@ pub trait Client {
             .await
     }
 
+    #[cfg(any(feature = "http-client", feature = "websocket-client"))]
     /// Poll the `/health` endpoint until it returns a successful result or
     /// the given `timeout` has elapsed.
     async fn wait_until_healthy<T>(&self, timeout: T) -> Result<(), Error>
     where
-        T: Into<Duration> + Send,
+        T: Into<core::time::Duration> + Send,
     {
         let timeout = timeout.into();
-        let poll_interval = Duration::from_millis(200);
+        let poll_interval = core::time::Duration::from_millis(200);
         let mut attempts_remaining = timeout.as_millis() / poll_interval.as_millis();
 
         while self.health().await.is_err() {
@@ -313,7 +321,7 @@ pub trait Client {
             }
 
             attempts_remaining -= 1;
-            time::sleep(poll_interval).await;
+            tokio::time::sleep(poll_interval).await;
         }
 
         Ok(())
