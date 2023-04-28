@@ -1,7 +1,6 @@
 //! Supervisor and Handle implementation.
 
 use crossbeam_channel as channel;
-use tendermint::evidence::Evidence;
 
 use crate::{
     errors::Error,
@@ -123,7 +122,7 @@ pub struct Supervisor {
     /// An instance of the fork detector
     fork_detector: Box<dyn ForkDetector>,
     /// Reporter of fork evidence
-    evidence_reporter: Box<dyn EvidenceReporter>,
+    _evidence_reporter: Box<dyn EvidenceReporter>,
     /// Channel through which to reply to `Handle`s
     sender: channel::Sender<HandleInput>,
     /// Channel through which to receive events from the `Handle`s
@@ -155,7 +154,7 @@ impl Supervisor {
             sender,
             receiver,
             fork_detector: Box::new(fork_detector),
-            evidence_reporter: Box::new(evidence_reporter),
+            _evidence_reporter: Box::new(evidence_reporter),
         }
     }
 
