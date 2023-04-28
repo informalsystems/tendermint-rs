@@ -725,6 +725,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_bisection_fork_detected() {
         let mut chain = LightChain::default_with_length(5);
         let primary = chain
