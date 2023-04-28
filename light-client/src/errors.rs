@@ -66,6 +66,16 @@ define_error! {
                     e.target_height, e.trusted_height)
             },
 
+        HeightTooHigh
+            {
+                height: Height,
+                latest_height: Height,
+            }
+            |e| {
+                format_args!("height ({0}) is higher than latest height ({1})",
+                    e.height, e.latest_height)
+            },
+
         TrustedStateOutsideTrustingPeriod
             {
                 trusted_state: Box<LightBlock>,
@@ -144,6 +154,14 @@ impl ErrorExt for ErrorDetail {
         } else {
             None
         }
+    }
+
+    fn is_io(&self) -> bool {
+        matches!(self, Self::Io(_))
+    }
+
+    fn is_height_too_high(&self) -> bool {
+        matches!(self, Self::HeightTooHigh { .. })
     }
 }
 

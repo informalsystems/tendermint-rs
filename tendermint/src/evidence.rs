@@ -7,25 +7,37 @@ use core::{
 
 use serde::{Deserialize, Serialize};
 use tendermint_proto::google::protobuf::Duration as RawDuration;
-use tendermint_proto::v0_37::types::Evidence as RawEvidence;
 use tendermint_proto::Protobuf;
 
-use crate::{error::Error, prelude::*, serializers, vote::Power, Time, Vote};
+use crate::{
+    block::{signed_header::SignedHeader, Height},
+    error::Error,
+    prelude::*,
+    serializers, validator,
+    vote::Power,
+    Time, Vote,
+};
 
-/// Evidence of malfeasance by validators (i.e. signing conflicting votes).
-/// encoded using an Amino prefix. There is currently only a single type of
-/// evidence: `DuplicateVoteEvidence`.
-///
-/// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#evidence>
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(try_from = "RawEvidence", into = "RawEvidence")] // Used by RPC /broadcast_evidence endpoint
-#[allow(clippy::large_enum_variant)]
+/// Evidence of malfeasance by validators (i.e. signing conflicting votes or light client attack).
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Evidence {
     /// Duplicate vote evidence
-    DuplicateVote(DuplicateVoteEvidence),
+    DuplicateVote(Box<DuplicateVoteEvidence>),
 
-    /// LightClient attack evidence - Todo: Implement details
-    LightClientAttackEvidence,
+    /// LightClient attack evidence
+    LightClientAttack(Box<LightClientAttackEvidence>),
+}
+
+impl From<LightClientAttackEvidence> for Evidence {
+    fn from(ev: LightClientAttackEvidence) -> Self {
+        Self::LightClientAttack(Box::new(ev))
+    }
+}
+
+impl From<DuplicateVoteEvidence> for Evidence {
+    fn from(ev: DuplicateVoteEvidence) -> Self {
+        Self::DuplicateVote(Box::new(ev))
+    }
 }
 
 /// Duplicate vote evidence
@@ -44,6 +56,7 @@ impl DuplicateVoteEvidence {
         if vote_a.height != vote_b.height {
             return Err(Error::invalid_evidence());
         }
+
         // Todo: make more assumptions about what is considered a valid evidence for duplicate vote
         Ok(Self {
             vote_a,
@@ -53,25 +66,43 @@ impl DuplicateVoteEvidence {
             timestamp: Time::unix_epoch(),
         })
     }
+
     /// Get votes
     pub fn votes(&self) -> (&Vote, &Vote) {
         (&self.vote_a, &self.vote_b)
     }
 }
 
-/// Evidence data is a wrapper for a list of `Evidence`.
+/// Conflicting block detected in light client attack
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ConflictingBlock {
+    pub signed_header: SignedHeader,
+    pub validator_set: validator::Set,
+}
+
+/// Light client attack evidence
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LightClientAttackEvidence {
+    pub conflicting_block: ConflictingBlock,
+    pub common_height: Height,
+    pub byzantine_validators: Vec<validator::Info>,
+    pub total_voting_power: Power,
+    pub timestamp: Time,
+}
+
+/// A list of `Evidence`.
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#evidencedata>
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Data(Vec<Evidence>);
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct List(Vec<Evidence>);
 
-impl Data {
+impl List {
     /// Create a new evidence data collection
-    pub fn new<I>(into_evidence: I) -> Data
+    pub fn new<I>(into_evidence: I) -> List
     where
         I: Into<Vec<Evidence>>,
     {
-        Data(into_evidence.into())
+        List(into_evidence.into())
     }
 
     /// Convert this evidence data into a vector
@@ -85,7 +116,7 @@ impl Data {
     }
 }
 
-impl AsRef<[Evidence]> for Data {
+impl AsRef<[Evidence]> for List {
     fn as_ref(&self) -> &[Evidence] {
         &self.0
     }
@@ -94,9 +125,7 @@ impl AsRef<[Evidence]> for Data {
 /// EvidenceParams determine how we handle evidence of malfeasance.
 ///
 /// [Tendermint documentation](https://docs.tendermint.com/master/spec/core/data_structures.html#evidenceparams)
-#[derive(Deserialize, Serialize, Clone, Debug, Eq, PartialEq)]
-// Todo: This struct is ready to be converted through tendermint_proto::types::EvidenceParams.
-// https://github.com/informalsystems/tendermint-rs/issues/741
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Params {
     /// Max age of evidence, in blocks.
     #[serde(with = "serializers::from_str")]
@@ -122,41 +151,47 @@ pub struct Params {
 // =============================================================================
 
 tendermint_pb_modules! {
-    use pb::types::{
-        evidence::Sum as RawSum, DuplicateVoteEvidence as RawDuplicateVoteEvidence,
-        Evidence as RawEvidence, EvidenceList as RawEvidenceList,
-        EvidenceParams as RawEvidenceParams,
-    };
+    use pb::types as raw;
 
-    use super::{Data, DuplicateVoteEvidence, Evidence, Params};
+    use super::{List, LightClientAttackEvidence, DuplicateVoteEvidence, ConflictingBlock, Evidence, Params};
     use crate::{error::Error, prelude::*};
 
-    impl TryFrom<RawEvidence> for Evidence {
+    impl Protobuf<raw::Evidence> for Evidence {}
+
+    impl TryFrom<raw::Evidence> for Evidence {
         type Error = Error;
 
-        fn try_from(message: RawEvidence) -> Result<Self, Self::Error> {
-            use RawSum::*;
-            match message.sum.ok_or_else(Error::invalid_evidence)? {
-                DuplicateVoteEvidence(ev) => Ok(Evidence::DuplicateVote(ev.try_into()?)),
-                LightClientAttackEvidence(_ev) => Ok(Evidence::LightClientAttackEvidence),
+        fn try_from(value: raw::Evidence) -> Result<Self, Self::Error> {
+            match value.sum.ok_or_else(Error::invalid_evidence)? {
+                raw::evidence::Sum::DuplicateVoteEvidence(ev) => {
+                    Ok(Evidence::DuplicateVote(Box::new(ev.try_into()?)))
+                },
+                raw::evidence::Sum::LightClientAttackEvidence(ev) => {
+                    Ok(Evidence::LightClientAttack(Box::new(ev.try_into()?)))
+                },
             }
         }
     }
 
-    impl From<Evidence> for RawEvidence {
+    impl From<Evidence> for raw::Evidence {
         fn from(value: Evidence) -> Self {
-            let sum = match value {
-                Evidence::DuplicateVote(ev) => Some(RawSum::DuplicateVoteEvidence(ev.into())),
-                Evidence::LightClientAttackEvidence => None,
-            };
-            RawEvidence { sum }
+            match value {
+                Evidence::DuplicateVote(ev) => raw::Evidence {
+                    sum: Some(raw::evidence::Sum::DuplicateVoteEvidence((*ev).into())),
+                },
+                Evidence::LightClientAttack(ev) => raw::Evidence {
+                    sum: Some(raw::evidence::Sum::LightClientAttackEvidence((*ev).into())),
+                },
+            }
         }
     }
 
-    impl TryFrom<RawDuplicateVoteEvidence> for DuplicateVoteEvidence {
+    impl Protobuf<raw::DuplicateVoteEvidence> for DuplicateVoteEvidence {}
+
+    impl TryFrom<raw::DuplicateVoteEvidence> for DuplicateVoteEvidence {
         type Error = Error;
 
-        fn try_from(value: RawDuplicateVoteEvidence) -> Result<Self, Self::Error> {
+        fn try_from(value: raw::DuplicateVoteEvidence) -> Result<Self, Self::Error> {
             Ok(Self {
                 vote_a: value
                     .vote_a
@@ -176,9 +211,9 @@ tendermint_pb_modules! {
         }
     }
 
-    impl From<DuplicateVoteEvidence> for RawDuplicateVoteEvidence {
+    impl From<DuplicateVoteEvidence> for raw::DuplicateVoteEvidence {
         fn from(value: DuplicateVoteEvidence) -> Self {
-            RawDuplicateVoteEvidence {
+            raw::DuplicateVoteEvidence {
                 vote_a: Some(value.vote_a.into()),
                 vote_b: Some(value.vote_b.into()),
                 total_voting_power: value.total_voting_power.into(),
@@ -188,9 +223,81 @@ tendermint_pb_modules! {
         }
     }
 
-    impl TryFrom<RawEvidenceList> for Data {
+    impl Protobuf<raw::LightBlock> for ConflictingBlock {}
+
+    impl TryFrom<raw::LightBlock> for ConflictingBlock {
         type Error = Error;
-        fn try_from(value: RawEvidenceList) -> Result<Self, Self::Error> {
+
+        fn try_from(value: raw::LightBlock) -> Result<Self, Self::Error> {
+            Ok(ConflictingBlock {
+                signed_header: value
+                    .signed_header
+                    .ok_or_else(Error::missing_evidence)?
+                    .try_into()?,
+                validator_set: value
+                    .validator_set
+                    .ok_or_else(Error::missing_evidence)?
+                    .try_into()?,
+            })
+        }
+    }
+
+    impl From<ConflictingBlock> for raw::LightBlock {
+        fn from(value: ConflictingBlock) -> Self {
+            raw::LightBlock {
+                signed_header: Some(value.signed_header.into()),
+                validator_set: Some(value.validator_set.into()),
+            }
+        }
+    }
+
+    impl Protobuf<raw::LightClientAttackEvidence> for LightClientAttackEvidence {}
+
+    impl TryFrom<raw::LightClientAttackEvidence> for LightClientAttackEvidence {
+        type Error = Error;
+
+        fn try_from(ev: raw::LightClientAttackEvidence) -> Result<Self, Self::Error> {
+            Ok(LightClientAttackEvidence {
+                conflicting_block: ev
+                    .conflicting_block
+                    .ok_or_else(Error::missing_evidence)?
+                    .try_into()?,
+                common_height: ev.common_height.try_into()?,
+                byzantine_validators: ev
+                    .byzantine_validators
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<Vec<_>, _>>()?,
+                total_voting_power: ev.total_voting_power.try_into()?,
+                timestamp: ev
+                    .timestamp
+                    .ok_or_else(Error::missing_timestamp)?
+                    .try_into()?,
+            })
+        }
+    }
+
+    impl From<LightClientAttackEvidence> for raw::LightClientAttackEvidence {
+        fn from(ev: LightClientAttackEvidence) -> Self {
+            raw::LightClientAttackEvidence {
+                conflicting_block: Some(ev.conflicting_block.into()),
+                common_height: ev.common_height.into(),
+                byzantine_validators: ev
+                    .byzantine_validators
+                    .into_iter()
+                    .map(Into::into)
+                    .collect(),
+                total_voting_power: ev.total_voting_power.into(),
+                timestamp: Some(ev.timestamp.into()),
+            }
+        }
+    }
+
+    impl Protobuf<raw::EvidenceList> for List {}
+
+    impl TryFrom<raw::EvidenceList> for List {
+        type Error = Error;
+        fn try_from(value: raw::EvidenceList) -> Result<Self, Self::Error> {
             let evidence = value
                 .evidence
                 .into_iter()
@@ -200,20 +307,20 @@ tendermint_pb_modules! {
         }
     }
 
-    impl From<Data> for RawEvidenceList {
-        fn from(value: Data) -> Self {
-            RawEvidenceList {
+    impl From<List> for raw::EvidenceList {
+        fn from(value: List) -> Self {
+            raw::EvidenceList {
                 evidence: value.0.into_iter().map(Into::into).collect(),
             }
         }
     }
 
-    impl Protobuf<RawEvidenceParams> for Params {}
+    impl Protobuf<raw::EvidenceParams> for Params {}
 
-    impl TryFrom<RawEvidenceParams> for Params {
+    impl TryFrom<raw::EvidenceParams> for Params {
         type Error = Error;
 
-        fn try_from(value: RawEvidenceParams) -> Result<Self, Self::Error> {
+        fn try_from(value: raw::EvidenceParams) -> Result<Self, Self::Error> {
             Ok(Self {
                 max_age_num_blocks: value
                     .max_age_num_blocks
@@ -228,7 +335,7 @@ tendermint_pb_modules! {
         }
     }
 
-    impl From<Params> for RawEvidenceParams {
+    impl From<Params> for raw::EvidenceParams {
         fn from(value: Params) -> Self {
             Self {
                 // Todo: Implement proper domain types so this becomes infallible

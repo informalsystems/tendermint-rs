@@ -13,12 +13,29 @@ pub trait Clock: Send + Sync {
 }
 
 /// Provides the current wall clock time.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct SystemClock;
 impl Clock for SystemClock {
     fn now(&self) -> Time {
         OffsetDateTime::now_utc()
             .try_into()
             .expect("system clock produces invalid time")
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct FixedClock {
+    now: Time,
+}
+
+impl FixedClock {
+    pub fn new(now: Time) -> Self {
+        Self { now }
+    }
+}
+
+impl Clock for FixedClock {
+    fn now(&self) -> Time {
+        self.now
     }
 }

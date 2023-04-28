@@ -224,6 +224,9 @@ impl LightClient {
                     // the `Verified` status or higher if already trusted.
                     let new_status = Status::most_trusted(Status::Verified, status);
                     state.light_store.update(&current_block, new_status);
+
+                    // Log the trusted height as a dependency of the block at the current height
+                    state.trace_block(current_height, trusted_block.height());
                 },
                 Verdict::Invalid(e) => {
                     // Verification failed, add the block to the light store with `Failed` status,
@@ -381,4 +384,40 @@ impl LightClient {
 
         Ok((block, Status::Unverified))
     }
+
+    /// Get the block at the given height or the latest block from the chain if the given height is
+    /// lower than the latest height.
+    pub fn get_target_block_or_latest(
+        &mut self,
+        height: Height,
+        state: &mut State,
+    ) -> Result<TargetOrLatest, Error> {
+        let block = state.light_store.get_non_failed(height);
+
+        if let Some((block, _)) = block {
+            return Ok(TargetOrLatest::Target(block));
+        }
+
+        let block = self.io.fetch_light_block(AtHeight::At(height));
+
+        if let Ok(block) = block {
+            return Ok(TargetOrLatest::Target(block));
+        }
+
+        let latest = self
+            .io
+            .fetch_light_block(AtHeight::Highest)
+            .map_err(Error::io)?;
+
+        if latest.height() == height {
+            Ok(TargetOrLatest::Target(latest))
+        } else {
+            Ok(TargetOrLatest::Latest(latest))
+        }
+    }
+}
+
+pub enum TargetOrLatest {
+    Latest(LightBlock),
+    Target(LightBlock),
 }

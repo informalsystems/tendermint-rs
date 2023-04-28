@@ -14,29 +14,18 @@
 
 use std::{convert::TryFrom, time::Duration};
 
-use tendermint::Hash;
 use tendermint_light_client::{
-    builder::{LightClientBuilder, SupervisorBuilder},
-    components::io::{AtHeight, Io, IoError, ProdIo},
+    builder::LightClientBuilder,
+    components::io::{AtHeight, Io, ProdIo},
     errors::Error,
-    evidence::{Evidence, EvidenceReporter},
+    instance::Instance,
     store::{memory::MemoryStore, LightStore},
-    supervisor::{Handle, Instance, Supervisor},
     verifier::{
         options::Options as LightClientOptions,
         types::{Height, PeerId, Status, TrustThreshold},
     },
 };
 use tendermint_rpc as rpc;
-
-struct TestEvidenceReporter;
-
-#[contracts::contract_trait]
-impl EvidenceReporter for TestEvidenceReporter {
-    fn report(&self, evidence: Evidence, peer: PeerId) -> Result<Hash, IoError> {
-        panic!("unexpected fork detected for peer {peer} with evidence: {evidence:?}");
-    }
-}
 
 fn make_instance(peer_id: PeerId, options: LightClientOptions, address: rpc::Url) -> Instance {
     let rpc_client = rpc::HttpClient::new(address).unwrap();
@@ -58,9 +47,8 @@ fn make_instance(peer_id: PeerId, options: LightClientOptions, address: rpc::Url
     .build()
 }
 
-fn make_supervisor() -> Supervisor {
+fn make_primary() -> Instance {
     let primary: PeerId = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap();
-    let witness: PeerId = "CEFEEDBADFADAD0C0CEEFACADE0ADEADBEEFC0FF".parse().unwrap();
 
     // Because our CI infrastructure can only spawn a single Tendermint node at the moment,
     // we run this test against this very node as both the primary and witness.
@@ -75,28 +63,19 @@ fn make_supervisor() -> Supervisor {
         clock_drift: Duration::from_secs(5 * 60),      // 5 minutes
     };
 
-    let primary_instance = make_instance(primary, options, node_address.clone());
-    let witness_instance = make_instance(witness, options, node_address.clone());
-
-    SupervisorBuilder::new()
-        .primary(primary, node_address.clone(), primary_instance)
-        .witness(witness, node_address, witness_instance)
-        .build_prod()
+    make_instance(primary, options, node_address)
 }
 
 #[test]
 fn forward() {
-    let supervisor = make_supervisor();
-
-    let handle = supervisor.handle();
-    std::thread::spawn(|| supervisor.run());
+    let mut primary = make_primary();
 
     let max_iterations: usize = 10;
 
     for i in 1..=max_iterations {
         println!("[info ] - iteration {i}/{max_iterations}");
 
-        match handle.verify_to_highest() {
+        match primary.light_client.verify_to_highest(&mut primary.state) {
             Ok(light_block) => {
                 println!("[info ] synced to block {}", light_block.height());
             },
@@ -112,10 +91,7 @@ fn forward() {
 
 #[test]
 fn backward() -> Result<(), Error> {
-    let supervisor = make_supervisor();
-
-    let handle = supervisor.handle();
-    std::thread::spawn(|| supervisor.run());
+    let mut primary = make_primary();
 
     let max_iterations: usize = 10;
 
@@ -126,14 +102,17 @@ fn backward() -> Result<(), Error> {
         println!("[info ] - iteration {i}/{max_iterations}");
 
         // First we sync to the highest block to have a high enough trusted state
-        let trusted_state = handle.verify_to_highest()?;
+        let trusted_state = primary.light_client.verify_to_highest(&mut primary.state)?;
         println!("[info ] synced to highest block {}", trusted_state.height());
 
         // Then we pick a height below the trusted state
         let target_height = Height::try_from(trusted_state.height().value() / 2).unwrap();
 
         // We now try to verify a block at this height
-        let light_block = handle.verify_to_target(target_height)?;
+        let light_block = primary
+            .light_client
+            .verify_to_target(target_height, &mut primary.state)?;
+
         println!("[info ] verified lower block {}", light_block.height());
 
         std::thread::sleep(Duration::from_millis(800));

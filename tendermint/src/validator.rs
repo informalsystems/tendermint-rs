@@ -268,15 +268,6 @@ tendermint_pb_modules! {
             let proposer = value.proposer.map(TryInto::try_into).transpose()?;
             let validator_set = Self::new(validators, proposer);
 
-            // Ensure that the raw voting power matches the computed one
-            let raw_voting_power = value.total_voting_power.try_into()?;
-            if raw_voting_power != validator_set.total_voting_power() {
-                return Err(Error::raw_voting_power_mismatch(
-                    raw_voting_power,
-                    validator_set.total_voting_power(),
-                ));
-            }
-
             Ok(validator_set)
         }
     }

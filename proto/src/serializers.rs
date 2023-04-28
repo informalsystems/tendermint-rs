@@ -55,12 +55,13 @@
 
 pub mod allow_null;
 pub mod bytes;
-mod evidence;
+pub mod evidence;
 pub mod from_str;
 pub mod nullable;
 pub mod optional;
 pub mod optional_from_str;
 pub mod part_set_header_total;
+pub mod public_key;
 pub mod time_duration;
 pub mod timestamp;
 pub mod txs;

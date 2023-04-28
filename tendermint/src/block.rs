@@ -42,7 +42,7 @@ pub struct Block {
     pub data: Vec<Vec<u8>>,
 
     /// Evidence of malfeasance
-    pub evidence: evidence::Data,
+    pub evidence: evidence::List,
 
     /// Last commit
     pub last_commit: Option<Commit>,
@@ -71,18 +71,17 @@ tendermint_pb_modules! {
                     "last_commit is empty on non-first block".to_string(),
                 ));
             }
+
             // Todo: Figure out requirements.
             // if last_commit.is_some() && header.height.value() == 1 {
             //    return Err(Kind::InvalidFirstBlock.context("last_commit is not null on first
             // height").into());
             //}
+
             Ok(Block {
                 header,
                 data: value.data.ok_or_else(Error::missing_data)?.txs,
-                evidence: value
-                    .evidence
-                    .ok_or_else(Error::missing_evidence)?
-                    .try_into()?,
+                evidence: value.evidence.map(TryInto::try_into).transpose()?.unwrap_or_default(),
                 last_commit,
             })
         }
@@ -106,7 +105,7 @@ impl Block {
     pub fn new(
         header: Header,
         data: Vec<Vec<u8>>,
-        evidence: evidence::Data,
+        evidence: evidence::List,
         last_commit: Option<Commit>,
     ) -> Result<Self, Error> {
         if last_commit.is_none() && header.height.value() != 1 {
@@ -138,7 +137,7 @@ impl Block {
     }
 
     /// Get evidence
-    pub fn evidence(&self) -> &evidence::Data {
+    pub fn evidence(&self) -> &evidence::List {
         &self.evidence
     }
 

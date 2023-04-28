@@ -6,7 +6,7 @@ use contracts::*;
 
 use crate::{
     store::LightStore,
-    verifier::types::{Height, LightBlock, Status},
+    verifier::types::{Height, LightBlock},
 };
 
 /// Records which blocks were needed to verify a target block, eg. during bisection.
@@ -39,7 +39,11 @@ impl State {
     pub fn trace_block(&mut self, target_height: Height, height: Height) {
         self.verification_trace
             .entry(target_height)
-            .or_insert_with(HashSet::new)
+            .or_insert_with(|| {
+                let mut trace = HashSet::new();
+                trace.insert(target_height);
+                trace
+            })
             .insert(height);
     }
 
@@ -50,11 +54,10 @@ impl State {
             .get(&target_height)
             .unwrap_or(&HashSet::new())
             .iter()
-            .flat_map(|h| self.light_store.get(*h, Status::Verified))
+            .flat_map(|&height| self.light_store.get_trusted_or_verified(height))
             .collect::<Vec<_>>();
 
         trace.sort_by_key(|lb| lb.height());
-        trace.reverse();
         trace
     }
 }

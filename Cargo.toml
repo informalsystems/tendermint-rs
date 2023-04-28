@@ -5,6 +5,7 @@ members = [
     "config",
     "light-client",
     "light-client-verifier",
+    "light-client-detector",
     "light-client-js",
     "p2p",
     "pbt-gen",

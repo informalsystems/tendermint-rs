@@ -164,7 +164,6 @@ impl FromStr for Hash {
     }
 }
 
-// Serialization is used in light-client config
 impl<'de> Deserialize<'de> for Hash {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let hex = <&str>::deserialize(deserializer)?;

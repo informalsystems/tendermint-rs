@@ -187,6 +187,13 @@ pub trait ErrorExt {
     /// Whether this error means that a timeout occurred when
     /// querying a node.
     fn is_timeout(&self) -> Option<Duration>;
+
+    /// Whether an I/O error occured when querying a node.
+    fn is_io(&self) -> bool;
+
+    /// Whether the height of the requested light block is higher than the
+    /// latest height available on the node.
+    fn is_height_too_high(&self) -> bool;
 }
 
 impl ErrorExt for VerificationErrorDetail {
@@ -203,5 +210,13 @@ impl ErrorExt for VerificationErrorDetail {
 
     fn is_timeout(&self) -> Option<Duration> {
         None
+    }
+
+    fn is_io(&self) -> bool {
+        false
+    }
+
+    fn is_height_too_high(&self) -> bool {
+        false
     }
 }

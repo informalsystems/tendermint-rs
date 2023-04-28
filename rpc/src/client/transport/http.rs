@@ -7,14 +7,13 @@ use core::{
 
 use async_trait::async_trait;
 
-use tendermint::{block::Height, Hash};
+use tendermint::{block::Height, evidence::Evidence, Hash};
 use tendermint_config::net;
 
-use crate::dialect::v0_34;
 use crate::prelude::*;
 use crate::{
     client::{Client, CompatMode},
-    endpoint,
+    dialect, endpoint,
     query::Query,
     Error, Order, Scheme, SimpleRequest, Url,
 };
@@ -160,7 +159,7 @@ impl HttpClient {
 
     async fn perform_v0_34<R>(&self, request: R) -> Result<R::Output, Error>
     where
-        R: SimpleRequest<v0_34::Dialect>,
+        R: SimpleRequest<dialect::v0_34::Dialect>,
     {
         self.inner.perform(request).await
     }
@@ -216,6 +215,17 @@ impl Client for HttpClient {
                     .perform_v0_34(endpoint::block_by_hash::Request::new(hash))
                     .await?;
                 Ok(resp.into())
+            },
+        }
+    }
+
+    /// `/broadcast_evidence`: broadcast an evidence.
+    async fn broadcast_evidence(&self, e: Evidence) -> Result<endpoint::evidence::Response, Error> {
+        match self.compat {
+            CompatMode::V0_37 => self.perform(endpoint::evidence::Request::new(e)).await,
+            CompatMode::V0_34 => {
+                self.perform_v0_34(endpoint::evidence::Request::new(e))
+                    .await
             },
         }
     }

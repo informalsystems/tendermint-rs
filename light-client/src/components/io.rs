@@ -45,6 +45,16 @@ define_error! {
                 "invalid height: given height must be greater than 0"
             },
 
+        HeightTooHigh
+        {
+            height: Height,
+            latest_height: Height,
+        }
+        |e| {
+            format_args!("height ({0}) is higher than latest height ({1})",
+                e.height, e.latest_height)
+        },
+
         InvalidValidatorSet
             [ tendermint::Error ]
             | _ | { "fetched validator set is invalid" },
@@ -61,6 +71,33 @@ define_error! {
             [ TraceError<std::io::Error> ]
             | _ | { "failed to initialize runtime" },
 
+    }
+}
+
+impl IoError {
+    pub fn from_rpc(err: rpc::Error) -> Self {
+        Self::from_height_too_high(&err).unwrap_or_else(|| Self::rpc(err))
+    }
+
+    pub fn from_height_too_high(err: &rpc::Error) -> Option<Self> {
+        use regex::Regex;
+
+        let err_str = err.to_string();
+
+        if err_str.contains("must be less than or equal to") {
+            let re = Regex::new(
+                r"height (\d+) must be less than or equal to the current blockchain height (\d+)",
+            )
+            .ok()?;
+
+            let captures = re.captures(&err_str)?;
+            let height = Height::try_from(captures[1].parse::<i64>().ok()?).ok()?;
+            let latest_height = Height::try_from(captures[2].parse::<i64>().ok()?).ok()?;
+
+            Some(Self::height_too_high(height, latest_height))
+        } else {
+            None
+        }
     }
 }
 
@@ -151,7 +188,19 @@ mod prod {
             }
         }
 
-        fn fetch_signed_header(&self, height: AtHeight) -> Result<TMSignedHeader, IoError> {
+        pub fn peer_id(&self) -> PeerId {
+            self.peer_id
+        }
+
+        pub fn rpc_client(&self) -> &rpc::HttpClient {
+            &self.rpc_client
+        }
+
+        pub fn timeout(&self) -> Option<Duration> {
+            self.timeout
+        }
+
+        pub fn fetch_signed_header(&self, height: AtHeight) -> Result<TMSignedHeader, IoError> {
             let client = self.rpc_client.clone();
             let res = block_on(self.timeout, async move {
                 match height {
@@ -162,11 +211,11 @@ mod prod {
 
             match res {
                 Ok(response) => Ok(response.signed_header),
-                Err(err) => Err(IoError::rpc(err)),
+                Err(err) => Err(IoError::from_rpc(err)),
             }
         }
 
-        fn fetch_validator_set(
+        pub fn fetch_validator_set(
             &self,
             height: AtHeight,
             proposer_address: Option<TMAccountId>,

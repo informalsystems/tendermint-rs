@@ -1,5 +1,5 @@
 [package]
-name       = "tendermint-light-client"
+name       = "tendermint-light-client-detector"
 version    = "0.31.1"
 edition    = "2021"
 license    = "Apache-2.0"
@@ -9,12 +9,10 @@ categories = ["cryptography::cryptocurrencies", "network-programming"]
 repository = "https://github.com/informalsystems/tendermint-rs"
 authors    = [
   "Informal Systems <hello@informal.systems>",
-  "Ismail Khoffi <Ismail.Khoffi@gmail.com>",
-  "Alexander Simmerl <a.simmerl@gmail.com>",
 ]
 
 description = """
-    Implementation of the Tendermint Light Client Verification Protocol.
+    Implementation of the Tendermint Light Client Attack Detector.
 """
 
 # docs.rs-specific configuration
@@ -24,20 +22,11 @@ all-features = true
 # defines the configuration attribute `docsrs`
 rustdoc-args = ["--cfg", "docsrs"]
 
-[features]
-default = ["rpc-client", "flex-error/std", "flex-error/eyre_tracer"]
-rpc-client = ["tokio", "rust-crypto", "tendermint-rpc/http-client"]
-rust-crypto = ["tendermint/rust-crypto", "tendermint-light-client-verifier/rust-crypto"]
-secp256k1 = ["tendermint/secp256k1", "tendermint-rpc/secp256k1"]
-lightstore-sled = ["sled"]
-unstable = ["rust-crypto"]
-# Enable to execute long-running model-based tests
-mbt = ["rust-crypto"]
-
 [dependencies]
-tendermint = { version = "0.31.1", path = "../tendermint", default-features = false }
-tendermint-rpc = { version = "0.31.1", path = "../rpc", default-features = false }
-tendermint-light-client-verifier = { version = "0.31.1", path = "../light-client-verifier", default-features = false }
+tendermint = { version = "0.31.1", path = "../tendermint" }
+tendermint-rpc = { version = "0.31.1", path = "../rpc", features = ["http-client"] }
+tendermint-proto = { version = "0.31.1", path = "../proto" }
+tendermint-light-client = { version = "0.31.1", path = "../light-client" }
 
 contracts = { version = "0.6.2", default-features = false }
 crossbeam-channel = { version = "0.4.2", default-features = false }
@@ -53,13 +42,4 @@ tokio = { version = "1.0", default-features = false, features = ["rt"], optional
 flex-error = { version = "0.4.4", default-features = false }
 tracing = { version = "0.1", default-features = false }
 serde_json = { version = "1.0.51", default-features = false }
-regex = { version = "1.7.3" }
 
-[dev-dependencies]
-tendermint-testgen = { path = "../testgen", default-features = false }
-
-serde_json = { version = "1.0.51", default-features = false }
-gumdrop = { version = "0.8.0", default-features = false }
-rand = { version = "0.7.3", default-features = false }
-tempfile = { version = "3.2.0", default-features = false }
-proptest = { version = "0.10.1", default-features = false, features = ["std"] }

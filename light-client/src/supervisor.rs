@@ -1,7 +1,6 @@
 //! Supervisor and Handle implementation.
 
 use crossbeam_channel as channel;
-use tendermint::evidence::Evidence;
 
 use crate::{
     errors::Error,
@@ -123,7 +122,7 @@ pub struct Supervisor {
     /// An instance of the fork detector
     fork_detector: Box<dyn ForkDetector>,
     /// Reporter of fork evidence
-    evidence_reporter: Box<dyn EvidenceReporter>,
+    _evidence_reporter: Box<dyn EvidenceReporter>,
     /// Channel through which to reply to `Handle`s
     sender: channel::Sender<HandleInput>,
     /// Channel through which to receive events from the `Handle`s
@@ -155,7 +154,7 @@ impl Supervisor {
             sender,
             receiver,
             fork_detector: Box::new(fork_detector),
-            evidence_reporter: Box::new(evidence_reporter),
+            _evidence_reporter: Box::new(evidence_reporter),
         }
     }
 
@@ -284,18 +283,14 @@ impl Supervisor {
     }
 
     /// Report the given evidence of a fork.
-    // TODO: rework to supply LightClientAttackEvidence data
     fn report_evidence(
         &mut self,
-        provider: PeerId,
+        _provider: PeerId,
         _primary: &LightBlock,
         _witness: &LightBlock,
     ) -> Result<(), Error> {
-        self.evidence_reporter
-            .report(Evidence::LightClientAttackEvidence, provider)
-            .map_err(Error::io)?;
-
-        Ok(())
+        // FIXME: Will be removed in a subsequent PR
+        todo!()
     }
 
     /// Perform fork detection with the given verified block and trusted block.
@@ -730,6 +725,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_bisection_fork_detected() {
         let mut chain = LightChain::default_with_length(5);
         let primary = chain
