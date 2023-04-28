@@ -1,35 +1,37 @@
 //! `/broadcast_evidence`: broadcast an evidence.
 
 use serde::{Deserialize, Serialize};
-use tendermint::{evidence::Evidence, Hash};
+use tendermint::{evidence, Hash};
 
 use crate::{dialect::Dialect, request::RequestMessage, Method};
 
 /// `/broadcast_evidence`: broadcast an evidence.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Request {
+pub struct Request<S: Dialect> {
     /// Evidence to broadcast
-    pub evidence: Evidence,
+    pub evidence: S::Evidence,
 }
 
-impl Request {
+impl<S: Dialect> Request<S> {
     /// Create a new evidence broadcast RPC request
-    pub fn new(evidence: Evidence) -> Request {
-        Request { evidence }
+    pub fn new(evidence: evidence::Evidence) -> Self {
+        Request {
+            evidence: evidence.into(),
+        }
     }
 }
 
-impl RequestMessage for Request {
+impl<S: Dialect> RequestMessage for Request<S> {
     fn method(&self) -> Method {
         Method::BroadcastEvidence
     }
 }
 
-impl<S: Dialect> crate::Request<S> for Request {
+impl<S: Dialect> crate::Request<S> for Request<S> {
     type Response = Response;
 }
 
-impl<S: Dialect> crate::SimpleRequest<S> for Request {
+impl<S: Dialect> crate::SimpleRequest<S> for Request<S> {
     type Output = Response;
 }
 
