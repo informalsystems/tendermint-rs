@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 #![deny(
+    warnings,
     trivial_casts,
     trivial_numeric_casts,
     unused_import_braces,
@@ -18,10 +19,14 @@ pub mod builder;
 pub mod components;
 pub mod contracts;
 pub mod errors;
+pub mod evidence;
+pub mod fork_detector;
 pub mod instance;
 pub mod light_client;
+pub mod peer_list;
 pub mod state;
 pub mod store;
+pub mod supervisor;
 
 pub(crate) mod utils;
 
