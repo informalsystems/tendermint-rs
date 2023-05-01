@@ -20,7 +20,7 @@ pub type Hash = [u8; HASH_SIZE];
 /// Compute a simple Merkle root from vectors of arbitrary byte vectors.
 /// The leaves of the tree are the bytes of the given byte vectors in
 /// the given order.
-pub fn simple_hash_from_byte_vectors<H>(byte_vecs: &[Vec<u8>]) -> Hash
+pub fn simple_hash_from_byte_vectors<H>(byte_vecs: &[impl AsRef<[u8]>]) -> Hash
 where
     H: MerkleHash + Default,
 {
@@ -48,11 +48,11 @@ pub trait MerkleHash {
     // Implements recursion into subtrees.
     // Pre and post-conditions: the hasher is in the reset state
     // before and after calling this function.
-    fn hash_byte_vectors(&mut self, byte_vecs: &[Vec<u8>]) -> Hash {
+    fn hash_byte_vectors(&mut self, byte_vecs: &[impl AsRef<[u8]>]) -> Hash {
         let length = byte_vecs.len();
         match length {
             0 => self.empty_hash(),
-            1 => self.leaf_hash(&byte_vecs[0]),
+            1 => self.leaf_hash(byte_vecs[0].as_ref()),
             _ => {
                 let split = length.next_power_of_two() / 2;
                 let left = self.hash_byte_vectors(&byte_vecs[..split]);
