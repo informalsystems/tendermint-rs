@@ -19,12 +19,12 @@ pub const TENDERMINT_VERSIONS: &[TendermintVersion] = &[
     TendermintVersion {
         repo: "https://github.com/cometbft/cometbft",
         ident: "v0_34",
-        commitish: "v0.34.27",
+        commitish: "v0.34.28",
     },
     TendermintVersion {
         repo: "https://github.com/cometbft/cometbft",
         ident: "v0_37",
-        commitish: "v0.37.0",
+        commitish: "v0.37.1",
     },
     TendermintVersion {
         repo: "https://github.com/cometbft/cometbft",
