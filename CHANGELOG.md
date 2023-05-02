@@ -1,6 +1,53 @@
 # CHANGELOG
 
+## v0.32.0
+
+*May 2nd, 2023*
+
+This release notably comes with a fully featured [light client attack detector][attack-detector],
+and introduces a [CLI for the light client][light-client-cli] for verifying headers,
+detecting attacks against the light client, and reporting the evidence to primary and witness nodes.
+
+It also adds a [`Verifier::verify_misbehaviour_header`][verifier-method] method for verifying
+headers coming from a misbehaviour evidence.
+
+Moreover, the [`Client`][client-trait] trait is now exposed by the `tendermint-rpc` without requiring
+the `http-client` or the `websocket-client` feature flags to be enabled.
+
+[light-client-cli]: https://github.com/informalsystems/tendermint-rs/tree/main/light-client-cli
+[attack-detector]: https://github.com/informalsystems/tendermint-rs/tree/main/light-client-detector
+[verifier-method]: https://github.com/informalsystems/tendermint-rs/blob/6a4cd245b6f362832b974104b40be973dd0ef108/light-client-verifier/src/verifier.rs#L67
+[client-trait]: https://github.com/informalsystems/tendermint-rs/blob/6a4cd245b6f362832b974104b40be973dd0ef108/rpc/src/client.rs#L49
+
+### BREAKING CHANGES
+
+- [`tendermint-light-client-verifier`] Rename `Verifier::verify`
+  to `Verifier::verify_update_header` to better describe
+  its purpose versus `Verifier::verify_misbehaviour_header`
+  ([\#1294](https://github.com/informalsystems/tendermint-rs/issues/1294))
+
+### FEATURES
+
+- [`tendermint-light-client-detector`] Implement a light client
+  attack detector, based on its Go version found in Comet
+  ([\#1291](https://github.com/informalsystems/tendermint-rs/issues/1291))
+- [`tendermint-light-client-verifier`] Add `Verifier::verify_misbehaviour_header`
+  for verifying headers coming from a misbehaviour evidence.
+  The verification for these headers is a bit more relaxed in order to catch FLA attacks.
+  In particular the "header in the future" check for the header should be skipped.
+  ([\#1294](https://github.com/informalsystems/tendermint-rs/issues/1294))
+
+### IMPROVEMENTS
+
+- [`tendermint-rpc`]: Export `Client` trait unconditionally, without
+  having to specify either the `http-client` or `websocket-client`
+  ([\#1235](https://github.com/informalsystems/tendermint-rs/issues/1235))
+- [`tendermint`]: Loosen bounds of merkle hashing functions to accept borrowed data.
+  ([\#1310](https://github.com/informalsystems/tendermint-rs/issues/1310))
+
 ## v0.31.1
+
+*April 17th, 2023*
 
 Expose the `TypedEvent` marker trait.
 
@@ -10,6 +57,8 @@ Expose the `TypedEvent` marker trait.
   ([\#1288](https://github.com/informalsystems/tendermint-rs/pull/1288))
 
 ## v0.31.0
+
+*April 16th, 2023*
 
 Upgrade signature crate versions and add a `TypedEvent` trait for ABCI events.
 
@@ -26,6 +75,8 @@ Upgrade signature crate versions and add a `TypedEvent` trait for ABCI events.
   ([\#1293](https://github.com/informalsystems/tendermint-rs/pull/1293)).
 
 ## v0.30.0
+
+*March 7th, 2023*
 
 This release introduces support for multiple versions of CometBFT protocols.
 Consumers of tendermint-rs crates, with the exception of `tendermint-abci`,
@@ -84,6 +135,8 @@ should be able to interoperate with CometBFT nodes based on 0.34.x and
   ([\#1280](https://github.com/informalsystems/tendermint-rs/issues/1280))
 
 ## v0.29.1
+
+*February 27th, 2023*
 
 Improve debug output for Ed25519 keys.
 
