@@ -20,5 +20,6 @@ pub fn default_consensus_params() -> consensus::Params {
             pub_key_types: vec![Algorithm::Ed25519],
         },
         version: Some(VersionParams::default()),
+        abci: Default::default(),
     }
 }
