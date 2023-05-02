@@ -38,13 +38,15 @@ Libraries:
 - [tendermint-abci](./abci) - A lightweight, low-level framework for building
   Tendermint ABCI applications in Rust
 - [tendermint-light-client](./light-client) - Tendermint light client library
-  for verifying signed headers, tracking validator set changes, and detecting
-  forks
+  for verifying signed headers and tracking validator set changes
+- [tendermint-light-client-detector](./light-client-detector) - Library for
+  detecting and reporting attacks against the Tendermint light client
+- [tendermint-light-client-cli](./light-client-cli) - CLI for the light client,
+  for verifying headers, detecting attacks and reporting them.
 - [tendermint-light-client-js](./light-client-js) - Low-level WASM interface for
   interacting with the Tendermint light client verification functionality
 - [tendermint-p2p](./p2p) - At present this primarily provides the ability to
-  connect to Tendermint nodes via Tendermint's [secret
-  connection](tendermint-secret-conn).
+  connect to Tendermint nodes via Tendermint's [secret connection](tendermint-secret-conn)
 - [tendermint-proto](./proto) - Protobuf data structures (generated using Prost)
   for wire-level interaction with Tendermint
 - [tendermint-rpc](./rpc) - Tendermint RPC client and response types
@@ -82,7 +84,7 @@ Papers
 
 ## License
 
-Copyright © 2020-2022 Informal Systems
+Copyright © 2020-2023 Informal Systems
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use the files in this repository except in compliance with the License.
