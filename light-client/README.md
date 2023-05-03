@@ -6,11 +6,11 @@ See the [repo root] for build status, license, rust version, etc.
 # Light-Client
 
 Implementation of the [Light Client Verification][light-client-verification]
-and [Fork Detection][light-client-detection] protocols.
+and [Attack Detection][light-client-detection] protocols.
 
 ## Documentation
 
-See documentation on [crates.io][docs-link].
+See documentation on [docs.rs][docs-link].
 
 ## Testing
 
@@ -63,21 +63,9 @@ To run the tests:
 $ cargo test -p tendermint-light-client --test light_client bisection
 ```
 
-### Fork Detection
+### Attack Detection
 
-Similarly to the bisection algorithm, the fork detection algorithm is tested via a set
-of [JSON fixtures](./tests/support/bisection/single_peer) which encode an initial trusted
-state, a target block to verify, a set of intermediary blocks, and the expected result
-of the fork detection algorithm.
-
-These tests target the [`supervisor`](./src/supervisor.rs) module,
-and can be found in the [`tests/supervisor.rs`](./tests/supervisor.rs) file.
-
-To run the tests:
-
-```bash
-$ cargo test -p tendermint-light-client --test supervisor
-```
+Please see the [`light-client-detector` crate][detector-crate].
 
 ### Voting Power Calculator
 
@@ -135,4 +123,4 @@ $ cargo test -p tendermint-light-client --all-features
 [quick start]: https://github.com/tendermint/tendermint/blob/main/docs/introduction/quick-start.md
 [Tendermint]: https://github.com/tendermint/tendermint
 [light-client-verification]: https://github.com/informalsystems/tendermint-rs/blob/main/docs/spec/lightclient/verification/verification.md
-[light-client-detection]: https://github.com/informalsystems/tendermint-rs/tree/main/docs/spec/lightclient/detection
+[detector-crate]: https://github.com/informalsystems/tendermint-rs/tree/main/light-client-detector
