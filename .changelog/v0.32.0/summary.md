@@ -1,3 +1,5 @@
+*May 3rd, 2023*
+
 This release notably comes with a fully featured [light client attack detector][attack-detector],
 and introduces a [CLI for the light client][light-client-cli] for verifying headers,
 detecting attacks against the light client, and reporting the evidence to primary and witness nodes.
