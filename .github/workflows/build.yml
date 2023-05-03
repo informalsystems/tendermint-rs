@@ -81,6 +81,8 @@ jobs:
       - name: Regenerate proto definitions
         working-directory: ./tools/proto-compiler/
         run: cargo run
+      - name: Show the differences with checked-in files
+        run: git diff -- proto/src/prost
       - name: Ensure that generated proto definitions compile
         uses: actions-rs/cargo@v1
         with:
