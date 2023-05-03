@@ -54,7 +54,7 @@ get_local_version() {
 }
 
 check_version_online() {
-  curl -s "https://crates.io/api/v1/crates/${1}" | jq -r '.versions[]|select(.num == "'"${2}"'").updated_at'
+  curl -s "https://crates.io/api/v1/crates/${1}" | jq -r 'try .versions[]|select(.num == "'"${2}"'").updated_at'
 }
 
 publish() {
