@@ -7,6 +7,7 @@
 
 use bytes::Bytes;
 
+use super::{Code, Event};
 use crate::{block, prelude::*, vote, Signature, Time};
 
 /// A validator address with voting power.
@@ -145,6 +146,40 @@ pub struct Snapshot {
     pub hash: Bytes,
     /// Arbitrary application metadata, e.g., chunk hashes or other verification data.
     pub metadata: Bytes,
+}
+
+/// Results of executing one individual transaction.
+///
+/// This structure is equivalent to [`response::DeliverTx`] which will be
+/// deprecated and removed.
+///
+/// [`response::DeliverTx`]: super::response::DeliverTx
+#[derive(Clone, PartialEq, Eq, Debug, Default)]
+pub struct ExecTxResult {
+    /// The response code.
+    ///
+    /// This code should be `Ok` only if the transaction is fully valid. However,
+    /// invalid transactions included in a block will still be executed against
+    /// the application state.
+    pub code: Code,
+    /// Result bytes, if any.
+    pub data: Bytes,
+    /// The output of the application's logger.
+    ///
+    /// **May be non-deterministic**.
+    pub log: String,
+    /// Additional information.
+    ///
+    /// **May be non-deterministic**.
+    pub info: String,
+    /// Amount of gas requested for the transaction.
+    pub gas_wanted: i64,
+    /// Amount of gas consumed by the transaction.
+    pub gas_used: i64,
+    /// Events that occurred while executing the transaction.
+    pub events: Vec<Event>,
+    /// The namespace for the `code`.
+    pub codespace: String,
 }
 
 // =============================================================================
@@ -551,7 +586,8 @@ mod v0_37 {
 
 mod v0_38 {
     use super::{
-        BlockSignatureInfo, CommitInfo, Misbehavior, MisbehaviorKind, Snapshot, Validator, VoteInfo,
+        BlockSignatureInfo, CommitInfo, ExecTxResult, Misbehavior, MisbehaviorKind, Snapshot,
+        Validator, VoteInfo,
     };
     use crate::{prelude::*, Error, Signature};
     use tendermint_proto::v0_38::abci as pb;
@@ -784,4 +820,42 @@ mod v0_38 {
     }
 
     impl Protobuf<pb::Snapshot> for Snapshot {}
+
+    impl From<ExecTxResult> for pb::ExecTxResult {
+        fn from(deliver_tx: ExecTxResult) -> Self {
+            Self {
+                code: deliver_tx.code.into(),
+                data: deliver_tx.data,
+                log: deliver_tx.log,
+                info: deliver_tx.info,
+                gas_wanted: deliver_tx.gas_wanted,
+                gas_used: deliver_tx.gas_used,
+                events: deliver_tx.events.into_iter().map(Into::into).collect(),
+                codespace: deliver_tx.codespace,
+            }
+        }
+    }
+
+    impl TryFrom<pb::ExecTxResult> for ExecTxResult {
+        type Error = Error;
+
+        fn try_from(deliver_tx: pb::ExecTxResult) -> Result<Self, Self::Error> {
+            Ok(Self {
+                code: deliver_tx.code.into(),
+                data: deliver_tx.data,
+                log: deliver_tx.log,
+                info: deliver_tx.info,
+                gas_wanted: deliver_tx.gas_wanted,
+                gas_used: deliver_tx.gas_used,
+                events: deliver_tx
+                    .events
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<_, _>>()?,
+                codespace: deliver_tx.codespace,
+            })
+        }
+    }
+
+    impl Protobuf<pb::ExecTxResult> for ExecTxResult {}
 }

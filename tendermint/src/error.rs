@@ -191,6 +191,9 @@ define_error! {
         UnsupportedProcessProposalStatus
             |_| { format_args!("unsupported ProcessProposal status value" ) },
 
+        UnsupportedVerifyVoteExtensionStatus
+            |_| { format_args!("unsupported VerifyVoteExtension status value" ) },
+
         NegativeMaxAgeNum
             [ DisplayOnly<TryFromIntError> ]
             |_| { format_args!("negative max_age_num_blocks") },

@@ -28,6 +28,8 @@ mod deliver_tx;
 mod echo;
 mod end_block;
 mod exception;
+mod extend_vote;
+mod finalize_block;
 mod info;
 mod init_chain;
 mod list_snapshots;
@@ -37,6 +39,7 @@ mod prepare_proposal;
 mod process_proposal;
 mod query;
 mod set_option;
+mod verify_vote_extension;
 
 pub use apply_snapshot_chunk::{ApplySnapshotChunk, ApplySnapshotChunkResult};
 pub use begin_block::BeginBlock;
@@ -46,6 +49,8 @@ pub use deliver_tx::DeliverTx;
 pub use echo::Echo;
 pub use end_block::EndBlock;
 pub use exception::Exception;
+pub use extend_vote::ExtendVote;
+pub use finalize_block::FinalizeBlock;
 pub use info::Info;
 pub use init_chain::InitChain;
 pub use list_snapshots::ListSnapshots;
@@ -55,6 +60,7 @@ pub use prepare_proposal::PrepareProposal;
 pub use process_proposal::ProcessProposal;
 pub use query::Query;
 pub use set_option::SetOption;
+pub use verify_vote_extension::VerifyVoteExtension;
 
 /// The consensus category of ABCI responses.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -73,6 +79,12 @@ pub enum ConsensusResponse {
     EndBlock(EndBlock),
     #[doc = include_str!("doc/response-commit.md")]
     Commit(Commit),
+    #[doc = include_str!("doc/response-extendvote.md")]
+    ExtendVote(ExtendVote),
+    #[doc = include_str!("doc/response-verifyvoteextension.md")]
+    VerifyVoteExtension(VerifyVoteExtension),
+    #[doc = include_str!("doc/response-finalizeblock.md")]
+    FinalizeBlock(FinalizeBlock),
 }
 
 /// The mempool category of ABCI responses.

@@ -74,16 +74,25 @@ impl From<ConsensusRequest> for Request {
     fn from(req: ConsensusRequest) -> Self {
         match req {
             ConsensusRequest::InitChain(x) => Self::InitChain(x),
-            ConsensusRequest::PrepareProposal(_) => {
-                panic!("Cannot convert PrepareProposal into a v0.34 Request")
-            },
-            ConsensusRequest::ProcessProposal(_) => {
-                panic!("Cannot convert ProcessProposal into a v0.34 Request")
-            },
             ConsensusRequest::BeginBlock(x) => Self::BeginBlock(x),
             ConsensusRequest::DeliverTx(x) => Self::DeliverTx(x),
             ConsensusRequest::EndBlock(x) => Self::EndBlock(x),
             ConsensusRequest::Commit => Self::Commit,
+            ConsensusRequest::PrepareProposal(_) => {
+                panic!("cannot convert PrepareProposal into a v0.34 Request")
+            },
+            ConsensusRequest::ProcessProposal(_) => {
+                panic!("cannot convert ProcessProposal into a v0.34 Request")
+            },
+            ConsensusRequest::ExtendVote(_) => {
+                panic!("cannot convert ExtendVote into a v0.34 Request")
+            },
+            ConsensusRequest::VerifyVoteExtension(_) => {
+                panic!("cannot convert VerifyVoteExtension into a v0.34 Request")
+            },
+            ConsensusRequest::FinalizeBlock(_) => {
+                panic!("cannot convert FinalizeBlock into a v0.34 Request")
+            },
         }
     }
 }
