@@ -79,3 +79,35 @@ mod v0_37 {
 
     impl Protobuf<pb::RequestInfo> for Info {}
 }
+
+mod v0_38 {
+    use super::Info;
+    use tendermint_proto::v0_38::abci as pb;
+    use tendermint_proto::Protobuf;
+
+    impl From<Info> for pb::RequestInfo {
+        fn from(info: Info) -> Self {
+            Self {
+                version: info.version,
+                block_version: info.block_version,
+                p2p_version: info.p2p_version,
+                abci_version: info.abci_version,
+            }
+        }
+    }
+
+    impl TryFrom<pb::RequestInfo> for Info {
+        type Error = crate::Error;
+
+        fn try_from(info: pb::RequestInfo) -> Result<Self, Self::Error> {
+            Ok(Self {
+                version: info.version,
+                block_version: info.block_version,
+                p2p_version: info.p2p_version,
+                abci_version: info.abci_version,
+            })
+        }
+    }
+
+    impl Protobuf<pb::RequestInfo> for Info {}
+}
