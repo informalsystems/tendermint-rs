@@ -36,7 +36,7 @@ mod v0_37 {
             use pb::response_process_proposal::ProposalStatus;
 
             let status = ProposalStatus::from_i32(message.status)
-                .ok_or_else(|| Error::unsupported_process_proposal_status())?;
+                .ok_or_else(Error::unsupported_process_proposal_status)?;
 
             let value = match status {
                 ProposalStatus::Unknown => ProcessProposal::Unknown,
@@ -71,7 +71,7 @@ mod v0_38 {
             use pb::response_process_proposal::ProposalStatus;
 
             let status = ProposalStatus::from_i32(message.status)
-                .ok_or_else(|| Error::unsupported_process_proposal_status())?;
+                .ok_or_else(Error::unsupported_process_proposal_status)?;
 
             let value = match status {
                 ProposalStatus::Unknown => ProcessProposal::Unknown,

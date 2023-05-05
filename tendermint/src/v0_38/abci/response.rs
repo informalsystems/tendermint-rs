@@ -182,7 +182,7 @@ impl TryFrom<pb::Response> for Response {
     fn try_from(response: pb::Response) -> Result<Self, Self::Error> {
         use pb::response::Value;
 
-        let value = response.value.ok_or_else(|| Error::missing_data())?;
+        let value = response.value.ok_or_else(Error::missing_data)?;
 
         let response = match value {
             Value::Exception(x) => Response::Exception(x.try_into()?),

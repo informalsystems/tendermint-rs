@@ -206,7 +206,7 @@ impl TryFrom<pb::Request> for Request {
     fn try_from(request: pb::Request) -> Result<Self, Self::Error> {
         use pb::request::Value;
 
-        let value = request.value.ok_or_else(|| Error::missing_data())?;
+        let value = request.value.ok_or_else(Error::missing_data)?;
         let request = match value {
             Value::Echo(x) => Request::Echo(x.try_into()?),
             Value::Flush(pb::RequestFlush {}) => Request::Flush,
