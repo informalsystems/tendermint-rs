@@ -18,7 +18,6 @@
 // bring into scope for doc links
 #[allow(unused)]
 use super::types::Snapshot;
-use crate::prelude::*;
 
 mod apply_snapshot_chunk;
 mod begin_block;
@@ -61,61 +60,3 @@ pub use process_proposal::ProcessProposal;
 pub use query::Query;
 pub use set_option::SetOption;
 pub use verify_vote_extension::VerifyVoteExtension;
-
-/// The consensus category of ABCI responses.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub enum ConsensusResponse {
-    #[doc = include_str!("doc/response-initchain.md")]
-    InitChain(InitChain),
-    #[doc = include_str!("doc/response-prepareproposal.md")]
-    PrepareProposal(PrepareProposal),
-    #[doc = include_str!("doc/response-processproposal.md")]
-    ProcessProposal(ProcessProposal),
-    #[doc = include_str!("doc/response-beginblock.md")]
-    BeginBlock(BeginBlock),
-    #[doc = include_str!("doc/response-delivertx.md")]
-    DeliverTx(DeliverTx),
-    #[doc = include_str!("doc/response-endblock.md")]
-    EndBlock(EndBlock),
-    #[doc = include_str!("doc/response-commit.md")]
-    Commit(Commit),
-    #[doc = include_str!("doc/response-extendvote.md")]
-    ExtendVote(ExtendVote),
-    #[doc = include_str!("doc/response-verifyvoteextension.md")]
-    VerifyVoteExtension(VerifyVoteExtension),
-    #[doc = include_str!("doc/response-finalizeblock.md")]
-    FinalizeBlock(FinalizeBlock),
-}
-
-/// The mempool category of ABCI responses.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub enum MempoolResponse {
-    #[doc = include_str!("doc/response-checktx.md")]
-    CheckTx(CheckTx),
-}
-
-/// The info category of ABCI responses.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub enum InfoResponse {
-    #[doc = include_str!("doc/response-echo.md")]
-    Echo(Echo),
-    #[doc = include_str!("doc/response-info.md")]
-    Info(Info),
-    #[doc = include_str!("doc/response-query.md")]
-    Query(Query),
-    #[doc = include_str!("doc/response-setoption.md")]
-    SetOption(SetOption),
-}
-
-/// The snapshot category of ABCI responses.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub enum SnapshotResponse {
-    #[doc = include_str!("doc/response-listsnapshots.md")]
-    ListSnapshots(ListSnapshots),
-    #[doc = include_str!("doc/response-offersnapshot.md")]
-    OfferSnapshot(OfferSnapshot),
-    #[doc = include_str!("doc/response-loadsnapshotchunk.md")]
-    LoadSnapshotChunk(LoadSnapshotChunk),
-    #[doc = include_str!("doc/response-applysnapshotchunk.md")]
-    ApplySnapshotChunk(ApplySnapshotChunk),
-}

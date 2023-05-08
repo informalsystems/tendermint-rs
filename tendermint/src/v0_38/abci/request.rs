@@ -1,7 +1,6 @@
 use tendermint_proto::v0_38::abci as pb;
 use tendermint_proto::Protobuf;
 
-use crate::abci::request::{ConsensusRequest, InfoRequest, MempoolRequest, SnapshotRequest};
 use crate::abci::MethodKind;
 use crate::Error;
 
@@ -10,7 +9,7 @@ pub use crate::abci::request::{
     LoadSnapshotChunk, OfferSnapshot, PrepareProposal, ProcessProposal, Query, VerifyVoteExtension,
 };
 
-/// All possible ABCI requests.
+/// All possible ABCI requests in CometBFT 0.38.
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Request {
@@ -48,6 +47,57 @@ pub enum Request {
     FinalizeBlock(FinalizeBlock),
 }
 
+/// The consensus category of ABCI requests.
+#[allow(clippy::large_enum_variant)]
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum ConsensusRequest {
+    #[doc = include_str!("../../abci/doc/request-initchain.md")]
+    InitChain(InitChain),
+    #[doc = include_str!("../../abci/doc/request-prepareproposal.md")]
+    PrepareProposal(PrepareProposal),
+    #[doc = include_str!("../../abci/doc/request-processproposal.md")]
+    ProcessProposal(ProcessProposal),
+    #[doc = include_str!("../../abci/doc/request-commit.md")]
+    Commit,
+    #[doc = include_str!("../../abci/doc/request-extendvote.md")]
+    ExtendVote(ExtendVote),
+    #[doc = include_str!("../../abci/doc/request-verifyvoteextension.md")]
+    VerifyVoteExtension(VerifyVoteExtension),
+    #[doc = include_str!("../../abci/doc/request-finalizeblock.md")]
+    FinalizeBlock(FinalizeBlock),
+}
+
+/// The mempool category of ABCI requests.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum MempoolRequest {
+    #[doc = include_str!("../../abci/doc/request-checktx.md")]
+    CheckTx(CheckTx),
+}
+
+/// The info category of ABCI requests.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum InfoRequest {
+    #[doc = include_str!("../../abci/doc/request-info.md")]
+    Info(Info),
+    #[doc = include_str!("../../abci/doc/request-query.md")]
+    Query(Query),
+    #[doc = include_str!("../../abci/doc/request-echo.md")]
+    Echo(Echo),
+}
+
+/// The snapshot category of ABCI requests.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum SnapshotRequest {
+    #[doc = include_str!("../../abci/doc/request-listsnapshots.md")]
+    ListSnapshots,
+    #[doc = include_str!("../../abci/doc/request-offersnapshot.md")]
+    OfferSnapshot(OfferSnapshot),
+    #[doc = include_str!("../../abci/doc/request-loadsnapshotchunk.md")]
+    LoadSnapshotChunk(LoadSnapshotChunk),
+    #[doc = include_str!("../../abci/doc/request-applysnapshotchunk.md")]
+    ApplySnapshotChunk(ApplySnapshotChunk),
+}
+
 impl Request {
     /// Get the method kind for this request.
     pub fn kind(&self) -> MethodKind {
@@ -83,9 +133,6 @@ impl From<ConsensusRequest> for Request {
             ConsensusRequest::ExtendVote(x) => Self::ExtendVote(x),
             ConsensusRequest::VerifyVoteExtension(x) => Self::VerifyVoteExtension(x),
             ConsensusRequest::FinalizeBlock(x) => Self::FinalizeBlock(x),
-            ConsensusRequest::BeginBlock(_) => panic!("BeginBlock cannot be used with v0.38"),
-            ConsensusRequest::DeliverTx(_) => panic!("DeliverTx cannot be used with v0.38"),
-            ConsensusRequest::EndBlock(_) => panic!("EndBlock cannot be used with v0.38"),
         }
     }
 }
@@ -130,7 +177,6 @@ impl From<InfoRequest> for Request {
             InfoRequest::Info(x) => Self::Info(x),
             InfoRequest::Query(x) => Self::Query(x),
             InfoRequest::Echo(x) => Self::Echo(x),
-            InfoRequest::SetOption(_) => panic!("SetOption cannot be used with v0.38"),
         }
     }
 }

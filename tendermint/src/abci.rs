@@ -50,9 +50,4 @@ pub use crate::v0_38::abci::response::Response;
 pub use event::{Event, EventAttribute, EventAttributeIndexExt, TypedEvent};
 
 #[doc(inline)]
-pub use self::{
-    code::Code,
-    kind::MethodKind,
-    request::{ConsensusRequest, InfoRequest, MempoolRequest, SnapshotRequest},
-    response::{ConsensusResponse, InfoResponse, MempoolResponse, SnapshotResponse},
-};
+pub use self::{code::Code, kind::MethodKind};
