@@ -7,8 +7,8 @@ use std::{
 
 use bytes::BytesMut;
 use tendermint_proto::v0_38::abci::{
-    RequestCheckTx, RequestInfo, RequestQuery, ResponseCheckTx, ResponseCommit, ResponseInfo,
-    ResponseQuery,
+    Event, EventAttribute, RequestCheckTx, RequestFinalizeBlock, RequestInfo, RequestQuery,
+    ResponseCheckTx, ResponseCommit, ResponseFinalizeBlock, ResponseInfo, ResponseQuery,
 };
 use tracing::{debug, info};
 
@@ -20,9 +20,10 @@ use crate::{codec::MAX_VARINT_LENGTH, Application, Error};
 /// store - the [`KeyValueStoreDriver`].
 ///
 /// ## Example
-/// ```rust
+///
+/// ```
 /// use tendermint_abci::{KeyValueStoreApp, ServerBuilder, ClientBuilder};
-/// use tendermint_proto::abci::{RequestEcho, RequestDeliverTx, RequestQuery};
+/// use tendermint_proto::abci::{RequestEcho, RequestFinalizeBlock, RequestQuery};
 ///
 /// // Create our key/value store application
 /// let (app, driver) = KeyValueStoreApp::new();
@@ -46,8 +47,9 @@ use crate::{codec::MAX_VARINT_LENGTH, Application, Error};
 ///
 /// // Deliver a transaction and then commit the transaction
 /// client
-///     .deliver_tx(RequestDeliverTx {
-///         tx: "test-key=test-value".into(),
+///     .finalize_block(RequestFinalizeBlock {
+///         txs: vec!["test-key=test-value".into()],
+///         ..Default::default()
 ///     })
 ///     .unwrap();
 /// client.commit().unwrap();
@@ -188,7 +190,43 @@ impl Application for KeyValueStoreApp {
         }
     }
 
-    // FIXME: override some logic in finalize_block?
+    fn finalize_block(&self, request: RequestFinalizeBlock) -> ResponseFinalizeBlock {
+        let mut events = Vec::new();
+        for tx in request.txs {
+            let tx = std::str::from_utf8(&tx).unwrap();
+            let tx_parts = tx.split('=').collect::<Vec<&str>>();
+            let (key, value) = if tx_parts.len() == 2 {
+                (tx_parts[0], tx_parts[1])
+            } else {
+                (tx, tx)
+            };
+            let _ = self.set(key, value).unwrap();
+            events.push(Event {
+                r#type: "app".to_string(),
+                attributes: vec![
+                    EventAttribute {
+                        key: "key".to_owned(),
+                        value: key.to_owned(),
+                        index: true,
+                    },
+                    EventAttribute {
+                        key: "index_key".to_owned(),
+                        value: "index is working".to_owned(),
+                        index: true,
+                    },
+                    EventAttribute {
+                        key: "noindex_key".to_owned(),
+                        value: "index is working".to_owned(),
+                        index: false,
+                    },
+                ],
+            });
+        }
+        ResponseFinalizeBlock {
+            events,
+            ..Default::default()
+        }
+    }
 }
 
 /// Manages key/value store state.
