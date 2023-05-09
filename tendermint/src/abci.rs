@@ -45,7 +45,13 @@ pub mod response;
 pub mod types;
 
 pub use crate::v0_38::abci::request::Request;
+pub use crate::v0_38::abci::request::{
+    ConsensusRequest, InfoRequest, MempoolRequest, SnapshotRequest,
+};
 pub use crate::v0_38::abci::response::Response;
+pub use crate::v0_38::abci::response::{
+    ConsensusResponse, InfoResponse, MempoolResponse, SnapshotResponse,
+};
 
 pub use event::{Event, EventAttribute, EventAttributeIndexExt, TypedEvent};
 
