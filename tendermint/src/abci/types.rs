@@ -23,9 +23,21 @@ pub struct Validator {
 
 /// Information about a whether a validator signed the last block.
 ///
-/// [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#voteinfo)
+/// [ABCI documentation](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/abci/abci%2B%2B_methods.md#voteinfo)
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct VoteInfo {
+    /// Identifies the validator.
+    pub validator: Validator,
+    /// Whether or not the validator signed the last block.
+    pub sig_info: BlockSignatureInfo,
+}
+
+/// Information about a whether a validator signed the last block,
+/// together with vote extensions.
+///
+/// [ABCI documentation](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/abci/abci%2B%2B_methods.md#extendedvoteinfo)
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct ExtendedVoteInfo {
     /// Identifies the validator.
     pub validator: Validator,
     /// Whether or not the validator signed the last block.
@@ -106,10 +118,7 @@ pub struct Misbehavior {
 
 /// Information on a block commit.
 ///
-/// The `CommitInfo` domain type represents both `CommitInfo` and `ExtendedCommitInfo`
-/// messages defined in protobuf.
-///
-/// [ABCI documentation](https://github.com/tendermint/tendermint/blob/main/spec/abci/abci++_methods.md#extendedcommitinfo)
+/// [ABCI documentation](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/abci/abci%2B%2B_methods.md#commitinfo)
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct CommitInfo {
     /// The commit round.
@@ -120,6 +129,21 @@ pub struct CommitInfo {
     /// The list of validator addresses in the last validator set, with their
     /// voting power and whether or not they signed a vote.
     pub votes: Vec<VoteInfo>,
+}
+
+/// Information on a block commit with provided vote extensions.
+///
+/// [ABCI documentation](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/abci/abci%2B%2B_methods.md#extendedcommitinfo)
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct ExtendedCommitInfo {
+    /// The commit round.
+    ///
+    /// Reflects the total number of rounds it took to come to consensus for the
+    /// current block.
+    pub round: block::Round,
+    /// The list of validator addresses in the last validator set, with their
+    /// voting power and whether or not they signed a vote.
+    pub votes: Vec<ExtendedVoteInfo>,
 }
 
 /// Used for state sync snapshots.
@@ -250,8 +274,6 @@ mod v0_34 {
                     .ok_or_else(Error::missing_validator)?
                     .try_into()?,
                 sig_info,
-                vote_extension: Default::default(),
-                extension_signature: None,
             })
         }
     }
@@ -356,7 +378,8 @@ mod v0_34 {
 
 mod v0_37 {
     use super::{
-        BlockSignatureInfo, CommitInfo, Misbehavior, MisbehaviorKind, Snapshot, Validator, VoteInfo,
+        BlockSignatureInfo, CommitInfo, ExtendedCommitInfo, ExtendedVoteInfo, Misbehavior,
+        MisbehaviorKind, Snapshot, Validator, VoteInfo,
     };
     use crate::{block::BlockIdFlag, prelude::*, Error};
     use tendermint_proto::v0_37::abci as pb;
@@ -418,8 +441,6 @@ mod v0_37 {
                     .ok_or_else(Error::missing_validator)?
                     .try_into()?,
                 sig_info,
-                vote_extension: Default::default(),
-                extension_signature: None,
             })
         }
     }
@@ -429,8 +450,8 @@ mod v0_37 {
     // ExtendedVoteInfo is defined in 0.37, but the vote_extension field
     // should be always nil and is ignored.
 
-    impl From<VoteInfo> for pb::ExtendedVoteInfo {
-        fn from(vi: VoteInfo) -> Self {
+    impl From<ExtendedVoteInfo> for pb::ExtendedVoteInfo {
+        fn from(vi: ExtendedVoteInfo) -> Self {
             Self {
                 validator: Some(vi.validator.into()),
                 signed_last_block: vi.sig_info.is_signed(),
@@ -439,7 +460,7 @@ mod v0_37 {
         }
     }
 
-    impl TryFrom<pb::ExtendedVoteInfo> for VoteInfo {
+    impl TryFrom<pb::ExtendedVoteInfo> for ExtendedVoteInfo {
         type Error = Error;
 
         fn try_from(vi: pb::ExtendedVoteInfo) -> Result<Self, Self::Error> {
@@ -454,13 +475,13 @@ mod v0_37 {
                     .ok_or_else(Error::missing_validator)?
                     .try_into()?,
                 sig_info,
-                vote_extension: vi.vote_extension,
+                vote_extension: Default::default(),
                 extension_signature: None,
             })
         }
     }
 
-    impl Protobuf<pb::ExtendedVoteInfo> for VoteInfo {}
+    impl Protobuf<pb::ExtendedVoteInfo> for ExtendedVoteInfo {}
 
     impl From<Misbehavior> for pb::Misbehavior {
         fn from(evidence: Misbehavior) -> Self {
@@ -529,8 +550,8 @@ mod v0_37 {
 
     impl Protobuf<pb::CommitInfo> for CommitInfo {}
 
-    impl From<CommitInfo> for pb::ExtendedCommitInfo {
-        fn from(lci: CommitInfo) -> Self {
+    impl From<ExtendedCommitInfo> for pb::ExtendedCommitInfo {
+        fn from(lci: ExtendedCommitInfo) -> Self {
             Self {
                 round: lci.round.into(),
                 votes: lci.votes.into_iter().map(Into::into).collect(),
@@ -538,7 +559,7 @@ mod v0_37 {
         }
     }
 
-    impl TryFrom<pb::ExtendedCommitInfo> for CommitInfo {
+    impl TryFrom<pb::ExtendedCommitInfo> for ExtendedCommitInfo {
         type Error = Error;
 
         fn try_from(lci: pb::ExtendedCommitInfo) -> Result<Self, Self::Error> {
@@ -553,7 +574,7 @@ mod v0_37 {
         }
     }
 
-    impl Protobuf<pb::ExtendedCommitInfo> for CommitInfo {}
+    impl Protobuf<pb::ExtendedCommitInfo> for ExtendedCommitInfo {}
 
     impl From<Snapshot> for pb::Snapshot {
         fn from(snapshot: Snapshot) -> Self {
@@ -586,8 +607,8 @@ mod v0_37 {
 
 mod v0_38 {
     use super::{
-        BlockSignatureInfo, CommitInfo, ExecTxResult, Misbehavior, MisbehaviorKind, Snapshot,
-        Validator, VoteInfo,
+        BlockSignatureInfo, CommitInfo, ExecTxResult, ExtendedCommitInfo, ExtendedVoteInfo,
+        Misbehavior, MisbehaviorKind, Snapshot, Validator, VoteInfo,
     };
     use crate::{prelude::*, Error, Signature};
     use tendermint_proto::v0_38::abci as pb;
@@ -660,16 +681,14 @@ mod v0_38 {
                     .ok_or_else(Error::missing_validator)?
                     .try_into()?,
                 sig_info: BlockSignatureInfo::Flag(block_id_flag.try_into()?),
-                vote_extension: Default::default(),
-                extension_signature: None,
             })
         }
     }
 
     impl Protobuf<pb::VoteInfo> for VoteInfo {}
 
-    impl From<VoteInfo> for pb::ExtendedVoteInfo {
-        fn from(vi: VoteInfo) -> Self {
+    impl From<ExtendedVoteInfo> for pb::ExtendedVoteInfo {
+        fn from(vi: ExtendedVoteInfo) -> Self {
             let block_id_flag: RawBlockIdFlag = vi.sig_info.into();
             Self {
                 validator: Some(vi.validator.into()),
@@ -680,7 +699,7 @@ mod v0_38 {
         }
     }
 
-    impl TryFrom<pb::ExtendedVoteInfo> for VoteInfo {
+    impl TryFrom<pb::ExtendedVoteInfo> for ExtendedVoteInfo {
         type Error = Error;
 
         fn try_from(vi: pb::ExtendedVoteInfo) -> Result<Self, Self::Error> {
@@ -698,7 +717,7 @@ mod v0_38 {
         }
     }
 
-    impl Protobuf<pb::ExtendedVoteInfo> for VoteInfo {}
+    impl Protobuf<pb::ExtendedVoteInfo> for ExtendedVoteInfo {}
 
     impl From<Misbehavior> for pb::Misbehavior {
         fn from(evidence: Misbehavior) -> Self {
@@ -767,8 +786,8 @@ mod v0_38 {
 
     impl Protobuf<pb::CommitInfo> for CommitInfo {}
 
-    impl From<CommitInfo> for pb::ExtendedCommitInfo {
-        fn from(lci: CommitInfo) -> Self {
+    impl From<ExtendedCommitInfo> for pb::ExtendedCommitInfo {
+        fn from(lci: ExtendedCommitInfo) -> Self {
             Self {
                 round: lci.round.into(),
                 votes: lci.votes.into_iter().map(Into::into).collect(),
@@ -776,7 +795,7 @@ mod v0_38 {
         }
     }
 
-    impl TryFrom<pb::ExtendedCommitInfo> for CommitInfo {
+    impl TryFrom<pb::ExtendedCommitInfo> for ExtendedCommitInfo {
         type Error = Error;
 
         fn try_from(lci: pb::ExtendedCommitInfo) -> Result<Self, Self::Error> {
@@ -791,7 +810,7 @@ mod v0_38 {
         }
     }
 
-    impl Protobuf<pb::ExtendedCommitInfo> for CommitInfo {}
+    impl Protobuf<pb::ExtendedCommitInfo> for ExtendedCommitInfo {}
 
     impl From<Snapshot> for pb::Snapshot {
         fn from(snapshot: Snapshot) -> Self {

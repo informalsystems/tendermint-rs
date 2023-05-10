@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use crate::{
-    abci::types::{CommitInfo, Misbehavior},
+    abci::types::{ExtendedCommitInfo, Misbehavior},
     account, block, Hash, Time,
 };
 
@@ -14,7 +14,7 @@ pub struct PrepareProposal {
     /// txs is an array of transactions that will be included in a block,
     /// sent to the app for possible modifications.
     pub txs: Vec<Bytes>,
-    pub local_last_commit: Option<CommitInfo>,
+    pub local_last_commit: Option<ExtendedCommitInfo>,
     pub misbehavior: Vec<Misbehavior>,
     pub height: block::Height,
     pub time: Time,
