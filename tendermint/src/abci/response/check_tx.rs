@@ -31,11 +31,12 @@ pub struct CheckTx {
     pub events: Vec<Event>,
     /// The namespace for the `code`.
     pub codespace: String,
-    // FIXME: Should we still support these fields for older protocol versions?
-    // Does anybody use them?
-    //pub sender: String,
-    //pub priority: i64,
-    //pub mempool_error: String,
+    /// The transactions's sender. Not used since CometBFT 0.38.
+    pub sender: String,
+    /// Priority for the mempool. Not used since CometBFT 0.38.
+    pub priority: i64,
+    /// Error reported for the mempool. Not used since CometBFT 0.38.
+    pub mempool_error: String,
 }
 
 // =============================================================================
@@ -58,9 +59,9 @@ mod v0_34 {
                 gas_used: check_tx.gas_used,
                 events: check_tx.events.into_iter().map(Into::into).collect(),
                 codespace: check_tx.codespace,
-                sender: Default::default(),
-                priority: Default::default(),
-                mempool_error: Default::default(),
+                sender: check_tx.sender,
+                priority: check_tx.priority,
+                mempool_error: check_tx.mempool_error,
             }
         }
     }
@@ -82,6 +83,9 @@ mod v0_34 {
                     .map(TryInto::try_into)
                     .collect::<Result<_, _>>()?,
                 codespace: check_tx.codespace,
+                sender: check_tx.sender,
+                priority: check_tx.priority,
+                mempool_error: check_tx.mempool_error,
             })
         }
     }
@@ -105,9 +109,9 @@ mod v0_37 {
                 gas_used: check_tx.gas_used,
                 events: check_tx.events.into_iter().map(Into::into).collect(),
                 codespace: check_tx.codespace,
-                sender: Default::default(),
-                priority: Default::default(),
-                mempool_error: Default::default(),
+                sender: check_tx.sender,
+                priority: check_tx.priority,
+                mempool_error: check_tx.mempool_error,
             }
         }
     }
@@ -129,6 +133,9 @@ mod v0_37 {
                     .map(TryInto::try_into)
                     .collect::<Result<_, _>>()?,
                 codespace: check_tx.codespace,
+                sender: check_tx.sender,
+                priority: check_tx.priority,
+                mempool_error: check_tx.mempool_error,
             })
         }
     }
@@ -173,6 +180,9 @@ mod v0_38 {
                     .map(TryInto::try_into)
                     .collect::<Result<_, _>>()?,
                 codespace: check_tx.codespace,
+                sender: Default::default(),
+                priority: Default::default(),
+                mempool_error: Default::default(),
             })
         }
     }

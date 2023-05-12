@@ -78,9 +78,9 @@ where
             gas_used: msg.gas_used,
             events: msg.events.into_iter().map(Into::into).collect(),
             codespace: msg.codespace,
-            // sender: msg.sender,
-            // priority: msg.priority,
-            // mempool_error: msg.mempool_error,
+            sender: msg.sender,
+            priority: msg.priority,
+            mempool_error: msg.mempool_error,
         }
     }
 }
