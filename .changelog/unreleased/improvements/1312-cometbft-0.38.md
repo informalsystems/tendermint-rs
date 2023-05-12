@@ -1,7 +1,7 @@
-- [`tendermint-proto`] Generate prost bindings for CometBFT 0.38
+- `[tendermint-proto]` Generate prost bindings for CometBFT 0.38
   under the `tendermint::v0_38` module
   ([\#1312](https://github.com/informalsystems/tendermint-rs/pull/1312))
-- [`tendermint`] Support for CometBFT 0.38:
+- `[tendermint]` Support for CometBFT 0.38:
   ([\#1312](https://github.com/informalsystems/tendermint-rs/pull/1312)):
   * Add conversions to and from `tendermint::v0_38` protobuf
     types generated in [`tendermint-proto`].
