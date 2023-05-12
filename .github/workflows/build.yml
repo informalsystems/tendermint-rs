@@ -75,7 +75,7 @@ jobs:
           export PATH="${PATH}:${HOME}/.local/bin"
       - name: Install buf
         run: |
-          curl -sSL https://github.com/bufbuild/buf/releases/download/v1.17.0/buf-Linux-x86_64 \
+          curl -sSL https://github.com/bufbuild/buf/releases/download/v1.18.0/buf-Linux-x86_64 \
             -o /usr/local/bin/buf
           chmod +x /usr/local/bin/buf
       - name: Regenerate proto definitions
