@@ -19,6 +19,9 @@ pub struct Params {
     #[serde(skip)] // FIXME: kvstore /genesis returns '{}' instead of '{app_version: "0"}'
     pub version: Option<VersionParams>,
     /// Parameters specific to the Application Blockchain Interface.
+    ///
+    /// This field has been added in CometBFT 0.38 and will be ignored when
+    /// encoding into earlier protocol versions.
     #[serde(default)]
     pub abci: AbciParams,
 }

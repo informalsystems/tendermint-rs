@@ -53,10 +53,16 @@ pub struct Vote {
 
     /// Vote extension provided by the application.
     /// Only valid for precommit messages.
+    ///
+    /// This field has been added in CometBFT 0.38 and will be ignored when
+    /// encoding into earlier protocol versions.
     pub extension: Vec<u8>,
 
     /// Vote extension signature by the validator
     /// Only valid for precommit messages.
+    ///
+    /// This field has been added in CometBFT 0.38 and will be ignored when
+    /// encoding into earlier protocol versions.
     pub extension_signature: Option<Signature>,
 }
 

@@ -8,7 +8,11 @@
 use bytes::Bytes;
 
 use super::{Code, Event};
-use crate::{block, prelude::*, vote, Signature, Time};
+use crate::{
+    block::{self, BlockIdFlag},
+    prelude::*,
+    vote, Signature, Time,
+};
 
 /// A validator address with voting power.
 ///
@@ -43,18 +47,31 @@ pub struct ExtendedVoteInfo {
     /// Whether or not the validator signed the last block.
     pub sig_info: BlockSignatureInfo,
     /// Non-deterministic extension provided by the sending validator's application.
+    ///
+    /// This field is only used since CometBFT 0.38. It will be ignored when
+    /// encoding into earlier protocol versions.
     pub vote_extension: Bytes,
     /// Signature for the vote extension.
+    ///
+    /// This field has been added in CometBFT 0.38 and will be ignored when
+    /// encoding into earlier protocol versions.
     pub extension_signature: Option<Signature>,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 /// Information on how the validator voted for a block.
 pub enum BlockSignatureInfo {
-    /// Full information available, as determined by the `BlockIdFlag` value.
-    Flag(block::BlockIdFlag),
-    /// In CometBFT versions before 0.38, the `signed_last_block` field has
-    /// the value of true.
+    /// Full information available, as determined by the [`BlockIdFlag`] value.
+    ///
+    /// In CometBFT versions before 0.38, both [`Commit`] and [`Nil`] values
+    /// are encoded as the true value of the `signed_last_block` field,
+    /// losing information on whether the vote was for the block or nil.
+    ///
+    /// [`Commit`]: BlockIdFlag::Commit
+    /// [`Nil`]: BlockIdFlag::Nil
+    Flag(BlockIdFlag),
+    /// In the message encoded in a CometBFT version before 0.38,
+    /// the `signed_last_block` field has the value of true.
     ///
     /// This variant should not be used in CometBFT 0.38 or later
     /// and will result in the "undefined" encoding in protobuf.
@@ -64,7 +81,7 @@ pub enum BlockSignatureInfo {
 impl BlockSignatureInfo {
     /// Whether the validator has signed the block accordingly to this information.
     pub fn is_signed(&self) -> bool {
-        use block::BlockIdFlag::*;
+        use BlockIdFlag::*;
 
         match self {
             BlockSignatureInfo::Flag(Commit) | BlockSignatureInfo::Flag(Nil) => true,
