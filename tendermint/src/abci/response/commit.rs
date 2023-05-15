@@ -1,11 +1,13 @@
 use crate::{block, prelude::*};
+use bytes::Bytes;
 
 #[doc = include_str!("../doc/response-commit.md")]
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct Commit {
-    // FIXME: do we want to support this for older versions of the protocol?
-    // Does anybody use it?
-    //pub data: Bytes,
+    /// The Merkle root hash of the application state.
+    ///
+    /// This field is ignored since CometBFT 0.38.
+    pub data: Bytes,
     /// Blocks below this height may be removed.
     pub retain_height: block::Height,
 }
@@ -22,7 +24,7 @@ mod v0_34 {
     impl From<Commit> for pb::abci::ResponseCommit {
         fn from(commit: Commit) -> Self {
             Self {
-                data: Default::default(),
+                data: commit.data,
                 retain_height: commit.retain_height.into(),
             }
         }
@@ -33,6 +35,7 @@ mod v0_34 {
 
         fn try_from(commit: pb::abci::ResponseCommit) -> Result<Self, Self::Error> {
             Ok(Self {
+                data: commit.data,
                 retain_height: commit.retain_height.try_into()?,
             })
         }
@@ -49,7 +52,7 @@ mod v0_37 {
     impl From<Commit> for pb::abci::ResponseCommit {
         fn from(commit: Commit) -> Self {
             Self {
-                data: Default::default(),
+                data: commit.data,
                 retain_height: commit.retain_height.into(),
             }
         }
@@ -60,6 +63,7 @@ mod v0_37 {
 
         fn try_from(commit: pb::abci::ResponseCommit) -> Result<Self, Self::Error> {
             Ok(Self {
+                data: commit.data,
                 retain_height: commit.retain_height.try_into()?,
             })
         }
@@ -87,6 +91,7 @@ mod v0_38 {
         fn try_from(commit: pb::abci::ResponseCommit) -> Result<Self, Self::Error> {
             Ok(Self {
                 retain_height: commit.retain_height.try_into()?,
+                data: Default::default(),
             })
         }
     }
