@@ -1,7 +1,7 @@
 //! `/block_results` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
-use tendermint::{abci, block, consensus, validator};
+use tendermint::{abci, block, consensus, serializers, validator, AppHash};
 
 use crate::dialect::{self, Dialect};
 use crate::prelude::*;
@@ -76,6 +76,10 @@ pub struct Response {
 
     /// New consensus params (might be explicit null)
     pub consensus_param_updates: Option<consensus::Params>,
+
+    /// Merkle hash of the application state
+    #[serde(with = "serializers::apphash")]
+    pub app_hash: AppHash,
 }
 
 pub mod v0_34 {
@@ -127,6 +131,7 @@ pub mod v0_34 {
                     .map(|v| v.into_iter().map(Into::into).collect()),
                 validator_updates: msg.validator_updates,
                 consensus_param_updates: msg.consensus_param_updates,
+                app_hash: Default::default(),
             }
         }
     }
@@ -138,7 +143,7 @@ pub mod v0_37 {
     use crate::prelude::*;
     use crate::{dialect, serializers};
     use serde::{Deserialize, Serialize};
-    use tendermint::{block, consensus, validator};
+    use tendermint::{block, consensus, validator, AppHash};
 
     /// RPC dialect helper for serialization of the response.
     #[derive(Debug, Serialize, Deserialize)]
@@ -166,6 +171,10 @@ pub mod v0_37 {
 
         /// New consensus params (might be explicit null)
         pub consensus_param_updates: Option<consensus::Params>,
+
+        #[serde(default)]
+        #[serde(with = "serializers::apphash")]
+        pub app_hash: AppHash,
     }
 
     impl crate::Response for DialectResponse {}
@@ -190,6 +199,7 @@ pub mod v0_37 {
                     .map(|v| v.into_iter().map(Into::into).collect()),
                 validator_updates: msg.validator_updates,
                 consensus_param_updates: msg.consensus_param_updates,
+                app_hash: msg.app_hash,
             }
         }
     }
