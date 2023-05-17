@@ -419,7 +419,7 @@ fn incoming_fixtures() {
             },
             "block_results_at_height_10" => {
                 let result: endpoint::block_results::Response =
-                    endpoint::block_results::DialectResponse::<RpcEvent>::from_string(content)
+                    endpoint::block_results::v0_37::DialectResponse::from_string(content)
                         .unwrap()
                         .into();
                 assert!(result.begin_block_events.is_none());
