@@ -6,6 +6,7 @@
 //! [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#data-types)
 
 use bytes::Bytes;
+use serde::{Deserialize, Serialize};
 
 use super::{Code, Event};
 use crate::{
@@ -195,7 +196,7 @@ pub struct Snapshot {
 /// deprecated and removed.
 ///
 /// [`response::DeliverTx`]: super::response::DeliverTx
-#[derive(Clone, PartialEq, Eq, Debug, Default)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
 pub struct ExecTxResult {
     /// The response code.
     ///
