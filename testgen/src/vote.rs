@@ -135,6 +135,8 @@ impl Generator<vote::Vote> for Vote {
             validator_index: ValidatorIndex::try_from(validator_index as u32).unwrap(),
             signature: Signature::new(vec![0_u8; Ed25519Signature::BYTE_SIZE])
                 .map_err(|e| SimpleError::new(e.to_string()))?,
+            extension: vec![],
+            extension_signature: None,
         };
 
         let sign_bytes = get_vote_sign_bytes(block_header.chain_id, &vote);

@@ -1,7 +1,6 @@
 use tendermint_proto::v0_37::abci as pb;
 use tendermint_proto::Protobuf;
 
-use crate::abci::request::{ConsensusRequest, InfoRequest, MempoolRequest, SnapshotRequest};
 use crate::abci::MethodKind;
 use crate::Error;
 
@@ -10,7 +9,7 @@ pub use crate::abci::request::{
     InitChain, LoadSnapshotChunk, OfferSnapshot, PrepareProposal, ProcessProposal, Query,
 };
 
-/// All possible ABCI requests.
+/// All possible ABCI requests in CometBFT 0.37.
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Request {
@@ -46,6 +45,57 @@ pub enum Request {
     PrepareProposal(PrepareProposal),
     #[doc = include_str!("../../abci/doc/request-processproposal.md")]
     ProcessProposal(ProcessProposal),
+}
+
+/// The consensus category of ABCI requests.
+#[allow(clippy::large_enum_variant)]
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum ConsensusRequest {
+    #[doc = include_str!("../../abci/doc/request-initchain.md")]
+    InitChain(InitChain),
+    #[doc = include_str!("../../abci/doc/request-prepareproposal.md")]
+    PrepareProposal(PrepareProposal),
+    #[doc = include_str!("../../abci/doc/request-processproposal.md")]
+    ProcessProposal(ProcessProposal),
+    #[doc = include_str!("../../abci/doc/request-beginblock.md")]
+    BeginBlock(BeginBlock),
+    #[doc = include_str!("../../abci/doc/request-delivertx.md")]
+    DeliverTx(DeliverTx),
+    #[doc = include_str!("../../abci/doc/request-endblock.md")]
+    EndBlock(EndBlock),
+    #[doc = include_str!("../../abci/doc/request-commit.md")]
+    Commit,
+}
+
+/// The mempool category of ABCI requests.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum MempoolRequest {
+    #[doc = include_str!("../../abci/doc/request-checktx.md")]
+    CheckTx(CheckTx),
+}
+
+/// The info category of ABCI requests.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum InfoRequest {
+    #[doc = include_str!("../../abci/doc/request-info.md")]
+    Info(Info),
+    #[doc = include_str!("../../abci/doc/request-query.md")]
+    Query(Query),
+    #[doc = include_str!("../../abci/doc/request-echo.md")]
+    Echo(Echo),
+}
+
+/// The snapshot category of ABCI requests.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum SnapshotRequest {
+    #[doc = include_str!("../../abci/doc/request-listsnapshots.md")]
+    ListSnapshots,
+    #[doc = include_str!("../../abci/doc/request-offersnapshot.md")]
+    OfferSnapshot(OfferSnapshot),
+    #[doc = include_str!("../../abci/doc/request-loadsnapshotchunk.md")]
+    LoadSnapshotChunk(LoadSnapshotChunk),
+    #[doc = include_str!("../../abci/doc/request-applysnapshotchunk.md")]
+    ApplySnapshotChunk(ApplySnapshotChunk),
 }
 
 impl Request {
@@ -127,7 +177,6 @@ impl From<InfoRequest> for Request {
             InfoRequest::Info(x) => Self::Info(x),
             InfoRequest::Query(x) => Self::Query(x),
             InfoRequest::Echo(x) => Self::Echo(x),
-            InfoRequest::SetOption(_) => panic!("cannot be used with v0.37"),
         }
     }
 }

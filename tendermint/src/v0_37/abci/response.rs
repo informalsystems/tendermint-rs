@@ -3,7 +3,6 @@ pub use crate::abci::response::{
     InitChain, ListSnapshots, LoadSnapshotChunk, OfferSnapshot, PrepareProposal, ProcessProposal,
     Query,
 };
-use crate::abci::response::{ConsensusResponse, InfoResponse, MempoolResponse, SnapshotResponse};
 use crate::Error;
 
 /// All possible ABCI responses for this protocol version.
@@ -43,6 +42,56 @@ pub enum Response {
     PrepareProposal(PrepareProposal),
     #[doc = include_str!("../../abci/doc/response-processproposal.md")]
     ProcessProposal(ProcessProposal),
+}
+
+/// The consensus category of ABCI responses.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum ConsensusResponse {
+    #[doc = include_str!("../../abci/doc/response-initchain.md")]
+    InitChain(InitChain),
+    #[doc = include_str!("../../abci/doc/response-prepareproposal.md")]
+    PrepareProposal(PrepareProposal),
+    #[doc = include_str!("../../abci/doc/response-processproposal.md")]
+    ProcessProposal(ProcessProposal),
+    #[doc = include_str!("../../abci/doc/response-beginblock.md")]
+    BeginBlock(BeginBlock),
+    #[doc = include_str!("../../abci/doc/response-delivertx.md")]
+    DeliverTx(DeliverTx),
+    #[doc = include_str!("../../abci/doc/response-endblock.md")]
+    EndBlock(EndBlock),
+    #[doc = include_str!("../../abci/doc/response-commit.md")]
+    Commit(Commit),
+}
+
+/// The mempool category of ABCI responses.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum MempoolResponse {
+    #[doc = include_str!("../../abci/doc/response-checktx.md")]
+    CheckTx(CheckTx),
+}
+
+/// The info category of ABCI responses.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum InfoResponse {
+    #[doc = include_str!("../../abci/doc/response-echo.md")]
+    Echo(Echo),
+    #[doc = include_str!("../../abci/doc/response-info.md")]
+    Info(Info),
+    #[doc = include_str!("../../abci/doc/response-query.md")]
+    Query(Query),
+}
+
+/// The snapshot category of ABCI responses.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum SnapshotResponse {
+    #[doc = include_str!("../../abci/doc/response-listsnapshots.md")]
+    ListSnapshots(ListSnapshots),
+    #[doc = include_str!("../../abci/doc/response-offersnapshot.md")]
+    OfferSnapshot(OfferSnapshot),
+    #[doc = include_str!("../../abci/doc/response-loadsnapshotchunk.md")]
+    LoadSnapshotChunk(LoadSnapshotChunk),
+    #[doc = include_str!("../../abci/doc/response-applysnapshotchunk.md")]
+    ApplySnapshotChunk(ApplySnapshotChunk),
 }
 
 impl From<ConsensusResponse> for Response {
@@ -99,7 +148,6 @@ impl From<InfoResponse> for Response {
             InfoResponse::Echo(x) => Self::Echo(x),
             InfoResponse::Info(x) => Self::Info(x),
             InfoResponse::Query(x) => Self::Query(x),
-            InfoResponse::SetOption(_) => panic!("cannot be used with v0.37"),
         }
     }
 }

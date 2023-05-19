@@ -232,6 +232,8 @@ fn non_absent_vote(
         validator_address,
         validator_index,
         signature: signature.clone(),
+        extension: Default::default(),
+        extension_signature: None,
     })
 }
 

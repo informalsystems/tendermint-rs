@@ -1,7 +1,6 @@
 use tendermint_proto::v0_34::abci as pb;
 use tendermint_proto::Protobuf;
 
-use crate::abci::request::{ConsensusRequest, InfoRequest, MempoolRequest, SnapshotRequest};
 use crate::abci::MethodKind;
 use crate::Error;
 
@@ -10,7 +9,7 @@ pub use crate::abci::request::{
     InitChain, LoadSnapshotChunk, OfferSnapshot, Query, SetOption,
 };
 
-/// All possible ABCI requests.
+/// All possible ABCI requests in CometBFT 0.34.
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Request {
@@ -36,6 +35,55 @@ pub enum Request {
     EndBlock(EndBlock),
     #[doc = include_str!("../../abci/doc/request-commit.md")]
     Commit,
+    #[doc = include_str!("../../abci/doc/request-listsnapshots.md")]
+    ListSnapshots,
+    #[doc = include_str!("../../abci/doc/request-offersnapshot.md")]
+    OfferSnapshot(OfferSnapshot),
+    #[doc = include_str!("../../abci/doc/request-loadsnapshotchunk.md")]
+    LoadSnapshotChunk(LoadSnapshotChunk),
+    #[doc = include_str!("../../abci/doc/request-applysnapshotchunk.md")]
+    ApplySnapshotChunk(ApplySnapshotChunk),
+}
+
+/// The consensus category of ABCI requests.
+#[allow(clippy::large_enum_variant)]
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum ConsensusRequest {
+    #[doc = include_str!("../../abci/doc/request-initchain.md")]
+    InitChain(InitChain),
+    #[doc = include_str!("../../abci/doc/request-beginblock.md")]
+    BeginBlock(BeginBlock),
+    #[doc = include_str!("../../abci/doc/request-delivertx.md")]
+    DeliverTx(DeliverTx),
+    #[doc = include_str!("../../abci/doc/request-endblock.md")]
+    EndBlock(EndBlock),
+    #[doc = include_str!("../../abci/doc/request-commit.md")]
+    Commit,
+}
+
+/// The mempool category of ABCI requests.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum MempoolRequest {
+    #[doc = include_str!("../../abci/doc/request-checktx.md")]
+    CheckTx(CheckTx),
+}
+
+/// The info category of ABCI requests.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum InfoRequest {
+    #[doc = include_str!("../../abci/doc/request-info.md")]
+    Info(Info),
+    #[doc = include_str!("../../abci/doc/request-query.md")]
+    Query(Query),
+    #[doc = include_str!("../../abci/doc/request-echo.md")]
+    Echo(Echo),
+    #[doc = include_str!("../../abci/doc/request-setoption.md")]
+    SetOption(SetOption),
+}
+
+/// The snapshot category of ABCI requests.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum SnapshotRequest {
     #[doc = include_str!("../../abci/doc/request-listsnapshots.md")]
     ListSnapshots,
     #[doc = include_str!("../../abci/doc/request-offersnapshot.md")]
@@ -74,12 +122,6 @@ impl From<ConsensusRequest> for Request {
     fn from(req: ConsensusRequest) -> Self {
         match req {
             ConsensusRequest::InitChain(x) => Self::InitChain(x),
-            ConsensusRequest::PrepareProposal(_) => {
-                panic!("Cannot convert PrepareProposal into a v0.34 Request")
-            },
-            ConsensusRequest::ProcessProposal(_) => {
-                panic!("Cannot convert ProcessProposal into a v0.34 Request")
-            },
             ConsensusRequest::BeginBlock(x) => Self::BeginBlock(x),
             ConsensusRequest::DeliverTx(x) => Self::DeliverTx(x),
             ConsensusRequest::EndBlock(x) => Self::EndBlock(x),

@@ -18,5 +18,12 @@ macro_rules! tendermint_pb_modules {
 
             $($contents)*
         }
+        mod v0_38 {
+            use tendermint_proto::v0_38 as pb;
+            #[allow(unused_imports)]
+            use tendermint_proto::Protobuf;
+
+            $($contents)*
+        }
     };
 }

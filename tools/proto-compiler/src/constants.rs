@@ -19,12 +19,17 @@ pub const TENDERMINT_VERSIONS: &[TendermintVersion] = &[
     TendermintVersion {
         repo: "https://github.com/cometbft/cometbft",
         ident: "v0_34",
-        commitish: "v0.34.27",
+        commitish: "v0.34.28",
     },
     TendermintVersion {
         repo: "https://github.com/cometbft/cometbft",
         ident: "v0_37",
-        commitish: "v0.37.0",
+        commitish: "v0.37.1",
+    },
+    TendermintVersion {
+        repo: "https://github.com/cometbft/cometbft",
+        ident: "v0_38",
+        commitish: "v0.38.0-alpha.1",
     },
 ];
 
@@ -93,7 +98,7 @@ pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.Commit", SERIALIZED),
     (".tendermint.types.CommitSig", SERIALIZED),
     (".tendermint.types.ValidatorSet", SERIALIZED),
-    (".tendermint.crypto.PublicKey.sum", SERIALIZED),
+    (".tendermint.crypto.PublicKey", SERIALIZED),
     (".tendermint.crypto.PublicKey.sum", TYPE_TAG),
     (".tendermint.abci.ResponseInfo", SERIALIZED),
     (".tendermint.types.CanonicalBlockID", SERIALIZED),

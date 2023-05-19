@@ -110,7 +110,7 @@ mod tests {
         chain::Id as ChainId,
         hash::Algorithm,
         prelude::*,
-        signature::{Ed25519Signature, Signature},
+        signature::Signature,
         vote::{CanonicalVote, SignVoteRequest, Type, ValidatorIndex},
         Hash, Vote,
     };
@@ -144,6 +144,9 @@ mod tests {
                 192, 133, 130, 193, 115, 32, 206, 152, 91, 173, 10,
             ])
             .unwrap(),
+            // TODO: test serialization of extensions
+            extension: vec![],
+            extension_signature: None,
         };
 
         let mut got = vec![];
@@ -228,6 +231,9 @@ mod tests {
                 192, 133, 130, 193, 115, 32, 206, 152, 91, 173, 10,
             ])
             .unwrap(),
+            // TODO: test serialization of extensions
+            extension: vec![],
+            extension_signature: None,
         };
 
         let request = SignVoteRequest {
@@ -278,10 +284,31 @@ mod tests {
     tendermint_pb_modules! {
         use super::*;
         use pb::types::CanonicalVote as RawCanonicalVote;
+        use crate::{Time, account, signature::Ed25519Signature};
+
+        /// Returns a dummy value to be used in tests.
+        pub fn dummy_vote() -> Vote {
+            Vote {
+                vote_type: Type::Prevote,
+                height: Default::default(),
+                round: Default::default(),
+                block_id: None,
+                timestamp: Some(Time::unix_epoch()),
+                validator_address: account::Id::new([0; account::LENGTH]),
+                validator_index: ValidatorIndex::try_from(0_i32).unwrap(),
+                // Could have reused crate::test::dummy_signature, except that
+                // this Default impl is defined outside of #[cfg(test)].
+                signature: Some(Signature::from(Ed25519Signature::from_bytes(
+                    &[0; Ed25519Signature::BYTE_SIZE],
+                ))),
+                extension: Default::default(),
+                extension_signature: None,
+            }
+        }
 
         #[test]
         fn test_sign_bytes_compatibility() {
-            let cv = CanonicalVote::new(Vote::default(), ChainId::try_from("A").unwrap());
+            let cv = CanonicalVote::new(dummy_vote(), ChainId::try_from("A").unwrap());
             let mut got = vec![];
             // SignBytes are encoded using MarshalBinary and not MarshalBinaryBare
             Protobuf::<RawCanonicalVote>::encode_length_delimited(&cv, &mut got).unwrap();
@@ -297,7 +324,7 @@ mod tests {
                     height: Height::from(1_u32),
                     round: Round::from(1_u16),
                     vote_type: Type::Precommit,
-                    ..Default::default()
+                    ..dummy_vote()
                 };
                 println!("{vt_precommit:?}");
                 let cv_precommit = CanonicalVote::new(vt_precommit, ChainId::try_from("A").unwrap());
@@ -323,7 +350,7 @@ mod tests {
                     height: Height::from(1_u32),
                     round: Round::from(1_u16),
                     vote_type: Type::Prevote,
-                    ..Default::default()
+                    ..dummy_vote()
                 };
 
                 let cv_prevote = CanonicalVote::new(vt_prevote, ChainId::try_from("A").unwrap());
@@ -384,6 +411,9 @@ mod tests {
                     .unwrap(),
                 }),
                 signature: Signature::new(vec![1; Ed25519Signature::BYTE_SIZE]).unwrap(),
+                // TODO: test deserialization of extensions in 0.38
+                extension: vec![],
+                extension_signature: None,
             };
             let want = SignVoteRequest {
                 vote,
@@ -428,6 +458,9 @@ mod tests {
                     192, 133, 130, 193, 115, 32, 206, 152, 91, 173, 10,
                 ])
                 .unwrap(),
+                // TODO: test deserialization of extensions in 0.38
+                extension: vec![],
+                extension_signature: None,
             };
             let got = Protobuf::<pb::types::Vote>::encode_vec(&vote).unwrap();
             let v = <Vote as Protobuf::<pb::types::Vote>>::decode_vec(&got).unwrap();

@@ -18,8 +18,55 @@ pub struct EndBlock {
 // Protobuf conversions
 // =============================================================================
 
-tendermint_pb_modules! {
+mod v0_34 {
     use super::EndBlock;
+    use tendermint_proto::v0_34 as pb;
+    use tendermint_proto::Protobuf;
+
+    impl From<EndBlock> for pb::abci::ResponseEndBlock {
+        fn from(end_block: EndBlock) -> Self {
+            Self {
+                validator_updates: end_block
+                    .validator_updates
+                    .into_iter()
+                    .map(Into::into)
+                    .collect(),
+                consensus_param_updates: end_block.consensus_param_updates.map(Into::into),
+                events: end_block.events.into_iter().map(Into::into).collect(),
+            }
+        }
+    }
+
+    impl TryFrom<pb::abci::ResponseEndBlock> for EndBlock {
+        type Error = crate::Error;
+
+        fn try_from(end_block: pb::abci::ResponseEndBlock) -> Result<Self, Self::Error> {
+            Ok(Self {
+                validator_updates: end_block
+                    .validator_updates
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<_, _>>()?,
+                consensus_param_updates: end_block
+                    .consensus_param_updates
+                    .map(TryInto::try_into)
+                    .transpose()?,
+                events: end_block
+                    .events
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<_, _>>()?,
+            })
+        }
+    }
+
+    impl Protobuf<pb::abci::ResponseEndBlock> for EndBlock {}
+}
+
+mod v0_37 {
+    use super::EndBlock;
+    use tendermint_proto::v0_37 as pb;
+    use tendermint_proto::Protobuf;
 
     impl From<EndBlock> for pb::abci::ResponseEndBlock {
         fn from(end_block: EndBlock) -> Self {

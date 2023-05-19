@@ -2,7 +2,7 @@
 
 use core::convert::TryFrom;
 use prost_derive::Message;
-use tendermint_proto::v0_37 as proto;
+use tendermint_proto::v0_38 as proto;
 
 use crate::error::Error;
 

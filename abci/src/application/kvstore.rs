@@ -6,9 +6,9 @@ use std::{
 };
 
 use bytes::BytesMut;
-use tendermint_proto::v0_37::abci::{
-    Event, EventAttribute, RequestCheckTx, RequestDeliverTx, RequestInfo, RequestQuery,
-    ResponseCheckTx, ResponseCommit, ResponseDeliverTx, ResponseInfo, ResponseQuery,
+use tendermint_proto::v0_38::abci::{
+    Event, EventAttribute, RequestCheckTx, RequestFinalizeBlock, RequestInfo, RequestQuery,
+    ResponseCheckTx, ResponseCommit, ResponseFinalizeBlock, ResponseInfo, ResponseQuery,
 };
 use tracing::{debug, info};
 
@@ -20,9 +20,10 @@ use crate::{codec::MAX_VARINT_LENGTH, Application, Error};
 /// store - the [`KeyValueStoreDriver`].
 ///
 /// ## Example
-/// ```rust
+///
+/// ```
 /// use tendermint_abci::{KeyValueStoreApp, ServerBuilder, ClientBuilder};
-/// use tendermint_proto::abci::{RequestEcho, RequestDeliverTx, RequestQuery};
+/// use tendermint_proto::abci::{RequestEcho, RequestFinalizeBlock, RequestQuery};
 ///
 /// // Create our key/value store application
 /// let (app, driver) = KeyValueStoreApp::new();
@@ -46,8 +47,9 @@ use crate::{codec::MAX_VARINT_LENGTH, Application, Error};
 ///
 /// // Deliver a transaction and then commit the transaction
 /// client
-///     .deliver_tx(RequestDeliverTx {
-///         tx: "test-key=test-value".into(),
+///     .finalize_block(RequestFinalizeBlock {
+///         txs: vec!["test-key=test-value".into()],
+///         ..Default::default()
 ///     })
 ///     .unwrap();
 /// client.commit().unwrap();
@@ -175,27 +177,31 @@ impl Application for KeyValueStoreApp {
             gas_used: 0,
             events: vec![],
             codespace: "".to_string(),
-            ..Default::default()
         }
     }
 
-    fn deliver_tx(&self, request: RequestDeliverTx) -> ResponseDeliverTx {
-        let tx = std::str::from_utf8(&request.tx).unwrap();
-        let tx_parts = tx.split('=').collect::<Vec<&str>>();
-        let (key, value) = if tx_parts.len() == 2 {
-            (tx_parts[0], tx_parts[1])
-        } else {
-            (tx, tx)
-        };
-        let _ = self.set(key, value).unwrap();
-        ResponseDeliverTx {
-            code: 0,
-            data: Default::default(),
-            log: "".to_string(),
-            info: "".to_string(),
-            gas_wanted: 0,
-            gas_used: 0,
-            events: vec![Event {
+    fn commit(&self) -> ResponseCommit {
+        let (result_tx, result_rx) = channel();
+        channel_send(&self.cmd_tx, Command::Commit { result_tx }).unwrap();
+        let height = channel_recv(&result_rx).unwrap();
+        info!("Committed height {}", height);
+        ResponseCommit {
+            retain_height: height - 1,
+        }
+    }
+
+    fn finalize_block(&self, request: RequestFinalizeBlock) -> ResponseFinalizeBlock {
+        let mut events = Vec::new();
+        for tx in request.txs {
+            let tx = std::str::from_utf8(&tx).unwrap();
+            let tx_parts = tx.split('=').collect::<Vec<&str>>();
+            let (key, value) = if tx_parts.len() == 2 {
+                (tx_parts[0], tx_parts[1])
+            } else {
+                (tx, tx)
+            };
+            let _ = self.set(key, value).unwrap();
+            events.push(Event {
                 r#type: "app".to_string(),
                 attributes: vec![
                     EventAttribute {
@@ -214,19 +220,11 @@ impl Application for KeyValueStoreApp {
                         index: false,
                     },
                 ],
-            }],
-            codespace: "".to_string(),
+            });
         }
-    }
-
-    fn commit(&self) -> ResponseCommit {
-        let (result_tx, result_rx) = channel();
-        channel_send(&self.cmd_tx, Command::Commit { result_tx }).unwrap();
-        let (height, app_hash) = channel_recv(&result_rx).unwrap();
-        info!("Committed height {}", height);
-        ResponseCommit {
-            data: app_hash.into(),
-            retain_height: height - 1,
+        ResponseFinalizeBlock {
+            events,
+            ..Default::default()
         }
     }
 }
@@ -278,14 +276,14 @@ impl KeyValueStoreDriver {
         }
     }
 
-    fn commit(&mut self, result_tx: Sender<(i64, Vec<u8>)>) -> Result<(), Error> {
+    fn commit(&mut self, result_tx: Sender<i64>) -> Result<(), Error> {
         // As in the Go-based key/value store, simply encode the number of
         // items as the "app hash"
         let mut app_hash = BytesMut::with_capacity(MAX_VARINT_LENGTH);
         prost::encoding::encode_varint(self.store.len() as u64, &mut app_hash);
         self.app_hash = app_hash.to_vec();
         self.height += 1;
-        channel_send(&result_tx, (self.height, self.app_hash.clone()))
+        channel_send(&result_tx, self.height)
     }
 }
 
@@ -305,8 +303,8 @@ enum Command {
         result_tx: Sender<Option<String>>,
     },
     /// Commit the current state of the application, which involves recomputing
-    /// the application's hash.
-    Commit { result_tx: Sender<(i64, Vec<u8>)> },
+    /// the application's hash, and return the new height.
+    Commit { result_tx: Sender<i64> },
 }
 
 fn channel_send<T>(tx: &Sender<T>, value: T) -> Result<(), Error> {

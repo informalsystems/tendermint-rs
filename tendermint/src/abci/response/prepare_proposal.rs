@@ -12,23 +12,46 @@ pub struct PrepareProposal {
 // Protobuf conversions
 // =============================================================================
 
-// PrepareProposal has been introduced in 0.37.
+mod v0_37 {
+    use super::PrepareProposal;
+    use tendermint_proto::v0_37::abci as pb;
+    use tendermint_proto::Protobuf;
 
-use tendermint_proto::v0_37::abci as pb;
-use tendermint_proto::Protobuf;
-
-impl From<PrepareProposal> for pb::ResponsePrepareProposal {
-    fn from(value: PrepareProposal) -> Self {
-        Self { txs: value.txs }
+    impl From<PrepareProposal> for pb::ResponsePrepareProposal {
+        fn from(value: PrepareProposal) -> Self {
+            Self { txs: value.txs }
+        }
     }
+
+    impl TryFrom<pb::ResponsePrepareProposal> for PrepareProposal {
+        type Error = crate::Error;
+
+        fn try_from(message: pb::ResponsePrepareProposal) -> Result<Self, Self::Error> {
+            Ok(Self { txs: message.txs })
+        }
+    }
+
+    impl Protobuf<pb::ResponsePrepareProposal> for PrepareProposal {}
 }
 
-impl TryFrom<pb::ResponsePrepareProposal> for PrepareProposal {
-    type Error = crate::Error;
+mod v0_38 {
+    use super::PrepareProposal;
+    use tendermint_proto::v0_38::abci as pb;
+    use tendermint_proto::Protobuf;
 
-    fn try_from(message: pb::ResponsePrepareProposal) -> Result<Self, Self::Error> {
-        Ok(Self { txs: message.txs })
+    impl From<PrepareProposal> for pb::ResponsePrepareProposal {
+        fn from(value: PrepareProposal) -> Self {
+            Self { txs: value.txs }
+        }
     }
-}
 
-impl Protobuf<pb::ResponsePrepareProposal> for PrepareProposal {}
+    impl TryFrom<pb::ResponsePrepareProposal> for PrepareProposal {
+        type Error = crate::Error;
+
+        fn try_from(message: pb::ResponsePrepareProposal) -> Result<Self, Self::Error> {
+            Ok(Self { txs: message.txs })
+        }
+    }
+
+    impl Protobuf<pb::ResponsePrepareProposal> for PrepareProposal {}
+}

@@ -18,7 +18,7 @@ description = """
 [[bin]]
 name = "kvstore-rs"
 path = "src/application/kvstore/main.rs"
-required-features = [ "binary", "kvstore-app" ]
+required-features = [ "binary", "client", "kvstore-app" ]
 
 [features]
 default = ["flex-error/std", "flex-error/eyre_tracer"]

@@ -5,7 +5,7 @@ mod kvstore_app_integration {
     use std::thread;
 
     use tendermint_abci::{ClientBuilder, KeyValueStoreApp, ServerBuilder};
-    use tendermint_proto::v0_37::abci::{RequestDeliverTx, RequestEcho, RequestQuery};
+    use tendermint_proto::v0_38::abci::{RequestEcho, RequestFinalizeBlock, RequestQuery};
 
     #[test]
     fn happy_path() {
@@ -24,8 +24,9 @@ mod kvstore_app_integration {
         assert_eq!(res.message, "Hello ABCI!");
 
         client
-            .deliver_tx(RequestDeliverTx {
-                tx: "test-key=test-value".into(),
+            .finalize_block(RequestFinalizeBlock {
+                txs: vec!["test-key=test-value".into()],
+                ..Default::default()
             })
             .unwrap();
         client.commit().unwrap();

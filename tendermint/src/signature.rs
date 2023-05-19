@@ -4,6 +4,8 @@ pub use ed25519::Signature as Ed25519Signature;
 #[cfg(feature = "secp256k1")]
 pub use k256::ecdsa::Signature as Secp256k1Signature;
 
+use bytes::Bytes;
+
 use tendermint_proto::Protobuf;
 
 use crate::{error::Error, prelude::*};
@@ -39,6 +41,20 @@ impl From<Signature> for Vec<u8> {
     }
 }
 
+impl TryFrom<Bytes> for Signature {
+    type Error = Error;
+
+    fn try_from(bytes: Bytes) -> Result<Self, Self::Error> {
+        Self::new_non_empty(bytes)
+    }
+}
+
+impl From<Signature> for Bytes {
+    fn from(value: Signature) -> Self {
+        value.0.into()
+    }
+}
+
 impl Signature {
     /// Create a new signature from the given byte array, if non-empty.
     ///
@@ -69,7 +85,7 @@ impl Signature {
     }
 
     /// Return the underlying byte array
-    pub fn to_bytes(self) -> Vec<u8> {
+    pub fn into_bytes(self) -> Vec<u8> {
         self.0
     }
 }
