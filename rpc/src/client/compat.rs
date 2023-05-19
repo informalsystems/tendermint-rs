@@ -49,6 +49,7 @@ impl CompatMode {
         match (version.major, version.minor) {
             (0, 34) => Ok(CompatMode::V0_34),
             (0, 37) => Ok(CompatMode::V0_37),
+            (0, 38) => Ok(CompatMode::V0_37),
             _ => Err(Error::unsupported_tendermint_version(version.to_string())),
         }
     }
