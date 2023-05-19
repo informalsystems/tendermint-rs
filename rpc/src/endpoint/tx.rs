@@ -1,10 +1,9 @@
 //! `/tx` endpoint JSON-RPC wrapper
 
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use tendermint::{abci, block, tx, Hash};
 
-use crate::dialect::{DeliverTx, Dialect};
+use crate::dialect::{self, Dialect};
 use crate::{prelude::*, request::RequestMessage, serializers, Method};
 
 /// Request for finding a transaction by its hash.
@@ -34,15 +33,23 @@ impl RequestMessage for Request {
     }
 }
 
-impl<S: Dialect> crate::Request<S> for Request {
-    type Response = DialectResponse<S::Event>;
+impl crate::Request<dialect::v0_34::Dialect> for Request {
+    type Response = self::v0_34::DialectResponse;
 }
 
-impl<S: Dialect> crate::SimpleRequest<S> for Request {
+impl crate::Request<dialect::v0_37::Dialect> for Request {
+    type Response = Response;
+}
+
+impl<S: Dialect> crate::SimpleRequest<S> for Request
+where
+    Self: crate::Request<S>,
+    Response: From<Self::Response>,
+{
     type Output = Response;
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Response {
     /// The hash of the transaction.
     ///
@@ -52,43 +59,54 @@ pub struct Response {
     pub hash: Hash,
     pub height: block::Height,
     pub index: u32,
-    pub tx_result: abci::response::DeliverTx,
-    pub tx: Vec<u8>,
-    pub proof: Option<tx::Proof>,
-}
-
-/// RPC dialect helper for serialization of the response.
-#[derive(Debug, Deserialize, Serialize)]
-pub struct DialectResponse<Ev> {
-    /// The hash of the transaction.
-    ///
-    /// Deserialized from a hex-encoded string (there is a discrepancy between
-    /// the format used for the request and the format used for the response in
-    /// the Tendermint RPC).
-    pub hash: Hash,
-    pub height: block::Height,
-    pub index: u32,
-    pub tx_result: DeliverTx<Ev>,
+    pub tx_result: abci::types::ExecTxResult,
     #[serde(with = "serializers::bytes::base64string")]
     pub tx: Vec<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proof: Option<tx::Proof>,
 }
 
-impl<Ev> crate::Response for DialectResponse<Ev> where Ev: Serialize + DeserializeOwned {}
+impl crate::Response for Response {}
 
-impl<Ev> From<DialectResponse<Ev>> for Response
-where
-    Ev: Into<abci::Event>,
-{
-    fn from(msg: DialectResponse<Ev>) -> Self {
-        Self {
-            hash: msg.hash,
-            height: msg.height,
-            index: msg.index,
-            tx_result: msg.tx_result.into(),
-            tx: msg.tx,
-            proof: msg.proof,
+/// Serialization for /tx endpoint format in Tendermint 0.34
+pub mod v0_34 {
+    use super::Response;
+    use crate::dialect::v0_34::Event;
+    use crate::prelude::*;
+    use crate::{dialect, serializers};
+    use serde::{Deserialize, Serialize};
+    use tendermint::{block, tx, Hash};
+
+    /// RPC dialect helper for serialization of the response.
+    #[derive(Debug, Deserialize, Serialize)]
+    pub struct DialectResponse {
+        /// The hash of the transaction.
+        ///
+        /// Deserialized from a hex-encoded string (there is a discrepancy between
+        /// the format used for the request and the format used for the response in
+        /// the Tendermint RPC).
+        pub hash: Hash,
+        pub height: block::Height,
+        pub index: u32,
+        pub tx_result: dialect::DeliverTx<Event>,
+        #[serde(with = "serializers::bytes::base64string")]
+        pub tx: Vec<u8>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub proof: Option<tx::Proof>,
+    }
+
+    impl crate::Response for DialectResponse {}
+
+    impl From<DialectResponse> for Response {
+        fn from(msg: DialectResponse) -> Self {
+            Self {
+                hash: msg.hash,
+                height: msg.height,
+                index: msg.index,
+                tx_result: msg.tx_result.into(),
+                tx: msg.tx,
+                proof: msg.proof,
+            }
         }
     }
 }

@@ -36,7 +36,7 @@ impl crate::Request<dialect::v0_34::Dialect> for Request {
 }
 
 impl crate::Request<dialect::v0_37::Dialect> for Request {
-    type Response = self::v0_37::DialectResponse;
+    type Response = Response;
 }
 
 impl<S: Dialect> crate::SimpleRequest<S> for Request
@@ -48,17 +48,18 @@ where
 }
 
 /// ABCI result response.
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Response {
     /// Block height
     pub height: block::Height,
 
     /// Txs results (might be explicit null)
-    pub txs_results: Option<Vec<abci::response::DeliverTx>>,
+    pub txs_results: Option<Vec<abci::types::ExecTxResult>>,
 
     /// Events from FinalizeBlock.
     ///
     /// This field is only populated with events since CometBFT version 0.38.
+    #[serde(deserialize_with = "serializers::nullable::deserialize")]
     pub finalize_block_events: Vec<abci::Event>,
 
     /// Begin block events (might be explicit null)
@@ -72,16 +73,21 @@ pub struct Response {
     pub end_block_events: Option<Vec<abci::Event>>,
 
     /// Validator updates (might be explicit null)
+    #[serde(deserialize_with = "serializers::nullable::deserialize")]
     pub validator_updates: Vec<validator::Update>,
 
     /// New consensus params (might be explicit null)
     pub consensus_param_updates: Option<consensus::Params>,
 
     /// Merkle hash of the application state
+    #[serde(default)]
     #[serde(with = "serializers::apphash")]
     pub app_hash: AppHash,
 }
 
+impl crate::Response for Response {}
+
+/// Serialization for /block_results endpoint format in Tendermint 0.34
 pub mod v0_34 {
     use super::Response;
     use crate::dialect::v0_34::Event;
@@ -132,74 +138,6 @@ pub mod v0_34 {
                 validator_updates: msg.validator_updates,
                 consensus_param_updates: msg.consensus_param_updates,
                 app_hash: Default::default(),
-            }
-        }
-    }
-}
-
-pub mod v0_37 {
-    use super::Response;
-    use crate::dialect::v0_37::Event;
-    use crate::prelude::*;
-    use crate::{dialect, serializers};
-    use serde::{Deserialize, Serialize};
-    use tendermint::{block, consensus, validator, AppHash};
-
-    /// RPC dialect helper for serialization of the response.
-    #[derive(Debug, Serialize, Deserialize)]
-    pub struct DialectResponse {
-        /// Block height
-        pub height: block::Height,
-
-        /// Txs results (might be explicit null)
-        pub txs_results: Option<Vec<dialect::DeliverTx<Event>>>,
-
-        #[serde(default)]
-        pub finalize_block_events: Vec<Event>,
-
-        /// Begin block events (might be explicit null)
-        #[serde(default)]
-        pub begin_block_events: Option<Vec<Event>>,
-
-        /// End block events (might be explicit null)
-        #[serde(default)]
-        pub end_block_events: Option<Vec<Event>>,
-
-        /// Validator updates (might be explicit null)
-        #[serde(deserialize_with = "serializers::nullable::deserialize")]
-        pub validator_updates: Vec<validator::Update>,
-
-        /// New consensus params (might be explicit null)
-        pub consensus_param_updates: Option<consensus::Params>,
-
-        #[serde(default)]
-        #[serde(with = "serializers::apphash")]
-        pub app_hash: AppHash,
-    }
-
-    impl crate::Response for DialectResponse {}
-
-    impl From<DialectResponse> for Response {
-        fn from(msg: DialectResponse) -> Self {
-            Response {
-                height: msg.height,
-                txs_results: msg
-                    .txs_results
-                    .map(|v| v.into_iter().map(Into::into).collect()),
-                finalize_block_events: msg
-                    .finalize_block_events
-                    .into_iter()
-                    .map(Into::into)
-                    .collect(),
-                begin_block_events: msg
-                    .begin_block_events
-                    .map(|v| v.into_iter().map(Into::into).collect()),
-                end_block_events: msg
-                    .end_block_events
-                    .map(|v| v.into_iter().map(Into::into).collect()),
-                validator_updates: msg.validator_updates,
-                consensus_param_updates: msg.consensus_param_updates,
-                app_hash: msg.app_hash,
             }
         }
     }

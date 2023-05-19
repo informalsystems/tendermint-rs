@@ -334,8 +334,8 @@ mod test {
 
     mod v0_37 {
         use super::*;
-        use crate::dialect::v0_37::Event as RpcEvent;
         use crate::event::DialectEvent;
+        use tendermint::abci::Event as RpcEvent;
 
         async fn read_event(name: &str) -> Event {
             let msg = DialectEvent::<RpcEvent>::from_string(read_json_fixture("v0_37", name).await)

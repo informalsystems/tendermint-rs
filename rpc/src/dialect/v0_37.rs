@@ -1,8 +1,12 @@
-use tendermint::{abci, evidence};
+use tendermint::evidence;
 use tendermint_proto::v0_37 as raw;
 
 use crate::prelude::*;
 use serde::{Deserialize, Serialize};
+
+/// The Event serialization in the latest RPC dialect is the canonical
+/// serialization for the ABCI domain type.
+pub use tendermint::abci::Event;
 
 #[derive(Default, Clone)]
 pub struct Dialect;
@@ -10,63 +14,6 @@ pub struct Dialect;
 impl crate::dialect::Dialect for Dialect {
     type Event = Event;
     type Evidence = Evidence;
-}
-
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
-pub struct Event {
-    #[serde(rename = "type")]
-    pub kind: String,
-    pub attributes: Vec<EventAttribute>,
-}
-
-impl From<Event> for abci::Event {
-    fn from(msg: Event) -> Self {
-        Self {
-            kind: msg.kind,
-            attributes: msg.attributes.into_iter().map(Into::into).collect(),
-        }
-    }
-}
-
-impl From<abci::Event> for Event {
-    fn from(msg: abci::Event) -> Self {
-        Self {
-            kind: msg.kind,
-            attributes: msg.attributes.into_iter().map(Into::into).collect(),
-        }
-    }
-}
-
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
-pub struct EventAttribute {
-    /// The event key.
-    pub key: String,
-    /// The event value.
-    pub value: String,
-    /// Whether Tendermint's indexer should index this event.
-    ///
-    /// **This field is nondeterministic**.
-    pub index: bool,
-}
-
-impl From<EventAttribute> for abci::EventAttribute {
-    fn from(msg: EventAttribute) -> Self {
-        Self {
-            key: msg.key,
-            value: msg.value,
-            index: msg.index,
-        }
-    }
-}
-
-impl From<abci::EventAttribute> for EventAttribute {
-    fn from(msg: abci::EventAttribute) -> Self {
-        Self {
-            key: msg.key,
-            value: msg.value,
-            index: msg.index,
-        }
-    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

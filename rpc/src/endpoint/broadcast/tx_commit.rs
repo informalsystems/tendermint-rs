@@ -1,7 +1,6 @@
 //! `/broadcast_tx_commit`: only returns error if `mempool.CheckTx()` errs or
 //! if we timeout waiting for tx to commit.
 
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
 use tendermint::{abci, block, Hash};
@@ -34,22 +33,31 @@ impl RequestMessage for Request {
     }
 }
 
-impl<S: Dialect> crate::Request<S> for Request {
-    type Response = DialectResponse<S::Event>;
+impl crate::Request<dialect::v0_34::Dialect> for Request {
+    type Response = self::v0_34::DialectResponse;
 }
 
-impl<S: Dialect> crate::SimpleRequest<S> for Request {
+impl crate::Request<dialect::v0_37::Dialect> for Request {
+    type Response = Response;
+}
+
+impl<S: Dialect> crate::SimpleRequest<S> for Request
+where
+    Self: crate::Request<S>,
+    Response: From<Self::Response>,
+{
     type Output = Response;
 }
 
 /// Response from `/broadcast_tx_commit`.
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Response {
     /// `CheckTx` result
     pub check_tx: abci::response::CheckTx,
 
-    /// `DeliverTx` result
-    pub deliver_tx: abci::response::DeliverTx,
+    /// Result of executing the transaction
+    #[serde(alias = "deliver_tx")]
+    pub tx_result: abci::types::ExecTxResult,
 
     /// Transaction
     pub hash: Hash,
@@ -58,34 +66,42 @@ pub struct Response {
     pub height: block::Height,
 }
 
-/// RPC dialect helper for serialization of the response.
-#[derive(Debug, Deserialize, Serialize)]
-pub struct DialectResponse<Ev> {
-    /// `CheckTx` result
-    pub check_tx: dialect::CheckTx<Ev>,
+impl crate::Response for Response {}
 
-    /// `DeliverTx` result
-    pub deliver_tx: dialect::DeliverTx<Ev>,
+/// Serialization for /broadcast_tx_commit endpoint format in Tendermint 0.34
+pub mod v0_34 {
+    use super::Response;
+    use crate::dialect;
+    use crate::dialect::v0_34::Event;
+    use serde::{Deserialize, Serialize};
+    use tendermint::{block, Hash};
 
-    /// Transaction
-    pub hash: Hash,
+    /// RPC dialect helper for serialization of the response.
+    #[derive(Debug, Deserialize, Serialize)]
+    pub struct DialectResponse {
+        /// `CheckTx` result
+        pub check_tx: dialect::CheckTx<Event>,
 
-    /// Height
-    pub height: block::Height,
-}
+        /// `DeliverTx` result
+        pub deliver_tx: dialect::DeliverTx<Event>,
 
-impl<Ev> crate::Response for DialectResponse<Ev> where Ev: Serialize + DeserializeOwned {}
+        /// Transaction
+        pub hash: Hash,
 
-impl<Ev> From<DialectResponse<Ev>> for Response
-where
-    Ev: Into<abci::Event>,
-{
-    fn from(msg: DialectResponse<Ev>) -> Self {
-        Self {
-            check_tx: msg.check_tx.into(),
-            deliver_tx: msg.deliver_tx.into(),
-            hash: msg.hash,
-            height: msg.height,
+        /// Height
+        pub height: block::Height,
+    }
+
+    impl crate::Response for DialectResponse {}
+
+    impl From<DialectResponse> for Response {
+        fn from(msg: DialectResponse) -> Self {
+            Self {
+                check_tx: msg.check_tx.into(),
+                tx_result: msg.deliver_tx.into(),
+                hash: msg.hash,
+                height: msg.height,
+            }
         }
     }
 }

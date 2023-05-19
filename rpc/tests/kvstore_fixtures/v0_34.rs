@@ -492,11 +492,9 @@ fn incoming_fixtures() {
             },
             "broadcast_tx_commit" => {
                 let result: endpoint::broadcast::tx_commit::Response =
-                    endpoint::broadcast::tx_commit::DialectResponse::<RpcEvent>::from_string(
-                        content,
-                    )
-                    .unwrap()
-                    .into();
+                    endpoint::broadcast::tx_commit::v0_34::DialectResponse::from_string(content)
+                        .unwrap()
+                        .into();
                 assert_eq!(result.check_tx.code, abci::Code::Ok);
                 assert!(result.check_tx.codespace.is_empty());
                 assert!(result.check_tx.data.is_empty());
@@ -506,36 +504,33 @@ fn incoming_fixtures() {
                 // assert_eq!(result.check_tx.gas_wanted.value(), 1);
                 assert!(result.check_tx.info.to_string().is_empty());
                 assert!(result.check_tx.log.is_empty());
-                assert_eq!(result.deliver_tx.code, abci::Code::Ok);
-                assert!(result.deliver_tx.codespace.is_empty());
-                assert!(result.deliver_tx.data.is_empty());
-                assert_eq!(result.deliver_tx.events.len(), 1);
-                assert_eq!(result.deliver_tx.events[0].attributes.len(), 4);
-                assert_eq!(result.deliver_tx.events[0].attributes[0].key, "creator");
+                assert_eq!(result.tx_result.code, abci::Code::Ok);
+                assert!(result.tx_result.codespace.is_empty());
+                assert!(result.tx_result.data.is_empty());
+                assert_eq!(result.tx_result.events.len(), 1);
+                assert_eq!(result.tx_result.events[0].attributes.len(), 4);
+                assert_eq!(result.tx_result.events[0].attributes[0].key, "creator");
                 assert_eq!(
-                    result.deliver_tx.events[0].attributes[0].value,
+                    result.tx_result.events[0].attributes[0].value,
                     "Cosmoshi Netowoko"
                 );
-                assert_eq!(result.deliver_tx.events[0].attributes[1].key, "key");
+                assert_eq!(result.tx_result.events[0].attributes[1].key, "key");
+                assert_eq!(result.tx_result.events[0].attributes[1].value, "commit-key");
+                assert_eq!(result.tx_result.events[0].attributes[2].key, "index_key");
                 assert_eq!(
-                    result.deliver_tx.events[0].attributes[1].value,
-                    "commit-key"
-                );
-                assert_eq!(result.deliver_tx.events[0].attributes[2].key, "index_key");
-                assert_eq!(
-                    result.deliver_tx.events[0].attributes[2].value,
+                    result.tx_result.events[0].attributes[2].value,
                     "index is working"
                 );
-                assert_eq!(result.deliver_tx.events[0].attributes[3].key, "noindex_key");
+                assert_eq!(result.tx_result.events[0].attributes[3].key, "noindex_key");
                 assert_eq!(
-                    result.deliver_tx.events[0].attributes[3].value,
+                    result.tx_result.events[0].attributes[3].value,
                     "index is working"
                 );
-                assert_eq!(result.deliver_tx.events[0].kind, "app");
-                assert_eq!(result.deliver_tx.gas_used, 0);
-                assert_eq!(result.deliver_tx.gas_wanted, 0);
-                assert!(result.deliver_tx.info.to_string().is_empty());
-                assert!(result.deliver_tx.log.is_empty());
+                assert_eq!(result.tx_result.events[0].kind, "app");
+                assert_eq!(result.tx_result.gas_used, 0);
+                assert_eq!(result.tx_result.gas_wanted, 0);
+                assert!(result.tx_result.info.to_string().is_empty());
+                assert!(result.tx_result.log.is_empty());
                 assert_ne!(
                     result.hash,
                     Hash::from_bytes(Algorithm::Sha256, &[0; 32]).unwrap()
@@ -1329,7 +1324,7 @@ fn incoming_fixtures() {
             },
             "tx" => {
                 let result: endpoint::tx::Response =
-                    endpoint::tx::DialectResponse::<RpcEvent>::from_string(content)
+                    endpoint::tx::v0_34::DialectResponse::from_string(content)
                         .unwrap()
                         .into();
                 assert_eq!(
@@ -1348,7 +1343,7 @@ fn incoming_fixtures() {
             },
             "tx_search_no_prove" => {
                 let result: endpoint::tx_search::Response =
-                    endpoint::tx_search::DialectResponse::<RpcEvent>::from_string(content)
+                    endpoint::tx_search::v0_34::DialectResponse::from_string(content)
                         .unwrap()
                         .into();
                 assert_eq!(result.total_count as usize, result.txs.len());
@@ -1367,7 +1362,7 @@ fn incoming_fixtures() {
             },
             "tx_search_with_prove" => {
                 let result: endpoint::tx_search::Response =
-                    endpoint::tx_search::DialectResponse::<RpcEvent>::from_string(content)
+                    endpoint::tx_search::v0_34::DialectResponse::from_string(content)
                         .unwrap()
                         .into();
                 assert_eq!(result.total_count as usize, result.txs.len());
