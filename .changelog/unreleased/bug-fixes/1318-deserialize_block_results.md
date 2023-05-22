@@ -1,0 +1,1 @@
+- `[tendermint-rpc]` - null is deserialized as empty `value` for `EventAttribute` (abci v0_37)

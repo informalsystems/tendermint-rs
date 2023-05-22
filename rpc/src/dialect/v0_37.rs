@@ -2,6 +2,7 @@ use tendermint::{abci, evidence};
 use tendermint_proto::v0_37 as raw;
 
 use crate::prelude::*;
+use crate::serializers;
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Clone)]
@@ -42,6 +43,7 @@ pub struct EventAttribute {
     /// The event key.
     pub key: String,
     /// The event value.
+    #[serde(deserialize_with = "serializers::nullable::deserialize")]
     pub value: String,
     /// Whether Tendermint's indexer should index this event.
     ///
