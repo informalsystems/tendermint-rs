@@ -1,0 +1,8 @@
+{
+  "id": "2eb70c44-72a5-49ec-b40a-dcc42c2d9f9c",
+  "jsonrpc": "2.0",
+  "method": "block_by_hash",
+  "params": {
+    "hash": "R0k7UeECcF9tzOWYHgW3wCW7W/Gc9eS1T+KMr+nSDIo="
+  }
+}

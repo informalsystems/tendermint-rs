@@ -1,0 +1,9 @@
+{
+  "error": {
+    "code": -32603,
+    "data": "failed to parse query: offset 10: got tag, wanted <= operator, >= operator, < operator, > operator, = operator, CONTAINS operator or EXISTS operator",
+    "message": "Internal error"
+  },
+  "id": "d6bb6715-6d1c-4aae-9f4c-ec684d5f7ed0",
+  "jsonrpc": "2.0"
+}

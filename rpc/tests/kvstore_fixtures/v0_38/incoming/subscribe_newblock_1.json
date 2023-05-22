@@ -1,0 +1,80 @@
+{
+  "id": "8e4bb2a3-1304-46c6-9647-4493ef0fa5f2",
+  "jsonrpc": "2.0",
+  "result": {
+    "data": {
+      "type": "tendermint/event/NewBlock",
+      "value": {
+        "block": {
+          "data": {
+            "txs": []
+          },
+          "evidence": {
+            "evidence": []
+          },
+          "header": {
+            "app_hash": "0600000000000000",
+            "chain_id": "dockerchain",
+            "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
+            "data_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+            "evidence_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+            "height": "236",
+            "last_block_id": {
+              "hash": "FA01C08688623731FA4250FB7873FE2049349DAE5352CB823E5BE0F472017C22",
+              "parts": {
+                "hash": "FA665C1C3E2348640E60153A50663E9C99323E096D15DC13AEB1C7B9F84DA8EB",
+                "total": 1
+              }
+            },
+            "last_commit_hash": "682F05D93AC93E2853A6B0059E775F506E61AC04519A5FB3991975DE581EB72C",
+            "last_results_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+            "next_validators_hash": "33415EFFCEDA5BD0A3A443A727457D9F7B9E38389BF27A936FEDF749A7B7566E",
+            "proposer_address": "2DD9F44FD9067555C322243C3C913BA7B51D2BE0",
+            "time": "2023-05-17T14:14:50.601315661Z",
+            "validators_hash": "33415EFFCEDA5BD0A3A443A727457D9F7B9E38389BF27A936FEDF749A7B7566E",
+            "version": {
+              "app": "1",
+              "block": "11"
+            }
+          },
+          "last_commit": {
+            "block_id": {
+              "hash": "FA01C08688623731FA4250FB7873FE2049349DAE5352CB823E5BE0F472017C22",
+              "parts": {
+                "hash": "FA665C1C3E2348640E60153A50663E9C99323E096D15DC13AEB1C7B9F84DA8EB",
+                "total": 1
+              }
+            },
+            "height": "235",
+            "round": 0,
+            "signatures": [
+              {
+                "block_id_flag": 2,
+                "signature": "a2v8BAsI6vQc6UGTz5rdgp84GN0toN4qEoeMU4y7CaY4Kothcq5AmjNL4sR1qR58ZUIe9/YFZOcFZN5KuHcQBw==",
+                "timestamp": "2023-05-17T14:14:50.601315661Z",
+                "validator_address": "2DD9F44FD9067555C322243C3C913BA7B51D2BE0"
+              }
+            ]
+          }
+        },
+        "block_id": {
+          "hash": "80A660B1AD0E3C8A6393239111174D2FDCE615612055FA7CD61793D9E8351D12",
+          "parts": {
+            "hash": "051A5E711FA370C706B917FBDC9891D7262F8DA0595A2F09BA5A598D79BCFF4A",
+            "total": 1
+          }
+        },
+        "result_finalize_block": {
+          "app_hash": "BgAAAAAAAAA=",
+          "validator_updates": []
+        }
+      }
+    },
+    "events": {
+      "tm.event": [
+        "NewBlock"
+      ]
+    },
+    "query": "tm.event = 'NewBlock'"
+  }
+}

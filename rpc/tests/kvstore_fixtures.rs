@@ -28,6 +28,7 @@ mod kvstore_fixtures {
     use super::*;
     mod v0_34;
     mod v0_37;
+    mod v0_38;
 }
 
 fn find_fixtures(ver_folder_name: &str, in_out_folder_name: &str) -> Vec<PathBuf> {

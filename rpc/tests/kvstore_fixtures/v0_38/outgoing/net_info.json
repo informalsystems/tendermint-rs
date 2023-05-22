@@ -1,0 +1,6 @@
+{
+  "id": "ee138ef6-f083-4746-9ed7-e30d50753308",
+  "jsonrpc": "2.0",
+  "method": "net_info",
+  "params": null
+}

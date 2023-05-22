@@ -1,0 +1,97 @@
+{
+  "id": "8d385392-918c-4f2e-b848-daa092a8d9b8",
+  "jsonrpc": "2.0",
+  "result": {
+    "data": {
+      "type": "tendermint/event/Tx",
+      "value": {
+        "TxResult": {
+          "height": "247",
+          "result": {
+            "events": [
+              {
+                "attributes": [
+                  {
+                    "index": true,
+                    "key": "creator",
+                    "value": "Cosmoshi Netowoko"
+                  },
+                  {
+                    "index": true,
+                    "key": "key",
+                    "value": "tx2"
+                  },
+                  {
+                    "index": true,
+                    "key": "index_key",
+                    "value": "index is working"
+                  },
+                  {
+                    "index": false,
+                    "key": "noindex_key",
+                    "value": "index is working"
+                  }
+                ],
+                "type": "app"
+              },
+              {
+                "attributes": [
+                  {
+                    "index": true,
+                    "key": "creator",
+                    "value": "Cosmoshi"
+                  },
+                  {
+                    "index": true,
+                    "key": "key",
+                    "value": "value"
+                  },
+                  {
+                    "index": true,
+                    "key": "index_key",
+                    "value": "index is working"
+                  },
+                  {
+                    "index": false,
+                    "key": "noindex_key",
+                    "value": "index is working"
+                  }
+                ],
+                "type": "app"
+              }
+            ]
+          },
+          "tx": "dHgyPXZhbHVl"
+        }
+      }
+    },
+    "events": {
+      "app.creator": [
+        "Cosmoshi Netowoko",
+        "Cosmoshi"
+      ],
+      "app.index_key": [
+        "index is working",
+        "index is working"
+      ],
+      "app.key": [
+        "tx2",
+        "value"
+      ],
+      "app.noindex_key": [
+        "index is working",
+        "index is working"
+      ],
+      "tm.event": [
+        "Tx"
+      ],
+      "tx.hash": [
+        "C9D123E2CF19B9F0EC3CA1F64CD3BF0735397C84778B40B3EB5C49A752D53BF4"
+      ],
+      "tx.height": [
+        "247"
+      ]
+    },
+    "query": "tm.event = 'Tx'"
+  }
+}

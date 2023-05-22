@@ -1,0 +1,79 @@
+{
+  "id": "f356464f-dd5c-4b81-a88d-73d5aef4db8d",
+  "jsonrpc": "2.0",
+  "result": {
+    "check_tx": {
+      "code": 0,
+      "codespace": "",
+      "data": null,
+      "events": [],
+      "gas_used": "0",
+      "gas_wanted": "1",
+      "info": "",
+      "log": ""
+    },
+    "hash": "D63F9C23791E610410B576D8C27BB5AEAC93CC1A58522428A7B32A1276085860",
+    "height": "227",
+    "tx_result": {
+      "code": 0,
+      "codespace": "",
+      "data": null,
+      "events": [
+        {
+          "attributes": [
+            {
+              "index": true,
+              "key": "creator",
+              "value": "Cosmoshi Netowoko"
+            },
+            {
+              "index": true,
+              "key": "key",
+              "value": "commit-key"
+            },
+            {
+              "index": true,
+              "key": "index_key",
+              "value": "index is working"
+            },
+            {
+              "index": false,
+              "key": "noindex_key",
+              "value": "index is working"
+            }
+          ],
+          "type": "app"
+        },
+        {
+          "attributes": [
+            {
+              "index": true,
+              "key": "creator",
+              "value": "Cosmoshi"
+            },
+            {
+              "index": true,
+              "key": "key",
+              "value": "value"
+            },
+            {
+              "index": true,
+              "key": "index_key",
+              "value": "index is working"
+            },
+            {
+              "index": false,
+              "key": "noindex_key",
+              "value": "index is working"
+            }
+          ],
+          "type": "app"
+        }
+      ],
+      "gas_used": "0",
+      "gas_wanted": "0",
+      "info": "",
+      "log": ""
+    }
+  }
+}

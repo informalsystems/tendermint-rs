@@ -1,0 +1,29 @@
+{
+  "id": "56d91e8f-1d2e-46b3-8d4d-686860344721",
+  "jsonrpc": "2.0",
+  "result": {
+    "block_height": "10",
+    "consensus_params": {
+      "abci": {
+        "vote_extensions_enable_height": "0"
+      },
+      "block": {
+        "max_bytes": "22020096",
+        "max_gas": "-1"
+      },
+      "evidence": {
+        "max_age_duration": "172800000000000",
+        "max_age_num_blocks": "100000",
+        "max_bytes": "1048576"
+      },
+      "validator": {
+        "pub_key_types": [
+          "ed25519"
+        ]
+      },
+      "version": {
+        "app": "0"
+      }
+    }
+  }
+}
