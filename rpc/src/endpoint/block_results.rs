@@ -59,6 +59,7 @@ pub struct Response {
     /// Events from FinalizeBlock.
     ///
     /// This field is only populated with events since CometBFT version 0.38.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     #[serde(deserialize_with = "serializers::nullable::deserialize")]
     pub finalize_block_events: Vec<abci::Event>,
 
