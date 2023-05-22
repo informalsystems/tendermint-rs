@@ -12,7 +12,7 @@ use super::{Code, Event};
 use crate::{
     block::{self, BlockIdFlag},
     prelude::*,
-    vote, Signature, Time,
+    serializers, vote, Signature, Time,
 };
 
 /// A validator address with voting power.
@@ -205,6 +205,7 @@ pub struct ExecTxResult {
     /// the application state.
     pub code: Code,
     /// Result bytes, if any.
+    #[serde(with = "serializers::nullable")]
     pub data: Bytes,
     /// The output of the application's logger.
     ///
@@ -215,8 +216,10 @@ pub struct ExecTxResult {
     /// **May be non-deterministic**.
     pub info: String,
     /// Amount of gas requested for the transaction.
+    #[serde(with = "serializers::from_str")]
     pub gas_wanted: i64,
     /// Amount of gas consumed by the transaction.
+    #[serde(with = "serializers::from_str")]
     pub gas_used: i64,
     /// Events that occurred while executing the transaction.
     pub events: Vec<Event>,

@@ -36,11 +36,14 @@ pub struct CheckTx {
     /// The namespace for the `code`.
     pub codespace: String,
     /// The transactions's sender. Not used since CometBFT 0.38.
+    #[serde(default)]
     pub sender: String,
     /// Priority for the mempool. Not used since CometBFT 0.38.
+    #[serde(default)]
     #[serde(with = "serializers::from_str")]
     pub priority: i64,
     /// Error reported for the mempool. Not used since CometBFT 0.38.
+    #[serde(default)]
     pub mempool_error: String,
 }
 
