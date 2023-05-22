@@ -1,0 +1,1 @@
+- `[tendermint]` fix: use compact mode to decode response from `latest_block_results`.
