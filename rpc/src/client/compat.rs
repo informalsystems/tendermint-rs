@@ -89,7 +89,11 @@ mod tests {
             CompatMode::from_version(parse_version("v0.37.0")).unwrap(),
             CompatMode::V0_37
         );
-        let res = CompatMode::from_version(parse_version("v0.38.0"));
+        assert_eq!(
+            CompatMode::from_version(parse_version("v0.38.0")).unwrap(),
+            CompatMode::V0_37
+        );
+        let res = CompatMode::from_version(parse_version("v0.39.0"));
         assert!(res.is_err());
         let res = CompatMode::from_version(parse_version("v1.0.0"));
         assert!(res.is_err());
