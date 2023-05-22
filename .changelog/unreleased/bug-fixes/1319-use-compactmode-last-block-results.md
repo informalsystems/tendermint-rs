@@ -1,1 +1,1 @@
-- `[tendermint]` fix: use compact mode to decode response from `latest_block_results`.
+- `[tendermint]` fix: use compat mode to decode response from `latest_block_results`.
