@@ -1,20 +1,26 @@
+use serde::{Deserialize, Serialize};
+
 use crate::abci::{types::ExecTxResult, Event};
 use crate::prelude::*;
-use crate::{consensus, validator, AppHash};
+use crate::{consensus, serializers, validator, AppHash};
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FinalizeBlock {
     /// Set of block events emitted as part of executing the block
+    #[serde(default)]
     pub events: Vec<Event>,
     /// The result of executing each transaction including the events
     /// the particular transction emitted. This should match the order
     /// of the transactions delivered in the block itself
+    #[serde(default)]
     pub tx_results: Vec<ExecTxResult>,
     /// A list of updates to the validator set.
     /// These will reflect the validator set at current height + 2.
     pub validator_updates: Vec<validator::Update>,
     /// Updates to the consensus params, if any.
+    #[serde(default)]
     pub consensus_param_updates: Option<consensus::Params>,
+    #[serde(default, with = "serializers::apphash")]
     pub app_hash: AppHash,
 }
 
