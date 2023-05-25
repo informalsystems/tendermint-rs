@@ -142,7 +142,7 @@ pub mod v0_34 {
                     result_begin_block,
                     result_end_block,
                 } => EventData::LegacyNewBlock {
-                    block: block,
+                    block,
                     result_begin_block: result_begin_block.map(Into::into),
                     result_end_block: result_end_block.map(Into::into),
                 },
