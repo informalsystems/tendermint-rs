@@ -20,7 +20,9 @@ pub struct FinalizeBlock {
     /// Updates to the consensus params, if any.
     #[serde(default)]
     pub consensus_param_updates: Option<consensus::Params>,
-    #[serde(default, with = "serializers::apphash")]
+    // FIXME: decide if base64 is the canonical serialization for AppHash,
+    // and implement Serialize/Deserialize on the type accordingly?
+    #[serde(default, with = "serializers::apphash_base64")]
     pub app_hash: AppHash,
 }
 
