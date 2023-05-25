@@ -410,7 +410,7 @@ mod rpc {
                     let ev: Event = res.unwrap();
                     println!("Got event: {ev:?}");
                     match ev.data {
-                        EventData::NewBlock { .. } => {
+                        EventData::LegacyNewBlock { .. } => {
                             println!("Got new block event");
                             expected_new_blocks -= 1;
                         },
