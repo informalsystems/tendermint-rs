@@ -144,7 +144,7 @@ mod test {
     use super::*;
     use crate::{
         client::sync::{unbounded, ChannelRx},
-        event::{Event, WrappedEvent},
+        event::Event,
         utils::uuid_str,
     };
 
@@ -180,16 +180,15 @@ mod test {
 
     mod v0_34 {
         use super::*;
-        use crate::dialect::v0_34::Event as RpcEvent;
+
+        type WrappedEvent = crate::response::Wrapper<crate::event::v0_34::DialectEvent>;
 
         async fn read_event(name: &str) -> Event {
-            serde_json::from_str::<WrappedEvent<RpcEvent>>(
-                read_json_fixture("v0_34", name).await.as_str(),
-            )
-            .unwrap()
-            .into_result()
-            .unwrap()
-            .into()
+            serde_json::from_str::<WrappedEvent>(read_json_fixture("v0_34", name).await.as_str())
+                .unwrap()
+                .into_result()
+                .unwrap()
+                .into()
         }
 
         #[tokio::test]
@@ -229,16 +228,15 @@ mod test {
 
     mod v0_37 {
         use super::*;
-        use crate::dialect::v0_37::Event as RpcEvent;
+
+        type WrappedEvent = crate::response::Wrapper<crate::event::latest::DialectEvent>;
 
         async fn read_event(name: &str) -> Event {
-            serde_json::from_str::<WrappedEvent<RpcEvent>>(
-                read_json_fixture("v0_37", name).await.as_str(),
-            )
-            .unwrap()
-            .into_result()
-            .unwrap()
-            .into()
+            serde_json::from_str::<WrappedEvent>(read_json_fixture("v0_37", name).await.as_str())
+                .unwrap()
+                .into_result()
+                .unwrap()
+                .into()
         }
 
         #[tokio::test]

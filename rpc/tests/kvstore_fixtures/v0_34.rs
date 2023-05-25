@@ -257,7 +257,7 @@ fn outgoing_fixtures() {
 
 #[test]
 fn incoming_fixtures() {
-    use tendermint_rpc::dialect::v0_34::Event as RpcEvent;
+    use tendermint_rpc::event::{v0_34::DialectEvent, EventData};
 
     let empty_merkle_root_hash = Some(
         tendermint::Hash::from_hex_upper(
@@ -792,9 +792,8 @@ fn incoming_fixtures() {
                 }
             },
             "subscribe_newblock_0" => {
-                let result =
-                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
-                if let tendermint_rpc::event::EventData::NewBlock {
+                let result = DialectEvent::from_string(content).unwrap();
+                if let EventData::LegacyNewBlock {
                     block,
                     result_begin_block,
                     result_end_block,
@@ -843,14 +842,13 @@ fn incoming_fixtures() {
                     assert!(reb.consensus_param_updates.is_none());
                     assert!(reb.events.is_empty());
                 } else {
-                    panic!("not a newblock");
+                    panic!("not a LegacyNewBlock event");
                 }
                 assert_eq!(result.query, "tm.event = 'NewBlock'");
             },
             "subscribe_newblock_1" => {
-                let result =
-                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
-                if let tendermint_rpc::event::EventData::NewBlock {
+                let result = DialectEvent::from_string(content).unwrap();
+                if let EventData::LegacyNewBlock {
                     block,
                     result_begin_block,
                     result_end_block,
@@ -921,14 +919,13 @@ fn incoming_fixtures() {
                     assert!(reb.consensus_param_updates.is_none());
                     assert!(reb.events.is_empty());
                 } else {
-                    panic!("not a newblock");
+                    panic!("not a LegacyNewBlock event");
                 }
                 assert_eq!(result.query, "tm.event = 'NewBlock'");
             },
             "subscribe_newblock_2" => {
-                let result =
-                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
-                if let tendermint_rpc::event::EventData::NewBlock {
+                let result = DialectEvent::from_string(content).unwrap();
+                if let EventData::LegacyNewBlock {
                     block,
                     result_begin_block,
                     result_end_block,
@@ -977,14 +974,13 @@ fn incoming_fixtures() {
                     assert!(reb.consensus_param_updates.is_none());
                     assert!(reb.events.is_empty());
                 } else {
-                    panic!("not a newblock");
+                    panic!("not a LegacyNewBlock event");
                 }
                 assert_eq!(result.query, "tm.event = 'NewBlock'");
             },
             "subscribe_newblock_3" => {
-                let result =
-                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
-                if let tendermint_rpc::event::EventData::NewBlock {
+                let result = DialectEvent::from_string(content).unwrap();
+                if let EventData::LegacyNewBlock {
                     block,
                     result_begin_block,
                     result_end_block,
@@ -1033,14 +1029,13 @@ fn incoming_fixtures() {
                     assert!(reb.consensus_param_updates.is_none());
                     assert!(reb.events.is_empty());
                 } else {
-                    panic!("not a newblock");
+                    panic!("not a LegacyNewBlock event");
                 }
                 assert_eq!(result.query, "tm.event = 'NewBlock'");
             },
             "subscribe_newblock_4" => {
-                let result =
-                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
-                if let tendermint_rpc::event::EventData::NewBlock {
+                let result = DialectEvent::from_string(content).unwrap();
+                if let EventData::LegacyNewBlock {
                     block,
                     result_begin_block,
                     result_end_block,
@@ -1089,7 +1084,7 @@ fn incoming_fixtures() {
                     assert!(reb.consensus_param_updates.is_none());
                     assert!(reb.events.is_empty());
                 } else {
-                    panic!("not a newblock");
+                    panic!("not a LegacyNewBlock event");
                 }
                 assert_eq!(result.query, "tm.event = 'NewBlock'");
             },
@@ -1097,8 +1092,7 @@ fn incoming_fixtures() {
                 assert!(endpoint::subscribe::Response::from_string(content).is_ok());
             },
             "subscribe_txs_0" => {
-                let result =
-                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
+                let result = DialectEvent::from_string(content).unwrap();
                 let height;
                 if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data.into() {
                     height = tx_result.height;
@@ -1130,8 +1124,7 @@ fn incoming_fixtures() {
                 assert_eq!(result.query, "tm.event = 'Tx'");
             },
             "subscribe_txs_1" => {
-                let result =
-                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
+                let result = DialectEvent::from_string(content).unwrap();
                 let height;
                 if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data.into() {
                     height = tx_result.height;
@@ -1164,8 +1157,7 @@ fn incoming_fixtures() {
                 assert_eq!(result.query, "tm.event = 'Tx'");
             },
             "subscribe_txs_2" => {
-                let result =
-                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
+                let result = DialectEvent::from_string(content).unwrap();
                 let height;
                 if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data.into() {
                     height = tx_result.height;
@@ -1197,8 +1189,7 @@ fn incoming_fixtures() {
                 assert_eq!(result.query, "tm.event = 'Tx'");
             },
             "subscribe_txs_3" => {
-                let result =
-                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
+                let result = DialectEvent::from_string(content).unwrap();
                 let height;
                 if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data.into() {
                     height = tx_result.height;
@@ -1230,8 +1221,7 @@ fn incoming_fixtures() {
                 assert_eq!(result.query, "tm.event = 'Tx'");
             },
             "subscribe_txs_4" => {
-                let result =
-                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
+                let result = DialectEvent::from_string(content).unwrap();
                 let height;
                 if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data.into() {
                     height = tx_result.height;

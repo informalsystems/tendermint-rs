@@ -25,7 +25,7 @@ use tendermint::{block::Height, Hash};
 use tendermint_config::net;
 
 use super::router::{SubscriptionId, SubscriptionIdRef};
-use crate::dialect::{v0_34, v0_37};
+use crate::dialect::v0_34;
 use crate::{
     client::{
         subscription::SubscriptionTx,
@@ -35,7 +35,7 @@ use crate::{
     },
     endpoint::{self, subscribe, unsubscribe},
     error::Error,
-    event::{DialectEvent, Event},
+    event::{self, Event},
     prelude::*,
     query::Query,
     request::Wrapper,
@@ -883,8 +883,8 @@ impl WebSocketClientDriver {
 
     async fn handle_text_msg(&mut self, msg: String) -> Result<(), Error> {
         let parse_res = match self.compat {
-            CompatMode::V0_37 => DialectEvent::<v0_37::Event>::from_string(&msg).map(Into::into),
-            CompatMode::V0_34 => DialectEvent::<v0_34::Event>::from_string(&msg).map(Into::into),
+            CompatMode::V0_37 => event::v0_34::DialectEvent::from_string(&msg).map(Into::into),
+            CompatMode::V0_34 => event::latest::DialectEvent::from_string(&msg).map(Into::into),
         };
         if let Ok(ev) = parse_res {
             debug!("JSON-RPC event: {}", msg);
@@ -1024,7 +1024,7 @@ mod test {
     };
 
     use super::*;
-    use crate::{client::sync::unbounded, dialect, query::EventType, request, Id, Method};
+    use crate::{client::sync::unbounded, event, query::EventType, request, Id, Method};
 
     // Interface to a driver that manages all incoming WebSocket connections.
     struct TestServer {
@@ -1214,11 +1214,11 @@ mod test {
             };
             match self.compat {
                 CompatMode::V0_37 => {
-                    let ev: DialectEvent<dialect::v0_37::Event> = ev.into();
+                    let ev: event::v0_34::DialectEvent = ev.into();
                     self.send(subs_id, ev).await;
                 },
                 CompatMode::V0_34 => {
-                    let ev: DialectEvent<dialect::v0_34::Event> = ev.into();
+                    let ev: event::latest::DialectEvent = ev.into();
                     self.send(subs_id, ev).await;
                 },
             }
@@ -1333,10 +1333,10 @@ mod test {
 
     mod v0_34 {
         use super::*;
-        use crate::dialect::v0_34::Event as RpcEvent;
+        use crate::event::v0_34::DialectEvent;
 
         async fn read_event(name: &str) -> Event {
-            DialectEvent::<RpcEvent>::from_string(read_json_fixture("v0_34", name).await)
+            DialectEvent::from_string(read_json_fixture("v0_34", name).await)
                 .unwrap()
                 .into()
         }
@@ -1400,10 +1400,10 @@ mod test {
 
     mod v0_37 {
         use super::*;
-        use crate::dialect::v0_37::Event as RpcEvent;
+        use crate::event::latest::DialectEvent;
 
         async fn read_event(name: &str) -> Event {
-            DialectEvent::<RpcEvent>::from_string(read_json_fixture("v0_37", name).await)
+            DialectEvent::from_string(read_json_fixture("v0_37", name).await)
                 .unwrap()
                 .into()
         }

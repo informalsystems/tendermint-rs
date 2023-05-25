@@ -256,7 +256,7 @@ fn outgoing_fixtures() {
 
 #[test]
 fn incoming_fixtures() {
-    use tendermint::abci::Event as RpcEvent;
+    use tendermint_rpc::event::{latest::DialectEvent, EventData};
 
     let empty_merkle_root_hash = Some(
         tendermint::Hash::from_hex_upper(
@@ -786,12 +786,11 @@ fn incoming_fixtures() {
                 }
             },
             "subscribe_newblock_0" => {
-                let result =
-                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
-                if let tendermint_rpc::event::EventData::NewBlock {
+                let result = DialectEvent::from_string(content).unwrap();
+                if let EventData::NewBlock {
                     block,
-                    result_begin_block,
-                    result_end_block,
+                    block_id,
+                    result_finalize_block,
                 } = result.data.into()
                 {
                     let b = block.unwrap();
@@ -831,23 +830,31 @@ fn incoming_fixtures() {
                     assert_eq!(last_commit.signatures.len(), 1);
                     assert!(last_commit.signatures[0].is_commit());
                     assert!(last_commit.signatures[0].validator_address().is_some());
-                    assert!(result_begin_block.unwrap().events.is_empty());
-                    let reb = result_end_block.unwrap();
-                    assert!(reb.validator_updates.is_empty());
-                    assert!(reb.consensus_param_updates.is_none());
-                    assert!(reb.events.is_empty());
+                    assert_eq!(
+                        block_id.hash.as_bytes(),
+                        b"FA01C08688623731FA4250FB7873FE2049349DAE5352CB823E5BE0F472017C22"
+                    );
+                    assert_eq!(block_id.part_set_header.total, 1);
+                    assert_eq!(
+                        block_id.part_set_header.hash.as_bytes(),
+                        b"FA665C1C3E2348640E60153A50663E9C99323E096D15DC13AEB1C7B9F84DA8EB"
+                    );
+                    let rfb = result_finalize_block.unwrap();
+                    assert!(rfb.validator_updates.is_empty());
+                    assert!(rfb.consensus_param_updates.is_none());
+                    assert!(rfb.events.is_empty());
+                    assert_eq!(rfb.app_hash.as_bytes(), &[0u8; 8])
                 } else {
-                    panic!("not a newblock");
+                    panic!("not a NewBlock event");
                 }
                 assert_eq!(result.query, "tm.event = 'NewBlock'");
             },
             "subscribe_newblock_1" => {
-                let result =
-                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
-                if let tendermint_rpc::event::EventData::NewBlock {
+                let result = DialectEvent::from_string(content).unwrap();
+                if let EventData::NewBlock {
                     block,
-                    result_begin_block,
-                    result_end_block,
+                    block_id,
+                    result_finalize_block,
                 } = result.data.into()
                 {
                     let b = block.unwrap();
@@ -887,45 +894,31 @@ fn incoming_fixtures() {
                     assert_eq!(last_commit.signatures.len(), 1);
                     assert!(last_commit.signatures[0].is_commit());
                     assert!(last_commit.signatures[0].validator_address().is_some());
-                    let rbb = result_begin_block.unwrap();
-                    assert_eq!(rbb.events.len(), 2);
-                    assert_eq!(rbb.events[0].kind, "transfer");
-                    assert_eq!(rbb.events[0].attributes.len(), 2);
-                    assert_eq!(rbb.events[0].attributes[0].key, "recipient");
                     assert_eq!(
-                        rbb.events[0].attributes[0].value,
-                        "cosmos17xpfvakm2amg962yls6f84z3kell8c5lserqta"
+                        block_id.hash.as_bytes(),
+                        b"80A660B1AD0E3C8A6393239111174D2FDCE615612055FA7CD61793D9E8351D12"
                     );
-                    assert!(rbb.events[0].attributes[0].index);
-                    assert_eq!(rbb.events[0].attributes[1].key, "sender");
+                    assert_eq!(block_id.part_set_header.total, 1);
                     assert_eq!(
-                        rbb.events[0].attributes[1].value,
-                        "cosmos1m3h30wlvsf8llruxtpukdvsy0km2kum8g38c8q"
+                        block_id.part_set_header.hash.as_bytes(),
+                        b"051A5E711FA370C706B917FBDC9891D7262F8DA0595A2F09BA5A598D79BCFF4A"
                     );
-                    assert!(!rbb.events[0].attributes[1].index);
-                    assert_eq!(rbb.events[1].kind, "message");
-                    assert_eq!(rbb.events[1].attributes.len(), 1);
-                    assert_eq!(rbb.events[1].attributes[0].key, "sender");
-                    assert_eq!(
-                        rbb.events[1].attributes[0].value,
-                        "cosmos1m3h30wlvsf8llruxtpukdvsy0km2kum8g38c8q"
-                    );
-                    let reb = result_end_block.unwrap();
-                    assert!(reb.validator_updates.is_empty());
-                    assert!(reb.consensus_param_updates.is_none());
-                    assert!(reb.events.is_empty());
+                    let rfb = result_finalize_block.unwrap();
+                    assert!(rfb.events.is_empty());
+                    assert!(rfb.validator_updates.is_empty());
+                    assert!(rfb.consensus_param_updates.is_none());
+                    assert_eq!(rfb.app_hash.as_bytes(), &[0u8; 8])
                 } else {
-                    panic!("not a newblock");
+                    panic!("not a NewBlock event");
                 }
                 assert_eq!(result.query, "tm.event = 'NewBlock'");
             },
             "subscribe_newblock_2" => {
-                let result =
-                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
-                if let tendermint_rpc::event::EventData::NewBlock {
+                let result = DialectEvent::from_string(content).unwrap();
+                if let EventData::NewBlock {
                     block,
-                    result_begin_block,
-                    result_end_block,
+                    block_id,
+                    result_finalize_block,
                 } = result.data.into()
                 {
                     let b = block.unwrap();
@@ -965,23 +958,31 @@ fn incoming_fixtures() {
                     assert_eq!(last_commit.signatures.len(), 1);
                     assert!(last_commit.signatures[0].is_commit());
                     assert!(last_commit.signatures[0].validator_address().is_some());
-                    assert!(result_begin_block.unwrap().events.is_empty());
-                    let reb = result_end_block.unwrap();
-                    assert!(reb.validator_updates.is_empty());
-                    assert!(reb.consensus_param_updates.is_none());
-                    assert!(reb.events.is_empty());
+                    assert_eq!(
+                        block_id.hash.as_bytes(),
+                        b"95590A6F18C7B1D43356D86992F5E3FDFD41508FF3A81918E38F274695E45447"
+                    );
+                    assert_eq!(block_id.part_set_header.total, 1);
+                    assert_eq!(
+                        block_id.part_set_header.hash.as_bytes(),
+                        b"147DF332018EB6AC5E853EA0126452E81391D0A836B3CE49431D0FEE6BC57A12"
+                    );
+                    let rfb = result_finalize_block.unwrap();
+                    assert!(rfb.validator_updates.is_empty());
+                    assert!(rfb.consensus_param_updates.is_none());
+                    assert!(rfb.events.is_empty());
+                    assert_eq!(rfb.app_hash.as_bytes(), &[0u8; 8])
                 } else {
-                    panic!("not a newblock");
+                    panic!("not a NewBlock event");
                 }
                 assert_eq!(result.query, "tm.event = 'NewBlock'");
             },
             "subscribe_newblock_3" => {
-                let result =
-                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
-                if let tendermint_rpc::event::EventData::NewBlock {
+                let result = DialectEvent::from_string(content).unwrap();
+                if let EventData::NewBlock {
                     block,
-                    result_begin_block,
-                    result_end_block,
+                    block_id,
+                    result_finalize_block,
                 } = result.data.into()
                 {
                     let b = block.unwrap();
@@ -1021,23 +1022,31 @@ fn incoming_fixtures() {
                     assert_eq!(last_commit.signatures.len(), 1);
                     assert!(last_commit.signatures[0].is_commit());
                     assert!(last_commit.signatures[0].validator_address().is_some());
-                    assert!(result_begin_block.unwrap().events.is_empty());
-                    let reb = result_end_block.unwrap();
-                    assert!(reb.validator_updates.is_empty());
-                    assert!(reb.consensus_param_updates.is_none());
-                    assert!(reb.events.is_empty());
+                    assert_eq!(
+                        block_id.hash.as_bytes(),
+                        b"CA72F4B34DAE4A5367E140334E865162D6B259DD5F04B521524C36C6C0C5A27A"
+                    );
+                    assert_eq!(block_id.part_set_header.total, 1);
+                    assert_eq!(
+                        block_id.part_set_header.hash.as_bytes(),
+                        b"8386E1C2220C0F042561035FBE7B1CE8967279C1274A6EF18C24DFAA9993A7CC"
+                    );
+                    let rfb = result_finalize_block.unwrap();
+                    assert!(rfb.validator_updates.is_empty());
+                    assert!(rfb.consensus_param_updates.is_none());
+                    assert!(rfb.events.is_empty());
+                    assert_eq!(rfb.app_hash.as_bytes(), &[0u8; 8])
                 } else {
-                    panic!("not a newblock");
+                    panic!("not a NewBlock event");
                 }
                 assert_eq!(result.query, "tm.event = 'NewBlock'");
             },
             "subscribe_newblock_4" => {
-                let result =
-                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
-                if let tendermint_rpc::event::EventData::NewBlock {
+                let result = DialectEvent::from_string(content).unwrap();
+                if let EventData::NewBlock {
                     block,
-                    result_begin_block,
-                    result_end_block,
+                    block_id,
+                    result_finalize_block,
                 } = result.data.into()
                 {
                     let b = block.unwrap();
@@ -1077,13 +1086,22 @@ fn incoming_fixtures() {
                     assert_eq!(last_commit.signatures.len(), 1);
                     assert!(last_commit.signatures[0].is_commit());
                     assert!(last_commit.signatures[0].validator_address().is_some());
-                    assert!(result_begin_block.unwrap().events.is_empty());
-                    let reb = result_end_block.unwrap();
-                    assert!(reb.validator_updates.is_empty());
-                    assert!(reb.consensus_param_updates.is_none());
-                    assert!(reb.events.is_empty());
+                    assert_eq!(
+                        block_id.hash.as_bytes(),
+                        b"71C6B19C7931F264766AE567D6D17609AD9D257E76EC0E1BA5E9AE9E33934EBD"
+                    );
+                    assert_eq!(block_id.part_set_header.total, 1);
+                    assert_eq!(
+                        block_id.part_set_header.hash.as_bytes(),
+                        b"CAE5DC225290AECB1C311BDD3E93B28B20D59C0B83669E76E68EDCB8EB383CA7"
+                    );
+                    let rfb = result_finalize_block.unwrap();
+                    assert!(rfb.validator_updates.is_empty());
+                    assert!(rfb.consensus_param_updates.is_none());
+                    assert!(rfb.events.is_empty());
+                    assert_eq!(rfb.app_hash.as_bytes(), &[0u8; 8])
                 } else {
-                    panic!("not a newblock");
+                    panic!("not a NewBlock event");
                 }
                 assert_eq!(result.query, "tm.event = 'NewBlock'");
             },
@@ -1091,10 +1109,9 @@ fn incoming_fixtures() {
                 assert!(endpoint::subscribe::Response::from_string(content).is_ok());
             },
             "subscribe_txs_0" => {
-                let result =
-                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
+                let result = DialectEvent::from_string(content).unwrap();
                 let height;
-                if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data.into() {
+                if let EventData::Tx { tx_result } = result.data.into() {
                     height = tx_result.height;
                     assert!(tx_result.result.log.is_none());
                     assert!(tx_result.result.gas_wanted.is_none());
@@ -1124,10 +1141,9 @@ fn incoming_fixtures() {
                 assert_eq!(result.query, "tm.event = 'Tx'");
             },
             "subscribe_txs_1" => {
-                let result =
-                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
+                let result = DialectEvent::from_string(content).unwrap();
                 let height;
-                if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data.into() {
+                if let EventData::Tx { tx_result } = result.data.into() {
                     height = tx_result.height;
                     assert!(tx_result.result.log.is_none());
                     assert!(tx_result.result.gas_wanted.is_none());
@@ -1158,10 +1174,9 @@ fn incoming_fixtures() {
                 assert_eq!(result.query, "tm.event = 'Tx'");
             },
             "subscribe_txs_2" => {
-                let result =
-                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
+                let result = DialectEvent::from_string(content).unwrap();
                 let height;
-                if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data.into() {
+                if let EventData::Tx { tx_result } = result.data.into() {
                     height = tx_result.height;
                     assert!(tx_result.result.log.is_none());
                     assert!(tx_result.result.gas_wanted.is_none());
@@ -1191,10 +1206,9 @@ fn incoming_fixtures() {
                 assert_eq!(result.query, "tm.event = 'Tx'");
             },
             "subscribe_txs_3" => {
-                let result =
-                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
+                let result = DialectEvent::from_string(content).unwrap();
                 let height;
-                if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data.into() {
+                if let EventData::Tx { tx_result } = result.data.into() {
                     height = tx_result.height;
                     assert!(tx_result.result.log.is_none());
                     assert!(tx_result.result.gas_wanted.is_none());
@@ -1224,10 +1238,9 @@ fn incoming_fixtures() {
                 assert_eq!(result.query, "tm.event = 'Tx'");
             },
             "subscribe_txs_4" => {
-                let result =
-                    tendermint_rpc::event::DialectEvent::<RpcEvent>::from_string(content).unwrap();
+                let result = DialectEvent::from_string(content).unwrap();
                 let height;
-                if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data.into() {
+                if let EventData::Tx { tx_result } = result.data.into() {
                     height = tx_result.height;
                     assert!(tx_result.result.log.is_none());
                     assert!(tx_result.result.gas_wanted.is_none());
