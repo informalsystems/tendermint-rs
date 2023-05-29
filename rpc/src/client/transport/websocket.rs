@@ -883,8 +883,8 @@ impl WebSocketClientDriver {
 
     async fn handle_text_msg(&mut self, msg: String) -> Result<(), Error> {
         let parse_res = match self.compat {
-            CompatMode::V0_37 => event::v0_34::DialectEvent::from_string(&msg).map(Into::into),
-            CompatMode::V0_34 => event::latest::DialectEvent::from_string(&msg).map(Into::into),
+            CompatMode::V0_37 => event::v0_37::DialectEvent::from_string(&msg).map(Into::into),
+            CompatMode::V0_34 => event::v0_34::DialectEvent::from_string(&msg).map(Into::into),
         };
         if let Ok(ev) = parse_res {
             debug!("JSON-RPC event: {}", msg);
