@@ -444,3 +444,11 @@ pub mod latest {
         }
     }
 }
+
+pub mod v0_37 {
+    pub use super::latest::*;
+}
+
+pub mod v0_38 {
+    pub use super::latest::*;
+}
