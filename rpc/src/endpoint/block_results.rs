@@ -81,6 +81,10 @@ pub struct Response {
     pub consensus_param_updates: Option<consensus::Params>,
 
     /// Merkle hash of the application state
+    ///
+    /// This field is used since CometBFT version 0.38. It's set to a
+    /// default value when converting responses from nodes using earlier
+    /// versions of the protocol.
     #[serde(default)]
     #[serde(with = "serializers::apphash")]
     pub app_hash: AppHash,

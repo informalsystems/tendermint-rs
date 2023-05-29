@@ -55,7 +55,10 @@ pub struct Response {
     /// `CheckTx` result
     pub check_tx: abci::response::CheckTx,
 
-    /// Result of executing the transaction
+    /// Result of executing the transaction.
+    ///
+    /// The JSON field carrying this data is named `deliver_tx` in
+    /// CometBFT versions before 0.38.
     #[serde(alias = "deliver_tx")]
     pub tx_result: abci::types::ExecTxResult,
 
