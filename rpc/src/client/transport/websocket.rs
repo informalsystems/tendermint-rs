@@ -1214,11 +1214,11 @@ mod test {
             };
             match self.compat {
                 CompatMode::V0_37 => {
-                    let ev: event::v0_34::DialectEvent = ev.into();
+                    let ev: event::v0_37::DialectEvent = ev.into();
                     self.send(subs_id, ev).await;
                 },
                 CompatMode::V0_34 => {
-                    let ev: event::latest::DialectEvent = ev.into();
+                    let ev: event::v0_34::DialectEvent = ev.into();
                     self.send(subs_id, ev).await;
                 },
             }
