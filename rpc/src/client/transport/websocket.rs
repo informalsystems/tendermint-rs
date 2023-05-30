@@ -1465,6 +1465,73 @@ mod test {
         }
     }
 
+    mod v0_38 {
+        use super::*;
+        use crate::event::latest::DialectEvent;
+
+        async fn read_event(name: &str) -> Event {
+            DialectEvent::from_string(read_json_fixture("v0_38", name).await)
+                .unwrap()
+                .into()
+        }
+
+        #[tokio::test]
+        async fn websocket_client_happy_path() {
+            let event1 = read_event("subscribe_newblock_0").await;
+            let event2 = read_event("subscribe_newblock_1").await;
+            let event3 = read_event("subscribe_newblock_2").await;
+            let test_events = vec![event1, event2, event3];
+
+            println!("Starting WebSocket server...");
+            let mut server = TestServer::new("127.0.0.1:0", CompatMode::V0_37).await;
+            println!("Creating client RPC WebSocket connection...");
+            let url = server.node_addr.clone().try_into().unwrap();
+            let (client, driver) = WebSocketClient::builder(url)
+                .compat_mode(CompatMode::V0_37)
+                .build()
+                .await
+                .unwrap();
+            let driver_handle = tokio::spawn(async move { driver.run().await });
+
+            println!("Initiating subscription for new blocks...");
+            let mut subs = client.subscribe(EventType::NewBlock.into()).await.unwrap();
+
+            // Collect all the events from the subscription.
+            let subs_collector_hdl = tokio::spawn(async move {
+                let mut results = Vec::new();
+                while let Some(res) = subs.next().await {
+                    results.push(res);
+                    if results.len() == 3 {
+                        break;
+                    }
+                }
+                results
+            });
+
+            println!("Publishing events");
+            // Publish the events from this context
+            for ev in &test_events {
+                server.publish_event(ev.clone()).unwrap();
+            }
+
+            println!("Collecting results from subscription...");
+            let collected_results = subs_collector_hdl.await.unwrap();
+
+            client.close().unwrap();
+            server.terminate().await.unwrap();
+            let _ = driver_handle.await.unwrap();
+            println!("Closed client and terminated server");
+
+            assert_eq!(3, collected_results.len());
+            for i in 0..3 {
+                assert_eq!(
+                    test_events[i],
+                    collected_results[i].as_ref().unwrap().clone()
+                );
+            }
+        }
+    }
+
     fn authorization(req: &http::Request<()>) -> Option<&str> {
         req.headers()
             .get(AUTHORIZATION)
