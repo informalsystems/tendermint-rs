@@ -883,8 +883,8 @@ impl WebSocketClientDriver {
 
     async fn handle_text_msg(&mut self, msg: String) -> Result<(), Error> {
         let parse_res = match self.compat {
-            CompatMode::V0_37 => event::v0_37::DialectEvent::from_string(&msg).map(Into::into),
-            CompatMode::V0_34 => event::v0_34::DialectEvent::from_string(&msg).map(Into::into),
+            CompatMode::V0_37 => event::v0_37::DeEvent::from_string(&msg).map(Into::into),
+            CompatMode::V0_34 => event::v0_34::DeEvent::from_string(&msg).map(Into::into),
         };
         if let Ok(ev) = parse_res {
             debug!("JSON-RPC event: {}", msg);
@@ -1214,11 +1214,11 @@ mod test {
             };
             match self.compat {
                 CompatMode::V0_37 => {
-                    let ev: event::v0_37::DialectEvent = ev.into();
+                    let ev: event::v0_37::SerEvent = ev.into();
                     self.send(subs_id, ev).await;
                 },
                 CompatMode::V0_34 => {
-                    let ev: event::v0_34::DialectEvent = ev.into();
+                    let ev: event::v0_34::SerEvent = ev.into();
                     self.send(subs_id, ev).await;
                 },
             }
@@ -1298,7 +1298,7 @@ mod test {
 
         async fn send<R>(&mut self, id: Id, res: R)
         where
-            R: Response,
+            R: Serialize,
         {
             self.conn
                 .send(Message::Text(
@@ -1333,10 +1333,10 @@ mod test {
 
     mod v0_34 {
         use super::*;
-        use crate::event::v0_34::DialectEvent;
+        use crate::event::v0_34::DeEvent;
 
         async fn read_event(name: &str) -> Event {
-            DialectEvent::from_string(read_json_fixture("v0_34", name).await)
+            DeEvent::from_string(read_json_fixture("v0_34", name).await)
                 .unwrap()
                 .into()
         }
@@ -1400,10 +1400,10 @@ mod test {
 
     mod v0_37 {
         use super::*;
-        use crate::event::latest::DialectEvent;
+        use crate::event::v0_37::DeEvent;
 
         async fn read_event(name: &str) -> Event {
-            DialectEvent::from_string(read_json_fixture("v0_37", name).await)
+            DeEvent::from_string(read_json_fixture("v0_37", name).await)
                 .unwrap()
                 .into()
         }
@@ -1467,10 +1467,10 @@ mod test {
 
     mod v0_38 {
         use super::*;
-        use crate::event::latest::DialectEvent;
+        use crate::event::v0_38::DeEvent;
 
         async fn read_event(name: &str) -> Event {
-            DialectEvent::from_string(read_json_fixture("v0_38", name).await)
+            DeEvent::from_string(read_json_fixture("v0_38", name).await)
                 .unwrap()
                 .into()
         }

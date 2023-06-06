@@ -229,7 +229,7 @@ mod test {
     mod v0_37 {
         use super::*;
 
-        type WrappedEvent = crate::response::Wrapper<crate::event::latest::DialectEvent>;
+        type WrappedEvent = crate::response::Wrapper<crate::event::v0_37::DeEvent>;
 
         async fn read_event(name: &str) -> Event {
             serde_json::from_str::<WrappedEvent>(read_json_fixture("v0_37", name).await.as_str())

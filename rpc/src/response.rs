@@ -7,7 +7,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use crate::{response_error::ResponseError, Error, Id, Version};
 
 /// JSON-RPC responses
-pub trait Response: Serialize + DeserializeOwned + Sized {
+pub trait Response: DeserializeOwned + Sized {
     /// Parse a JSON-RPC response from a JSON string
     fn from_string(response: impl AsRef<[u8]>) -> Result<Self, Error> {
         let wrapper: Wrapper<Self> =
@@ -38,10 +38,7 @@ pub struct Wrapper<R> {
     error: Option<ResponseError>,
 }
 
-impl<R> Wrapper<R>
-where
-    R: Response,
-{
+impl<R> Wrapper<R> {
     /// Get JSON-RPC version
     pub fn version(&self) -> &Version {
         &self.jsonrpc

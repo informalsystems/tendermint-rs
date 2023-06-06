@@ -94,6 +94,9 @@ pub mod v0_34 {
         pub events: Option<HashMap<String, Vec<String>>>,
     }
 
+    pub type DeEvent = DialectEvent;
+    pub type SerEvent = DialectEvent;
+
     impl Response for DialectEvent {}
 
     impl From<DialectEvent> for Event {
@@ -248,8 +251,8 @@ pub mod v0_34 {
     }
 }
 
-/// Serialization helpers for the RPC protocol used since CometBFT 0.37
-pub mod latest {
+/// Shared serialization/deserialization helpers for the RPC protocol used since CometBFT 0.37
+mod latest {
     use super::{Event, EventData, TxInfo, TxResult};
     use crate::prelude::*;
     use crate::{serializers, Response};
@@ -258,20 +261,20 @@ pub mod latest {
     use tendermint::abci::Event as RpcEvent;
     use tendermint::{abci, block, Block};
 
-    #[derive(Serialize, Deserialize, Debug)]
-    pub struct DialectEvent {
+    #[derive(Deserialize, Debug)]
+    pub struct DeEvent {
         /// The query that produced the event.
         pub query: String,
         /// The data associated with the event.
-        pub data: DialectEventData,
+        pub data: DeEventData,
         /// Event type and attributes map.
         pub events: Option<HashMap<String, Vec<String>>>,
     }
 
-    impl Response for DialectEvent {}
+    impl Response for DeEvent {}
 
-    impl From<DialectEvent> for Event {
-        fn from(msg: DialectEvent) -> Self {
+    impl From<DeEvent> for Event {
+        fn from(msg: DeEvent) -> Self {
             Event {
                 query: msg.query,
                 data: msg.data.into(),
@@ -280,30 +283,21 @@ pub mod latest {
         }
     }
 
-    impl From<Event> for DialectEvent {
-        fn from(msg: Event) -> Self {
-            DialectEvent {
-                query: msg.query,
-                data: msg.data.into(),
-                events: msg.events,
-            }
-        }
-    }
-
-    #[derive(Serialize, Deserialize, Debug)]
+    /// Helper used to deserialize [`EventData`] for CometBFT RPC since 0.37
+    #[derive(Deserialize, Debug)]
     #[serde(tag = "type", content = "value")]
     #[allow(clippy::large_enum_variant)]
-    pub enum DialectEventData {
+    pub enum DeEventData {
         #[serde(alias = "tendermint/event/NewBlock")]
         NewBlock {
             block: Option<Box<Block>>,
-            #[serde(default, skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
             result_begin_block: Option<abci::response::BeginBlock>,
-            #[serde(default, skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
             result_end_block: Option<abci::response::EndBlock>,
-            #[serde(default, skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
             block_id: Option<block::Id>,
-            #[serde(default, skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
             result_finalize_block: Option<abci::response::FinalizeBlock>,
         },
         #[serde(alias = "tendermint/event/Tx")]
@@ -314,10 +308,10 @@ pub mod latest {
         GenericJsonEvent(serde_json::Value),
     }
 
-    impl From<DialectEventData> for EventData {
-        fn from(msg: DialectEventData) -> Self {
+    impl From<DeEventData> for EventData {
+        fn from(msg: DeEventData) -> Self {
             match msg {
-                DialectEventData::NewBlock {
+                DeEventData::NewBlock {
                     block,
                     block_id: Some(block_id),
                     result_finalize_block,
@@ -328,7 +322,7 @@ pub mod latest {
                     block_id,
                     result_finalize_block,
                 },
-                DialectEventData::NewBlock {
+                DeEventData::NewBlock {
                     block,
                     result_begin_block,
                     result_end_block,
@@ -339,45 +333,10 @@ pub mod latest {
                     result_begin_block: result_begin_block.map(Into::into),
                     result_end_block: result_end_block.map(Into::into),
                 },
-                DialectEventData::Tx { tx_result } => EventData::Tx {
+                DeEventData::Tx { tx_result } => EventData::Tx {
                     tx_result: tx_result.into(),
                 },
-                DialectEventData::GenericJsonEvent(v) => EventData::GenericJsonEvent(v),
-            }
-        }
-    }
-
-    impl From<EventData> for DialectEventData {
-        fn from(msg: EventData) -> Self {
-            match msg {
-                EventData::NewBlock {
-                    block,
-                    block_id,
-                    result_finalize_block,
-                } => DialectEventData::NewBlock {
-                    block,
-                    block_id: Some(block_id),
-                    result_finalize_block,
-                    result_begin_block: None,
-                    result_end_block: None,
-                },
-                // This variant should not be used since 0.38, but we're using
-                // this impl only for the mock server.
-                EventData::LegacyNewBlock {
-                    block,
-                    result_begin_block,
-                    result_end_block,
-                } => DialectEventData::NewBlock {
-                    block,
-                    block_id: None,
-                    result_finalize_block: None,
-                    result_begin_block: result_begin_block.map(Into::into),
-                    result_end_block: result_end_block.map(Into::into),
-                },
-                EventData::Tx { tx_result } => DialectEventData::Tx {
-                    tx_result: tx_result.into(),
-                },
-                EventData::GenericJsonEvent(v) => DialectEventData::GenericJsonEvent(v),
+                DeEventData::GenericJsonEvent(v) => EventData::GenericJsonEvent(v),
             }
         }
     }
@@ -445,10 +404,160 @@ pub mod latest {
     }
 }
 
+/// Serialization helpers for the RPC protocol used in CometBFT 0.37
 pub mod v0_37 {
+    use super::{Event, EventData};
+    use crate::prelude::*;
+    use alloc::collections::BTreeMap as HashMap;
+    use serde::Serialize;
+    use tendermint::{abci, Block};
+
     pub use super::latest::*;
+
+    #[derive(Serialize, Debug)]
+    pub struct SerEvent {
+        /// The query that produced the event.
+        pub query: String,
+        /// The data associated with the event.
+        pub data: SerEventData,
+        /// Event type and attributes map.
+        pub events: Option<HashMap<String, Vec<String>>>,
+    }
+
+    impl From<Event> for SerEvent {
+        fn from(msg: Event) -> Self {
+            SerEvent {
+                query: msg.query,
+                data: msg.data.into(),
+                events: msg.events,
+            }
+        }
+    }
+
+    #[derive(Serialize, Debug)]
+    #[serde(tag = "type", content = "value")]
+    pub enum SerEventData {
+        #[serde(alias = "tendermint/event/NewBlock")]
+        NewBlock {
+            block: Option<Box<Block>>,
+            result_begin_block: Option<abci::response::BeginBlock>,
+            result_end_block: Option<abci::response::EndBlock>,
+        },
+        #[serde(alias = "tendermint/event/Tx")]
+        Tx {
+            #[serde(rename = "TxResult")]
+            tx_result: DialectTxInfo,
+        },
+        GenericJsonEvent(serde_json::Value),
+    }
+
+    impl From<EventData> for SerEventData {
+        fn from(msg: EventData) -> Self {
+            match msg {
+                // This variant should not be used in 0.37, but the conversion
+                // must be infallible.
+                EventData::NewBlock {
+                    block,
+                    block_id: _,
+                    result_finalize_block: _,
+                } => SerEventData::NewBlock {
+                    block,
+                    result_begin_block: None,
+                    result_end_block: None,
+                },
+                EventData::LegacyNewBlock {
+                    block,
+                    result_begin_block,
+                    result_end_block,
+                } => SerEventData::NewBlock {
+                    block,
+                    result_begin_block: result_begin_block.map(Into::into),
+                    result_end_block: result_end_block.map(Into::into),
+                },
+                EventData::Tx { tx_result } => SerEventData::Tx {
+                    tx_result: tx_result.into(),
+                },
+                EventData::GenericJsonEvent(v) => SerEventData::GenericJsonEvent(v),
+            }
+        }
+    }
 }
 
+/// Serialization helpers for the RPC protocol used in CometBFT 0.38
 pub mod v0_38 {
+    use super::{Event, EventData};
+    use crate::prelude::*;
+    use alloc::collections::BTreeMap as HashMap;
+    use serde::Serialize;
+    use tendermint::{abci, block, Block};
+
     pub use super::latest::*;
+
+    #[derive(Serialize, Debug)]
+    pub struct SerEvent {
+        /// The query that produced the event.
+        pub query: String,
+        /// The data associated with the event.
+        pub data: SerEventData,
+        /// Event type and attributes map.
+        pub events: Option<HashMap<String, Vec<String>>>,
+    }
+
+    impl From<Event> for SerEvent {
+        fn from(msg: Event) -> Self {
+            SerEvent {
+                query: msg.query,
+                data: msg.data.into(),
+                events: msg.events,
+            }
+        }
+    }
+
+    #[derive(Serialize, Debug)]
+    #[serde(tag = "type", content = "value")]
+    pub enum SerEventData {
+        #[serde(alias = "tendermint/event/NewBlock")]
+        NewBlock {
+            block: Option<Box<Block>>,
+            block_id: block::Id,
+            result_finalize_block: Option<abci::response::FinalizeBlock>,
+        },
+        #[serde(alias = "tendermint/event/Tx")]
+        Tx {
+            #[serde(rename = "TxResult")]
+            tx_result: DialectTxInfo,
+        },
+        GenericJsonEvent(serde_json::Value),
+    }
+
+    impl From<EventData> for SerEventData {
+        fn from(msg: EventData) -> Self {
+            match msg {
+                EventData::NewBlock {
+                    block,
+                    block_id,
+                    result_finalize_block,
+                } => SerEventData::NewBlock {
+                    block,
+                    block_id,
+                    result_finalize_block,
+                },
+                // This variant should not be used in 0.38, but the conversion
+                // must be infallible.
+                EventData::LegacyNewBlock {
+                    block,
+                    result_begin_block: _,
+                    result_end_block: _,
+                } => SerEventData::NewBlock {
+                    block,
+                    block_id: Default::default(),
+                    result_finalize_block: None,
+                },
+                EventData::Tx { tx_result } => SerEventData::Tx {
+                    tx_result: tx_result.into(),
+                },
+                EventData::GenericJsonEvent(v) => SerEventData::GenericJsonEvent(v),
+            }
+        }
+    }
 }
