@@ -108,3 +108,40 @@ pub mod v0_34 {
         }
     }
 }
+
+/// Serialization for /broadcast_tx_commit endpoint format in CometBFT 0.37
+pub mod v0_37 {
+    use super::Response;
+    use crate::dialect;
+    use serde::{Deserialize, Serialize};
+    use tendermint::{abci::Event, block, Hash};
+
+    /// RPC dialect helper for serialization of the response.
+    #[derive(Debug, Deserialize, Serialize)]
+    pub struct DialectResponse {
+        /// `CheckTx` result
+        pub check_tx: dialect::CheckTx<Event>,
+
+        /// `DeliverTx` result
+        pub deliver_tx: dialect::DeliverTx<Event>,
+
+        /// Transaction
+        pub hash: Hash,
+
+        /// Height
+        pub height: block::Height,
+    }
+
+    impl crate::Response for DialectResponse {}
+
+    impl From<DialectResponse> for Response {
+        fn from(msg: DialectResponse) -> Self {
+            Self {
+                check_tx: msg.check_tx.into(),
+                tx_result: msg.deliver_tx.into(),
+                hash: msg.hash,
+                height: msg.height,
+            }
+        }
+    }
+}

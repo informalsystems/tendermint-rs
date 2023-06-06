@@ -376,6 +376,8 @@ where
                 .map_err(Error::serde)?
         },
         ClientRequest::BroadcastTxCommit { tx } => {
+            // NOTE: this prints out the response in the 0.38+ format,
+            // regardless of the actual protocol version.
             serde_json::to_string_pretty(&client.broadcast_tx_commit(tx).await?)
                 .map_err(Error::serde)?
         },
