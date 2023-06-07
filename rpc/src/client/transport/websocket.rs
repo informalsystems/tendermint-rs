@@ -1034,8 +1034,17 @@ mod test {
         event_tx: ChannelTx<Event>,
     }
 
+    // A setting telling which of the CometBFT server versions to emulate
+    // with the test server.
+    #[derive(Copy, Clone)]
+    enum TestRpcVersion {
+        V0_34,
+        V0_37,
+        V0_38,
+    }
+
     impl TestServer {
-        async fn new(addr: &str, compat: CompatMode) -> Self {
+        async fn new(addr: &str, version: TestRpcVersion) -> Self {
             let listener = TcpListener::bind(addr).await.unwrap();
             let local_addr = listener.local_addr().unwrap();
             let node_addr = net::Address::Tcp {
@@ -1045,7 +1054,7 @@ mod test {
             };
             let (terminate_tx, terminate_rx) = unbounded();
             let (event_tx, event_rx) = unbounded();
-            let driver = TestServerDriver::new(listener, compat, event_rx, terminate_rx);
+            let driver = TestServerDriver::new(listener, version, event_rx, terminate_rx);
             let driver_hdl = tokio::spawn(async move { driver.run().await });
             Self {
                 node_addr,
@@ -1068,7 +1077,7 @@ mod test {
     // Manages all incoming WebSocket connections.
     struct TestServerDriver {
         listener: TcpListener,
-        compat: CompatMode,
+        version: TestRpcVersion,
         event_rx: ChannelRx<Event>,
         terminate_rx: ChannelRx<Result<(), Error>>,
         handlers: Vec<TestServerHandler>,
@@ -1077,13 +1086,13 @@ mod test {
     impl TestServerDriver {
         fn new(
             listener: TcpListener,
-            compat: CompatMode,
+            version: TestRpcVersion,
             event_rx: ChannelRx<Event>,
             terminate_rx: ChannelRx<Result<(), Error>>,
         ) -> Self {
             Self {
                 listener,
-                compat,
+                version,
                 event_rx,
                 terminate_rx,
                 handlers: Vec::new(),
@@ -1116,7 +1125,7 @@ mod test {
 
         async fn handle_incoming(&mut self, stream: TcpStream) {
             self.handlers
-                .push(TestServerHandler::new(stream, self.compat).await);
+                .push(TestServerHandler::new(stream, self.version).await);
         }
 
         async fn terminate(&mut self) {
@@ -1139,12 +1148,12 @@ mod test {
     }
 
     impl TestServerHandler {
-        async fn new(stream: TcpStream, compat: CompatMode) -> Self {
+        async fn new(stream: TcpStream, version: TestRpcVersion) -> Self {
             let conn: WebSocketStream<TokioAdapter<TcpStream>> =
                 accept_async(stream).await.unwrap();
             let (terminate_tx, terminate_rx) = unbounded();
             let (event_tx, event_rx) = unbounded();
-            let driver = TestServerHandlerDriver::new(conn, compat, event_rx, terminate_rx);
+            let driver = TestServerHandlerDriver::new(conn, version, event_rx, terminate_rx);
             let driver_hdl = tokio::spawn(async move { driver.run().await });
             Self {
                 driver_hdl,
@@ -1166,7 +1175,7 @@ mod test {
     // Manages interaction with a single incoming WebSocket connection.
     struct TestServerHandlerDriver {
         conn: WebSocketStream<TokioAdapter<TcpStream>>,
-        compat: CompatMode,
+        version: TestRpcVersion,
         event_rx: ChannelRx<Event>,
         terminate_rx: ChannelRx<Result<(), Error>>,
         // A mapping of subscription queries to subscription IDs for this
@@ -1177,13 +1186,13 @@ mod test {
     impl TestServerHandlerDriver {
         fn new(
             conn: WebSocketStream<TokioAdapter<TcpStream>>,
-            compat: CompatMode,
+            version: TestRpcVersion,
             event_rx: ChannelRx<Event>,
             terminate_rx: ChannelRx<Result<(), Error>>,
         ) -> Self {
             Self {
                 conn,
-                compat,
+                version,
                 event_rx,
                 terminate_rx,
                 subscriptions: HashMap::new(),
@@ -1212,12 +1221,16 @@ mod test {
                 Some(id) => Id::Str(id.clone()),
                 None => return,
             };
-            match self.compat {
-                CompatMode::V0_37 => {
+            match self.version {
+                TestRpcVersion::V0_38 => {
+                    let ev: event::v0_38::SerEvent = ev.into();
+                    self.send(subs_id, ev).await;
+                },
+                TestRpcVersion::V0_37 => {
                     let ev: event::v0_37::SerEvent = ev.into();
                     self.send(subs_id, ev).await;
                 },
-                CompatMode::V0_34 => {
+                TestRpcVersion::V0_34 => {
                     let ev: event::v0_34::SerEvent = ev.into();
                     self.send(subs_id, ev).await;
                 },
@@ -1349,7 +1362,7 @@ mod test {
             let test_events = vec![event1, event2, event3];
 
             println!("Starting WebSocket server...");
-            let mut server = TestServer::new("127.0.0.1:0", CompatMode::V0_34).await;
+            let mut server = TestServer::new("127.0.0.1:0", TestRpcVersion::V0_34).await;
             println!("Creating client RPC WebSocket connection...");
             let url = server.node_addr.clone().try_into().unwrap();
             let (client, driver) = WebSocketClient::builder(url)
@@ -1416,7 +1429,7 @@ mod test {
             let test_events = vec![event1, event2, event3];
 
             println!("Starting WebSocket server...");
-            let mut server = TestServer::new("127.0.0.1:0", CompatMode::V0_37).await;
+            let mut server = TestServer::new("127.0.0.1:0", TestRpcVersion::V0_37).await;
             println!("Creating client RPC WebSocket connection...");
             let url = server.node_addr.clone().try_into().unwrap();
             let (client, driver) = WebSocketClient::builder(url)
@@ -1483,7 +1496,7 @@ mod test {
             let test_events = vec![event1, event2, event3];
 
             println!("Starting WebSocket server...");
-            let mut server = TestServer::new("127.0.0.1:0", CompatMode::V0_37).await;
+            let mut server = TestServer::new("127.0.0.1:0", TestRpcVersion::V0_38).await;
             println!("Creating client RPC WebSocket connection...");
             let url = server.node_addr.clone().try_into().unwrap();
             let (client, driver) = WebSocketClient::builder(url)
