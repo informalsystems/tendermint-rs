@@ -149,9 +149,10 @@ impl Generator<block::Header> for Header {
             Validator::new("a").generate().unwrap().address
         };
         let valset = validator::Set::without_proposer(vals);
+        let validators_hash = valset.hash();
         let next_valset = match &self.next_validators {
             Some(next_vals) => validator::Set::without_proposer(generate_validators(next_vals)?),
-            None => valset.clone(),
+            None => valset,
         };
         let chain_id = match chain::Id::from_str(
             self.chain_id
@@ -181,9 +182,9 @@ impl Generator<block::Header> for Header {
             last_block_id,
             last_commit_hash: None,
             data_hash: None,
-            validators_hash: valset.hash(),
+            validators_hash,
             next_validators_hash: next_valset.hash(),
-            consensus_hash: valset.hash(), // TODO: currently not clear how to produce a valid hash
+            consensus_hash: validators_hash, // TODO: currently not clear how to produce a valid hash
             app_hash: AppHash::from_hex_upper("").unwrap(),
             last_results_hash: None,
             evidence_hash: None,
