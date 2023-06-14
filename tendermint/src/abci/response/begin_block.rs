@@ -1,10 +1,12 @@
-use super::super::Event;
-use crate::prelude::*;
+use serde::{Deserialize, Serialize};
+
+use crate::{abci::Event, prelude::*};
 
 #[doc = include_str!("../doc/response-beginblock.md")]
-#[derive(Clone, PartialEq, Eq, Debug, Default)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
 pub struct BeginBlock {
     /// Events that occurred while beginning the block.
+    #[serde(default)]
     pub events: Vec<Event>,
 }
 

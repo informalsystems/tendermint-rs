@@ -1,0 +1,58 @@
+{
+  "id": "ac0d2aa0-e54f-415e-9144-79b965b43d18",
+  "jsonrpc": "2.0",
+  "result": {
+    "block": {
+      "data": {
+        "txs": []
+      },
+      "evidence": {
+        "evidence": []
+      },
+      "header": {
+        "app_hash": "0000000000000000",
+        "chain_id": "dockerchain",
+        "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
+        "data_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "evidence_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "height": "1",
+        "last_block_id": {
+          "hash": "",
+          "parts": {
+            "hash": "",
+            "total": 0
+          }
+        },
+        "last_commit_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "last_results_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "next_validators_hash": "33415EFFCEDA5BD0A3A443A727457D9F7B9E38389BF27A936FEDF749A7B7566E",
+        "proposer_address": "2DD9F44FD9067555C322243C3C913BA7B51D2BE0",
+        "time": "2023-05-17T14:12:48.347696215Z",
+        "validators_hash": "33415EFFCEDA5BD0A3A443A727457D9F7B9E38389BF27A936FEDF749A7B7566E",
+        "version": {
+          "app": "1",
+          "block": "11"
+        }
+      },
+      "last_commit": {
+        "block_id": {
+          "hash": "",
+          "parts": {
+            "hash": "",
+            "total": 0
+          }
+        },
+        "height": "0",
+        "round": 0,
+        "signatures": []
+      }
+    },
+    "block_id": {
+      "hash": "6CD5CF4E23A49D9BC073D6F305D29D1B8B5193B534C237696D42FEA5AFBCD520",
+      "parts": {
+        "hash": "F021777213F7EF77494C9B5C11D246A6F532DA146D205422D1FB85600F6B479C",
+        "total": 1
+      }
+    }
+  }
+}

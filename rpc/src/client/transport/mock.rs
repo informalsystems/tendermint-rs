@@ -264,12 +264,10 @@ mod test {
 
     mod v0_34 {
         use super::*;
-        use crate::dialect::v0_34::Event as RpcEvent;
-        use crate::event::DialectEvent;
+        use crate::event::v0_34::DeEvent;
 
         async fn read_event(name: &str) -> Event {
-            let msg = DialectEvent::<RpcEvent>::from_string(read_json_fixture("v0_34", name).await)
-                .unwrap();
+            let msg = DeEvent::from_string(read_json_fixture("v0_34", name).await).unwrap();
             msg.into()
         }
 
@@ -334,12 +332,10 @@ mod test {
 
     mod v0_37 {
         use super::*;
-        use crate::dialect::v0_37::Event as RpcEvent;
-        use crate::event::DialectEvent;
+        use crate::event::v0_37::DeEvent;
 
         async fn read_event(name: &str) -> Event {
-            let msg = DialectEvent::<RpcEvent>::from_string(read_json_fixture("v0_37", name).await)
-                .unwrap();
+            let msg = DeEvent::from_string(read_json_fixture("v0_37", name).await).unwrap();
             msg.into()
         }
 

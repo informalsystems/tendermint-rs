@@ -1,0 +1,12 @@
+{
+  "id": "f9f35bd2-8a8b-48c2-b04c-5c1e1b673ce1",
+  "jsonrpc": "2.0",
+  "result": {
+    "app_hash": null,
+    "consensus_param_updates": null,
+    "finalize_block_events": null,
+    "height": "10",
+    "txs_results": null,
+    "validator_updates": null
+  }
+}

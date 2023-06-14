@@ -7,8 +7,7 @@ use structopt::StructOpt;
 use tendermint::Hash;
 use tendermint_rpc::{
     client::CompatMode,
-    dialect::{Dialect, LatestDialect},
-    event::DialectEvent,
+    event::{self, Event, EventData},
     query::Query,
     Client, Error, HttpClient, Order, Paging, Scheme, Subscription, SubscriptionClient, Url,
     WebSocketClient,
@@ -377,6 +376,8 @@ where
                 .map_err(Error::serde)?
         },
         ClientRequest::BroadcastTxCommit { tx } => {
+            // NOTE: this prints out the response in the 0.38+ format,
+            // regardless of the actual protocol version.
             serde_json::to_string_pretty(&client.broadcast_tx_commit(tx).await?)
                 .map_err(Error::serde)?
         },
@@ -504,8 +505,7 @@ async fn recv_events_with_timeout(
                     }
                 };
                 let event = result?;
-                let event: DialectEvent<<LatestDialect as Dialect>::Event> = event.into();
-                println!("{}", serde_json::to_string_pretty(&event).map_err(Error::serde)?);
+                print_event(event)?;
                 event_count += 1;
                 if let Some(me) = max_events {
                     if event_count >= (me as u64) {
@@ -526,11 +526,7 @@ async fn recv_events(mut subs: Subscription, max_events: Option<u32>) -> Result<
     let mut event_count = 0u64;
     while let Some(result) = subs.next().await {
         let event = result?;
-        let event: DialectEvent<<LatestDialect as Dialect>::Event> = event.into();
-        println!(
-            "{}",
-            serde_json::to_string_pretty(&event).map_err(Error::serde)?
-        );
+        print_event(event)?;
         event_count += 1;
         if let Some(me) = max_events {
             if event_count >= (me as u64) {
@@ -540,5 +536,23 @@ async fn recv_events(mut subs: Subscription, max_events: Option<u32>) -> Result<
         }
     }
     info!("The server terminated the subscription");
+    Ok(())
+}
+
+fn print_event(event: Event) -> Result<(), Error> {
+    let json = match &event.data {
+        EventData::LegacyNewBlock { .. } => {
+            // Print the old field structure in case the event was received
+            // from a pre-0.38 node. This is the only instance where the
+            // structure of the dumped event data currently differs.
+            let ser_event: event::v0_37::SerEvent = event.into();
+            serde_json::to_string_pretty(&ser_event).map_err(Error::serde)?
+        },
+        _ => {
+            let ser_event: event::v0_38::SerEvent = event.into();
+            serde_json::to_string_pretty(&ser_event).map_err(Error::serde)?
+        },
+    };
+    println!("{}", json);
     Ok(())
 }

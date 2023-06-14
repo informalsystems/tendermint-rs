@@ -70,3 +70,21 @@ where
         }
     }
 }
+
+impl<Ev> From<DeliverTx<Ev>> for abci::types::ExecTxResult
+where
+    Ev: Into<abci::Event>,
+{
+    fn from(msg: DeliverTx<Ev>) -> Self {
+        Self {
+            code: msg.code,
+            data: msg.data,
+            log: msg.log,
+            info: msg.info,
+            gas_wanted: msg.gas_wanted,
+            gas_used: msg.gas_used,
+            events: msg.events.into_iter().map(Into::into).collect(),
+            codespace: msg.codespace,
+        }
+    }
+}

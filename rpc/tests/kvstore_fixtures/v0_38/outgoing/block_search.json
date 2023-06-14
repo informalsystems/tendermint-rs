@@ -1,0 +1,11 @@
+{
+  "id": "eb430b0c-df54-4434-817b-9b53000522b1",
+  "jsonrpc": "2.0",
+  "method": "block_search",
+  "params": {
+    "order_by": "asc",
+    "page": "1",
+    "per_page": "100",
+    "query": "block.height > 1"
+  }
+}

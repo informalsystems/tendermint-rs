@@ -1,0 +1,6 @@
+{
+  "id": "11f67985-68c8-4c9c-a2d6-4c9b8167a792",
+  "jsonrpc": "2.0",
+  "method": "consensus_state",
+  "params": null
+}

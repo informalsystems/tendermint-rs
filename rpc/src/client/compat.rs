@@ -49,6 +49,7 @@ impl CompatMode {
         match (version.major, version.minor) {
             (0, 34) => Ok(CompatMode::V0_34),
             (0, 37) => Ok(CompatMode::V0_37),
+            (0, 38) => Ok(CompatMode::V0_37),
             _ => Err(Error::unsupported_tendermint_version(version.to_string())),
         }
     }
@@ -88,7 +89,11 @@ mod tests {
             CompatMode::from_version(parse_version("v0.37.0")).unwrap(),
             CompatMode::V0_37
         );
-        let res = CompatMode::from_version(parse_version("v0.38.0"));
+        assert_eq!(
+            CompatMode::from_version(parse_version("v0.38.0")).unwrap(),
+            CompatMode::V0_37
+        );
+        let res = CompatMode::from_version(parse_version("v0.39.0"));
         assert!(res.is_err());
         let res = CompatMode::from_version(parse_version("v1.0.0"));
         assert!(res.is_err());

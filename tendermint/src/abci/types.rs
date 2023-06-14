@@ -6,12 +6,13 @@
 //! [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#data-types)
 
 use bytes::Bytes;
+use serde::{Deserialize, Serialize};
 
 use super::{Code, Event};
 use crate::{
     block::{self, BlockIdFlag},
     prelude::*,
-    vote, Signature, Time,
+    serializers, vote, Signature, Time,
 };
 
 /// A validator address with voting power.
@@ -195,7 +196,7 @@ pub struct Snapshot {
 /// deprecated and removed.
 ///
 /// [`response::DeliverTx`]: super::response::DeliverTx
-#[derive(Clone, PartialEq, Eq, Debug, Default)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
 pub struct ExecTxResult {
     /// The response code.
     ///
@@ -204,6 +205,7 @@ pub struct ExecTxResult {
     /// the application state.
     pub code: Code,
     /// Result bytes, if any.
+    #[serde(with = "serializers::nullable")]
     pub data: Bytes,
     /// The output of the application's logger.
     ///
@@ -214,8 +216,10 @@ pub struct ExecTxResult {
     /// **May be non-deterministic**.
     pub info: String,
     /// Amount of gas requested for the transaction.
+    #[serde(with = "serializers::from_str")]
     pub gas_wanted: i64,
     /// Amount of gas consumed by the transaction.
+    #[serde(with = "serializers::from_str")]
     pub gas_used: i64,
     /// Events that occurred while executing the transaction.
     pub events: Vec<Event>,
