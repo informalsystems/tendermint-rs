@@ -41,6 +41,20 @@ impl crate::Response for Response {}
 /// Sync information
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncInfo {
+    /// Earliest block hash
+    #[serde(with = "tendermint::serializers::hash")]
+    pub earliest_block_hash: Hash,
+
+    /// Earliest app hash
+    #[serde(with = "tendermint::serializers::apphash")]
+    pub earliest_app_hash: AppHash,
+
+    /// Earliest block height
+    pub earliest_block_height: block::Height,
+
+    /// Earliest block time
+    pub earliest_block_time: Time,
+
     /// Latest block hash
     #[serde(with = "tendermint::serializers::hash")]
     pub latest_block_hash: Hash,
