@@ -8,12 +8,13 @@
     `endpoint::tx::Response`.
   * The `event::EventData::NewBlock` variant is renamed to `LegacyNewBlock`.
     The new `NewBlock` variant only carries fields relevant since CometBFT 0.38.
-  * Removed `event::DialectEvent`, replaced with `event::v0_34::DialectEvent`
-    and `event::latest::DialectEvent` as non-generic serialization helpers.
-    The latter handles the fields added in CometBFT 0.38, `block_id` and
-    `result_finalize_block`. Same refactoring done for `DialectEventData`
-    and other types used in the event data structures.
-  * Changed some of the serialization dialect helpers only be
+  * Removed `event::DialectEvent`, replaced with non-generic serialization
+    helpers in `event::{v0_34, v0_37, v0_38}`. The `Deserialize` helpers in
+    the latter two modules are aliased from common types that can support both
+    fields added in CometBFT 0.38, `block_id` and `result_finalize_block`,
+    as well as the fields present 0.37. Likewise for `DialectEventData`
+    and other event data structure types.
+  * Changed some of the serialization dialect helpers to only be
     used by the 0.34 dialect and remove generics. The current dialect's
     seralization is switched to the serde impls on the domain types in
     `tendermint`.
