@@ -709,11 +709,24 @@ fn incoming_fixtures() {
                 );
                 assert_eq!(result.node_info.version.to_string(), "0.37.0-alpha.3");
                 assert!(!result.sync_info.catching_up);
+                assert!(result.sync_info.earliest_app_hash.as_bytes().is_empty());
+                assert!(!result.sync_info.earliest_block_hash.is_empty());
+                assert_eq!(result.sync_info.earliest_block_height.value(), 1);
+                assert!(
+                    result
+                        .sync_info
+                        .earliest_block_time
+                        .duration_since(informal_epoch)
+                        .unwrap()
+                        .as_secs()
+                        > 0
+                );
                 assert_eq!(
                     result.sync_info.latest_app_hash.as_bytes(),
                     [6, 0, 0, 0, 0, 0, 0, 0]
                 );
                 assert!(!result.sync_info.latest_block_hash.is_empty());
+                assert_eq!(result.sync_info.latest_block_height.value(), 53);
                 assert!(
                     result
                         .sync_info
