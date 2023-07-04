@@ -23,5 +23,5 @@ where
     S: Serializer,
     T: core::fmt::Display,
 {
-    format!("{value}").serialize(serializer)
+    value.to_string().serialize(serializer)
 }
