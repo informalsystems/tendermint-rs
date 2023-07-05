@@ -69,7 +69,6 @@ impl<R> Wrapper<R> {
         }
     }
 
-    #[cfg(test)]
     pub fn new_with_id(id: Id, result: Option<R>, error: Option<ResponseError>) -> Self {
         Self {
             jsonrpc: Version::current(),
