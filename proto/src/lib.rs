@@ -22,14 +22,11 @@ mod error;
 #[allow(warnings)]
 mod tendermint;
 
-use core::{
-    convert::{TryFrom, TryInto},
-    fmt::Display,
-};
+use core::{convert::TryFrom, fmt::Display};
 
 use bytes::{Buf, BufMut};
 pub use error::Error;
-use prost::{encoding::encoded_len_varint, Message};
+use prost::Message;
 pub use tendermint::*;
 
 pub mod serializers;
@@ -184,9 +181,8 @@ where
     }
 
     /// Encodes into a Protobuf-encoded `Vec<u8>`.
-    fn encode_vec(&self) -> Result<Vec<u8>, Error> {
-        let mut wire = Vec::with_capacity(self.encoded_len());
-        self.encode(&mut wire).map(|_| wire)
+    fn encode_vec(&self) -> Vec<u8> {
+        T::from(self.clone()).encode_to_vec()
     }
 
     /// Constructor that attempts to decode a Protobuf-encoded instance from a
@@ -196,11 +192,8 @@ where
     }
 
     /// Encode with a length-delimiter to a `Vec<u8>` Protobuf-encoded message.
-    fn encode_length_delimited_vec(&self) -> Result<Vec<u8>, Error> {
-        let len = self.encoded_len();
-        let lenu64 = len.try_into().map_err(Error::parse_length)?;
-        let mut wire = Vec::with_capacity(len + encoded_len_varint(lenu64));
-        self.encode_length_delimited(&mut wire).map(|_| wire)
+    fn encode_length_delimited_vec(&self) -> Vec<u8> {
+        T::from(self.clone()).encode_length_delimited_to_vec()
     }
 
     /// Constructor that attempts to decode a Protobuf-encoded instance with a

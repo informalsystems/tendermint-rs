@@ -265,7 +265,7 @@ impl Vote {
     }
 
     /// Create signable vector from Vote.
-    pub fn to_signable_vec(&self, chain_id: ChainId) -> Result<Vec<u8>, ProtobufError> {
+    pub fn to_signable_vec(&self, chain_id: ChainId) -> Vec<u8> {
         let canonical = CanonicalVote::new(self.clone(), chain_id);
         Protobuf::<RawCanonicalVote>::encode_length_delimited_vec(&canonical)
     }
@@ -326,7 +326,7 @@ impl SignedVote {
 
     /// Return the bytes (of the canonicalized vote) that were signed.
     pub fn sign_bytes(&self) -> Vec<u8> {
-        Protobuf::<RawCanonicalVote>::encode_length_delimited_vec(&self.vote).unwrap()
+        Protobuf::<RawCanonicalVote>::encode_length_delimited_vec(&self.vote)
     }
 
     /// Return the actual signature on the canonicalized vote.
