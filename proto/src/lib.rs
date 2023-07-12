@@ -121,10 +121,8 @@ where
     /// Protobuf data structure.
     ///
     /// [`prost::Message::encode`]: https://docs.rs/prost/*/prost/trait.Message.html#method.encode
-    fn encode<B: BufMut>(&self, buf: &mut B) -> Result<(), Error> {
-        T::from(self.clone())
-            .encode(buf)
-            .map_err(Error::encode_message)
+    fn encode<B: BufMut>(self, buf: &mut B) -> Result<(), Error> {
+        T::from(self).encode(buf).map_err(Error::encode_message)
     }
 
     /// Encode with a length-delimiter to a buffer in Protobuf format.
@@ -135,8 +133,8 @@ where
     /// its counterpart Protobuf data structure.
     ///
     /// [`prost::Message::encode_length_delimited`]: https://docs.rs/prost/*/prost/trait.Message.html#method.encode_length_delimited
-    fn encode_length_delimited<B: BufMut>(&self, buf: &mut B) -> Result<(), Error> {
-        T::from(self.clone())
+    fn encode_length_delimited<B: BufMut>(self, buf: &mut B) -> Result<(), Error> {
+        T::from(self)
             .encode_length_delimited(buf)
             .map_err(Error::encode_message)
     }
@@ -176,13 +174,13 @@ where
     /// counterpart Protobuf data structure.
     ///
     /// [`prost::Message::encoded_len`]: https://docs.rs/prost/*/prost/trait.Message.html#method.encoded_len
-    fn encoded_len(&self) -> usize {
-        T::from(self.clone()).encoded_len()
+    fn encoded_len(self) -> usize {
+        T::from(self).encoded_len()
     }
 
     /// Encodes into a Protobuf-encoded `Vec<u8>`.
-    fn encode_vec(&self) -> Vec<u8> {
-        T::from(self.clone()).encode_to_vec()
+    fn encode_vec(self) -> Vec<u8> {
+        T::from(self).encode_to_vec()
     }
 
     /// Constructor that attempts to decode a Protobuf-encoded instance from a
@@ -192,8 +190,8 @@ where
     }
 
     /// Encode with a length-delimiter to a `Vec<u8>` Protobuf-encoded message.
-    fn encode_length_delimited_vec(&self) -> Vec<u8> {
-        T::from(self.clone()).encode_length_delimited_to_vec()
+    fn encode_length_delimited_vec(self) -> Vec<u8> {
+        T::from(self).encode_length_delimited_to_vec()
     }
 
     /// Constructor that attempts to decode a Protobuf-encoded instance with a

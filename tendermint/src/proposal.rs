@@ -94,14 +94,14 @@ impl Proposal {
         B: BufMut,
     {
         let canonical = CanonicalProposal::new(self.clone(), chain_id);
-        Protobuf::<RawCanonicalProposal>::encode_length_delimited(&canonical, sign_bytes)?;
+        Protobuf::<RawCanonicalProposal>::encode_length_delimited(canonical, sign_bytes)?;
         Ok(true)
     }
 
     /// Create signable vector from Proposal.
     pub fn to_signable_vec(&self, chain_id: ChainId) -> Vec<u8> {
         let canonical = CanonicalProposal::new(self.clone(), chain_id);
-        Protobuf::<RawCanonicalProposal>::encode_length_delimited_vec(&canonical)
+        Protobuf::<RawCanonicalProposal>::encode_length_delimited_vec(canonical)
     }
 
     /// Consensus state from this proposal - This doesn't seem to be used anywhere.
