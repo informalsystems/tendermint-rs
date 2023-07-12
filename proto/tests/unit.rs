@@ -75,10 +75,7 @@ pub fn protobuf_struct_length_delimited_example() {
     };
 
     let mut wire = vec![];
-    my_domain_type
-        .clone()
-        .encode_length_delimited(&mut wire)
-        .unwrap();
+    my_domain_type.encode_length_delimited(&mut wire).unwrap();
     assert_eq!(
         wire,
         vec![14, 10, 12, 72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 33]
