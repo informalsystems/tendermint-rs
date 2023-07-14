@@ -441,7 +441,7 @@ impl Tester {
     pub fn run_foreach_in_dir(&mut self, dir: &str) {
         let full_dir = PathBuf::from(&self.root_dir).join(dir);
         let starts_with_underscore = |entry: &DirEntry| {
-            if let Some(last) = entry.path().iter().rev().next() {
+            if let Some(last) = entry.path().iter().next_back() {
                 if let Some(last) = last.to_str() {
                     if last.starts_with('_') {
                         return true;
