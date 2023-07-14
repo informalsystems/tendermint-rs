@@ -33,11 +33,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
-      - uses: actions-rs/clippy-check@v1
+      - uses: giraffate/clippy-action@v1
         with:
-          name: clippy-results
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features --all-targets -- -Dwarnings -Drust-2018-idioms
+          reporter: 'github-pr-check'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          clippy_flags: --all-features --all-targets -- -Dwarnings -Drust-2018-idioms
 
   clippy-tools-output:
     runs-on: ubuntu-latest
@@ -46,11 +46,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
-      - uses: actions-rs/clippy-check@v1
+      - uses: giraffate/clippy-action@v1
         with:
-          name: clippy-tools-results
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --manifest-path tools/kvstore-test/Cargo.toml --all-features --all-targets -- -Dwarnings -Drust-2018-idioms
+          reporter: 'github-pr-check'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          clippy_flags: --manifest-path tools/kvstore-test/Cargo.toml --all-features --all-targets -- -Dwarnings -Drust-2018-idioms
 
   docs:
     runs-on: ubuntu-latest
