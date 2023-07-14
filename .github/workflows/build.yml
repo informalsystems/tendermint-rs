@@ -21,52 +21,33 @@ jobs:
   tendermint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: build-all
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build-all
 
   build-light-client-wasm:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          override: true
-          target: wasm32-unknown-unknown
-      - uses: actions-rs/cargo@v1
-        with:
-          command: build-wasm-tendermint
-      - uses: actions-rs/cargo@v1
-        with:
-          command: build-wasm-light-client
+          targets: wasm32-unknown-unknown
+      - run: cargo build-wasm-tendermint
+      - run: cargo build-wasm-light-client
 
   tools:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: build-tools
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build-tools
 
   # As per https://github.com/informalsystems/tendermint-rs/issues/1014
   generated-protos-compile:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
       - name: Install protoc
         run: |
           curl -Lo /tmp/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v22.3/protoc-22.3-linux-x86_64.zip
@@ -84,6 +65,4 @@ jobs:
       - name: Show the differences with checked-in files
         run: git diff -- proto/src/prost
       - name: Ensure that generated proto definitions compile
-        uses: actions-rs/cargo@v1
-        with:
-          command: build-all
+        run: cargo build-all

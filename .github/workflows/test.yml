@@ -21,14 +21,9 @@ jobs:
   default-features:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test
 
   # TODO(shonfeder): remove duplication once GitHub addresses one of these
   #  - https://github.community/t/support-for-yaml-anchors/16128/15
@@ -37,67 +32,40 @@ jobs:
   tendermint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test-all-features
-          args: -p tendermint
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test-all-features -p tendermint
 
   tendermint-rpc:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test-all-features
-          args: -p tendermint-rpc
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test-all-features -p tendermint-rpc
 
   tendermint-proto:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test-all-features
-          args: -p tendermint-proto
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test-all-features -p tendermint-proto
 
   tendermint-light-client:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
       # NOTE: We test with default features to make sure things work without "unstable".
-      - uses: actions-rs/cargo@v1
-        name: Test with default features
-        with:
-          command: test
-          args: -p tendermint-light-client
-      - uses: actions-rs/cargo@v1
-        name: Test with all features
-        with:
-          command: test-all-features
-          args: -p tendermint-light-client
+      - name: Test with default features
+        run: cargo test -p tendermint-light-client
+      - name: Test with all features
+        run: cargo test-all-features -p tendermint-light-client
 
   # From https://rustwasm.github.io/docs/wasm-bindgen/wasm-bindgen-test/continuous-integration.html#github-actions
   tendermint-light-client-js:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - run: wasm-pack test --headless --chrome ./light-client-js/
@@ -106,28 +74,16 @@ jobs:
   tendermint-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test-all-features
-          args: -p tendermint-test
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test-all-features -p tendermint-test
 
   tendermint-testgen:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test-all-features
-          args: -p tendermint-testgen
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test-all-features -p tendermint-testgen
 
   kvstore-integration-stable:
     runs-on: ubuntu-latest
@@ -139,36 +95,24 @@ jobs:
           - 26657:26657
           - 26660:26660
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test-all-features
-          args: --manifest-path tools/kvstore-test/Cargo.toml -- --nocapture
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test-all-features --manifest-path tools/kvstore-test/Cargo.toml -- --nocapture
         env:
           RUST_LOG: debug
 
   nightly-coverage:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly-2022-09-18
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test-all-features
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@nightly
+        components: llvm-tools-preview
+      - run: cargo test-all-features
         env:
           RUSTFLAGS: '-Zinstrument-coverage'
           LLVM_PROFILE_FILE: '%p-%m.profraw'
       - name: Install grcov
         run: |
-          rustup component add llvm-tools-preview
           curl -L https://github.com/mozilla/grcov/releases/download/v0.8.11/grcov-x86_64-unknown-linux-gnu.tar.bz2 | tar jxf -
       - name: Run grcov
         run: |
