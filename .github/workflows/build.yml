@@ -50,13 +50,13 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: Install protoc
         run: |
-          curl -Lo /tmp/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v22.3/protoc-22.3-linux-x86_64.zip
+          curl -Lo /tmp/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v23.4/protoc-23.4-linux-x86_64.zip
           unzip /tmp/protoc.zip -d ${HOME}/.local
           echo "PROTOC=${HOME}/.local/bin/protoc" >> $GITHUB_ENV
           export PATH="${PATH}:${HOME}/.local/bin"
       - name: Install buf
         run: |
-          curl -sSL https://github.com/bufbuild/buf/releases/download/v1.18.0/buf-Linux-x86_64 \
+          curl -sSL https://github.com/bufbuild/buf/releases/download/v1.24.0/buf-Linux-x86_64 \
             -o /usr/local/bin/buf
           chmod +x /usr/local/bin/buf
       - name: Regenerate proto definitions
