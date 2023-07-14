@@ -181,6 +181,10 @@ impl Client for HttpClient {
         perform_with_compat!(self, endpoint::block_results::Request::new(height.into()))
     }
 
+    async fn latest_block_results(&self) -> Result<endpoint::block_results::Response, Error> {
+        perform_with_compat!(self, endpoint::block_results::Request::default())
+    }
+
     async fn header<H>(&self, height: H) -> Result<endpoint::header::Response, Error>
     where
         H: Into<Height> + Send,
