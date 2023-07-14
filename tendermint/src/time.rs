@@ -64,7 +64,7 @@ impl From<Time> for Timestamp {
 }
 
 impl Time {
-    #[cfg(any(feature = "clock"))]
+    #[cfg(feature = "clock")]
     pub fn now() -> Time {
         OffsetDateTime::now_utc().try_into().unwrap()
     }

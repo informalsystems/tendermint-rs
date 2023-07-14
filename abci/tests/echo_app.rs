@@ -8,7 +8,7 @@ mod echo_app_integration {
     #[test]
     fn echo() {
         let server = ServerBuilder::default()
-            .bind("127.0.0.1:0", EchoApp::default())
+            .bind("127.0.0.1:0", EchoApp)
             .unwrap();
         let server_addr = server.local_addr();
         let _ = std::thread::spawn(move || server.listen());
