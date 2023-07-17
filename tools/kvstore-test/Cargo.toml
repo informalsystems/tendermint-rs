@@ -11,9 +11,9 @@ edition = "2021"
 [dev-dependencies]
 futures = "0.3"
 sha2 = "0.10"
-tendermint = { version = "0.32.0", path = "../../tendermint" }
-tendermint-light-client = { version = "0.32.0", path = "../../light-client", features = ["unstable"] }
-tendermint-rpc = { version = "0.32.0", path = "../../rpc", features = [ "http-client", "websocket-client" ] }
+tendermint = { version = "0.32.1", path = "../../tendermint" }
+tendermint-light-client = { version = "0.32.1", path = "../../light-client", features = ["unstable"] }
+tendermint-rpc = { version = "0.32.1", path = "../../rpc", features = [ "http-client", "websocket-client" ] }
 tokio = { version = "1.0", features = [ "rt-multi-thread", "macros" ] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
