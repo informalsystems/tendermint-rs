@@ -21,58 +21,42 @@ jobs:
   fmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo fmt --all -- --check
 
   # This job creates the "clippy-results" GitHub Action that lists the clippy results in a nice format.
   clippy-json-output:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
           components: clippy
-          override: true
-      - uses: actions-rs/clippy-check@v1
+      - uses: giraffate/clippy-action@v1
         with:
-          name: clippy-results
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features --all-targets -- -Dwarnings -Drust-2018-idioms
+          reporter: 'github-pr-check'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          clippy_flags: --all-features --all-targets -- -Dwarnings -Drust-2018-idioms
 
   clippy-tools-output:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
           components: clippy
-          override: true
-      - uses: actions-rs/clippy-check@v1
+      - uses: giraffate/clippy-action@v1
         with:
-          name: clippy-tools-results
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --manifest-path tools/kvstore-test/Cargo.toml --all-features --all-targets -- -Dwarnings -Drust-2018-idioms
+          reporter: 'github-pr-check'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          clippy_flags: --manifest-path tools/kvstore-test/Cargo.toml --all-features --all-targets -- -Dwarnings -Drust-2018-idioms
 
   docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly-2023-03-01 # regression prevents docs from building
-          override: true
-      - uses: actions-rs/cargo@v1
-        env:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@nightly # regression prevents docs from building on stable
+      - env:
           RUSTDOCFLAGS: "--cfg docsrs"
-        with:
-          command: doc
-          args: --all-features
+        run: cargo doc --all-features

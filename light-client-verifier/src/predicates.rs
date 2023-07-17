@@ -263,7 +263,7 @@ mod tests {
         let header_one = Header::new(&val).generate().unwrap();
         let header_two = Header::new(&val).generate().unwrap();
 
-        let vp = ProdPredicates::default();
+        let vp = ProdPredicates;
 
         // 1. ensure valid header verifies
         let result_ok = vp.is_monotonic_bft_time(header_two.time, header_one.time);
@@ -286,7 +286,7 @@ mod tests {
         let header_one = Header::new(&val).generate().unwrap();
         let header_two = Header::new(&val).height(2).generate().unwrap();
 
-        let vp = ProdPredicates::default();
+        let vp = ProdPredicates;
 
         // 1. ensure valid header verifies
         let result_ok = vp.is_monotonic_height(header_two.height, header_one.height);
@@ -310,7 +310,7 @@ mod tests {
         let header_one = Header::new(&val).chain_id("chaina-1").generate().unwrap();
         let header_two = Header::new(&val).chain_id("chainb-1").generate().unwrap();
 
-        let vp = ProdPredicates::default();
+        let vp = ProdPredicates;
 
         // 1. ensure valid header verifies
         let result_ok = vp.is_matching_chain_id(&header_one.chain_id, &header_one.chain_id);
@@ -333,7 +333,7 @@ mod tests {
         let val = Validator::new("val-1");
         let header = Header::new(&[val]).generate().unwrap();
 
-        let vp = ProdPredicates::default();
+        let vp = ProdPredicates;
 
         // 1. ensure valid header verifies
         let mut trusting_period = Duration::new(1000, 0);
@@ -362,7 +362,7 @@ mod tests {
         let val = Validator::new("val-1");
         let header = Header::new(&[val]).generate().unwrap();
 
-        let vp = ProdPredicates::default();
+        let vp = ProdPredicates;
         let one_second = Duration::new(1, 0);
 
         let now = OffsetDateTime::now_utc().try_into().unwrap();
@@ -393,7 +393,7 @@ mod tests {
 
         let bad_validator_set = ValidatorSet::new(vec!["bad-val"]).generate().unwrap();
 
-        let vp = ProdPredicates::default();
+        let vp = ProdPredicates;
 
         // Test positive case
         // 1. For predicate: validator_sets_match
@@ -458,7 +458,7 @@ mod tests {
             .unwrap()
             .signed_header;
 
-        let vp = ProdPredicates::default();
+        let vp = ProdPredicates;
 
         // 1. ensure valid signed header verifies
         let result_ok =
@@ -493,8 +493,8 @@ mod tests {
         let mut signed_header = light_block.signed_header;
         let val_set = light_block.validators;
 
-        let vp = ProdPredicates::default();
-        let commit_validator = ProdCommitValidator::default();
+        let vp = ProdPredicates;
+        let commit_validator = ProdCommitValidator;
 
         // Test scenarios -->
         // 1. valid commit - must result "Ok"
@@ -580,7 +580,7 @@ mod tests {
 
         let light_block2: LightBlock = test_lb1.next().generate().unwrap().into();
 
-        let vp = ProdPredicates::default();
+        let vp = ProdPredicates;
 
         // Test scenarios -->
         // 1. next_validator_set hash matches
@@ -627,7 +627,7 @@ mod tests {
         let val_set = light_block.validators;
         let signed_header = light_block.signed_header;
 
-        let vp = ProdPredicates::default();
+        let vp = ProdPredicates;
         let mut trust_threshold = TrustThreshold::new(1, 3).expect("Cannot make trust threshold");
         let voting_power_calculator = ProdVotingPowerCalculator::default();
 
@@ -681,7 +681,7 @@ mod tests {
         let mut light_block: LightBlock =
             TestgenLightBlock::new_default(2).generate().unwrap().into();
 
-        let vp = ProdPredicates::default();
+        let vp = ProdPredicates;
         let voting_power_calculator = ProdVotingPowerCalculator::default();
 
         // Test scenarios -->
