@@ -99,8 +99,8 @@ impl Proposal {
     }
 
     /// Create signable vector from Proposal.
-    pub fn to_signable_vec(&self, chain_id: ChainId) -> Vec<u8> {
-        let canonical = CanonicalProposal::new(self.clone(), chain_id);
+    pub fn into_signable_vec(self, chain_id: ChainId) -> Vec<u8> {
+        let canonical = CanonicalProposal::new(self, chain_id);
         Protobuf::<RawCanonicalProposal>::encode_length_delimited_vec(canonical)
     }
 
