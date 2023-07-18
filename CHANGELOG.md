@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## v0.32.1
+
+Fixed a bug with processing the `latest_block_result` endpoint result
+in the RPC client set to the 0.34 compatibility mode.
+
+### BUG FIXES
+
+- `[tendermint-rpc]` Use compatibility mode in implementations
+  of the `Client::latest_block_results` method
+  ([\#1326](https://github.com/informalsystems/tendermint-rs/pull/1326))
+
 ## v0.32.0
 
 *May 3rd, 2023*
@@ -606,18 +617,18 @@ not yet support `no_std`.
 - Upgraded Prost to the official v0.9 release to finally resolve the security
   issue introduced by v0.7
   ([#925](https://github.com/informalsystems/tendermint-rs/issues/925))
-- `[tendermint]` The `tendermint::node::info::ListenAddress::to_net_address`
-  method was replaced with a simple `as_str` method toward facilitating
-  `no_std` compatibility ([#983](https://github.com/informalsystems/tendermint-
-  rs/issues/983))
-- `[tendermint]` The `tendermint::node::info::OtherInfo::rpc_address`
-  field type has been changed from `tendermint::net::Address`
-  to `String` toward facilitating `no_std` compatibility
-  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
 - `[tendermint, tendermint-config]` The `tendermint::config`
   module has now been broken out into its own crate (`tendermint-
   config`) to help towards facilitating `no_std` compatibility
   ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
+- `[tendermint]` The `tendermint::node::info::OtherInfo::rpc_address`
+  field type has been changed from `tendermint::net::Address`
+  to `String` toward facilitating `no_std` compatibility
+  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
+- `[tendermint]` The `tendermint::node::info::ListenAddress::to_net_address`
+  method was replaced with a simple `as_str` method toward facilitating
+  `no_std` compatibility ([#983](https://github.com/informalsystems/tendermint-
+  rs/issues/983))
 
 ### FEATURES
 
