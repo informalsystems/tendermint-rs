@@ -106,7 +106,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@nightly
-        components: llvm-tools-preview
+        with:
+          components: llvm-tools-preview
       - run: cargo test-all-features
         env:
           RUSTFLAGS: '-Zinstrument-coverage'
