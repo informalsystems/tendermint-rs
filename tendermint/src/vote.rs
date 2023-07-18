@@ -265,8 +265,8 @@ impl Vote {
     }
 
     /// Create signable vector from Vote.
-    pub fn to_signable_vec(&self, chain_id: ChainId) -> Vec<u8> {
-        let canonical = CanonicalVote::new(self.clone(), chain_id);
+    pub fn into_signable_vec(self, chain_id: ChainId) -> Vec<u8> {
+        let canonical = CanonicalVote::new(self, chain_id);
         Protobuf::<RawCanonicalVote>::encode_length_delimited_vec(canonical)
     }
 
