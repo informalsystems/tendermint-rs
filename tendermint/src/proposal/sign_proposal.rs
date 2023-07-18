@@ -24,8 +24,8 @@ impl SignProposalRequest {
     }
 
     /// Create signable vector from Proposal.
-    pub fn to_signable_vec(&self) -> Vec<u8> {
-        self.proposal.to_signable_vec(self.chain_id.clone())
+    pub fn into_signable_vec(self) -> Vec<u8> {
+        self.proposal.into_signable_vec(self.chain_id)
     }
 }
 

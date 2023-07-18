@@ -23,8 +23,8 @@ impl SignVoteRequest {
     }
 
     /// Create signable vector from Vote.
-    pub fn to_signable_vec(&self) -> Vec<u8> {
-        self.vote.to_signable_vec(self.chain_id.clone())
+    pub fn into_signable_vec(self) -> Vec<u8> {
+        self.vote.into_signable_vec(self.chain_id)
     }
 }
 
@@ -159,7 +159,7 @@ mod tests {
         // Option 1 using bytes:
         let _have = request.to_signable_bytes(&mut got);
         // Option 2 using Vec<u8>:
-        let got2 = request.to_signable_vec();
+        let got2 = request.into_signable_vec();
 
         // the following vector is generated via:
         // import (
@@ -241,7 +241,7 @@ mod tests {
             chain_id: ChainId::from_str("test_chain_id").unwrap(),
         };
 
-        let got = request.to_signable_vec();
+        let got = request.into_signable_vec();
 
         // the following vector is generated via:
         // import (
