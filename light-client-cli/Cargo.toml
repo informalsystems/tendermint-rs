@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint-light-client-cli"
-version    = "0.32.1"
+version    = "0.32.2"
 edition    = "2021"
 license    = "Apache-2.0"
 keywords   = ["blockchain", "bft", "consensus", "cosmos", "tendermint"]
@@ -22,10 +22,10 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-tendermint = { version = "0.32.1", path = "../tendermint" }
-tendermint-rpc = { version = "0.32.1", path = "../rpc", features = ["http-client"] }
-tendermint-light-client = { version = "0.32.1", path = "../light-client" }
-tendermint-light-client-detector = { version = "0.32.1", path = "../light-client-detector" }
+tendermint = { version = "0.32.2", path = "../tendermint" }
+tendermint-rpc = { version = "0.32.2", path = "../rpc", features = ["http-client"] }
+tendermint-light-client = { version = "0.32.2", path = "../light-client" }
+tendermint-light-client-detector = { version = "0.32.2", path = "../light-client-detector" }
 
 clap = { version = "4.1.8", features = ["derive"] }
 color-eyre = "0.6.2"
