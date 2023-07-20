@@ -1,6 +1,6 @@
 [package]
 name = "abci-test"
-version = "0.32.1"
+version = "0.32.2"
 authors = ["Informal Systems <hello@informal.systems>"]
 edition = "2021"
 description = """
@@ -14,9 +14,9 @@ description = """
 flex-error = { version = "0.4.4", default-features = false, features = ["std", "eyre_tracer"] }
 futures = "0.3"
 structopt = "0.3"
-tendermint = { version = "0.32.1", path = "../../tendermint" }
-tendermint-config = { version = "0.32.1", path = "../../config" }
-tendermint-rpc = { version = "0.32.1", path = "../../rpc", features = [ "websocket-client" ] }
+tendermint = { version = "0.32.2", path = "../../tendermint" }
+tendermint-config = { version = "0.32.2", path = "../../config" }
+tendermint-rpc = { version = "0.32.2", path = "../../rpc", features = [ "websocket-client" ] }
 tracing = "0.1"
 tracing-subscriber = "0.2"
 tokio = { version = "1.20", features = ["full"] }
