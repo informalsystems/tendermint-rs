@@ -512,7 +512,7 @@ mod tests {
                 ),
                 error: None,
             };
-            let got = Protobuf::<RawPubKeyResponse>::encode_vec(&msg).unwrap();
+            let got = Protobuf::<RawPubKeyResponse>::encode_vec(msg.clone());
 
             assert_eq!(got, encoded);
             let decoded = <PubKeyResponse as Protobuf<RawPubKeyResponse>>::decode_vec(

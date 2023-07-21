@@ -23,8 +23,8 @@ impl SignVoteRequest {
     }
 
     /// Create signable vector from Vote.
-    pub fn to_signable_vec(&self) -> Result<Vec<u8>, ProtobufError> {
-        self.vote.to_signable_vec(self.chain_id.clone())
+    pub fn into_signable_vec(self) -> Vec<u8> {
+        self.vote.into_signable_vec(self.chain_id)
     }
 }
 
@@ -159,7 +159,7 @@ mod tests {
         // Option 1 using bytes:
         let _have = request.to_signable_bytes(&mut got);
         // Option 2 using Vec<u8>:
-        let got2 = request.to_signable_vec().unwrap();
+        let got2 = request.into_signable_vec();
 
         // the following vector is generated via:
         // import (
@@ -241,7 +241,7 @@ mod tests {
             chain_id: ChainId::from_str("test_chain_id").unwrap(),
         };
 
-        let got = request.to_signable_vec().unwrap();
+        let got = request.into_signable_vec();
 
         // the following vector is generated via:
         // import (
@@ -311,7 +311,7 @@ mod tests {
             let cv = CanonicalVote::new(dummy_vote(), ChainId::try_from("A").unwrap());
             let mut got = vec![];
             // SignBytes are encoded using MarshalBinary and not MarshalBinaryBare
-            Protobuf::<RawCanonicalVote>::encode_length_delimited(&cv, &mut got).unwrap();
+            Protobuf::<RawCanonicalVote>::encode_length_delimited(cv, &mut got).unwrap();
             let want = vec![
                 0x10, 0x8, 0x1, 0x11, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x2a, 0x0, 0x32, 0x1,
                 0x41,
@@ -328,7 +328,7 @@ mod tests {
                 };
                 println!("{vt_precommit:?}");
                 let cv_precommit = CanonicalVote::new(vt_precommit, ChainId::try_from("A").unwrap());
-                let got = Protobuf::<RawCanonicalVote>::encode_vec(&cv_precommit).unwrap();
+                let got = Protobuf::<RawCanonicalVote>::encode_vec(cv_precommit);
                 let want = vec![
                     0x8,  // (field_number << 3) | wire_type
                     0x2,  // PrecommitType
@@ -355,7 +355,7 @@ mod tests {
 
                 let cv_prevote = CanonicalVote::new(vt_prevote, ChainId::try_from("A").unwrap());
 
-                let got = Protobuf::<RawCanonicalVote>::encode_vec(&cv_prevote).unwrap();
+                let got = Protobuf::<RawCanonicalVote>::encode_vec(cv_prevote);
 
                 let want = vec![
                     0x8,  // (field_number << 3) | wire_type
@@ -462,7 +462,7 @@ mod tests {
                 extension: vec![],
                 extension_signature: None,
             };
-            let got = Protobuf::<pb::types::Vote>::encode_vec(&vote).unwrap();
+            let got = Protobuf::<pb::types::Vote>::encode_vec(vote.clone());
             let v = <Vote as Protobuf::<pb::types::Vote>>::decode_vec(&got).unwrap();
 
             assert_eq!(v, vote);
@@ -473,7 +473,7 @@ mod tests {
                     chain_id: ChainId::from_str("test_chain_id").unwrap(),
                 };
                 let mut got = vec![];
-                let _have = Protobuf::<pb::privval::SignVoteRequest>::encode(&svr, &mut got);
+                let _have = Protobuf::<pb::privval::SignVoteRequest>::encode(svr.clone(), &mut got);
 
                 let svr2 = <SignVoteRequest as Protobuf<pb::privval::SignVoteRequest>>::decode(
                     got.as_ref()

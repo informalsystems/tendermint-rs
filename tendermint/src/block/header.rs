@@ -84,26 +84,20 @@ impl Header {
         // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/encoding_helper.go#L9:6
 
         let fields_bytes = vec![
-            Protobuf::<RawConsensusVersion>::encode_vec(&self.version).unwrap(),
-            self.chain_id.encode_vec().unwrap(),
-            self.height.encode_vec().unwrap(),
-            self.time.encode_vec().unwrap(),
-            Protobuf::<RawBlockId>::encode_vec(&self.last_block_id.unwrap_or_default()).unwrap(),
-            self.last_commit_hash
-                .unwrap_or_default()
-                .encode_vec()
-                .unwrap(),
-            self.data_hash.unwrap_or_default().encode_vec().unwrap(),
-            self.validators_hash.encode_vec().unwrap(),
-            self.next_validators_hash.encode_vec().unwrap(),
-            self.consensus_hash.encode_vec().unwrap(),
-            self.app_hash.encode_vec().unwrap(),
-            self.last_results_hash
-                .unwrap_or_default()
-                .encode_vec()
-                .unwrap(),
-            self.evidence_hash.unwrap_or_default().encode_vec().unwrap(),
-            self.proposer_address.encode_vec().unwrap(),
+            Protobuf::<RawConsensusVersion>::encode_vec(self.version),
+            self.chain_id.clone().encode_vec(),
+            self.height.encode_vec(),
+            self.time.encode_vec(),
+            Protobuf::<RawBlockId>::encode_vec(self.last_block_id.unwrap_or_default()),
+            self.last_commit_hash.unwrap_or_default().encode_vec(),
+            self.data_hash.unwrap_or_default().encode_vec(),
+            self.validators_hash.encode_vec(),
+            self.next_validators_hash.encode_vec(),
+            self.consensus_hash.encode_vec(),
+            self.app_hash.clone().encode_vec(),
+            self.last_results_hash.unwrap_or_default().encode_vec(),
+            self.evidence_hash.unwrap_or_default().encode_vec(),
+            self.proposer_address.encode_vec(),
         ];
 
         Hash::Sha256(merkle::simple_hash_from_byte_vectors::<H>(&fields_bytes))

@@ -56,7 +56,7 @@ pub fn protobuf_struct_example() {
     };
 
     let mut wire = vec![];
-    my_domain_type.encode(&mut wire).unwrap();
+    my_domain_type.clone().encode(&mut wire).unwrap();
     assert_eq!(
         wire,
         vec![10, 12, 72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 33]
@@ -93,7 +93,7 @@ pub fn protobuf_struct_conveniences_example() {
         part_set_header_exists: false,
     };
 
-    let wire = my_domain_type.encode_vec().unwrap();
+    let wire = my_domain_type.clone().encode_vec();
     assert_eq!(
         wire,
         vec![10, 12, 72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 33]
@@ -101,7 +101,7 @@ pub fn protobuf_struct_conveniences_example() {
     let new_domain_type = BlockId::decode_vec(&wire).unwrap();
     assert_eq!(my_domain_type, new_domain_type);
 
-    let wire = my_domain_type.encode_length_delimited_vec().unwrap();
+    let wire = my_domain_type.clone().encode_length_delimited_vec();
     assert_eq!(
         wire,
         vec![14, 10, 12, 72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 33]

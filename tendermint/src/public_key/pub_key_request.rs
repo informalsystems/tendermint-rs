@@ -62,7 +62,7 @@ mod tests {
                 chain_id: ChainId::from_str("A").unwrap(),
             };
             let mut got = vec![];
-            Protobuf::<RawPubKeyRequest>::encode(&msg, &mut got).unwrap();
+            Protobuf::<RawPubKeyRequest>::encode(msg.clone(), &mut got).unwrap();
 
             assert_eq!(got, want);
 
