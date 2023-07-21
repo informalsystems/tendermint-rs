@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.32.2
+
+Fixed a minor cargo metadata problem that gummed up the 0.32.1 release.
+
 ## v0.32.1
 
 Fixed a bug with processing the `latest_block_result` endpoint result
