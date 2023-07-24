@@ -107,8 +107,18 @@ fn main() {
             ".google.protobuf.Timestamp",
             "crate::google::protobuf::Timestamp",
         );
-        println!("[info] => Creating structs.");
-        match pb.compile_protos(&protos, &proto_includes_paths) {
+
+        println!("[info] => Creating structs and interfaces.");
+        let builder = tonic_build::configure()
+            .out_dir(&out_dir)
+            .build_server(true)
+            .build_client(false)
+            .server_mod_attribute("tendermint.abci", "#[cfg(feature = \"grpc-server\")]")
+            .server_mod_attribute("tendermint.rpc.grpc", "#[cfg(feature = \"grpc-server\")]");
+        // TODO: this is tracked in https://github.com/informalsystems/tendermint-rs/issues/1134
+        //.server_mod_attribute("tendermint.privval", "#[cfg(feature = \"grpc-server\")]")
+
+        match builder.compile_with_config(pb, &protos, &proto_includes_paths) {
             Ok(()) => {},
             Err(e) => {
                 eprintln!("{}", e);
