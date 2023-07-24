@@ -29,22 +29,17 @@ pub mod broadcast_api_server {
         async fn ping(
             &self,
             request: tonic::Request<super::RequestPing>,
-        ) -> std::result::Result<tonic::Response<super::ResponsePing>, tonic::Status>;
+        ) -> Result<tonic::Response<super::ResponsePing>, tonic::Status>;
         async fn broadcast_tx(
             &self,
             request: tonic::Request<super::RequestBroadcastTx>,
-        ) -> std::result::Result<
-            tonic::Response<super::ResponseBroadcastTx>,
-            tonic::Status,
-        >;
+        ) -> Result<tonic::Response<super::ResponseBroadcastTx>, tonic::Status>;
     }
     #[derive(Debug)]
     pub struct BroadcastApiServer<T: BroadcastApi> {
         inner: _Inner<T>,
         accept_compression_encodings: EnabledCompressionEncodings,
         send_compression_encodings: EnabledCompressionEncodings,
-        max_decoding_message_size: Option<usize>,
-        max_encoding_message_size: Option<usize>,
     }
     struct _Inner<T>(Arc<T>);
     impl<T: BroadcastApi> BroadcastApiServer<T> {
@@ -57,8 +52,6 @@ pub mod broadcast_api_server {
                 inner,
                 accept_compression_encodings: Default::default(),
                 send_compression_encodings: Default::default(),
-                max_decoding_message_size: None,
-                max_encoding_message_size: None,
             }
         }
         pub fn with_interceptor<F>(
@@ -82,22 +75,6 @@ pub mod broadcast_api_server {
             self.send_compression_encodings.enable(encoding);
             self
         }
-        /// Limits the maximum size of a decoded message.
-        ///
-        /// Default: `4MB`
-        #[must_use]
-        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
-            self.max_decoding_message_size = Some(limit);
-            self
-        }
-        /// Limits the maximum size of an encoded message.
-        ///
-        /// Default: `usize::MAX`
-        #[must_use]
-        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
-            self.max_encoding_message_size = Some(limit);
-            self
-        }
     }
     impl<T, B> tonic::codegen::Service<http::Request<B>> for BroadcastApiServer<T>
     where
@@ -111,7 +88,7 @@ pub mod broadcast_api_server {
         fn poll_ready(
             &mut self,
             _cx: &mut Context<'_>,
-        ) -> Poll<std::result::Result<(), Self::Error>> {
+        ) -> Poll<Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -131,15 +108,13 @@ pub mod broadcast_api_server {
                             &mut self,
                             request: tonic::Request<super::RequestPing>,
                         ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
+                            let inner = self.0.clone();
                             let fut = async move { (*inner).ping(request).await };
                             Box::pin(fut)
                         }
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -149,10 +124,6 @@ pub mod broadcast_api_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -175,7 +146,7 @@ pub mod broadcast_api_server {
                             &mut self,
                             request: tonic::Request<super::RequestBroadcastTx>,
                         ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
+                            let inner = self.0.clone();
                             let fut = async move {
                                 (*inner).broadcast_tx(request).await
                             };
@@ -184,8 +155,6 @@ pub mod broadcast_api_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -195,10 +164,6 @@ pub mod broadcast_api_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -227,14 +192,12 @@ pub mod broadcast_api_server {
                 inner,
                 accept_compression_encodings: self.accept_compression_encodings,
                 send_compression_encodings: self.send_compression_encodings,
-                max_decoding_message_size: self.max_decoding_message_size,
-                max_encoding_message_size: self.max_encoding_message_size,
             }
         }
     }
     impl<T: BroadcastApi> Clone for _Inner<T> {
         fn clone(&self) -> Self {
-            Self(Arc::clone(&self.0))
+            Self(self.0.clone())
         }
     }
     impl<T: std::fmt::Debug> std::fmt::Debug for _Inner<T> {
