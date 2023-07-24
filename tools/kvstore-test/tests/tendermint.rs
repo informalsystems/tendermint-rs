@@ -23,12 +23,7 @@ mod rpc {
 
     use futures::StreamExt;
     use sha2::Sha256;
-    use tendermint::{
-        abci::Code,
-        Hash,
-        block::Height,
-        merkle::simple_hash_from_byte_vectors,
-    };
+    use tendermint::{abci::Code, block::Height, merkle::simple_hash_from_byte_vectors, Hash};
     use tendermint_rpc::{
         event::{Event, EventData, TxInfo},
         query::{EventType, Query},
@@ -110,9 +105,7 @@ mod rpc {
 
         // Check for empty merkle root.
         // See: https://github.com/informalsystems/tendermint-rs/issues/562
-        let computed_data_hash = simple_hash_from_byte_vectors::<Sha256>(
-            &block_info.block.data,
-        );
+        let computed_data_hash = simple_hash_from_byte_vectors::<Sha256>(&block_info.block.data);
         assert_eq!(
             computed_data_hash,
             block_info
