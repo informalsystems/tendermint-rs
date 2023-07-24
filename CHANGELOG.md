@@ -1,5 +1,91 @@
 # CHANGELOG
 
+## v0.33.0
+
+This release adds support for CometBFT 0.38 protocols.
+In the response to the `sync_info` RPC endpoint, the data of the earliest block
+are exposed to the client.
+
+### BREAKING CHANGES
+
+- `[tendermint]` Adaptations for CometFBT 0.38
+  ([\#1312](https://github.com/informalsystems/tendermint-rs/pull/1312)):
+  * Define `consensus::params::AbciParams` struct, add the `abci` field of this
+    type to `consensus::Params` to represent the protobuf additions.
+  * Change the `abci::Request` and `abci::Response` reexports to use the
+    enums defined in `v0_38`.
+- `[tendermint]` Define version-specific categorized request/response enums:
+  `ConsensusRequest`, `MempoolRequest`, `InfoRequest`, `ShapshotRequest`,
+  `ConsensusResponse`, `MempoolResponse`, `InfoResponse`, `ShapshotResponse`,
+  in each of the `v0_*::abci` modules, so that the variants are trimmed to the
+  requests/responses used by the respective protocol version.
+  Reexport the types from `v0_38::abci` as aliases for these names in the
+  `abci` module, continuing the naming as used in older API.
+  ([\#1312](https://github.com/informalsystems/tendermint-rs/pull/1312)).
+- `[tendermint]` Rename `Signature::to_bytes` to `Signature::into_bytes`
+  ([\#1312](https://github.com/informalsystems/tendermint-rs/pull/1312)).
+- `[tendermint-abci]` Update the `Application` interface to CometBFT 0.38
+  ([\#1312](https://github.com/informalsystems/tendermint-rs/pull/1312))
+- `[tendermint-rpc]`  Changes to support the RPC protocol in CometBFT 0.38
+  ([\#1317](https://github.com/informalsystems/tendermint-rs/pull/1317)):
+  * Add `finalize_block_results` and `app_hash` fields to
+    `endpoint::block_results::Response`.
+  * The `deliver_tx` field is renamed to `tx_result` in
+    `endpoint::broadcast::tx_commit::Response`.
+  * The `tx_result` field type changed to `ExecTxResult` in
+    `endpoint::tx::Response`.
+  * The `event::EventData::NewBlock` variant is renamed to `LegacyNewBlock`.
+    The new `NewBlock` variant only carries fields relevant since CometBFT 0.38.
+  * Removed `event::DialectEvent`, replaced with non-generic serialization
+    helpers in `event::{v0_34, v0_37, v0_38}`. The `Deserialize` helpers in
+    the latter two modules are aliased from common types that can support both
+    fields added in CometBFT 0.38, `block_id` and `result_finalize_block`,
+    as well as the fields present 0.37. Likewise for `DialectEventData`
+    and other event data structure types.
+  * Changed some of the serialization dialect helpers to only be
+    used by the 0.34 dialect and remove generics. The current dialect's
+    seralization is switched to the serde impls on the domain types in
+    `tendermint`.
+- `[tendermint]` Changes to support the RPC protocol in CometBFT 0.38
+  ([\#1317](https://github.com/informalsystems/tendermint-rs/pull/1317)):
+  * Due to some attribute changes, the format emitted by `Serialize` is
+    changed for `abci::response` types `CheckTx` and `FinalizeBlock`.
+- [`tendermint-rpc`] Decode the earliest block data fields of the `sync_info`
+  object in `/status` response and expose them in the `SyncInfo` struct:
+  `earliest_block_hash`, `earliest_app_hash`, `earliest_block_height`,
+  `earliest_block_time`
+  ([\#1321](https://github.com/informalsystems/tendermint-rs/pull/1321)).
+- `[tendermint-proto]` Align the return signature of the `encode_vec` and
+  `encode_length_delimited_vec` methods in the `Protobuf` trait with
+  `prost::Message` by directly returning `Vec<u8>`.
+  ([\#1323](https://github.com/informalsystems/tendermint-rs/issues/1323))
+  * Remove mandatory cloning in `Protobuf` methods and let callers decide on
+    clone beforehand for original value access
+
+### IMPROVEMENTS
+
+- `[tendermint-proto]` Generate prost bindings for CometBFT 0.38
+  under the `tendermint::v0_38` module
+  ([\#1312](https://github.com/informalsystems/tendermint-rs/pull/1312))
+- `[tendermint]` Support for CometBFT 0.38:
+  ([\#1312](https://github.com/informalsystems/tendermint-rs/pull/1312)):
+  * Add conversions to and from `tendermint::v0_38` protobuf
+    types generated in [`tendermint-proto`].
+  * Add request and response enums under `v0_38::abci` to enumerate all requests
+    and responses appropriate for CometBFT version 0.38.
+  * Add request and response types under `abci` to represent the requests
+    and responses new to ABCI++ 2.0 in CometBFT version 0.38. The names are
+    `ExtendVote`, `FinalizeBlock`, `VerifyVoteExtension`.
+- `[tendermint-rpc]` Support for CometBFT 0.38
+  ([\#1317](https://github.com/informalsystems/tendermint-rs/pull/1317)):
+  * `Deserialize` implementations on `abci::Event`, `abci::EventAttribute`
+    that correspond to the current RPC serialization.
+  * Domain types under `abci::response` also get `Deserialize` implementations
+    corresponding to the current RPC serialization.
+  * `Serialize`, `Deserialize` implementations on `abci::types::ExecTxResult`
+    corresponding to the current RPC serialization.
+  * Added the `apphash_base64` serializer module.
+
 ## v0.32.2
 
 Fixed a minor cargo metadata problem that gummed up the 0.32.1 release.
