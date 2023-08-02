@@ -20,7 +20,7 @@ use crate::{
 pub struct Set {
     validators: Vec<Info>,
     proposer: Option<Info>,
-    total_voting_power: vote::Power,
+    total_voting_power: Option<vote::Power>,
 }
 
 impl Set {
@@ -29,12 +29,14 @@ impl Set {
         Self::sort_validators(&mut validators);
 
         // Compute the total voting power
-        let total_voting_power = validators
-            .iter()
-            .map(|v| v.power.value())
-            .sum::<u64>()
-            .try_into()
-            .unwrap();
+        let total_voting_power = Some(
+            validators
+                .iter()
+                .map(|v| v.power.value())
+                .sum::<u64>()
+                .try_into()
+                .unwrap(),
+        );
 
         Set {
             validators,
@@ -77,7 +79,7 @@ impl Set {
 
     /// Get total voting power
     pub fn total_voting_power(&self) -> vote::Power {
-        self.total_voting_power
+        self.total_voting_power.unwrap()
     }
 
     /// Sort the validators according to the current Tendermint requirements
@@ -277,7 +279,7 @@ tendermint_pb_modules! {
             RawValidatorSet {
                 validators: value.validators.into_iter().map(Into::into).collect(),
                 proposer: value.proposer.map(Into::into),
-                total_voting_power: value.total_voting_power.into(),
+                total_voting_power: value.total_voting_power.unwrap().into(),
             }
         }
     }
