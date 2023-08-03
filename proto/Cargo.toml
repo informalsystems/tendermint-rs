@@ -15,9 +15,8 @@ description = """
 
 [features]
 default = []
-grpc = ["grpc-server", "grpc-client"]
+grpc = ["grpc-server"]
 grpc-server = ["tonic"]
-grpc-client = ["tonic"]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -33,7 +32,7 @@ num-traits = { version = "0.2", default-features = false }
 num-derive = { version = "0.3", default-features = false }
 time = { version = "0.3", default-features = false, features = ["macros", "parsing"] }
 flex-error = { version = "0.4.4", default-features = false }
-tonic = { version = "0.8", optional = true }
+tonic = { version = "0.9", optional = true }
 
 [dev-dependencies]
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }

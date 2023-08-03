@@ -113,8 +113,7 @@ fn main() {
             .out_dir(&out_dir)
             .build_server(true)
             .build_client(false)
-            .server_mod_attribute("tendermint.abci", "#[cfg(feature = \"grpc-server\")]")
-            .server_mod_attribute("tendermint.rpc.grpc", "#[cfg(feature = \"grpc-server\")]");
+            .server_mod_attribute("tendermint.abci", "#[cfg(feature = \"grpc-server\")]");
         // TODO: this is tracked in https://github.com/informalsystems/tendermint-rs/issues/1134
         //.server_mod_attribute("tendermint.privval", "#[cfg(feature = \"grpc-server\")]")
 
