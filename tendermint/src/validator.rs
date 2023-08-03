@@ -29,14 +29,12 @@ impl Set {
         Self::sort_validators(&mut validators);
 
         // Compute the total voting power
-        let total_voting_power = Some(
-            validators
-                .iter()
-                .map(|v| v.power.value())
-                .sum::<u64>()
-                .try_into()
-                .unwrap(),
-        );
+        let total_voting_power = validators
+            .iter()
+            .map(|v| v.power.value())
+            .sum::<u64>()
+            .try_into()
+            .ok();
 
         Set {
             validators,
@@ -78,8 +76,8 @@ impl Set {
     }
 
     /// Get total voting power
-    pub fn total_voting_power(&self) -> vote::Power {
-        self.total_voting_power.unwrap()
+    pub fn total_voting_power(&self) -> Option<vote::Power> {
+        self.total_voting_power
     }
 
     /// Sort the validators according to the current Tendermint requirements
@@ -279,7 +277,7 @@ tendermint_pb_modules! {
             RawValidatorSet {
                 validators: value.validators.into_iter().map(Into::into).collect(),
                 proposer: value.proposer.map(Into::into),
-                total_voting_power: value.total_voting_power.unwrap().into(),
+                total_voting_power: value.total_voting_power.unwrap_or_default().into(),
             }
         }
     }
@@ -450,7 +448,10 @@ mod tests {
             assert_eq!(val_set.validator(v3.address).unwrap(), v3);
             assert_eq!(val_set.validator(not_in_set.address), None);
             assert_eq!(
-                val_set.total_voting_power().value(),
+                val_set
+                    .total_voting_power()
+                    .expect("total voting power should be some value")
+                    .value(),
                 148_151_478_422_287_875 + 158_095_448_483_785_107 + 770_561_664_770_006_272
             );
         }

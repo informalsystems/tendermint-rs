@@ -41,7 +41,7 @@ pub fn make_evidence(
         conflicting_block,
         byzantine_validators,
         common_height: witness.height(),
-        total_voting_power: witness.validators.total_voting_power(),
+        total_voting_power: witness.validators.total_voting_power().unwrap_or_default(),
         timestamp: witness.time(),
     }
 }
