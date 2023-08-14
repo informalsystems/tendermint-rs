@@ -19,6 +19,7 @@ pub struct ResponseBroadcastTx {
     pub deliver_tx: ::core::option::Option<super::super::abci::ResponseDeliverTx>,
 }
 /// Generated server implementations.
+#[cfg(feature = "grpc-server")]
 pub mod broadcast_api_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
