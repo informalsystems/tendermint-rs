@@ -171,6 +171,9 @@ impl Generator<block::Header> for Header {
             part_set_header: Default::default(),
         });
 
+        let app_hash =
+            AppHash::try_from(vec![0u8; 32]).map_err(|e| SimpleError::new(e.to_string()))?;
+
         let header = block::Header {
             // block version in Tendermint-go is hardcoded with value 11
             // so we do the same with MBT for now for compatibility
@@ -185,7 +188,7 @@ impl Generator<block::Header> for Header {
             validators_hash,
             next_validators_hash: next_valset.hash(),
             consensus_hash: validators_hash, // TODO: currently not clear how to produce a valid hash
-            app_hash: AppHash::from_hex_upper("").unwrap(),
+            app_hash,
             last_results_hash: None,
             evidence_hash: None,
             proposer_address,
