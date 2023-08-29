@@ -36,6 +36,8 @@ pub struct Header {
     pub proposer: Option<usize>,
     #[options(help = "last block id hash (default: Hash::None)")]
     pub last_block_id_hash: Option<Hash>,
+    #[options(help = "last commit hash (default: AppHash(vec![])")]
+    pub app_hash: Option<AppHash>,
 }
 
 // Serialize and deserialize time only up to second precision for integration with MBT.
@@ -74,6 +76,7 @@ impl Header {
             time: None,
             proposer: None,
             last_block_id_hash: None,
+            app_hash: None,
         }
     }
     set_option!(validators, &[Validator], Some(validators.to_vec()));
@@ -87,6 +90,7 @@ impl Header {
     set_option!(time, Time);
     set_option!(proposer, usize);
     set_option!(last_block_id_hash, Hash);
+    set_option!(app_hash, AppHash);
 
     pub fn next(&self) -> Self {
         let height = self.height.expect("Missing previous header's height");
@@ -108,6 +112,7 @@ impl Header {
             time: Some((time + Duration::from_secs(1)).unwrap()),
             proposer: self.proposer, // TODO: proposer must be incremented
             last_block_id_hash: Some(last_block_id_hash),
+            app_hash: self.app_hash.clone(),
         }
     }
 }
@@ -133,6 +138,7 @@ impl Generator<block::Header> for Header {
             time: self.time.or(default.time),
             proposer: self.proposer.or(default.proposer),
             last_block_id_hash: self.last_block_id_hash.or(default.last_block_id_hash),
+            app_hash: self.app_hash.or(default.app_hash),
         }
     }
 
@@ -171,8 +177,10 @@ impl Generator<block::Header> for Header {
             part_set_header: Default::default(),
         });
 
-        let app_hash =
-            AppHash::try_from(vec![0u8; 32]).map_err(|e| SimpleError::new(e.to_string()))?;
+        let app_hash = self
+            .app_hash
+            .clone()
+            .unwrap_or(AppHash::from_hex_upper("").map_err(|e| SimpleError::new(e.to_string()))?);
 
         let header = block::Header {
             // block version in Tendermint-go is hardcoded with value 11

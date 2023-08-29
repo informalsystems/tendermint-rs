@@ -95,15 +95,7 @@ impl LightBlock {
             .next_validators(&validators)
             .time(Time::from_unix_timestamp(height as i64, 0).unwrap()); // just wanted to initialize time with some value
 
-        let commit = Commit::new(header.clone(), 1);
-
-        Self {
-            header: Some(header),
-            commit: Some(commit),
-            validators: Some(validators.to_vec()),
-            next_validators: Some(validators.to_vec()),
-            provider: Some(default_peer_id()),
-        }
+        Self::new_default_with_header(header)
     }
 
     pub fn new_default_with_time_and_chain_id(chain_id: String, time: Time, height: u64) -> Self {
@@ -117,13 +109,15 @@ impl LightBlock {
             .next_validators(&validators)
             .time(time);
 
-        let commit = Commit::new(header.clone(), 1);
+        Self::new_default_with_header(header)
+    }
 
+    pub fn new_default_with_header(header: Header) -> Self {
         Self {
-            header: Some(header),
-            commit: Some(commit),
-            validators: Some(validators.to_vec()),
-            next_validators: Some(validators.to_vec()),
+            header: Some(header.clone()),
+            commit: Some(Commit::new(header.clone(), 1)),
+            validators: header.validators.clone(),
+            next_validators: header.validators,
             provider: Some(default_peer_id()),
         }
     }
