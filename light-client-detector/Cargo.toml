@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint-light-client-detector"
-version    = "0.33.0"
+version    = "0.33.1"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -23,10 +23,10 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-tendermint = { version = "0.33.0", path = "../tendermint" }
-tendermint-rpc = { version = "0.33.0", path = "../rpc", features = ["http-client"] }
-tendermint-proto = { version = "0.33.0", path = "../proto" }
-tendermint-light-client = { version = "0.33.0", path = "../light-client" }
+tendermint = { version = "0.33.1", path = "../tendermint" }
+tendermint-rpc = { version = "0.33.1", path = "../rpc", features = ["http-client"] }
+tendermint-proto = { version = "0.33.1", path = "../proto" }
+tendermint-light-client = { version = "0.33.1", path = "../light-client" }
 
 contracts = { version = "0.6.2", default-features = false }
 crossbeam-channel = { version = "0.4.2", default-features = false }
