@@ -54,7 +54,6 @@ pub struct HttpClient {
 pub struct Builder {
     url: HttpClientUrl,
     compat: CompatMode,
-    proxy_url: Option<HttpClientUrl>,
 }
 
 impl Builder {
@@ -66,40 +65,16 @@ impl Builder {
         self
     }
 
-    /// Specify the URL of a proxy server for the client to connect through.
-    ///
-    /// If the RPC endpoint is secured (HTTPS), the proxy will automatically
-    /// attempt to connect using the [HTTP CONNECT] method.
-    ///
-    /// [HTTP CONNECT]: https://en.wikipedia.org/wiki/HTTP_tunnel
-    pub fn proxy_url(mut self, url: HttpClientUrl) -> Self {
-        self.proxy_url = Some(url);
-        self
-    }
-
     /// Try to create a client with the options specified for this builder.
     pub fn build(self) -> Result<HttpClient, Error> {
-        match self.proxy_url {
-            None => Ok(HttpClient {
-                inner: if self.url.0.is_secure() {
-                    sealed::HttpClient::new_https(self.url.try_into()?)
-                } else {
-                    sealed::HttpClient::new_http(self.url.try_into()?)
-                },
-                compat: self.compat,
-            }),
-            Some(proxy_url) => Ok(HttpClient {
-                inner: if proxy_url.0.is_secure() {
-                    sealed::HttpClient::new_https_proxy(
-                        self.url.try_into()?,
-                        proxy_url.try_into()?,
-                    )?
-                } else {
-                    sealed::HttpClient::new_http_proxy(self.url.try_into()?, proxy_url.try_into()?)?
-                },
-                compat: self.compat,
-            }),
-        }
+        Ok(HttpClient {
+            inner: if self.url.0.is_secure() {
+                sealed::HttpClient::new_https(self.url.try_into()?)
+            } else {
+                sealed::HttpClient::new_http(self.url.try_into()?)
+            },
+            compat: self.compat,
+        })
     }
 }
 
@@ -121,22 +96,6 @@ impl HttpClient {
         })
     }
 
-    /// Construct a new Tendermint RPC HTTP/S client connecting to the given
-    /// URL, but via the specified proxy's URL.
-    ///
-    /// If the RPC endpoint is secured (HTTPS), the proxy will automatically
-    /// attempt to connect using the [HTTP CONNECT] method.
-    ///
-    /// [HTTP CONNECT]: https://en.wikipedia.org/wiki/HTTP_tunnel
-    pub fn new_with_proxy<U, P>(url: U, proxy_url: P) -> Result<Self, Error>
-    where
-        U: TryInto<HttpClientUrl, Error = Error>,
-        P: TryInto<HttpClientUrl, Error = Error>,
-    {
-        let url = url.try_into()?;
-        Self::builder(url).proxy_url(proxy_url.try_into()?).build()
-    }
-
     /// Initiate a builder for a Tendermint RPC HTTP/S client connecting
     /// to the given URL, so that more configuration options can be specified
     /// with the builder.
@@ -144,7 +103,6 @@ impl HttpClient {
         Builder {
             url,
             compat: Default::default(),
-            proxy_url: None,
         }
     }
 
@@ -335,8 +293,7 @@ mod sealed {
         client::{connect::Connect, HttpConnector},
         header, Uri,
     };
-    use hyper_proxy::{Intercept, Proxy, ProxyConnector};
-    use hyper_rustls::HttpsConnector;
+    use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 
     use crate::prelude::*;
     use crate::{
@@ -418,8 +375,6 @@ mod sealed {
     pub enum HttpClient {
         Http(HyperClient<HttpConnector>),
         Https(HyperClient<HttpsConnector<HttpConnector>>),
-        HttpProxy(HyperClient<ProxyConnector<HttpConnector>>),
-        HttpsProxy(HyperClient<ProxyConnector<HttpsConnector<HttpConnector>>>),
     }
 
     impl HttpClient {
@@ -430,30 +385,15 @@ mod sealed {
         pub fn new_https(uri: Uri) -> Self {
             Self::Https(HyperClient::new(
                 uri,
-                hyper::Client::builder().build(HttpsConnector::with_native_roots()),
+                hyper::Client::builder().build(
+                    HttpsConnectorBuilder::new()
+                        .with_native_roots()
+                        .https_only()
+                        .enable_http1()
+                        .enable_http2()
+                        .build(),
+                ),
             ))
-        }
-
-        pub fn new_http_proxy(uri: Uri, proxy_uri: Uri) -> Result<Self, Error> {
-            let proxy = Proxy::new(Intercept::All, proxy_uri);
-            let proxy_connector =
-                ProxyConnector::from_proxy(HttpConnector::new(), proxy).map_err(Error::io)?;
-            Ok(Self::HttpProxy(HyperClient::new(
-                uri,
-                hyper::Client::builder().build(proxy_connector),
-            )))
-        }
-
-        pub fn new_https_proxy(uri: Uri, proxy_uri: Uri) -> Result<Self, Error> {
-            let proxy = Proxy::new(Intercept::All, proxy_uri);
-            let proxy_connector =
-                ProxyConnector::from_proxy(HttpsConnector::with_native_roots(), proxy)
-                    .map_err(Error::io)?;
-
-            Ok(Self::HttpsProxy(HyperClient::new(
-                uri,
-                hyper::Client::builder().build(proxy_connector),
-            )))
         }
 
         pub async fn perform<R, S>(&self, request: R) -> Result<R::Output, Error>
@@ -464,8 +404,6 @@ mod sealed {
             match self {
                 HttpClient::Http(c) => c.perform(request).await,
                 HttpClient::Https(c) => c.perform(request).await,
-                HttpClient::HttpProxy(c) => c.perform(request).await,
-                HttpClient::HttpsProxy(c) => c.perform(request).await,
             }
         }
     }
