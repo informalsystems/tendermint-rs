@@ -35,8 +35,10 @@ mod v0_37 {
         fn try_from(message: pb::ResponseProcessProposal) -> Result<Self, Self::Error> {
             use pb::response_process_proposal::ProposalStatus;
 
-            let status = ProposalStatus::from_i32(message.status)
-                .ok_or_else(Error::unsupported_process_proposal_status)?;
+            let status = message
+                .status
+                .try_into()
+                .map_err(|_| Error::unsupported_process_proposal_status())?;
 
             let value = match status {
                 ProposalStatus::Unknown => ProcessProposal::Unknown,
@@ -70,8 +72,10 @@ mod v0_38 {
         fn try_from(message: pb::ResponseProcessProposal) -> Result<Self, Self::Error> {
             use pb::response_process_proposal::ProposalStatus;
 
-            let status = ProposalStatus::from_i32(message.status)
-                .ok_or_else(Error::unsupported_process_proposal_status)?;
+            let status = message
+                .status
+                .try_into()
+                .map_err(|_| Error::unsupported_process_proposal_status())?;
 
             let value = match status {
                 ProposalStatus::Unknown => ProcessProposal::Unknown,

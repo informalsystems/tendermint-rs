@@ -132,7 +132,9 @@ pub mod broadcast_api_server {
                             request: tonic::Request<super::RequestPing>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).ping(request).await };
+                            let fut = async move {
+                                <T as BroadcastApi>::ping(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -177,7 +179,7 @@ pub mod broadcast_api_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).broadcast_tx(request).await
+                                <T as BroadcastApi>::broadcast_tx(&inner, request).await
                             };
                             Box::pin(fut)
                         }

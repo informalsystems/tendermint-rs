@@ -1003,7 +1003,9 @@ pub mod abci_application_server {
                             request: tonic::Request<super::RequestEcho>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).echo(request).await };
+                            let fut = async move {
+                                <T as AbciApplication>::echo(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -1046,7 +1048,9 @@ pub mod abci_application_server {
                             request: tonic::Request<super::RequestFlush>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).flush(request).await };
+                            let fut = async move {
+                                <T as AbciApplication>::flush(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -1089,7 +1093,9 @@ pub mod abci_application_server {
                             request: tonic::Request<super::RequestInfo>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).info(request).await };
+                            let fut = async move {
+                                <T as AbciApplication>::info(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -1133,7 +1139,9 @@ pub mod abci_application_server {
                             request: tonic::Request<super::RequestDeliverTx>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).deliver_tx(request).await };
+                            let fut = async move {
+                                <T as AbciApplication>::deliver_tx(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -1177,7 +1185,9 @@ pub mod abci_application_server {
                             request: tonic::Request<super::RequestCheckTx>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).check_tx(request).await };
+                            let fut = async move {
+                                <T as AbciApplication>::check_tx(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -1220,7 +1230,9 @@ pub mod abci_application_server {
                             request: tonic::Request<super::RequestQuery>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).query(request).await };
+                            let fut = async move {
+                                <T as AbciApplication>::query(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -1264,7 +1276,9 @@ pub mod abci_application_server {
                             request: tonic::Request<super::RequestCommit>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).commit(request).await };
+                            let fut = async move {
+                                <T as AbciApplication>::commit(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -1308,7 +1322,9 @@ pub mod abci_application_server {
                             request: tonic::Request<super::RequestInitChain>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).init_chain(request).await };
+                            let fut = async move {
+                                <T as AbciApplication>::init_chain(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -1352,7 +1368,9 @@ pub mod abci_application_server {
                             request: tonic::Request<super::RequestBeginBlock>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).begin_block(request).await };
+                            let fut = async move {
+                                <T as AbciApplication>::begin_block(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -1396,7 +1414,9 @@ pub mod abci_application_server {
                             request: tonic::Request<super::RequestEndBlock>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).end_block(request).await };
+                            let fut = async move {
+                                <T as AbciApplication>::end_block(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -1441,7 +1461,8 @@ pub mod abci_application_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).list_snapshots(request).await
+                                <T as AbciApplication>::list_snapshots(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -1487,7 +1508,8 @@ pub mod abci_application_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).offer_snapshot(request).await
+                                <T as AbciApplication>::offer_snapshot(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -1533,7 +1555,8 @@ pub mod abci_application_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).load_snapshot_chunk(request).await
+                                <T as AbciApplication>::load_snapshot_chunk(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -1579,7 +1602,11 @@ pub mod abci_application_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).apply_snapshot_chunk(request).await
+                                <T as AbciApplication>::apply_snapshot_chunk(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -1625,7 +1652,8 @@ pub mod abci_application_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).prepare_proposal(request).await
+                                <T as AbciApplication>::prepare_proposal(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -1671,7 +1699,8 @@ pub mod abci_application_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).process_proposal(request).await
+                                <T as AbciApplication>::process_proposal(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }

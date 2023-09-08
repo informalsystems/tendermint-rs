@@ -31,8 +31,10 @@ mod v0_38 {
         fn try_from(message: pb::ResponseVerifyVoteExtension) -> Result<Self, Self::Error> {
             use pb::response_verify_vote_extension::VerifyStatus;
 
-            let status = VerifyStatus::from_i32(message.status)
-                .ok_or_else(Error::unsupported_verify_vote_extension_status)?;
+            let status = message
+                .status
+                .try_into()
+                .map_err(|_| Error::unsupported_verify_vote_extension_status())?;
 
             let value = match status {
                 VerifyStatus::Unknown => VerifyVoteExtension::Unknown,
