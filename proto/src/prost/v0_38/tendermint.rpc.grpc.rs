@@ -38,6 +38,10 @@ pub mod broadcast_api_server {
             tonic::Status,
         >;
     }
+    /// BroadcastAPI
+    ///
+    /// Deprecated: This API will be superseded by a more comprehensive gRPC-based
+    /// broadcast API, and is scheduled for removal after v0.38.
     #[derive(Debug)]
     pub struct BroadcastApiServer<T: BroadcastApi> {
         inner: _Inner<T>,
