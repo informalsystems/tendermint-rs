@@ -206,7 +206,7 @@ pub mod allow_empty {
 }
 
 /// AppHash is usually a SHA256 hash, but in reality it can be any kind of data
-#[derive(Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Default)]
 pub struct AppHash(Vec<u8>);
 
 impl Protobuf<Vec<u8>> for AppHash {}

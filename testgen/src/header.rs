@@ -37,6 +37,7 @@ pub struct Header {
     #[options(help = "last block id hash (default: Hash::None)")]
     pub last_block_id_hash: Option<Hash>,
     #[options(help = "last commit hash (default: AppHash(vec![])")]
+    #[serde(with = "app_hash_serde")]
     pub app_hash: Option<AppHash>,
 }
 
@@ -64,6 +65,29 @@ where
     });
 
     m_secs.serialize(serializer)
+}
+
+// Serialize and deserialize the `Option<AppHash>`, delegating to the `AppHash`
+// serialization/deserialization into/from hexstring.
+mod app_hash_serde {
+    use super::*;
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<AppHash>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let app_hash = tendermint::serializers::apphash::deserialize(deserializer)?;
+        Ok(Some(app_hash))
+    }
+
+    pub fn serialize<S>(value: &Option<AppHash>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match value {
+            Some(inner) => tendermint::serializers::apphash::serialize(inner, serializer),
+            None => serializer.serialize_none(),
+        }
+    }
 }
 
 impl Header {
