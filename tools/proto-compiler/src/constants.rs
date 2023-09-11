@@ -199,7 +199,10 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         ".tendermint.types.Validator.proposer_priority",
         QUOTED_WITH_DEFAULT,
     ), // Default is for /genesis deserialization
-    (".tendermint.types.ValidatorSet.total_voting_power", DEFAULT),
+    (
+        ".tendermint.types.ValidatorSet.total_voting_power",
+        QUOTED_WITH_DEFAULT,
+    ),
     (
         ".tendermint.types.ValidatorSet.total_voting_power",
         SKIP_SERIALIZING,
