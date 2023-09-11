@@ -64,3 +64,5 @@ pub mod part_set_header_total;
 pub mod time_duration;
 pub mod timestamp;
 pub mod txs;
+
+mod public_key;
