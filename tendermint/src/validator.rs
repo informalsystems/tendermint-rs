@@ -24,23 +24,47 @@ pub struct Set {
 }
 
 impl Set {
-    /// Constructor
-    pub fn new(mut validators: Vec<Info>, proposer: Option<Info>) -> Set {
-        Self::sort_validators(&mut validators);
+    pub const MAX_TOTAL_VOTING_POWER: u64 = (i64::MAX / 8) as u64;
 
+    /// Constructor
+    pub fn new(validators: Vec<Info>, proposer: Option<Info>) -> Set {
+        Self::try_from_parts(validators, proposer, 0).unwrap()
+    }
+
+    fn try_from_parts(
+        mut validators: Vec<Info>,
+        proposer: Option<Info>,
+        unvalidated_total_voting_power: i64,
+    ) -> Result<Set, Error> {
         // Compute the total voting power
         let total_voting_power = validators
             .iter()
             .map(|v| v.power.value())
-            .sum::<u64>()
-            .try_into()
-            .unwrap();
+            .fold(0u64, |acc, v| acc.saturating_add(v));
 
-        Set {
+        if total_voting_power > Self::MAX_TOTAL_VOTING_POWER {
+            return Err(Error::total_voting_power_overflow());
+        }
+
+        // The conversion cannot fail as we have validated against a smaller limit.
+        let total_voting_power: vote::Power = total_voting_power.try_into().unwrap();
+
+        // If the given total voting power is not the default value,
+        // validate it against the sum of voting powers of the participants.
+        if unvalidated_total_voting_power != 0 {
+            let given_val: vote::Power = unvalidated_total_voting_power.try_into()?;
+            if given_val != total_voting_power {
+                return Err(Error::total_voting_power_mismatch());
+            }
+        }
+
+        Self::sort_validators(&mut validators);
+
+        Ok(Set {
             validators,
             proposer,
             total_voting_power,
-        }
+        })
     }
 
     /// Convenience constructor for cases where there is no proposer
@@ -266,9 +290,8 @@ tendermint_pb_modules! {
                 .collect::<Result<Vec<_>, _>>()?;
 
             let proposer = value.proposer.map(TryInto::try_into).transpose()?;
-            let validator_set = Self::new(validators, proposer);
 
-            Ok(validator_set)
+            Self::try_from_parts(validators, proposer, value.total_voting_power)
         }
     }
 
