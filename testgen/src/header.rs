@@ -36,8 +36,8 @@ pub struct Header {
     pub proposer: Option<usize>,
     #[options(help = "last block id hash (default: Hash::None)")]
     pub last_block_id_hash: Option<Hash>,
-    #[options(help = "last commit hash (default: AppHash(vec![])")]
-    #[serde(with = "app_hash_serde")]
+    #[options(help = "application hash (default: AppHash(vec![])")]
+    #[serde(default, with = "app_hash_serde")]
     pub app_hash: Option<AppHash>,
 }
 
