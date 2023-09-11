@@ -7,7 +7,8 @@ pub struct ValidatorSet {
     #[prost(message, optional, tag = "2")]
     pub proposer: ::core::option::Option<Validator>,
     #[prost(int64, tag = "3")]
-    #[serde(skip)]
+    #[serde(default)]
+    #[serde(skip_serializing)]
     pub total_voting_power: i64,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]

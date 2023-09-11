@@ -47,7 +47,7 @@ const BASE64STRING: &str = r#"#[serde(with = "crate::serializers::bytes::base64s
 const VEC_BASE64STRING: &str = r#"#[serde(with = "crate::serializers::bytes::vec_base64string")]"#;
 const OPTIONAL: &str = r#"#[serde(with = "crate::serializers::optional")]"#;
 const BYTES_SKIP_IF_EMPTY: &str = r#"#[serde(skip_serializing_if = "bytes::Bytes::is_empty")]"#;
-const SKIP: &str = "#[serde(skip)]";
+const SKIP_SERIALIZING: &str = "#[serde(skip_serializing)]";
 const RENAME_ALL_PASCALCASE: &str = r#"#[serde(rename_all = "PascalCase")]"#;
 const NULLABLEVECARRAY: &str = r#"#[serde(with = "crate::serializers::txs")]"#;
 const NULLABLE: &str = r#"#[serde(with = "crate::serializers::nullable")]"#;
@@ -199,7 +199,11 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         ".tendermint.types.Validator.proposer_priority",
         QUOTED_WITH_DEFAULT,
     ), // Default is for /genesis deserialization
-    (".tendermint.types.ValidatorSet.total_voting_power", SKIP),
+    (".tendermint.types.ValidatorSet.total_voting_power", DEFAULT),
+    (
+        ".tendermint.types.ValidatorSet.total_voting_power",
+        SKIP_SERIALIZING,
+    ),
     (".tendermint.types.BlockMeta.block_size", QUOTED),
     (".tendermint.types.BlockMeta.num_txs", QUOTED),
     (".tendermint.crypto.PublicKey.sum.ed25519", RENAME_EDPUBKEY),
