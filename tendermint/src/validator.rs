@@ -1,7 +1,9 @@
 //! Tendermint validators
 
 use serde::{Deserialize, Serialize};
-use tendermint_proto::v0_37::types::SimpleValidator as RawSimpleValidator;
+use tendermint_proto::v0_38::types::{
+    SimpleValidator as RawSimpleValidator, ValidatorSet as RawValidatorSet,
+};
 use tendermint_proto::Protobuf;
 
 use crate::{
@@ -17,6 +19,7 @@ use crate::{
 
 /// Validator set contains a vector of validators
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "RawValidatorSet")]
 pub struct Set {
     validators: Vec<Info>,
     proposer: Option<Info>,
