@@ -12,9 +12,9 @@ where
     T: core::str::FromStr,
     <T as core::str::FromStr>::Err: core::fmt::Display,
 {
-    String::deserialize(deserializer)?
+    <&str>::deserialize(deserializer)?
         .parse::<T>()
-        .map_err(|e| D::Error::custom(format!("{e}")))
+        .map_err(D::Error::custom)
 }
 
 /// Serialize from T into string

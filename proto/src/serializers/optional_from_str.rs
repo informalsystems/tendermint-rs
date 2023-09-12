@@ -23,11 +23,9 @@ where
     T: FromStr,
     T::Err: Display,
 {
-    let s = match Option::<String>::deserialize(deserializer)? {
+    let s = match Option::<&str>::deserialize(deserializer)? {
         Some(s) => s,
         None => return Ok(None),
     };
-    Ok(Some(s.parse().map_err(|e: <T as FromStr>::Err| {
-        D::Error::custom(format!("{e}"))
-    })?))
+    Ok(Some(s.parse().map_err(D::Error::custom)?))
 }
