@@ -1,6 +1,9 @@
 //! Serialize/deserialize `Option<T>` type where `T` has a serializer/deserializer.
-//! Use `null` if the received value equals the `Default` implementation.
-// Todo: Rename this serializer to something like "default_eq_none" to mirror its purpose better.
+//! Deserialize to `None` if the received value equals the `Default` value.
+//! Serialize `None` as `Some` with the `Default` value for `T`.
+
+// TODO: Rename this serializer to something like "default_eq_none" to mirror its purpose better.
+
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// Deserialize `Option<T>`
@@ -19,7 +22,7 @@ where
     T: Default + Serialize,
 {
     match value {
-        Some(v) => v.serialize(serializer),
-        None => T::default().serialize(serializer),
+        Some(v) => serializer.serialize_some(v),
+        None => serializer.serialize_some(&T::default()),
     }
 }
