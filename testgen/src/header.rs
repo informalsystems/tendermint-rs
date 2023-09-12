@@ -38,6 +38,7 @@ pub struct Header {
     pub last_block_id_hash: Option<Hash>,
     #[options(help = "application hash (default: AppHash(vec![])")]
     #[serde(default, with = "app_hash_serde")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub app_hash: Option<AppHash>,
 }
 
@@ -201,11 +202,6 @@ impl Generator<block::Header> for Header {
             part_set_header: Default::default(),
         });
 
-        let app_hash = self
-            .app_hash
-            .clone()
-            .unwrap_or_default();
-
         let header = block::Header {
             // block version in Tendermint-go is hardcoded with value 11
             // so we do the same with MBT for now for compatibility
@@ -220,7 +216,7 @@ impl Generator<block::Header> for Header {
             validators_hash,
             next_validators_hash: next_valset.hash(),
             consensus_hash: validators_hash, // TODO: currently not clear how to produce a valid hash
-            app_hash,
+            app_hash: self.app_hash.clone().unwrap_or_default(),
             last_results_hash: None,
             evidence_hash: None,
             proposer_address,
