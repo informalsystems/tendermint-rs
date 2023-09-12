@@ -76,16 +76,18 @@ mod app_hash_serde {
     where
         D: Deserializer<'de>,
     {
-        let app_hash = tendermint::serializers::apphash::deserialize(deserializer)?;
-        Ok(Some(app_hash))
+        tendermint::serializers::apphash::deserialize(deserializer).map(Some)
     }
 
     pub fn serialize<S>(value: &Option<AppHash>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        let app_hash = value.clone().unwrap_or_default();
-        tendermint::serializers::apphash::serialize(&app_hash, serializer)
+        if value.is_none() {
+            serializer.serialize_none()
+        } else {
+            tendermint::serializers::apphash::serialize(value.as_ref().unwrap(), serializer)
+        }
     }
 }
 
