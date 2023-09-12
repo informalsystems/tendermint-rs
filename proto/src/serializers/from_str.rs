@@ -33,6 +33,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::*;
     use core::convert::Infallible;
     use core::str::FromStr;
     use serde::Deserialize;
