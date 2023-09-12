@@ -84,10 +84,8 @@ mod app_hash_serde {
     where
         S: Serializer,
     {
-        match value {
-            Some(inner) => tendermint::serializers::apphash::serialize(inner, serializer),
-            None => serializer.serialize_none(),
-        }
+        let app_hash = value.clone().unwrap_or_default();
+        tendermint::serializers::apphash::serialize(&app_hash, serializer)
     }
 }
 
