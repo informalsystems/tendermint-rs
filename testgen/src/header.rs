@@ -204,7 +204,7 @@ impl Generator<block::Header> for Header {
         let app_hash = self
             .app_hash
             .clone()
-            .unwrap_or(AppHash::from_hex_upper("").map_err(|e| SimpleError::new(e.to_string()))?);
+            .unwrap_or_default();
 
         let header = block::Header {
             // block version in Tendermint-go is hardcoded with value 11
