@@ -83,11 +83,7 @@ mod app_hash_serde {
     where
         S: Serializer,
     {
-        if value.is_none() {
-            serializer.serialize_none()
-        } else {
-            tendermint::serializers::apphash::serialize(value.as_ref().unwrap(), serializer)
-        }
+        tendermint::serializers::apphash::serialize(value.as_ref().unwrap(), serializer)
     }
 }
 
