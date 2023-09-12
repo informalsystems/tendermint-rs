@@ -1,6 +1,6 @@
 //! Hash serialization with validation
 
-use serde::{Deserialize, Deserializer, Serializer};
+use serde::{de, ser, Deserialize, Deserializer, Serializer};
 use subtle_encoding::hex;
 
 use crate::{hash::Algorithm, prelude::*, Hash};
@@ -10,8 +10,8 @@ pub fn deserialize<'de, D>(deserializer: D) -> Result<Hash, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let hexstring: String = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
-    Hash::from_hex_upper(Algorithm::Sha256, hexstring.as_str()).map_err(serde::de::Error::custom)
+    let hexstring = Option::<&str>::deserialize(deserializer)?.unwrap_or("");
+    Hash::from_hex_upper(Algorithm::Sha256, hexstring).map_err(de::Error::custom)
 }
 
 /// Serialize from Hash into hexstring
@@ -20,6 +20,7 @@ where
     S: Serializer,
 {
     let hex_bytes = hex::encode_upper(value.as_bytes());
-    let hex_string = String::from_utf8(hex_bytes).map_err(serde::ser::Error::custom)?;
-    serializer.serialize_str(&hex_string)
+    let hex_string = String::from_utf8(hex_bytes).map_err(ser::Error::custom)?;
+    // Serialize as Option<String> for symmetry with deserialize
+    serializer.serialize_some(&hex_string)
 }
