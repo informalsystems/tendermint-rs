@@ -24,7 +24,8 @@ pub struct Validator {
     #[serde(alias = "power", with = "crate::serializers::from_str")]
     pub voting_power: i64,
     #[prost(int64, tag = "4")]
-    #[serde(with = "crate::serializers::from_str", default)]
+    #[serde(with = "crate::serializers::from_str_allow_null")]
+    #[serde(default)]
     pub proposer_priority: i64,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]

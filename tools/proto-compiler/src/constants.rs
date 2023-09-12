@@ -41,6 +41,7 @@ const TYPE_TAG: &str = r#"#[serde(tag = "type", content = "value")]"#;
 /// Predefined custom attributes for field annotations
 const QUOTED: &str = r#"#[serde(with = "crate::serializers::from_str")]"#;
 const QUOTED_WITH_DEFAULT: &str = r#"#[serde(with = "crate::serializers::from_str", default)]"#;
+const QUOTED_ALLOW_NULL: &str = r#"#[serde(with = "crate::serializers::from_str_allow_null")]"#;
 const DEFAULT: &str = r#"#[serde(default)]"#;
 const HEXSTRING: &str = r#"#[serde(with = "crate::serializers::bytes::hexstring")]"#;
 const BASE64STRING: &str = r#"#[serde(with = "crate::serializers::bytes::base64string")]"#;
@@ -197,8 +198,9 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     ), // https://github.com/tendermint/tendermint/issues/5549
     (
         ".tendermint.types.Validator.proposer_priority",
-        QUOTED_WITH_DEFAULT,
-    ), // Default is for /genesis deserialization
+        QUOTED_ALLOW_NULL,
+    ), // null occurs in some LightBlock data
+    (".tendermint.types.Validator.proposer_priority", DEFAULT), // Default is for /genesis deserialization
     (
         ".tendermint.types.ValidatorSet.total_voting_power",
         QUOTED_WITH_DEFAULT,
