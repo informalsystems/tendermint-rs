@@ -11,6 +11,7 @@
 //! [`from_str`]: super::from_str
 //! [`allow_null`]: super::allow_null
 
+use alloc::borrow::Cow;
 use core::fmt::Display;
 use core::str::FromStr;
 
@@ -25,7 +26,7 @@ where
     T: FromStr + Default,
     <T as FromStr>::Err: Display,
 {
-    match <Option<&str>>::deserialize(deserializer)? {
+    match <Option<Cow<'_, str>>>::deserialize(deserializer)? {
         Some(s) => s.parse::<T>().map_err(D::Error::custom),
         None => Ok(T::default()),
     }
