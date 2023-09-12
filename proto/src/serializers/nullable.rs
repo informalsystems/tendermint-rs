@@ -17,7 +17,8 @@ where
     T: Default + PartialEq + Serialize,
 {
     if value == &T::default() {
-        return serializer.serialize_none();
+        serializer.serialize_none()
+    } else {
+        serializer.serialize_some(value)
     }
-    value.serialize(serializer)
 }
