@@ -1,5 +1,7 @@
 //! `Option<Hash>` serialization with validation
 
+use alloc::borrow::Cow;
+
 use serde::{de, Deserialize, Deserializer, Serializer};
 
 use super::hash;
@@ -11,8 +13,8 @@ pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<Hash>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    match Option::<&str>::deserialize(deserializer)? {
-        Some(s) => Hash::from_hex_upper(Algorithm::Sha256, s)
+    match Option::<Cow<'_, str>>::deserialize(deserializer)? {
+        Some(s) => Hash::from_hex_upper(Algorithm::Sha256, &s)
             .map(Some)
             .map_err(de::Error::custom),
         None => Ok(None),

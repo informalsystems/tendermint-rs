@@ -1,5 +1,7 @@
 //! AppHash serialization with validation
 
+use alloc::borrow::Cow;
+
 use serde::{de, ser, Deserialize, Deserializer, Serializer};
 use subtle_encoding::hex;
 
@@ -10,8 +12,8 @@ pub fn deserialize<'de, D>(deserializer: D) -> Result<AppHash, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let hexstring = Option::<&str>::deserialize(deserializer)?.unwrap_or("");
-    AppHash::from_hex_upper(hexstring).map_err(de::Error::custom)
+    let hexstring = Option::<Cow<'_, str>>::deserialize(deserializer)?.unwrap_or(Cow::Borrowed(""));
+    AppHash::from_hex_upper(&hexstring).map_err(de::Error::custom)
 }
 
 /// Serialize from AppHash into hexstring
