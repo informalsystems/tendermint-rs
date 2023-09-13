@@ -1,5 +1,6 @@
 //! De/serialize an optional type that must be converted from/to a string.
 
+use alloc::borrow::Cow;
 use core::{fmt::Display, str::FromStr};
 
 use serde::{de::Error, Deserialize, Deserializer, Serializer};
@@ -23,11 +24,41 @@ where
     T: FromStr,
     T::Err: Display,
 {
-    let s = match Option::<String>::deserialize(deserializer)? {
+    let s = match Option::<Cow<'_, str>>::deserialize(deserializer)? {
         Some(s) => s,
         None => return Ok(None),
     };
-    Ok(Some(s.parse().map_err(|e: <T as FromStr>::Err| {
-        D::Error::custom(format!("{e}"))
-    })?))
+    Ok(Some(s.parse().map_err(D::Error::custom)?))
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+    use core::convert::Infallible;
+    use core::str::FromStr;
+    use serde::Deserialize;
+
+    #[derive(Debug, PartialEq)]
+    struct ParsedStr(String);
+
+    impl FromStr for ParsedStr {
+        type Err = Infallible;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            Ok(Self(s.to_owned()))
+        }
+    }
+
+    #[derive(Deserialize)]
+    struct Foo {
+        #[serde(with = "super")]
+        msg: Option<ParsedStr>,
+    }
+
+    #[test]
+    fn can_deserialize_owned() {
+        const TEST_JSON: &str = r#"{ "msg": "\"Hello\"" }"#;
+        let v = serde_json::from_str::<Foo>(TEST_JSON).unwrap();
+        assert_eq!(v.msg, Some(ParsedStr("\"Hello\"".into())));
+    }
 }

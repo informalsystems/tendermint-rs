@@ -1,6 +1,8 @@
 //! AppHash serialization with validation
 
-use serde::{Deserialize, Deserializer, Serializer};
+use alloc::borrow::Cow;
+
+use serde::{de, Deserialize, Deserializer, Serializer};
 use subtle_encoding::base64;
 
 use crate::{prelude::*, AppHash};
@@ -10,9 +12,11 @@ pub fn deserialize<'de, D>(deserializer: D) -> Result<AppHash, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let s = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
-    let decoded = base64::decode(s).map_err(serde::de::Error::custom)?;
-    decoded.try_into().map_err(serde::de::Error::custom)
+    let decoded = match Option::<Cow<'_, str>>::deserialize(deserializer)? {
+        Some(s) => base64::decode(s.as_bytes()).map_err(de::Error::custom)?,
+        None => vec![],
+    };
+    decoded.try_into().map_err(de::Error::custom)
 }
 
 /// Serialize from [`AppHash`] into a base64-encoded string.
