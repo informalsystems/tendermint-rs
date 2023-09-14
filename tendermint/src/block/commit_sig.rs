@@ -12,13 +12,13 @@ use crate::{account, prelude::*, Signature, Time};
 ///
 /// From the corresponding Tendermint `Time` struct:
 ///
-///     The zero value for a Time is defined to be
-///     January 1, year 1, 00:00:00.000000000 UTC
-///     which (1) looks like a zero, or as close as you can get in a date
-///     (1-1-1 00:00:00 UTC), (2) is unlikely enough to arise in practice to
-///     be a suitable "not set" sentinel, unlike Jan 1 1970, and (3) has a
-///     non-negative year even in time zones west of UTC, unlike 1-1-0
-///     00:00:00 UTC, which would be 12-31-(-1) 19:00:00 in New York.
+/// The zero value for a Time is defined to be
+/// January 1, year 1, 00:00:00.000000000 UTC
+/// which (1) looks like a zero, or as close as you can get in a date
+/// (1-1-1 00:00:00 UTC), (2) is unlikely enough to arise in practice to
+/// be a suitable "not set" sentinel, unlike Jan 1 1970, and (3) has a
+/// non-negative year even in time zones west of UTC, unlike 1-1-0
+/// 00:00:00 UTC, which would be 12-31-(-1) 19:00:00 in New York.
 const ZERO_TIMESTAMP: Timestamp = Timestamp {
     seconds: -62135596800,
     nanos: 0,
