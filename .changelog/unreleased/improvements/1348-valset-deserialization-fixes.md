@@ -7,3 +7,6 @@
 - `[tendermint-proto]` In the `Deserialize` impls derived for
   `v*::types::ValidatorSet`, the `total_voting_power` field value is retrieved
   when present.
+- `[tendermint-proto]` Add serialziation helper module
+  `serializers::from_str_allow_null`. Use it to allow the `proposed_priority`
+  field value of null in the deserialization of `v*::types::Validator`.
