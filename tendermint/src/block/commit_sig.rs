@@ -187,4 +187,23 @@ tendermint_pb_modules! {
             }
         }
     }
+
+    #[test]
+    #[cfg(test)]
+    fn test_block_id_flag_absent_serialization() {
+        let absent = CommitSig::BlockIdFlagAbsent;
+        let raw_absent = RawCommitSig::from(absent);
+        let expected = r#"{"block_id_flag":1,"validator_address":"","timestamp":"0001-01-01T00:00:00Z","signature":""}"#;
+        let output = serde_json::to_string(&raw_absent).unwrap();
+        assert_eq!(expected, &output);
+    }
+
+    #[test]
+    #[cfg(test)]
+    fn test_block_id_flag_absent_deserialization() {
+        let json = r#"{"block_id_flag":1,"validator_address":"","timestamp":"0001-01-01T00:00:00Z","signature":""}"#;
+        let raw_commit_sg = serde_json::from_str::<RawCommitSig>(json).unwrap();
+        let commit_sig = CommitSig::try_from(raw_commit_sg).unwrap();
+        assert_eq!(commit_sig, CommitSig::BlockIdFlagAbsent);
+    }
 }
