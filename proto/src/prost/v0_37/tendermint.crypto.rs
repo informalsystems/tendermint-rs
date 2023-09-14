@@ -56,7 +56,6 @@ pub struct ProofOps {
     pub ops: ::prost::alloc::vec::Vec<ProofOp>,
 }
 /// PublicKey defines the keys available for use with Validators
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PublicKey {

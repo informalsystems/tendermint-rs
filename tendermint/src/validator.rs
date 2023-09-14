@@ -1,7 +1,9 @@
 //! Tendermint validators
 
 use serde::{Deserialize, Serialize};
-use tendermint_proto::v0_37::types::SimpleValidator as RawSimpleValidator;
+use tendermint_proto::v0_38::types::{
+    SimpleValidator as RawSimpleValidator, ValidatorSet as RawValidatorSet,
+};
 use tendermint_proto::Protobuf;
 
 use crate::{
@@ -17,6 +19,7 @@ use crate::{
 
 /// Validator set contains a vector of validators
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "RawValidatorSet")]
 pub struct Set {
     validators: Vec<Info>,
     proposer: Option<Info>,
@@ -24,23 +27,47 @@ pub struct Set {
 }
 
 impl Set {
-    /// Constructor
-    pub fn new(mut validators: Vec<Info>, proposer: Option<Info>) -> Set {
-        Self::sort_validators(&mut validators);
+    pub const MAX_TOTAL_VOTING_POWER: u64 = (i64::MAX / 8) as u64;
 
+    /// Constructor
+    pub fn new(validators: Vec<Info>, proposer: Option<Info>) -> Set {
+        Self::try_from_parts(validators, proposer, 0).unwrap()
+    }
+
+    fn try_from_parts(
+        mut validators: Vec<Info>,
+        proposer: Option<Info>,
+        unvalidated_total_voting_power: i64,
+    ) -> Result<Set, Error> {
         // Compute the total voting power
         let total_voting_power = validators
             .iter()
             .map(|v| v.power.value())
-            .sum::<u64>()
-            .try_into()
-            .unwrap();
+            .fold(0u64, |acc, v| acc.saturating_add(v));
 
-        Set {
+        if total_voting_power > Self::MAX_TOTAL_VOTING_POWER {
+            return Err(Error::total_voting_power_overflow());
+        }
+
+        // The conversion cannot fail as we have validated against a smaller limit.
+        let total_voting_power: vote::Power = total_voting_power.try_into().unwrap();
+
+        // If the given total voting power is not the default value,
+        // validate it against the sum of voting powers of the participants.
+        if unvalidated_total_voting_power != 0 {
+            let given_val: vote::Power = unvalidated_total_voting_power.try_into()?;
+            if given_val != total_voting_power {
+                return Err(Error::total_voting_power_mismatch());
+            }
+        }
+
+        Self::sort_validators(&mut validators);
+
+        Ok(Set {
             validators,
             proposer,
             total_voting_power,
-        }
+        })
     }
 
     /// Convenience constructor for cases where there is no proposer
@@ -266,9 +293,8 @@ tendermint_pb_modules! {
                 .collect::<Result<Vec<_>, _>>()?;
 
             let proposer = value.proposer.map(TryInto::try_into).transpose()?;
-            let validator_set = Self::new(validators, proposer);
 
-            Ok(validator_set)
+            Self::try_from_parts(validators, proposer, value.total_voting_power)
         }
     }
 
@@ -480,5 +506,219 @@ mod tests {
 
         assert_eq!(u64::from(update1.power), 573929);
         assert_eq!(update1, update2);
+    }
+
+    #[test]
+    fn validator_set_deserialize_all_fields() {
+        const VSET: &str = r#"{
+            "validators": [
+                {
+                    "address": "01F527D77D3FFCC4FCFF2DDC2952EEA5414F2A33",
+                    "pub_key": {
+                        "type": "tendermint/PubKeyEd25519",
+                        "value": "OAaNq3DX/15fGJP2MI6bujt1GRpvjwrqIevChirJsbc="
+                    },
+                    "voting_power": "50",
+                    "proposer_priority": "-150"
+                },
+                {
+                    "address": "026CC7B6F3E62F789DBECEC59766888B5464737D",
+                    "pub_key": {
+                        "type": "tendermint/PubKeyEd25519",
+                        "value": "+vlsKpn6ojn+UoTZl+w+fxeqm6xvUfBokTcKfcG3au4="
+                    },
+                    "voting_power": "42",
+                    "proposer_priority": "50"
+                }
+            ],
+            "proposer": {
+                "address": "01F527D77D3FFCC4FCFF2DDC2952EEA5414F2A33",
+                "pub_key": {
+                    "type": "tendermint/PubKeyEd25519",
+                    "value": "OAaNq3DX/15fGJP2MI6bujt1GRpvjwrqIevChirJsbc="
+                },
+                "voting_power": "50",
+                "proposer_priority": "-150"
+            },
+            "total_voting_power": "92"
+        }"#;
+
+        let vset = serde_json::from_str::<Set>(VSET).unwrap();
+        assert_eq!(vset.total_voting_power().value(), 92);
+    }
+
+    #[test]
+    fn validator_set_deserialize_no_total_voting_power() {
+        const VSET: &str = r#"{
+            "validators": [
+                {
+                    "address": "01F527D77D3FFCC4FCFF2DDC2952EEA5414F2A33",
+                    "pub_key": {
+                        "type": "tendermint/PubKeyEd25519",
+                        "value": "OAaNq3DX/15fGJP2MI6bujt1GRpvjwrqIevChirJsbc="
+                    },
+                    "voting_power": "50",
+                    "proposer_priority": "-150"
+                },
+                {
+                    "address": "026CC7B6F3E62F789DBECEC59766888B5464737D",
+                    "pub_key": {
+                        "type": "tendermint/PubKeyEd25519",
+                        "value": "+vlsKpn6ojn+UoTZl+w+fxeqm6xvUfBokTcKfcG3au4="
+                    },
+                    "voting_power": "42",
+                    "proposer_priority": "50"
+                }
+            ],
+            "proposer": {
+                "address": "01F527D77D3FFCC4FCFF2DDC2952EEA5414F2A33",
+                "pub_key": {
+                    "type": "tendermint/PubKeyEd25519",
+                    "value": "OAaNq3DX/15fGJP2MI6bujt1GRpvjwrqIevChirJsbc="
+                },
+                "voting_power": "50",
+                "proposer_priority": "-150"
+            }
+        }"#;
+
+        let vset = serde_json::from_str::<Set>(VSET).unwrap();
+        assert_eq!(vset.total_voting_power().value(), 92);
+    }
+
+    #[test]
+    fn validator_set_deserialize_total_voting_power_mismatch() {
+        const VSET: &str = r#"{
+            "validators": [
+                {
+                    "address": "01F527D77D3FFCC4FCFF2DDC2952EEA5414F2A33",
+                    "pub_key": {
+                        "type": "tendermint/PubKeyEd25519",
+                        "value": "OAaNq3DX/15fGJP2MI6bujt1GRpvjwrqIevChirJsbc="
+                    },
+                    "voting_power": "50",
+                    "proposer_priority": "-150"
+                },
+                {
+                    "address": "026CC7B6F3E62F789DBECEC59766888B5464737D",
+                    "pub_key": {
+                        "type": "tendermint/PubKeyEd25519",
+                        "value": "+vlsKpn6ojn+UoTZl+w+fxeqm6xvUfBokTcKfcG3au4="
+                    },
+                    "voting_power": "42",
+                    "proposer_priority": "50"
+                }
+            ],
+            "proposer": {
+                "address": "01F527D77D3FFCC4FCFF2DDC2952EEA5414F2A33",
+                "pub_key": {
+                    "type": "tendermint/PubKeyEd25519",
+                    "value": "OAaNq3DX/15fGJP2MI6bujt1GRpvjwrqIevChirJsbc="
+                },
+                "voting_power": "50",
+                "proposer_priority": "-150"
+            },
+            "total_voting_power": "100"
+        }"#;
+
+        let err = serde_json::from_str::<Set>(VSET).unwrap_err();
+        assert!(
+            err.to_string()
+                .contains("total voting power in validator set does not match the sum of participants' powers"),
+            "{err}"
+        );
+    }
+
+    #[test]
+    fn validator_set_deserialize_total_voting_power_exceeds_limit() {
+        const VSET: &str = r#"{
+            "validators": [
+                {
+                    "address": "01F527D77D3FFCC4FCFF2DDC2952EEA5414F2A33",
+                    "pub_key": {
+                        "type": "tendermint/PubKeyEd25519",
+                        "value": "OAaNq3DX/15fGJP2MI6bujt1GRpvjwrqIevChirJsbc="
+                    },
+                    "voting_power": "576460752303423488",
+                    "proposer_priority": "-150"
+                },
+                {
+                    "address": "026CC7B6F3E62F789DBECEC59766888B5464737D",
+                    "pub_key": {
+                        "type": "tendermint/PubKeyEd25519",
+                        "value": "+vlsKpn6ojn+UoTZl+w+fxeqm6xvUfBokTcKfcG3au4="
+                    },
+                    "voting_power": "576460752303423488",
+                    "proposer_priority": "50"
+                }
+            ],
+            "proposer": {
+                "address": "01F527D77D3FFCC4FCFF2DDC2952EEA5414F2A33",
+                "pub_key": {
+                    "type": "tendermint/PubKeyEd25519",
+                    "value": "OAaNq3DX/15fGJP2MI6bujt1GRpvjwrqIevChirJsbc="
+                },
+                "voting_power": "50",
+                "proposer_priority": "-150"
+            },
+            "total_voting_power": "92"
+        }"#;
+
+        let err = serde_json::from_str::<Set>(VSET).unwrap_err();
+        assert!(
+            err.to_string()
+                .contains("total voting power in validator set exceeds the allowed maximum"),
+            "{err}"
+        );
+    }
+
+    #[test]
+    fn validator_set_deserialize_total_voting_power_overflow() {
+        const VSET: &str = r#"{
+            "validators": [
+                {
+                    "address": "01F527D77D3FFCC4FCFF2DDC2952EEA5414F2A33",
+                    "pub_key": {
+                        "type": "tendermint/PubKeyEd25519",
+                        "value": "OAaNq3DX/15fGJP2MI6bujt1GRpvjwrqIevChirJsbc="
+                    },
+                    "voting_power": "6148914691236517205",
+                    "proposer_priority": "-150"
+                },
+                {
+                    "address": "026CC7B6F3E62F789DBECEC59766888B5464737D",
+                    "pub_key": {
+                        "type": "tendermint/PubKeyEd25519",
+                        "value": "+vlsKpn6ojn+UoTZl+w+fxeqm6xvUfBokTcKfcG3au4="
+                    },
+                    "voting_power": "6148914691236517205",
+                    "proposer_priority": "50"
+                },
+                {
+                    "address": "044EB1BB5D4C1CDB90029648439AEB10431FF295",
+                    "pub_key": {
+                        "type": "tendermint/PubKeyEd25519",
+                        "value": "Wc790fkCDAi7LvZ4UIBAIJSNI+Rp2aU80/8l+idZ/wI="
+                    },
+                    "voting_power": "6148914691236517206",
+                    "proposer_priority": "50"
+                }
+            ],
+            "proposer": {
+                "address": "01F527D77D3FFCC4FCFF2DDC2952EEA5414F2A33",
+                "pub_key": {
+                    "type": "tendermint/PubKeyEd25519",
+                    "value": "OAaNq3DX/15fGJP2MI6bujt1GRpvjwrqIevChirJsbc="
+                },
+                "voting_power": "50",
+                "proposer_priority": "-150"
+            }
+        }"#;
+
+        let err = serde_json::from_str::<Set>(VSET).unwrap_err();
+        assert!(
+            err.to_string()
+                .contains("total voting power in validator set exceeds the allowed maximum"),
+            "{err}"
+        );
     }
 }
