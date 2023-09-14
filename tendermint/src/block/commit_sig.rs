@@ -87,8 +87,6 @@ tendermint_pb_modules! {
     use num_traits::ToPrimitive;
     use pb::types::{BlockIdFlag, CommitSig as RawCommitSig};
 
-    // Todo: https://github.com/informalsystems/tendermint-rs/issues/259 - CommitSig Timestamp can be zero time
-    // Todo: https://github.com/informalsystems/tendermint-rs/issues/260 - CommitSig validator address missing in Absent vote
     impl TryFrom<RawCommitSig> for CommitSig {
         type Error = Error;
 
