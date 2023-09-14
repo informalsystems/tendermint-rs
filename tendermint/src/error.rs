@@ -16,7 +16,7 @@ define_error! {
 
         InvalidKey
             { detail: String }
-            |e| { format_args!("invalid key: {e}") },
+            |e| { format_args!("invalid key: {}", e.detail) },
 
         Length
             |_| { format_args!("length error") },
@@ -229,6 +229,12 @@ define_error! {
         NegativeProofIndex
             [ DisplayOnly<TryFromIntError> ]
             |_| { "negative item index in proof" },
+
+        TotalVotingPowerMismatch
+            |_| { "total voting power in validator set does not match the sum of participants' powers" },
+
+        TotalVotingPowerOverflow
+            |_| { "total voting power in validator set exceeds the allowed maximum" },
     }
 }
 

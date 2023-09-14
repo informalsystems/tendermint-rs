@@ -104,7 +104,8 @@ pub struct ValidatorSet {
     #[prost(message, optional, tag = "2")]
     pub proposer: ::core::option::Option<Validator>,
     #[prost(int64, tag = "3")]
-    #[serde(skip)]
+    #[serde(with = "crate::serializers::from_str", default)]
+    #[serde(skip_serializing)]
     pub total_voting_power: i64,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize)]
@@ -120,7 +121,8 @@ pub struct Validator {
     #[serde(alias = "power", with = "crate::serializers::from_str")]
     pub voting_power: i64,
     #[prost(int64, tag = "4")]
-    #[serde(with = "crate::serializers::from_str", default)]
+    #[serde(with = "crate::serializers::from_str_allow_null")]
+    #[serde(default)]
     pub proposer_priority: i64,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
