@@ -1,6 +1,28 @@
 //! CommitSig within Commit
 
+use tendermint_proto::google::protobuf::Timestamp;
+
 use crate::{account, prelude::*, Signature, Time};
+
+/// The special zero timestamp is to be used for absent votes,
+/// where there is no timestamp to speak of.
+///
+/// It is not the standard UNIX epoch at 0 seconds, ie. 1970-01-01 00:00:00 UTC,
+/// but a custom Tendermint-specific one for 1-1-1 00:00:00 UTC
+///
+/// From the corresponding Tendermint `Time` struct:
+///
+/// The zero value for a Time is defined to be
+/// January 1, year 1, 00:00:00.000000000 UTC
+/// which (1) looks like a zero, or as close as you can get in a date
+/// (1-1-1 00:00:00 UTC), (2) is unlikely enough to arise in practice to
+/// be a suitable "not set" sentinel, unlike Jan 1 1970, and (3) has a
+/// non-negative year even in time zones west of UTC, unlike 1-1-0
+/// 00:00:00 UTC, which would be 12-31-(-1) 19:00:00 in New York.
+const ZERO_TIMESTAMP: Timestamp = Timestamp {
+    seconds: -62135596800,
+    nanos: 0,
+};
 
 /// CommitSig represents a signature of a validator.
 /// It's a part of the Commit and can be used to reconstruct the vote set given the validator set.
@@ -59,13 +81,12 @@ impl CommitSig {
 }
 
 tendermint_pb_modules! {
-    use super::CommitSig;
+    use super::{CommitSig, ZERO_TIMESTAMP};
     use crate::{error::Error, prelude::*, Signature};
+
     use num_traits::ToPrimitive;
     use pb::types::{BlockIdFlag, CommitSig as RawCommitSig};
 
-    // Todo: https://github.com/informalsystems/tendermint-rs/issues/259 - CommitSig Timestamp can be zero time
-    // Todo: https://github.com/informalsystems/tendermint-rs/issues/260 - CommitSig validator address missing in Absent vote
     impl TryFrom<RawCommitSig> for CommitSig {
         type Error = Error;
 
@@ -140,7 +161,7 @@ tendermint_pb_modules! {
                 CommitSig::BlockIdFlagAbsent => RawCommitSig {
                     block_id_flag: BlockIdFlag::Absent.to_i32().unwrap(),
                     validator_address: Vec::new(),
-                    timestamp: None,
+                    timestamp: Some(ZERO_TIMESTAMP),
                     signature: Vec::new(),
                 },
                 CommitSig::BlockIdFlagNil {
@@ -165,5 +186,24 @@ tendermint_pb_modules! {
                 },
             }
         }
+    }
+
+    #[test]
+    #[cfg(test)]
+    fn test_block_id_flag_absent_serialization() {
+        let absent = CommitSig::BlockIdFlagAbsent;
+        let raw_absent = RawCommitSig::from(absent);
+        let expected = r#"{"block_id_flag":1,"validator_address":"","timestamp":"0001-01-01T00:00:00Z","signature":""}"#;
+        let output = serde_json::to_string(&raw_absent).unwrap();
+        assert_eq!(expected, &output);
+    }
+
+    #[test]
+    #[cfg(test)]
+    fn test_block_id_flag_absent_deserialization() {
+        let json = r#"{"block_id_flag":1,"validator_address":"","timestamp":"0001-01-01T00:00:00Z","signature":""}"#;
+        let raw_commit_sg = serde_json::from_str::<RawCommitSig>(json).unwrap();
+        let commit_sig = CommitSig::try_from(raw_commit_sg).unwrap();
+        assert_eq!(commit_sig, CommitSig::BlockIdFlagAbsent);
     }
 }
