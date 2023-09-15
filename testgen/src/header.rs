@@ -36,6 +36,10 @@ pub struct Header {
     pub proposer: Option<usize>,
     #[options(help = "last block id hash (default: Hash::None)")]
     pub last_block_id_hash: Option<Hash>,
+    #[options(help = "application hash (default: AppHash(vec![])")]
+    #[serde(default, with = "app_hash_serde")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub app_hash: Option<AppHash>,
 }
 
 // Serialize and deserialize time only up to second precision for integration with MBT.
@@ -64,6 +68,25 @@ where
     m_secs.serialize(serializer)
 }
 
+// Serialize and deserialize the `Option<AppHash>`, delegating to the `AppHash`
+// serialization/deserialization into/from hexstring.
+mod app_hash_serde {
+    use super::*;
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<AppHash>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        tendermint::serializers::apphash::deserialize(deserializer).map(Some)
+    }
+
+    pub fn serialize<S>(value: &Option<AppHash>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        tendermint::serializers::apphash::serialize(value.as_ref().unwrap(), serializer)
+    }
+}
+
 impl Header {
     pub fn new(validators: &[Validator]) -> Self {
         Header {
@@ -74,6 +97,7 @@ impl Header {
             time: None,
             proposer: None,
             last_block_id_hash: None,
+            app_hash: None,
         }
     }
     set_option!(validators, &[Validator], Some(validators.to_vec()));
@@ -87,6 +111,7 @@ impl Header {
     set_option!(time, Time);
     set_option!(proposer, usize);
     set_option!(last_block_id_hash, Hash);
+    set_option!(app_hash, AppHash);
 
     pub fn next(&self) -> Self {
         let height = self.height.expect("Missing previous header's height");
@@ -108,6 +133,7 @@ impl Header {
             time: Some((time + Duration::from_secs(1)).unwrap()),
             proposer: self.proposer, // TODO: proposer must be incremented
             last_block_id_hash: Some(last_block_id_hash),
+            app_hash: self.app_hash.clone(),
         }
     }
 }
@@ -133,6 +159,7 @@ impl Generator<block::Header> for Header {
             time: self.time.or(default.time),
             proposer: self.proposer.or(default.proposer),
             last_block_id_hash: self.last_block_id_hash.or(default.last_block_id_hash),
+            app_hash: self.app_hash.or(default.app_hash),
         }
     }
 
@@ -185,7 +212,7 @@ impl Generator<block::Header> for Header {
             validators_hash,
             next_validators_hash: next_valset.hash(),
             consensus_hash: validators_hash, // TODO: currently not clear how to produce a valid hash
-            app_hash: AppHash::from_hex_upper("").unwrap(),
+            app_hash: self.app_hash.clone().unwrap_or_default(),
             last_results_hash: None,
             evidence_hash: None,
             proposer_address,
