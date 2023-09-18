@@ -57,6 +57,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - env:
-          RUSTDOCFLAGS: "--cfg docsrs"
-        run: cargo doc --all-features
+      - run: cargo doc --all-features
