@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@nightly # regression prevents docs from building on stable
+      - uses: dtolnay/rust-toolchain@stable
       - env:
           RUSTDOCFLAGS: "--cfg docsrs"
         run: cargo doc --all-features
