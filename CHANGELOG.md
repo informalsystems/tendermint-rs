@@ -1,5 +1,65 @@
 # CHANGELOG
 
+## v0.33.2
+
+*September 18th, 2023*
+
+This release includes bug fixes and performance improvements to how
+CometBFT data types are serialized and deserialized.
+
+### BREAKING CHANGES
+
+- Changed the serde schema produced by `serialize` functions in these
+  helper modules ([\#1351](https://github.com/informalsystems/tendermint-
+  rs/pull/1351)):
+
+  * In `tendermint-proto`:
+    - `serializers::nullable`
+    - `serializers::optional`
+  * In `tendermint`:
+    - `serializers::apphash`
+    - `serializers::hash`
+    - `serializers::option_hash`
+
+  If `serde_json` is used for serialization, the output schema does not change.
+  But since serde is a generic framework, the changes may be breaking for
+  other users. Overall, these changes should make the serialized data
+  acceptable by the corresponding deserializer agnostically of the format.
+
+### BUG FIXES
+
+- `[tendermint]` Integer overflows are prevented when calculating the total
+  voting power value in `validator::Set`
+  ([\#1348](https://github.com/informalsystems/tendermint-rs/issues/1348)).
+- `[tendermint-proto]` `Serialize` and `Deserialize` impls for
+  `v*::crypto::PublicKey` are corrected to match the JSON schema used by
+  other implementations
+  ([\#1350](https://github.com/informalsystems/tendermint-rs/pull/1350)).
+- [`tendermint`] Fix JSON serialization of timestamp field for
+  `CommitSig::BlockIdFlagAbsent` to match what is expected by CometBFT
+  ([\#1352](https://github.com/informalsystems/tendermint-rs/issues/1352))
+
+### IMPROVEMENTS
+
+- `[tendermint-testgen]` Add `app_hash` field to testgen `Header` and implement
+  convenient method for default `LightBlock` construction from `Header`
+  ([\#1343](https://github.com/informalsystems/tendermint-rs/issues/1343))
+- `[tendermint]` Improve and validate deserialization of `validator::Set`
+  ([\#1348](https://github.com/informalsystems/tendermint-rs/issues/1348)).
+  The `total_voting_power` field no longer has to be present in the format
+  processed by `Deserialize`. If it is present, it is validated against the
+  sum of the `voting_power` values of the listed validators. The sum value
+  is also checked against the protocol-defined maximum.
+- `[tendermint-proto]` In the `Deserialize` impls derived for
+  `v*::types::ValidatorSet`, the `total_voting_power` field value is retrieved
+  when present.
+- `[tendermint-proto]` Add serialziation helper module
+  `serializers::from_str_allow_null`. Use it to allow the `proposed_priority`
+  field value of null in the deserialization of `v*::types::Validator`.
+- Corrected custom serializer helpers to consistently produce the format
+  accepted by the deserializer. Improved performance of deserializers.
+  ([\#1351](https://github.com/informalsystems/tendermint-rs/pull/1351))
+
 ## v0.33.1
 
 *Aug 29th, 2023*
@@ -718,18 +778,18 @@ not yet support `no_std`.
 - Upgraded Prost to the official v0.9 release to finally resolve the security
   issue introduced by v0.7
   ([#925](https://github.com/informalsystems/tendermint-rs/issues/925))
-- `[tendermint]` The `tendermint::node::info::ListenAddress::to_net_address`
-  method was replaced with a simple `as_str` method toward facilitating
-  `no_std` compatibility ([#983](https://github.com/informalsystems/tendermint-
-  rs/issues/983))
-- `[tendermint]` The `tendermint::node::info::OtherInfo::rpc_address`
-  field type has been changed from `tendermint::net::Address`
-  to `String` toward facilitating `no_std` compatibility
-  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
 - `[tendermint, tendermint-config]` The `tendermint::config`
   module has now been broken out into its own crate (`tendermint-
   config`) to help towards facilitating `no_std` compatibility
   ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
+- `[tendermint]` The `tendermint::node::info::OtherInfo::rpc_address`
+  field type has been changed from `tendermint::net::Address`
+  to `String` toward facilitating `no_std` compatibility
+  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
+- `[tendermint]` The `tendermint::node::info::ListenAddress::to_net_address`
+  method was replaced with a simple `as_str` method toward facilitating
+  `no_std` compatibility ([#983](https://github.com/informalsystems/tendermint-
+  rs/issues/983))
 
 ### FEATURES
 
