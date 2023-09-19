@@ -9,7 +9,7 @@ jobs:
     name: Check no_std panic conflict
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - run: |
           cd tools/no-std-check
@@ -21,7 +21,7 @@ jobs:
   #   name: Check no_std substrate support
   #   runs-on: ubuntu-latest
   #   steps:
-  #     - uses: actions/checkout@v3
+  #     - uses: actions/checkout@v4
   #     - uses: dtolnay/rust-toolchain@stable
   #     - run: |
   #         cd tools/no-std-check
