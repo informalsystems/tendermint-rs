@@ -337,10 +337,9 @@ mod sealed {
     };
     use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 
+    use crate::client::transport::{auth::authorize, proxy::ProxyConnector};
     use crate::prelude::*;
-    use crate::{
-        client::transport::auth::authorize, dialect::Dialect, Error, Response, SimpleRequest,
-    };
+    use crate::{dialect::Dialect, Error, Response, SimpleRequest};
 
     /// A wrapper for a `hyper`-based client, generic over the connector type.
     #[derive(Debug, Clone)]

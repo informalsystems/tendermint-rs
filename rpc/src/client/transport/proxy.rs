@@ -1,33 +1,32 @@
 use futures::future::BoxFuture;
 use futures::prelude::*;
 use futures::ready;
-use http::uri::Scheme;
-use hyper::client::connect::dns::{self, GaiFuture as ResolveFuture, GaiResolver};
+use hyper::client::{conn as http_conn, HttpConnector};
 use hyper::service::Service;
-use hyper::upgrade::Upgraded;
-use hyper::Uri;
+use hyper::upgrade::{self, Upgraded};
+use hyper::{Body, Request, StatusCode, Uri};
 use tracing::{debug, debug_span, Instrument};
 
-use std::io;
 use std::task::{Context, Poll};
 
+#[derive(Debug)]
 pub struct ProxyConnector {
+    inner: HttpConnector,
     proxy_uri: Uri,
-    resolver: GaiResolver,
 }
 
 #[derive(Debug, thiserror::Error)]
 enum ConnectError {
     #[error(transparent)]
-    Dns(#[from] io::Error),
-    #[error("no scheme in proxy URI")]
-    UriSchemeMissing,
-    #[error("proxy URI scheme {} not supported", .0)]
-    UriSchemeNotSupported(Scheme),
-    #[error("no host part in proxy URI")]
-    UriHostMissing,
-    #[error("invalid host part in proxy URI")]
-    UriHostInvalid(#[from] dns::InvalidNameError),
+    Connect(<HttpConnector as Service<Uri>>::Error),
+    #[error("HTTP handshake with proxy failed")]
+    Handshake(#[source] hyper::Error),
+    #[error("HTTP CONNECT request to proxy failed")]
+    Request(#[source] hyper::Error),
+    #[error("HTTP CONNECT request to proxy was responded with {}", .0)]
+    Unsuccessful(StatusCode),
+    #[error("HTTP proxy connection upgrade failed")]
+    Upgrade(#[source] hyper::Error),
 }
 
 impl Service<Uri> for ProxyConnector {
@@ -38,41 +37,39 @@ impl Service<Uri> for ProxyConnector {
     type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        ready!(self.resolver.poll_ready(cx))?;
+        ready!(self.inner.poll_ready(cx)).map_err(ConnectError::Connect)?;
         Poll::Ready(Ok(()))
     }
 
     fn call(&mut self, uri: Uri) -> Self::Future {
         let span = debug_span!("proxy_connect", proxy_uri = %self.proxy_uri, uri = %uri);
         let _entered = span.enter();
-        let resolve_res = self.resolve();
+        let connect_fut = self.inner.call(self.proxy_uri.clone());
         async move {
-            let sockaddrs = resolve_res?.await?;
-            for sockaddr in sockaddrs {
-                debug!("connecting to {:?}", sockaddr);
+            let stream = connect_fut.await.map_err(ConnectError::Connect)?;
+
+            let (mut sender, conn) = http_conn::handshake(stream)
+                .await
+                .map_err(ConnectError::Handshake)?;
+            tokio::task::spawn(async move {
+                if let Err(error) = conn.await {
+                    debug!(?error, "proxy connection failed");
+                }
+            });
+
+            let req = Request::connect(uri).body(Body::empty()).unwrap();
+            let res = sender
+                .send_request(req)
+                .await
+                .map_err(ConnectError::Request)?;
+
+            if !res.status().is_success() {
+                return Err(ConnectError::Unsuccessful(res.status()));
             }
-            todo!()
+
+            upgrade::on(res).await.map_err(ConnectError::Upgrade)
         }
         .instrument(span)
         .boxed()
-    }
-}
-
-impl ProxyConnector {
-    fn resolve(&mut self) -> Result<ResolveFuture, ConnectError> {
-        let scheme = self
-            .proxy_uri
-            .scheme()
-            .ok_or(ConnectError::UriSchemeMissing)?;
-        if scheme != &Scheme::HTTP && scheme != &Scheme::HTTPS {
-            return Err(ConnectError::UriSchemeNotSupported(scheme.clone()));
-        }
-        let hostname = self
-            .proxy_uri
-            .host()
-            .ok_or(ConnectError::UriHostMissing)?
-            .parse::<dns::Name>()?;
-        debug!("resolving proxy host {:?}", hostname);
-        Ok(self.resolver.call(hostname))
     }
 }
