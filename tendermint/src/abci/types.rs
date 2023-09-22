@@ -694,8 +694,10 @@ mod v0_38 {
         type Error = Error;
 
         fn try_from(vi: pb::VoteInfo) -> Result<Self, Self::Error> {
-            let block_id_flag =
-                RawBlockIdFlag::from_i32(vi.block_id_flag).ok_or_else(Error::block_id_flag)?;
+            let block_id_flag: RawBlockIdFlag = vi
+                .block_id_flag
+                .try_into()
+                .map_err(|_| Error::block_id_flag())?;
             Ok(Self {
                 validator: vi
                     .validator
@@ -724,8 +726,10 @@ mod v0_38 {
         type Error = Error;
 
         fn try_from(vi: pb::ExtendedVoteInfo) -> Result<Self, Self::Error> {
-            let block_id_flag =
-                RawBlockIdFlag::from_i32(vi.block_id_flag).ok_or_else(Error::block_id_flag)?;
+            let block_id_flag: RawBlockIdFlag = vi
+                .block_id_flag
+                .try_into()
+                .map_err(|_| Error::block_id_flag())?;
             Ok(Self {
                 validator: vi
                     .validator

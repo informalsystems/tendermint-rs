@@ -38,6 +38,10 @@ pub mod broadcast_api_server {
             tonic::Status,
         >;
     }
+    /// BroadcastAPI
+    ///
+    /// Deprecated: This API will be superseded by a more comprehensive gRPC-based
+    /// broadcast API, and is scheduled for removal after v0.38.
     #[derive(Debug)]
     pub struct BroadcastApiServer<T: BroadcastApi> {
         inner: _Inner<T>,
@@ -132,7 +136,9 @@ pub mod broadcast_api_server {
                             request: tonic::Request<super::RequestPing>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).ping(request).await };
+                            let fut = async move {
+                                <T as BroadcastApi>::ping(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -177,7 +183,7 @@ pub mod broadcast_api_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).broadcast_tx(request).await
+                                <T as BroadcastApi>::broadcast_tx(&inner, request).await
                             };
                             Box::pin(fut)
                         }

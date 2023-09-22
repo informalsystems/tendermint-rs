@@ -22,8 +22,8 @@ grpc-server = ["tonic"]
 all-features = true
 
 [dependencies]
-prost = { version = "0.11", default-features = false }
-prost-types = { version = "0.11", default-features = false }
+prost = { version = "0.12", default-features = false }
+prost-types = { version = "0.12", default-features = false }
 bytes = { version = "1.0", default-features = false, features = ["serde"]}
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde_bytes = { version = "0.11", default-features = false, features = ["alloc"] }
@@ -32,7 +32,7 @@ num-traits = { version = "0.2", default-features = false }
 num-derive = { version = "0.3", default-features = false }
 time = { version = "0.3", default-features = false, features = ["macros", "parsing"] }
 flex-error = { version = "0.4.4", default-features = false }
-tonic = { version = "0.9", optional = true }
+tonic = { version = "0.10", optional = true }
 
 [dev-dependencies]
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
