@@ -13,7 +13,7 @@ use tendermint_rpc::{
     WebSocketClient,
 };
 use tokio::{task::JoinHandle, time::Duration};
-use tracing::{debug, error, info, level_filters::LevelFilter};
+use tracing::{debug, error, info, level_filters::LevelFilter, warn};
 
 /// CLI for performing simple interactions against a Tendermint node's RPC.
 ///
