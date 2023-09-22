@@ -12,7 +12,7 @@ use std::boxed::Box;
 use std::error::Error;
 use std::task::{Context, Poll};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ProxyConnector<C> {
     inner: C,
     proxy_uri: Uri,
@@ -30,6 +30,15 @@ enum ConnectError {
     Unsuccessful(StatusCode),
     #[error("HTTP proxy connection upgrade failed")]
     Upgrade(#[source] hyper::Error),
+}
+
+impl<C> ProxyConnector<C> {
+    pub fn new(connector: C, proxy_uri: Uri) -> Self {
+        ProxyConnector {
+            inner: connector,
+            proxy_uri,
+        }
+    }
 }
 
 impl<C> Service<Uri> for ProxyConnector<C>
