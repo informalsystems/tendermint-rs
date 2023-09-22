@@ -3,7 +3,7 @@ use futures::prelude::*;
 use futures::ready;
 use hyper::client::conn as http_conn;
 use hyper::service::Service;
-use hyper::upgrade::{self, Upgraded};
+use hyper::upgrade;
 use hyper::{Body, Request, StatusCode, Uri};
 use tokio::io::{AsyncRead, AsyncWrite};
 use tracing::{debug, debug_span, Instrument};
@@ -19,7 +19,7 @@ pub struct ProxyConnector<C> {
 }
 
 #[derive(Debug, thiserror::Error)]
-enum ConnectError {
+pub enum ConnectError {
     #[error(transparent)]
     Connect(Box<dyn Error + Send + Sync>),
     #[error("HTTP handshake with proxy failed")]
@@ -30,6 +30,8 @@ enum ConnectError {
     Unsuccessful(StatusCode),
     #[error("HTTP proxy connection upgrade failed")]
     Upgrade(#[source] hyper::Error),
+    #[error("unexpected data after HTTP CONNECT response")]
+    UnexpectedResponseData,
 }
 
 impl<C> ProxyConnector<C> {
@@ -46,9 +48,9 @@ where
     C: Service<Uri>,
     C::Response: AsyncRead + AsyncWrite + Unpin + Send + 'static,
     C::Error: Into<Box<dyn Error + Send + Sync>>,
-    C::Future: Send,
+    C::Future: Send + 'static,
 {
-    type Response = Upgraded;
+    type Response = C::Response;
 
     type Error = ConnectError;
 
@@ -61,8 +63,10 @@ where
 
     fn call(&mut self, uri: Uri) -> Self::Future {
         let span = debug_span!("proxy_connect", proxy_uri = %self.proxy_uri, uri = %uri);
-        let _entered = span.enter();
-        let connect_fut = self.inner.call(self.proxy_uri.clone());
+        let connect_fut = {
+            let _entered = span.enter();
+            self.inner.call(self.proxy_uri.clone())
+        };
         async move {
             let stream = connect_fut
                 .await
@@ -88,7 +92,27 @@ where
                 return Err(ConnectError::Unsuccessful(res.status()));
             }
 
-            upgrade::on(res).await.map_err(ConnectError::Upgrade)
+            let upgrade::Parts { io, read_buf, .. } = upgrade::on(res)
+                .await
+                .map_err(ConnectError::Upgrade)?
+                .downcast()
+                .expect("wrong type of stream in upgraded proxy connection");
+
+            // There should not be any initial bytes from the proxy or the
+            // destination server. With TLS, the handshake must start with a
+            // client hello. With plaintext HTTP, the server should expect the
+            // client to send either an HTTP/1.1 request with a possible Upgrade
+            // header, or an HTTP/2 preface. It should be very uncommon for the
+            // server to fire away a HTTP/2 SETTINGS frame without prior
+            // negotiation, even though RFC 7540 does not expressly forbid this.
+            // Assuming this, we can treat any pre-received data as an error
+            // and return the underlying connection object.
+            if !read_buf.is_empty() {
+                debug!("unexpected bytes in CONNECT response: {:?}", read_buf);
+                return Err(ConnectError::UnexpectedResponseData);
+            }
+
+            Ok(io)
         }
         .instrument(span)
         .boxed()
