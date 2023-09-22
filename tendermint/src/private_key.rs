@@ -88,16 +88,16 @@ where
 {
     use de::Error;
     let string = Zeroizing::new(String::deserialize(deserializer)?);
-    let mut keypair_bytes = Zeroizing::new([0u8; SECP256K1_KEY_SIZE]);
+    let mut privkey_bytes = Zeroizing::new([0u8; SECP256K1_KEY_SIZE]);
     let decoded_len = Base64::default()
-        .decode_to_slice(string.as_bytes(), &mut *keypair_bytes)
+        .decode_to_slice(string.as_bytes(), &mut *privkey_bytes)
         .map_err(D::Error::custom)?;
 
     if decoded_len != SECP256K1_KEY_SIZE {
         return Err(D::Error::custom("invalid sepc256k1 privkey size"));
     }
 
-    let signing_key = Secp256k1::try_from(&keypair_bytes[0..SECP256K1_KEY_SIZE])
+    let signing_key = Secp256k1::try_from(&privkey_bytes[0..SECP256K1_KEY_SIZE])
         .map_err(|_| D::Error::custom("invalid signing key"))?;
 
     Ok(signing_key)
