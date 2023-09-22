@@ -1,24 +1,27 @@
 use futures::future::BoxFuture;
 use futures::prelude::*;
 use futures::ready;
-use hyper::client::{conn as http_conn, HttpConnector};
+use hyper::client::conn as http_conn;
 use hyper::service::Service;
 use hyper::upgrade::{self, Upgraded};
 use hyper::{Body, Request, StatusCode, Uri};
+use tokio::io::{AsyncRead, AsyncWrite};
 use tracing::{debug, debug_span, Instrument};
 
+use std::boxed::Box;
+use std::error::Error;
 use std::task::{Context, Poll};
 
 #[derive(Debug)]
-pub struct ProxyConnector {
-    inner: HttpConnector,
+pub struct ProxyConnector<C> {
+    inner: C,
     proxy_uri: Uri,
 }
 
 #[derive(Debug, thiserror::Error)]
 enum ConnectError {
     #[error(transparent)]
-    Connect(<HttpConnector as Service<Uri>>::Error),
+    Connect(Box<dyn Error + Send + Sync>),
     #[error("HTTP handshake with proxy failed")]
     Handshake(#[source] hyper::Error),
     #[error("HTTP CONNECT request to proxy failed")]
@@ -29,7 +32,13 @@ enum ConnectError {
     Upgrade(#[source] hyper::Error),
 }
 
-impl Service<Uri> for ProxyConnector {
+impl<C> Service<Uri> for ProxyConnector<C>
+where
+    C: Service<Uri>,
+    C::Response: AsyncRead + AsyncWrite + Unpin + Send + 'static,
+    C::Error: Into<Box<dyn Error + Send + Sync>>,
+    C::Future: Send,
+{
     type Response = Upgraded;
 
     type Error = ConnectError;
@@ -37,7 +46,7 @@ impl Service<Uri> for ProxyConnector {
     type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        ready!(self.inner.poll_ready(cx)).map_err(ConnectError::Connect)?;
+        ready!(self.inner.poll_ready(cx)).map_err(|e| ConnectError::Connect(e.into()))?;
         Poll::Ready(Ok(()))
     }
 
@@ -46,7 +55,9 @@ impl Service<Uri> for ProxyConnector {
         let _entered = span.enter();
         let connect_fut = self.inner.call(self.proxy_uri.clone());
         async move {
-            let stream = connect_fut.await.map_err(ConnectError::Connect)?;
+            let stream = connect_fut
+                .await
+                .map_err(|e| ConnectError::Connect(e.into()))?;
 
             let (mut sender, conn) = http_conn::handshake(stream)
                 .await
@@ -63,6 +74,7 @@ impl Service<Uri> for ProxyConnector {
                 .await
                 .map_err(ConnectError::Request)?;
 
+            // TODO: handle redirects and proxy authentication
             if !res.status().is_success() {
                 return Err(ConnectError::Unsuccessful(res.status()));
             }
