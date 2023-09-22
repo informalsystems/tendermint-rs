@@ -70,7 +70,7 @@ impl PrivateKey {
     }
 }
 
-/// Serialize an Ed25519 keypair as Base64
+/// Serialize a Secp256k1 privkey as Base64
 #[cfg(feature = "secp256k1")]
 fn serialize_secp256k1_privkey<S>(signing_key: &Secp256k1, serializer: S) -> Result<S::Ok, S::Error>
 where
@@ -80,7 +80,7 @@ where
         .serialize(serializer)
 }
 
-/// Deserialize an Ed25519 keypair from Base64
+/// Deserialize a Secp256k1 privkey from Base64
 #[cfg(feature = "secp256k1")]
 fn deserialize_secp256k1_privkey<'de, D>(deserializer: D) -> Result<Secp256k1, D::Error>
 where
