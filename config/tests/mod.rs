@@ -213,14 +213,26 @@ fn node_key_parser() {
     );
 }
 
-/// Parse an example `priv_validator_key.json` to a `PrivValidatorKey` struct
+/// Parse an example `priv_validator_key.ed25519.json` to a `PrivValidatorKey` struct
 #[test]
-fn priv_validator_json_parser() {
-    let raw_priv_validator_key = read_fixture("priv_validator_key.json");
+fn priv_validator_ed25519_json_parser() {
+    let raw_priv_validator_key = read_fixture("priv_validator_key.ed25519.json");
     let priv_validator_key = PrivValidatorKey::parse_json(raw_priv_validator_key).unwrap();
     assert_eq!(
         priv_validator_key.consensus_pubkey().public_key().to_hex(),
         "F26BF4B2A2E84CEB7A53C3F1AE77408779B20064782FBADBDF0E365959EE4534"
+    );
+}
+
+/// Parse an example `priv_validator_key.secp256k1.json` to a `PrivValidatorKey` struct
+#[test]
+#[cfg(feature = "secp256k1")]
+fn priv_validator_secp256k1_json_parser() {
+    let raw_priv_validator_key = read_fixture("priv_validator_key.secp256k1.json");
+    let priv_validator_key = PrivValidatorKey::parse_json(raw_priv_validator_key).unwrap();
+    assert_eq!(
+        priv_validator_key.consensus_pubkey().public_key().to_hex(),
+        "03685D6F62E54D0FACC6AA649E4036BF446043A6BA438B793B085E6C8A92AFCAAE"
     );
 }
 

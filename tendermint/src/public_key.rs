@@ -290,8 +290,11 @@ impl TendermintKey {
         #[allow(unreachable_patterns)]
         match public_key {
             PublicKey::Ed25519(_) => Ok(TendermintKey::AccountKey(public_key)),
+            #[cfg(feature = "secp256k1")]
+            PublicKey::Secp256k1(_) => Ok(TendermintKey::AccountKey(public_key)),
+
             _ => Err(Error::invalid_key(
-                "only ed25519 consensus keys are supported".to_string(),
+                "only ed25519 or secp256k1 consensus keys are supported".to_string(),
             )),
         }
     }
