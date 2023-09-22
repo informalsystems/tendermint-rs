@@ -3,7 +3,6 @@ use futures::prelude::*;
 use futures::ready;
 use hyper::client::conn as http_conn;
 use hyper::service::Service;
-use hyper::upgrade;
 use hyper::{Body, Request, StatusCode, Uri};
 use tokio::io::{AsyncRead, AsyncWrite};
 use tracing::{debug, debug_span, Instrument};
@@ -28,8 +27,8 @@ pub enum ConnectError {
     Request(#[source] hyper::Error),
     #[error("HTTP CONNECT request to proxy was responded with {}", .0)]
     Unsuccessful(StatusCode),
-    #[error("HTTP proxy connection upgrade failed")]
-    Upgrade(#[source] hyper::Error),
+    #[error("HTTP proxy connection failed")]
+    Connection(#[source] hyper::Error),
     #[error("unexpected data after HTTP CONNECT response")]
     UnexpectedResponseData,
 }
@@ -68,18 +67,14 @@ where
             self.inner.call(self.proxy_uri.clone())
         };
         async move {
-            let stream = connect_fut
+            let io = connect_fut
                 .await
                 .map_err(|e| ConnectError::Connect(e.into()))?;
 
-            let (mut sender, conn) = http_conn::handshake(stream)
+            let (mut sender, conn) = http_conn::handshake(io)
                 .await
                 .map_err(ConnectError::Handshake)?;
-            tokio::task::spawn(async move {
-                if let Err(error) = conn.await {
-                    debug!(?error, "proxy connection failed");
-                }
-            });
+            let conn_task = tokio::task::spawn(conn.without_shutdown());
 
             let req = Request::connect(uri).body(Body::empty()).unwrap();
             let res = sender
@@ -92,11 +87,8 @@ where
                 return Err(ConnectError::Unsuccessful(res.status()));
             }
 
-            let upgrade::Parts { io, read_buf, .. } = upgrade::on(res)
-                .await
-                .map_err(ConnectError::Upgrade)?
-                .downcast()
-                .expect("wrong type of stream in upgraded proxy connection");
+            let http_conn::Parts { io, read_buf, .. } =
+                conn_task.await.unwrap().map_err(ConnectError::Connection)?;
 
             // There should not be any initial bytes from the proxy or the
             // destination server. With TLS, the handshake must start with a
