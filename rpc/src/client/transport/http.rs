@@ -440,9 +440,7 @@ mod sealed {
         }
 
         pub fn new_http_proxy(uri: Uri, proxy_uri: Uri) -> Result<Self, Error> {
-            let proxy = Proxy::new(Intercept::All, proxy_uri);
-            let proxy_connector =
-                ProxyConnector::from_proxy(HttpConnector::new(), proxy).map_err(Error::io)?;
+            let proxy_connector = ProxyConnector::new(HttpConnector::new(), proxy_uri);
             Ok(Self::HttpProxy(HyperClient::new(
                 uri,
                 hyper::Client::builder().build(proxy_connector),
@@ -450,18 +448,15 @@ mod sealed {
         }
 
         pub fn new_https_proxy(uri: Uri, proxy_uri: Uri) -> Result<Self, Error> {
-            let proxy = Proxy::new(Intercept::All, proxy_uri);
-            let proxy_connector = ProxyConnector::from_proxy(
+            let proxy_connector = ProxyConnector::new(
                 HttpsConnectorBuilder::new()
                     .with_native_roots()
                     .https_only()
                     .enable_http1()
                     .enable_http2()
                     .build(),
-                proxy,
-            )
-            .map_err(Error::io)?;
-
+                proxy_uri,
+            );
             Ok(Self::HttpsProxy(HyperClient::new(
                 uri,
                 hyper::Client::builder().build(proxy_connector),
