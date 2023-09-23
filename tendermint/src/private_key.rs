@@ -76,7 +76,7 @@ fn serialize_secp256k1_privkey<S>(signing_key: &Secp256k1, serializer: S) -> Res
 where
     S: ser::Serializer,
 {
-    Zeroizing::new(String::from_utf8(Base64::default().encode(&signing_key.to_bytes())).unwrap())
+    Zeroizing::new(String::from_utf8(Base64::default().encode(signing_key.to_bytes())).unwrap())
         .serialize(serializer)
 }
 
