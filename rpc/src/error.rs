@@ -77,6 +77,15 @@ define_error! {
                 format_args!("method not found: {}", e.method)
             },
 
+        #[cfg(feature = "reqwest")]
+        HttpRequestFailed
+            {
+                status: reqwest::StatusCode,
+            }
+            | e | {
+                format_args!("HTTP request failed with non-200 status code: {}", e.status)
+            },
+
         Parse
             {
                 reason: String

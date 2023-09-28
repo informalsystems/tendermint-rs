@@ -160,7 +160,7 @@ impl HttpClient {
     {
         let request_body = request.into_json();
 
-        tracing::trace!("outgoing request: {}", request_body);
+        tracing::debug!(url = %self.url, body = %request_body, "outgoing request");
 
         let mut builder = self
             .inner
@@ -182,11 +182,23 @@ impl HttpClient {
     {
         let request = self.build_request(request)?;
         let response = self.inner.execute(request).await.map_err(Error::http)?;
+        let response_status = response.status();
         let response_body = response.bytes().await.map_err(Error::http)?;
-        tracing::trace!(
-            "incoming response: {}",
-            String::from_utf8_lossy(&response_body)
+
+        tracing::debug!(
+            status = %response_status,
+            body = %String::from_utf8_lossy(&response_body),
+            "incoming response"
         );
+
+        // Successful JSON-RPC requests are expected to return a 200 OK HTTP status.
+        // Otherwise, this means that the HTTP request failed as a whole,
+        // as opposed to the JSON-RPC request returning an error,
+        // and we cannot expect the response body to be a valid JSON-RPC response.
+        if response_status != reqwest::StatusCode::OK {
+            return Err(Error::http_request_failed(response_status));
+        }
+
         R::Response::from_string(&response_body).map(Into::into)
     }
 }
