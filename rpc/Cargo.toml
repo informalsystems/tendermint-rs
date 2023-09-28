@@ -38,9 +38,7 @@ cli = [
 ]
 http-client = [
   "futures",
-  "http",
   "reqwest",
-  "tokio/fs",
   "tokio/macros",
   "tracing"
 ]
