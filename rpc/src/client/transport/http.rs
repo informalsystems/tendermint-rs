@@ -90,7 +90,7 @@ impl Builder {
         let inner = match self.proxy_url {
             None => builder.build().map_err(Error::http)?,
             Some(proxy_url) => {
-                let proxy = if proxy_url.0.is_secure() {
+                let proxy = if self.url.0.is_secure() {
                     Proxy::https(reqwest::Url::from(proxy_url.0)).map_err(Error::invalid_proxy)?
                 } else {
                     Proxy::http(reqwest::Url::from(proxy_url.0)).map_err(Error::invalid_proxy)?
