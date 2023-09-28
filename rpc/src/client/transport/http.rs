@@ -15,7 +15,7 @@ use super::auth;
 use crate::prelude::*;
 use crate::{
     client::{Client, CompatMode},
-    dialect::{latest, v0_34, Dialect},
+    dialect::{v0_34, Dialect, LatestDialect},
     endpoint,
     query::Query,
     request::RequestMessage,
@@ -197,7 +197,7 @@ impl Client for HttpClient {
     where
         R: SimpleRequest,
     {
-        self.perform_with_dialect(request, latest::Dialect).await
+        self.perform_with_dialect(request, LatestDialect).await
     }
 
     async fn block_results<H>(&self, height: H) -> Result<endpoint::block_results::Response, Error>

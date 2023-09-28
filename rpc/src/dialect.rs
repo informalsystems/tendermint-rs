@@ -3,7 +3,7 @@
 
 pub mod v0_34;
 pub mod v0_37;
-pub use v0_37 as latest;
+pub use v0_37::Dialect as LatestDialect;
 
 mod begin_block;
 mod check_tx;
@@ -23,8 +23,6 @@ pub trait Dialect: sealed::Sealed + Default + Clone + Send + Sync {
     type Event: Into<abci::Event> + Serialize + DeserializeOwned;
     type Evidence: From<evidence::Evidence> + Serialize + DeserializeOwned + Send;
 }
-
-pub type LatestDialect = v0_37::Dialect;
 
 mod sealed {
     pub trait Sealed {}

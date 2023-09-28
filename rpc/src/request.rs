@@ -5,7 +5,7 @@ use core::fmt::Debug;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use super::{Id, Method, Version};
-use crate::dialect::{latest, Dialect};
+use crate::dialect::{Dialect, LatestDialect};
 use crate::{prelude::*, Error};
 
 /// Serialization for JSON-RPC requests
@@ -26,7 +26,7 @@ pub trait RequestMessage: DeserializeOwned + Serialize + Sized {
 }
 
 /// JSON-RPC requests
-pub trait Request<S: Dialect = latest::Dialect>: RequestMessage + Send {
+pub trait Request<S: Dialect = LatestDialect>: RequestMessage + Send {
     /// Response type for this command
     type Response: super::response::Response;
 }
@@ -39,7 +39,7 @@ pub trait Request<S: Dialect = latest::Dialect>: RequestMessage + Send {
 /// simple, singular response.
 ///
 /// [`Subscription`]: struct.Subscription.html
-pub trait SimpleRequest<S: Dialect = latest::Dialect>: Request<S> {
+pub trait SimpleRequest<S: Dialect = LatestDialect>: Request<S> {
     /// The output data, converted from Response.
     type Output: From<Self::Response>;
 }

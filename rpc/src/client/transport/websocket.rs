@@ -32,7 +32,7 @@ use crate::{
         transport::router::{PublishResult, SubscriptionRouter},
         Client, CompatMode,
     },
-    dialect::{latest, v0_34, Dialect},
+    dialect::{v0_34, Dialect, LatestDialect},
     endpoint::{self, subscribe, unsubscribe},
     error::Error,
     event::{self, Event},
@@ -235,7 +235,7 @@ impl Client for WebSocketClient {
     where
         R: SimpleRequest,
     {
-        self.perform_with_dialect(request, latest::Dialect).await
+        self.perform_with_dialect(request, LatestDialect).await
     }
 
     async fn block_results<H>(&self, height: H) -> Result<endpoint::block_results::Response, Error>
