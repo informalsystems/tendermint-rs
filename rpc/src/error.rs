@@ -6,23 +6,11 @@ use flex_error::{define_error, DefaultTracer, DisplayError, DisplayOnly, ErrorMe
 
 use crate::{prelude::*, response_error::ResponseError, rpc_url::Url};
 
-#[cfg(feature = "http")]
-type HttpError = flex_error::DisplayOnly<http::Error>;
+#[cfg(feature = "reqwest")]
+type ReqwestError = flex_error::DisplayOnly<reqwest::Error>;
 
-#[cfg(not(feature = "http"))]
-type HttpError = flex_error::NoSource;
-
-#[cfg(feature = "http")]
-type InvalidUriError = flex_error::DisplayOnly<http::uri::InvalidUri>;
-
-#[cfg(not(feature = "http"))]
-type InvalidUriError = flex_error::NoSource;
-
-#[cfg(feature = "hyper")]
-type HyperError = flex_error::DisplayOnly<hyper::Error>;
-
-#[cfg(not(feature = "hyper"))]
-type HyperError = flex_error::NoSource;
+#[cfg(not(feature = "reqwest"))]
+type ReqwestError = flex_error::NoSource;
 
 #[cfg(feature = "tokio")]
 type JoinError = flex_error::DisplayOnly<tokio::task::JoinError>;
@@ -48,12 +36,12 @@ define_error! {
             | _ | { "I/O error" },
 
         Http
-            [ HttpError ]
+            [ ReqwestError ]
             | _ | { "HTTP error" },
 
-        Hyper
-            [ HyperError ]
-            | _ | { "HTTP error" },
+        InvalidProxy
+            [ ReqwestError ]
+            | _ | { "Invalid proxy configuration" },
 
         InvalidParams
             {
@@ -135,10 +123,6 @@ define_error! {
                     e.url
                 )
             },
-
-        InvalidUri
-            [ InvalidUriError ]
-            | _ | { "invalid URI" },
 
         Tendermint
             [ tendermint::Error ]

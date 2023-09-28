@@ -49,33 +49,14 @@ impl FromStr for Scheme {
 pub struct Url {
     inner: url::Url,
     scheme: Scheme,
-    host: String,
-    port: u16,
 }
 
 impl FromStr for Url {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let inner: url::Url = s.parse().map_err(Error::parse_url)?;
-
-        let scheme: Scheme = inner.scheme().parse()?;
-
-        let host = inner
-            .host_str()
-            .ok_or_else(|| Error::invalid_params(format!("URL is missing its host: {s}")))?
-            .to_owned();
-
-        let port = inner.port_or_known_default().ok_or_else(|| {
-            Error::invalid_params(format!("cannot determine appropriate port for URL: {s}"))
-        })?;
-
-        Ok(Self {
-            inner,
-            scheme,
-            host,
-            port,
-        })
+        let url: url::Url = s.parse().map_err(Error::parse_url)?;
+        url.try_into()
     }
 }
 
@@ -115,12 +96,12 @@ impl Url {
 
     /// Get the host associated with this URL.
     pub fn host(&self) -> &str {
-        &self.host
+        self.inner.host_str().unwrap()
     }
 
     /// Get the port associated with this URL.
     pub fn port(&self) -> u16 {
-        self.port
+        self.inner.port_or_known_default().unwrap()
     }
 
     /// Get this URL's path.
@@ -135,11 +116,37 @@ impl fmt::Display for Url {
     }
 }
 
+impl AsRef<url::Url> for Url {
+    fn as_ref(&self) -> &url::Url {
+        &self.inner
+    }
+}
+
+impl From<Url> for url::Url {
+    fn from(value: Url) -> Self {
+        value.inner
+    }
+}
+
 impl TryFrom<url::Url> for Url {
     type Error = crate::Error;
 
-    fn try_from(value: url::Url) -> Result<Self, Self::Error> {
-        value.to_string().parse()
+    fn try_from(url: url::Url) -> Result<Self, Self::Error> {
+        let scheme: Scheme = url.scheme().parse()?;
+
+        if url.host_str().is_none() {
+            return Err(Error::invalid_params(format!(
+                "URL is missing its host: {url}"
+            )));
+        }
+
+        if url.port_or_known_default().is_none() {
+            return Err(Error::invalid_params(format!(
+                "cannot determine appropriate port for URL: {url}"
+            )));
+        }
+
+        Ok(Self { inner: url, scheme })
     }
 }
 
