@@ -32,7 +32,7 @@ use crate::{
         transport::router::{PublishResult, SubscriptionRouter},
         Client, CompatMode,
     },
-    dialect::{v0_34, Dialect, LatestDialect},
+    dialect::{latest, v0_34, Dialect},
     endpoint::{self, subscribe, unsubscribe},
     error::Error,
     event::{self, Event},
@@ -220,12 +220,12 @@ impl WebSocketClient {
         }
     }
 
-    async fn execute<R, S>(&self, request: R) -> Result<R::Output, Error>
+    async fn perform_with_dialect<R, S>(&self, request: R, dialect: S) -> Result<R::Output, Error>
     where
         R: SimpleRequest<S>,
         S: Dialect,
     {
-        self.inner.perform(request).await
+        self.inner.perform(request, dialect).await
     }
 }
 
@@ -235,7 +235,7 @@ impl Client for WebSocketClient {
     where
         R: SimpleRequest,
     {
-        self.execute::<_, LatestDialect>(request).await
+        self.perform_with_dialect(request, latest::Dialect).await
     }
 
     async fn block_results<H>(&self, height: H) -> Result<endpoint::block_results::Response, Error>
@@ -260,7 +260,7 @@ impl Client for WebSocketClient {
                 // Back-fill with a request to /block endpoint and
                 // taking just the header from the response.
                 let resp = self
-                    .execute::<_, v0_34::Dialect>(endpoint::block::Request::new(height))
+                    .perform_with_dialect(endpoint::block::Request::new(height), v0_34::Dialect)
                     .await?;
                 Ok(resp.into())
             },
@@ -280,7 +280,10 @@ impl Client for WebSocketClient {
                 // Back-fill with a request to /block_by_hash endpoint and
                 // taking just the header from the response.
                 let resp = self
-                    .execute::<_, v0_34::Dialect>(endpoint::block_by_hash::Request::new(hash))
+                    .perform_with_dialect(
+                        endpoint::block_by_hash::Request::new(hash),
+                        v0_34::Dialect,
+                    )
                     .await?;
                 Ok(resp.into())
             },
@@ -619,7 +622,7 @@ mod sealed {
     }
 
     impl WebSocketClient {
-        pub async fn perform<R, S>(&self, request: R) -> Result<R::Output, Error>
+        pub async fn perform<R, S>(&self, request: R, _dialect: S) -> Result<R::Output, Error>
         where
             R: SimpleRequest<S>,
             S: Dialect,

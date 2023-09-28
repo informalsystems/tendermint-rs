@@ -15,9 +15,10 @@ use super::auth;
 use crate::prelude::*;
 use crate::{
     client::{Client, CompatMode},
-    dialect::{v0_34, Dialect, LatestDialect},
+    dialect::{latest, v0_34, Dialect},
     endpoint,
     query::Query,
+    request::RequestMessage,
     response::Response,
     Error, Order, Scheme, SimpleRequest, Url,
 };
@@ -153,10 +154,9 @@ impl HttpClient {
         self.compat = compat;
     }
 
-    fn build_request<R, S>(&self, request: R) -> Result<reqwest::Request, Error>
+    fn build_request<R>(&self, request: R) -> Result<reqwest::Request, Error>
     where
-        R: SimpleRequest<S>,
-        S: Dialect,
+        R: RequestMessage,
     {
         let request_body = request.into_json();
 
@@ -175,7 +175,7 @@ impl HttpClient {
         builder.build().map_err(Error::http)
     }
 
-    async fn execute<R, S>(&self, request: R) -> Result<R::Output, Error>
+    async fn perform_with_dialect<R, S>(&self, request: R, _dialect: S) -> Result<R::Output, Error>
     where
         R: SimpleRequest<S>,
         S: Dialect,
@@ -197,7 +197,7 @@ impl Client for HttpClient {
     where
         R: SimpleRequest,
     {
-        self.execute::<_, LatestDialect>(request).await
+        self.perform_with_dialect(request, latest::Dialect).await
     }
 
     async fn block_results<H>(&self, height: H) -> Result<endpoint::block_results::Response, Error>
@@ -222,7 +222,7 @@ impl Client for HttpClient {
                 // Back-fill with a request to /block endpoint and
                 // taking just the header from the response.
                 let resp = self
-                    .execute::<_, v0_34::Dialect>(endpoint::block::Request::new(height))
+                    .perform_with_dialect(endpoint::block::Request::new(height), v0_34::Dialect)
                     .await?;
                 Ok(resp.into())
             },
@@ -242,7 +242,10 @@ impl Client for HttpClient {
                 // Back-fill with a request to /block_by_hash endpoint and
                 // taking just the header from the response.
                 let resp = self
-                    .execute::<_, v0_34::Dialect>(endpoint::block_by_hash::Request::new(hash))
+                    .perform_with_dialect(
+                        endpoint::block_by_hash::Request::new(hash),
+                        v0_34::Dialect,
+                    )
                     .await?;
                 Ok(resp.into())
             },
@@ -254,7 +257,7 @@ impl Client for HttpClient {
         match self.compat {
             CompatMode::V0_37 => self.perform(endpoint::evidence::Request::new(e)).await,
             CompatMode::V0_34 => {
-                self.execute::<_, v0_34::Dialect>(endpoint::evidence::Request::new(e))
+                self.perform_with_dialect(endpoint::evidence::Request::new(e), v0_34::Dialect)
                     .await
             },
         }
@@ -357,7 +360,6 @@ mod tests {
     use reqwest::{header::AUTHORIZATION, Request};
 
     use super::HttpClient;
-    use crate::dialect::LatestDialect;
     use crate::endpoint::abci_info;
     use crate::Url;
 
@@ -371,8 +373,7 @@ mod tests {
     fn without_basic_auth() {
         let url = Url::from_str("http://example.com").unwrap();
         let client = HttpClient::new(url).unwrap();
-        let req =
-            HttpClient::build_request::<_, LatestDialect>(&client, abci_info::Request).unwrap();
+        let req = HttpClient::build_request(&client, abci_info::Request).unwrap();
 
         assert_eq!(authorization(&req), None);
     }
@@ -381,8 +382,7 @@ mod tests {
     fn with_basic_auth() {
         let url = Url::from_str("http://toto:tata@example.com").unwrap();
         let client = HttpClient::new(url).unwrap();
-        let req =
-            HttpClient::build_request::<_, LatestDialect>(&client, abci_info::Request).unwrap();
+        let req = HttpClient::build_request(&client, abci_info::Request).unwrap();
 
         assert_eq!(authorization(&req), Some("Basic dG90bzp0YXRh"));
     }

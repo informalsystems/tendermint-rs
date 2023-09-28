@@ -10,12 +10,12 @@ macro_rules! perform_with_compat {
         match $self.compat {
             CompatMode::V0_37 => {
                 $self
-                    .execute::<_, crate::dialect::v0_37::Dialect>(request)
+                    .perform_with_dialect(request, crate::dialect::v0_37::Dialect)
                     .await
             },
             CompatMode::V0_34 => {
                 $self
-                    .execute::<_, crate::dialect::v0_34::Dialect>(request)
+                    .perform_with_dialect(request, crate::dialect::v0_34::Dialect)
                     .await
             },
         }
