@@ -5,8 +5,8 @@
 use alloc::string::{String, ToString};
 use core::fmt;
 
-use http::Uri;
 use subtle_encoding::base64;
+use url::Url;
 
 /// An HTTP authorization.
 ///
@@ -28,10 +28,10 @@ impl fmt::Display for Authorization {
 ///
 /// This authorization can then be supplied to the RPC server via
 /// the `Authorization` HTTP header.
-pub fn authorize(uri: &Uri) -> Option<Authorization> {
-    let authority = uri.authority()?;
+pub fn authorize(url: &Url) -> Option<Authorization> {
+    let authority = url.authority();
 
-    if let Some((userpass, _)) = authority.as_str().split_once('@') {
+    if let Some((userpass, _)) = authority.split_once('@') {
         let bytes = base64::encode(userpass);
         let credentials = String::from_utf8_lossy(bytes.as_slice());
         Some(Authorization::Basic(credentials.to_string()))
@@ -42,28 +42,24 @@ pub fn authorize(uri: &Uri) -> Option<Authorization> {
 
 #[cfg(test)]
 mod tests {
-    use core::str::FromStr;
-
-    use http::Uri;
-
     use super::*;
 
     #[test]
     fn extract_auth_absent() {
-        let uri = Uri::from_str("http://example.com").unwrap();
+        let uri = "http://example.com".parse().unwrap();
         assert_eq!(authorize(&uri), None);
     }
 
     #[test]
     fn extract_auth_username_only() {
-        let uri = Uri::from_str("http://toto@example.com").unwrap();
+        let uri = "http://toto@example.com".parse().unwrap();
         let base64 = "dG90bw==".to_string();
         assert_eq!(authorize(&uri), Some(Authorization::Basic(base64)));
     }
 
     #[test]
     fn extract_auth_username_password() {
-        let uri = Uri::from_str("http://toto:tata@example.com").unwrap();
+        let uri = "http://toto:tata@example.com".parse().unwrap();
         let base64 = "dG90bzp0YXRh".to_string();
         assert_eq!(authorize(&uri), Some(Authorization::Basic(base64)));
     }

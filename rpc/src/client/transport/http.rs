@@ -6,17 +6,24 @@ use core::{
 };
 
 use async_trait::async_trait;
+use reqwest::{header, Proxy};
 
 use tendermint::{block::Height, evidence::Evidence, Hash};
 use tendermint_config::net;
 
+use super::auth;
 use crate::prelude::*;
 use crate::{
     client::{Client, CompatMode},
-    dialect, endpoint,
+    dialect::{v0_34, Dialect, LatestDialect},
+    endpoint,
     query::Query,
+    request::RequestMessage,
+    response::Response,
     Error, Order, Scheme, SimpleRequest, Url,
 };
+
+const USER_AGENT: &str = concat!("tendermint.rs/", env!("CARGO_PKG_VERSION"));
 
 /// A JSON-RPC/HTTP Tendermint RPC client (implements [`crate::Client`]).
 ///
@@ -46,7 +53,8 @@ use crate::{
 /// ```
 #[derive(Debug, Clone)]
 pub struct HttpClient {
-    inner: sealed::HttpClient,
+    inner: reqwest::Client,
+    url: reqwest::Url,
     compat: CompatMode,
 }
 
@@ -79,27 +87,23 @@ impl Builder {
 
     /// Try to create a client with the options specified for this builder.
     pub fn build(self) -> Result<HttpClient, Error> {
-        match self.proxy_url {
-            None => Ok(HttpClient {
-                inner: if self.url.0.is_secure() {
-                    sealed::HttpClient::new_https(self.url.try_into()?)
+        let builder = reqwest::ClientBuilder::new().user_agent(USER_AGENT);
+        let inner = match self.proxy_url {
+            None => builder.build().map_err(Error::http)?,
+            Some(proxy_url) => {
+                let proxy = if self.url.0.is_secure() {
+                    Proxy::https(reqwest::Url::from(proxy_url.0)).map_err(Error::invalid_proxy)?
                 } else {
-                    sealed::HttpClient::new_http(self.url.try_into()?)
-                },
-                compat: self.compat,
-            }),
-            Some(proxy_url) => Ok(HttpClient {
-                inner: if proxy_url.0.is_secure() {
-                    sealed::HttpClient::new_https_proxy(
-                        self.url.try_into()?,
-                        proxy_url.try_into()?,
-                    )?
-                } else {
-                    sealed::HttpClient::new_http_proxy(self.url.try_into()?, proxy_url.try_into()?)?
-                },
-                compat: self.compat,
-            }),
-        }
+                    Proxy::http(reqwest::Url::from(proxy_url.0)).map_err(Error::invalid_proxy)?
+                };
+                builder.proxy(proxy).build().map_err(Error::http)?
+            },
+        };
+        Ok(HttpClient {
+            inner,
+            url: self.url.into(),
+            compat: self.compat,
+        })
     }
 }
 
@@ -111,14 +115,7 @@ impl HttpClient {
         U: TryInto<HttpClientUrl, Error = Error>,
     {
         let url = url.try_into()?;
-        Ok(Self {
-            inner: if url.0.is_secure() {
-                sealed::HttpClient::new_https(url.try_into()?)
-            } else {
-                sealed::HttpClient::new_http(url.try_into()?)
-            },
-            compat: Default::default(),
-        })
+        Self::builder(url).build()
     }
 
     /// Construct a new Tendermint RPC HTTP/S client connecting to the given
@@ -157,11 +154,40 @@ impl HttpClient {
         self.compat = compat;
     }
 
-    async fn perform_v0_34<R>(&self, request: R) -> Result<R::Output, Error>
+    fn build_request<R>(&self, request: R) -> Result<reqwest::Request, Error>
     where
-        R: SimpleRequest<dialect::v0_34::Dialect>,
+        R: RequestMessage,
     {
-        self.inner.perform(request).await
+        let request_body = request.into_json();
+
+        tracing::trace!("outgoing request: {}", request_body);
+
+        let mut builder = self
+            .inner
+            .post(self.url.clone())
+            .header(header::CONTENT_TYPE, "application/json")
+            .body(request_body.into_bytes());
+
+        if let Some(auth) = auth::authorize(&self.url) {
+            builder = builder.header(header::AUTHORIZATION, auth.to_string());
+        }
+
+        builder.build().map_err(Error::http)
+    }
+
+    async fn perform_with_dialect<R, S>(&self, request: R, _dialect: S) -> Result<R::Output, Error>
+    where
+        R: SimpleRequest<S>,
+        S: Dialect,
+    {
+        let request = self.build_request(request)?;
+        let response = self.inner.execute(request).await.map_err(Error::http)?;
+        let response_body = response.bytes().await.map_err(Error::http)?;
+        tracing::trace!(
+            "incoming response: {}",
+            String::from_utf8_lossy(&response_body)
+        );
+        R::Response::from_string(&response_body).map(Into::into)
     }
 }
 
@@ -171,7 +197,7 @@ impl Client for HttpClient {
     where
         R: SimpleRequest,
     {
-        self.inner.perform(request).await
+        self.perform_with_dialect(request, LatestDialect).await
     }
 
     async fn block_results<H>(&self, height: H) -> Result<endpoint::block_results::Response, Error>
@@ -196,7 +222,7 @@ impl Client for HttpClient {
                 // Back-fill with a request to /block endpoint and
                 // taking just the header from the response.
                 let resp = self
-                    .perform_v0_34(endpoint::block::Request::new(height))
+                    .perform_with_dialect(endpoint::block::Request::new(height), v0_34::Dialect)
                     .await?;
                 Ok(resp.into())
             },
@@ -216,7 +242,10 @@ impl Client for HttpClient {
                 // Back-fill with a request to /block_by_hash endpoint and
                 // taking just the header from the response.
                 let resp = self
-                    .perform_v0_34(endpoint::block_by_hash::Request::new(hash))
+                    .perform_with_dialect(
+                        endpoint::block_by_hash::Request::new(hash),
+                        v0_34::Dialect,
+                    )
                     .await?;
                 Ok(resp.into())
             },
@@ -228,7 +257,7 @@ impl Client for HttpClient {
         match self.compat {
             CompatMode::V0_37 => self.perform(endpoint::evidence::Request::new(e)).await,
             CompatMode::V0_34 => {
-                self.perform_v0_34(endpoint::evidence::Request::new(e))
+                self.perform_with_dialect(endpoint::evidence::Request::new(e), v0_34::Dialect)
                     .await
             },
         }
@@ -318,168 +347,9 @@ impl From<HttpClientUrl> for Url {
     }
 }
 
-impl TryFrom<HttpClientUrl> for hyper::Uri {
-    type Error = Error;
-
-    fn try_from(value: HttpClientUrl) -> Result<Self, Error> {
-        value.0.to_string().parse().map_err(Error::invalid_uri)
-    }
-}
-
-mod sealed {
-    use std::io::Read;
-
-    use http::header::AUTHORIZATION;
-    use hyper::{
-        body::Buf,
-        client::{connect::Connect, HttpConnector},
-        header, Uri,
-    };
-    use hyper_proxy::{Intercept, Proxy, ProxyConnector};
-    use hyper_rustls::HttpsConnector;
-
-    use crate::prelude::*;
-    use crate::{
-        client::transport::auth::authorize, dialect::Dialect, Error, Response, SimpleRequest,
-    };
-
-    /// A wrapper for a `hyper`-based client, generic over the connector type.
-    #[derive(Debug, Clone)]
-    pub struct HyperClient<C> {
-        uri: Uri,
-        inner: hyper::Client<C>,
-    }
-
-    impl<C> HyperClient<C> {
-        pub fn new(uri: Uri, inner: hyper::Client<C>) -> Self {
-            Self { uri, inner }
-        }
-    }
-
-    impl<C> HyperClient<C>
-    where
-        C: Connect + Clone + Send + Sync + 'static,
-    {
-        pub async fn perform<R, S>(&self, request: R) -> Result<R::Output, Error>
-        where
-            R: SimpleRequest<S>,
-            S: Dialect,
-        {
-            let request = self.build_request(request)?;
-            let response = self.inner.request(request).await.map_err(Error::hyper)?;
-            let response_body = response_to_string(response).await?;
-            tracing::debug!("Incoming response: {}", response_body);
-            R::Response::from_string(&response_body).map(Into::into)
-        }
-    }
-
-    impl<C> HyperClient<C> {
-        /// Build a request using the given Tendermint RPC request.
-        pub fn build_request<R, S>(&self, request: R) -> Result<hyper::Request<hyper::Body>, Error>
-        where
-            R: SimpleRequest<S>,
-            S: Dialect,
-        {
-            let request_body = request.into_json();
-
-            tracing::debug!("Outgoing request: {}", request_body);
-
-            let mut request = hyper::Request::builder()
-                .method("POST")
-                .uri(&self.uri)
-                .body(hyper::Body::from(request_body.into_bytes()))
-                .map_err(Error::http)?;
-
-            {
-                let headers = request.headers_mut();
-                headers.insert(header::CONTENT_TYPE, "application/json".parse().unwrap());
-                headers.insert(
-                    header::USER_AGENT,
-                    format!("tendermint.rs/{}", env!("CARGO_PKG_VERSION"))
-                        .parse()
-                        .unwrap(),
-                );
-
-                if let Some(auth) = authorize(&self.uri) {
-                    headers.insert(AUTHORIZATION, auth.to_string().parse().unwrap());
-                }
-            }
-
-            Ok(request)
-        }
-    }
-
-    /// We offer several variations of `hyper`-based client.
-    ///
-    /// Here we erase the type signature of the underlying `hyper`-based
-    /// client, allowing the higher-level HTTP client to operate via HTTP or
-    /// HTTPS, and with or without a proxy.
-    #[derive(Debug, Clone)]
-    pub enum HttpClient {
-        Http(HyperClient<HttpConnector>),
-        Https(HyperClient<HttpsConnector<HttpConnector>>),
-        HttpProxy(HyperClient<ProxyConnector<HttpConnector>>),
-        HttpsProxy(HyperClient<ProxyConnector<HttpsConnector<HttpConnector>>>),
-    }
-
-    impl HttpClient {
-        pub fn new_http(uri: Uri) -> Self {
-            Self::Http(HyperClient::new(uri, hyper::Client::new()))
-        }
-
-        pub fn new_https(uri: Uri) -> Self {
-            Self::Https(HyperClient::new(
-                uri,
-                hyper::Client::builder().build(HttpsConnector::with_native_roots()),
-            ))
-        }
-
-        pub fn new_http_proxy(uri: Uri, proxy_uri: Uri) -> Result<Self, Error> {
-            let proxy = Proxy::new(Intercept::All, proxy_uri);
-            let proxy_connector =
-                ProxyConnector::from_proxy(HttpConnector::new(), proxy).map_err(Error::io)?;
-            Ok(Self::HttpProxy(HyperClient::new(
-                uri,
-                hyper::Client::builder().build(proxy_connector),
-            )))
-        }
-
-        pub fn new_https_proxy(uri: Uri, proxy_uri: Uri) -> Result<Self, Error> {
-            let proxy = Proxy::new(Intercept::All, proxy_uri);
-            let proxy_connector =
-                ProxyConnector::from_proxy(HttpsConnector::with_native_roots(), proxy)
-                    .map_err(Error::io)?;
-
-            Ok(Self::HttpsProxy(HyperClient::new(
-                uri,
-                hyper::Client::builder().build(proxy_connector),
-            )))
-        }
-
-        pub async fn perform<R, S>(&self, request: R) -> Result<R::Output, Error>
-        where
-            R: SimpleRequest<S>,
-            S: Dialect,
-        {
-            match self {
-                HttpClient::Http(c) => c.perform(request).await,
-                HttpClient::Https(c) => c.perform(request).await,
-                HttpClient::HttpProxy(c) => c.perform(request).await,
-                HttpClient::HttpsProxy(c) => c.perform(request).await,
-            }
-        }
-    }
-
-    async fn response_to_string(response: hyper::Response<hyper::Body>) -> Result<String, Error> {
-        let mut response_body = String::new();
-        hyper::body::aggregate(response.into_body())
-            .await
-            .map_err(Error::hyper)?
-            .reader()
-            .read_to_string(&mut response_body)
-            .map_err(Error::io)?;
-
-        Ok(response_body)
+impl From<HttpClientUrl> for url::Url {
+    fn from(url: HttpClientUrl) -> Self {
+        url.0.into()
     }
 }
 
@@ -487,14 +357,13 @@ mod sealed {
 mod tests {
     use core::str::FromStr;
 
-    use http::{header::AUTHORIZATION, Request, Uri};
-    use hyper::Body;
+    use reqwest::{header::AUTHORIZATION, Request};
 
-    use super::sealed::HyperClient;
-    use crate::dialect::LatestDialect;
+    use super::HttpClient;
     use crate::endpoint::abci_info;
+    use crate::Url;
 
-    fn authorization(req: &Request<Body>) -> Option<&str> {
+    fn authorization(req: &Request) -> Option<&str> {
         req.headers()
             .get(AUTHORIZATION)
             .map(|h| h.to_str().unwrap())
@@ -502,22 +371,18 @@ mod tests {
 
     #[test]
     fn without_basic_auth() {
-        let uri = Uri::from_str("http://example.com").unwrap();
-        let inner = hyper::Client::new();
-        let client = HyperClient::new(uri, inner);
-        let req =
-            HyperClient::build_request::<_, LatestDialect>(&client, abci_info::Request).unwrap();
+        let url = Url::from_str("http://example.com").unwrap();
+        let client = HttpClient::new(url).unwrap();
+        let req = HttpClient::build_request(&client, abci_info::Request).unwrap();
 
         assert_eq!(authorization(&req), None);
     }
 
     #[test]
     fn with_basic_auth() {
-        let uri = Uri::from_str("http://toto:tata@example.com").unwrap();
-        let inner = hyper::Client::new();
-        let client = HyperClient::new(uri, inner);
-        let req =
-            HyperClient::build_request::<_, LatestDialect>(&client, abci_info::Request).unwrap();
+        let url = Url::from_str("http://toto:tata@example.com").unwrap();
+        let client = HttpClient::new(url).unwrap();
+        let req = HttpClient::build_request(&client, abci_info::Request).unwrap();
 
         assert_eq!(authorization(&req), Some("Basic dG90bzp0YXRh"));
     }

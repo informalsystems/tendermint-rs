@@ -25,7 +25,6 @@ use tendermint::{block::Height, Hash};
 use tendermint_config::net;
 
 use super::router::{SubscriptionId, SubscriptionIdRef};
-use crate::dialect::v0_34;
 use crate::{
     client::{
         subscription::SubscriptionTx,
@@ -33,6 +32,7 @@ use crate::{
         transport::router::{PublishResult, SubscriptionRouter},
         Client, CompatMode,
     },
+    dialect::{v0_34, Dialect, LatestDialect},
     endpoint::{self, subscribe, unsubscribe},
     error::Error,
     event::{self, Event},
@@ -220,11 +220,12 @@ impl WebSocketClient {
         }
     }
 
-    async fn perform_v0_34<R>(&self, request: R) -> Result<R::Output, Error>
+    async fn perform_with_dialect<R, S>(&self, request: R, dialect: S) -> Result<R::Output, Error>
     where
-        R: SimpleRequest<v0_34::Dialect>,
+        R: SimpleRequest<S>,
+        S: Dialect,
     {
-        self.inner.perform(request).await
+        self.inner.perform(request, dialect).await
     }
 }
 
@@ -234,7 +235,7 @@ impl Client for WebSocketClient {
     where
         R: SimpleRequest,
     {
-        self.inner.perform(request).await
+        self.perform_with_dialect(request, LatestDialect).await
     }
 
     async fn block_results<H>(&self, height: H) -> Result<endpoint::block_results::Response, Error>
@@ -259,7 +260,7 @@ impl Client for WebSocketClient {
                 // Back-fill with a request to /block endpoint and
                 // taking just the header from the response.
                 let resp = self
-                    .perform_v0_34(endpoint::block::Request::new(height))
+                    .perform_with_dialect(endpoint::block::Request::new(height), v0_34::Dialect)
                     .await?;
                 Ok(resp.into())
             },
@@ -279,7 +280,10 @@ impl Client for WebSocketClient {
                 // Back-fill with a request to /block_by_hash endpoint and
                 // taking just the header from the response.
                 let resp = self
-                    .perform_v0_34(endpoint::block_by_hash::Request::new(hash))
+                    .perform_with_dialect(
+                        endpoint::block_by_hash::Request::new(hash),
+                        v0_34::Dialect,
+                    )
                     .await?;
                 Ok(resp.into())
             },
@@ -618,7 +622,7 @@ mod sealed {
     }
 
     impl WebSocketClient {
-        pub async fn perform<R, S>(&self, request: R) -> Result<R::Output, Error>
+        pub async fn perform<R, S>(&self, request: R, _dialect: S) -> Result<R::Output, Error>
         where
             R: SimpleRequest<S>,
             S: Dialect,
@@ -650,8 +654,6 @@ mod sealed {
         fn into_client_request(
             self,
         ) -> tungstenite::Result<tungstenite::handshake::client::Request> {
-            let uri = self.to_string().parse::<http::Uri>().unwrap();
-
             let builder = tungstenite::handshake::client::Request::builder()
                 .method("GET")
                 .header("Host", self.host())
@@ -663,14 +665,14 @@ mod sealed {
                     tungstenite::handshake::client::generate_key(),
                 );
 
-            let builder = if let Some(auth) = authorize(&uri) {
+            let builder = if let Some(auth) = authorize(self.as_ref()) {
                 builder.header("Authorization", auth.to_string())
             } else {
                 builder
             };
 
             builder
-                .uri(uri)
+                .uri(self.to_string())
                 .body(())
                 .map_err(tungstenite::error::Error::HttpFormat)
         }
