@@ -12,6 +12,12 @@ type ReqwestError = flex_error::DisplayOnly<reqwest::Error>;
 #[cfg(not(feature = "reqwest"))]
 type ReqwestError = flex_error::NoSource;
 
+#[cfg(feature = "reqwest")]
+type HttpStatusCode = reqwest::StatusCode;
+
+#[cfg(not(feature = "reqwest"))]
+type HttpStatusCode = core::num::NonZeroU16;
+
 #[cfg(feature = "tokio")]
 type JoinError = flex_error::DisplayOnly<tokio::task::JoinError>;
 
@@ -75,6 +81,14 @@ define_error! {
             }
             | e | {
                 format_args!("method not found: {}", e.method)
+            },
+
+        HttpRequestFailed
+            {
+                status: HttpStatusCode,
+            }
+            | e | {
+                format_args!("HTTP request failed with non-200 status code: {}", e.status)
             },
 
         Parse
