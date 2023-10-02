@@ -193,12 +193,26 @@ pub struct RequestProcessProposal {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestExtendVote {
-    /// the hash of the block  that this vote may be referring to
+    /// the hash of the block that this vote may be referring to
     #[prost(bytes = "bytes", tag = "1")]
     pub hash: ::prost::bytes::Bytes,
     /// the height of the extended vote
     #[prost(int64, tag = "2")]
     pub height: i64,
+    /// info of the block that this vote may be referring to
+    #[prost(message, optional, tag = "3")]
+    pub time: ::core::option::Option<crate::google::protobuf::Timestamp>,
+    #[prost(bytes = "bytes", repeated, tag = "4")]
+    pub txs: ::prost::alloc::vec::Vec<::prost::bytes::Bytes>,
+    #[prost(message, optional, tag = "5")]
+    pub proposed_last_commit: ::core::option::Option<CommitInfo>,
+    #[prost(message, repeated, tag = "6")]
+    pub misbehavior: ::prost::alloc::vec::Vec<Misbehavior>,
+    #[prost(bytes = "bytes", tag = "7")]
+    pub next_validators_hash: ::prost::bytes::Bytes,
+    /// address of the public key of the original proposer of the block.
+    #[prost(bytes = "bytes", tag = "8")]
+    pub proposer_address: ::prost::bytes::Bytes,
 }
 /// Verify the vote extension
 #[allow(clippy::derive_partial_eq_without_eq)]
