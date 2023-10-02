@@ -1,5 +1,51 @@
 # CHANGELOG
 
+## v0.34.0
+
+This release brings breaking changes, updating the `ExtendVote` request
+data structure to the changes in the CometBFT 0.38.0 release.
+The gRPC stack has been updated to prost 0.12 and tonic 0.10.
+The RPC client for HTTP has been reimplemented using `reqwest`.
+Support for Secp256k1 consensus keys has been added as an optional feature.
+
+### BREAKING CHANGES
+
+- `[tendermint-proto]` Update dependencies to prost 0.12 and tonic 0.10
+  ([\#1349](https://github.com/informalsystems/tendermint-rs/pull/1349))
+- `[tendermint-rpc]` Changed `ErrorDetail` variants
+  ([\#1362](https://github.com/informalsystems/tendermint-rs/pull/1362)):
+  * Removed the `Hyper` and `InvalidUri` variants.
+  * The `Http` variant now has `Error` from `reqwest` as the source.
+  * Added the `InvalidProxy` variant.
+  * The `tungstenite` dependency exposed through its `Error` type in
+    WebSocket-related variants has been updated to version 0.20.x.
+- `[tendermint-rpc]` Removed a `TryFrom<HttpClientUrl>` conversion for
+  `hyper::Uri` as hyper is no longer a direct dependency
+  ([\#1362](https://github.com/informalsystems/tendermint-rs/pull/1362)).
+- `[tendermint-proto]` Update `v0_38` bindings to CometFBT release 0.38.0
+  ([\#1365](https://github.com/informalsystems/tendermint-rs/pull/1365)).
+- `[tendermint]` Add fields to `abci::request::ExtendVote` to represent
+  the fields added to the `abci.RequestExtendVote` protobuf message since
+  the 0.38.0-rc3 release
+  ([\#1365](https://github.com/informalsystems/tendermint-rs/pull/1365)).
+
+### FEATURES
+
+- `[tendermint]` Add support for secp256k1 consensus keys
+  ([\#1364](https://github.com/informalsystems/tendermint-rs/issues/1364))
+
+### IMPROVEMENTS
+
+- `[tendermint-rpc]` Turn non-200 HTTP response into an error
+  instead of trying to parse the body as a JSON-RPC response
+  ([\#1359](https://github.com/informalsystems/tendermint-rs/issues/1359))
+
+### SECURITY
+
+- `[tendermint-rpc]` Address the RUSTSEC-2023-0052 vulnerability by dropping
+  dependency on `hyper-proxy` and changing the HTTP client to use `reqwest`
+  ([\#1342](https://github.com/informalsystems/tendermint-rs/issues/1342)).
+
 ## v0.33.2
 
 *September 18th, 2023*
