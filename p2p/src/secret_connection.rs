@@ -13,7 +13,7 @@ use std::{
 };
 
 use chacha20poly1305::{
-    aead::{generic_array::GenericArray, AeadInPlace, NewAead},
+    aead::{generic_array::GenericArray, AeadInPlace, KeyInit},
     ChaCha20Poly1305,
 };
 use curve25519_dalek_ng::{
