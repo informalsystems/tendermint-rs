@@ -21,7 +21,7 @@ path = "src/application/kvstore/main.rs"
 required-features = [ "binary", "client", "kvstore-app" ]
 
 [features]
-default = ["flex-error/std", "flex-error/eyre_tracer"]
+default = ["flex-error/std"]
 client = []
 echo-app = []
 kvstore-app = []

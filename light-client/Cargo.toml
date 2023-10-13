@@ -25,7 +25,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["rpc-client", "flex-error/std", "flex-error/eyre_tracer"]
+default = ["rpc-client", "flex-error/std"]
 rpc-client = ["tokio", "rust-crypto", "tendermint-rpc/http-client"]
 rust-crypto = ["tendermint/rust-crypto", "tendermint-light-client-verifier/rust-crypto"]
 secp256k1 = ["tendermint/secp256k1", "tendermint-rpc/secp256k1"]
