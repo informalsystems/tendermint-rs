@@ -11,7 +11,7 @@ description = """
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-flex-error = { version = "0.4.4", default-features = false, features = ["std", "eyre_tracer"] }
+flex-error = { version = "0.4.4", default-features = false, features = ["std"] }
 futures = "0.3"
 structopt = "0.3"
 tendermint = { version = "0.34.0", path = "../../tendermint" }
