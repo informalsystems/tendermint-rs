@@ -3,7 +3,7 @@
  A TLA+ specification of a simplified Tendermint consensus, tuned for
  fork accountability. The simplifications are as follows:
 
- - the procotol runs for one height, that is, one-shot consensus
+ - the protocol runs for one height, that is, one-shot consensus
 
  - this specification focuses on safety, so timeouts are modelled with
    with non-determinism
