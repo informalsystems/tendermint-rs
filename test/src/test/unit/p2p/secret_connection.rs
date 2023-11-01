@@ -4,10 +4,12 @@ use std::{
     thread,
 };
 
+use curve25519_dalek_ng::{
+    constants::X25519_BASEPOINT, montgomery::MontgomeryPoint as EphemeralPublic,
+};
 use rand_core::OsRng;
 use tendermint_p2p::secret_connection::{sort32, Handshake, SecretConnection, Version};
 use tendermint_proto::v0_38 as proto;
-use x25519_dalek::PublicKey as EphemeralPublic;
 
 use crate::pipe;
 
@@ -66,7 +68,7 @@ fn test_evil_peer_shares_invalid_eph_key() {
     let local_privkey = ed25519_consensus::SigningKey::new(csprng);
     let (mut h, _) = Handshake::new(local_privkey, Version::V0_34);
     let bytes: [u8; 32] = [0; 32];
-    let res = h.got_key(EphemeralPublic::from(bytes));
+    let res = h.got_key(EphemeralPublic(bytes));
     assert!(res.is_err());
 }
 
@@ -75,7 +77,7 @@ fn test_evil_peer_shares_invalid_auth_sig() {
     let csprng = OsRng {};
     let local_privkey = ed25519_consensus::SigningKey::new(csprng);
     let (mut h, _) = Handshake::new(local_privkey, Version::V0_34);
-    let res = h.got_key(EphemeralPublic::from(x25519_dalek::X25519_BASEPOINT_BYTES));
+    let res = h.got_key(X25519_BASEPOINT);
     assert!(res.is_ok());
 
     let mut h = res.unwrap();

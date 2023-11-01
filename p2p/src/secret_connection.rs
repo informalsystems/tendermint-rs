@@ -13,15 +13,18 @@ use std::{
 };
 
 use chacha20poly1305::{
-    aead::{generic_array::GenericArray, AeadInPlace, NewAead},
+    aead::{generic_array::GenericArray, AeadInPlace, KeyInit},
     ChaCha20Poly1305,
+};
+use curve25519_dalek_ng::{
+    constants::X25519_BASEPOINT, montgomery::MontgomeryPoint as EphemeralPublic,
+    scalar::Scalar as EphemeralSecret,
 };
 use merlin::Transcript;
 use rand_core::OsRng;
 use subtle::ConstantTimeEq;
 use tendermint_proto::v0_38 as proto;
 use tendermint_std_ext::TryClone;
-use x25519_dalek::{EphemeralSecret, PublicKey as EphemeralPublic};
 
 pub use self::{
     kdf::Kdf,
@@ -82,8 +85,8 @@ impl Handshake<AwaitingEphKey> {
         protocol_version: Version,
     ) -> (Self, EphemeralPublic) {
         // Generate an ephemeral key for perfect forward secrecy.
-        let local_eph_privkey = EphemeralSecret::new(OsRng);
-        let local_eph_pubkey = EphemeralPublic::from(&local_eph_privkey);
+        let local_eph_privkey = EphemeralSecret::random(&mut OsRng);
+        let local_eph_pubkey = X25519_BASEPOINT * &local_eph_privkey;
 
         (
             Self {
@@ -111,10 +114,10 @@ impl Handshake<AwaitingEphKey> {
         let Some(local_eph_privkey) = self.state.local_eph_privkey.take() else {
             return Err(Error::missing_secret());
         };
-        let local_eph_pubkey = EphemeralPublic::from(&local_eph_privkey);
+        let local_eph_pubkey = X25519_BASEPOINT * &local_eph_privkey;
 
         // Compute common shared secret.
-        let shared_secret = EphemeralSecret::diffie_hellman(local_eph_privkey, &remote_eph_pubkey);
+        let shared_secret = &local_eph_privkey * &remote_eph_pubkey;
 
         let mut transcript = Transcript::new(b"TENDERMINT_SECRET_CONNECTION_TRANSCRIPT_HASH");
 

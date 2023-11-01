@@ -2,9 +2,9 @@
 
 use std::convert::TryInto;
 
+use curve25519_dalek_ng::montgomery::MontgomeryPoint as EphemeralPublic;
 use prost::Message as _;
 use tendermint_proto::v0_38 as proto;
-use x25519_dalek::PublicKey as EphemeralPublic;
 
 #[cfg(feature = "amino")]
 use super::amino_types;
@@ -83,7 +83,7 @@ impl Version {
             }
 
             let eph_pubkey_bytes: [u8; 32] = bytes[2..].try_into().expect("framing failed");
-            EphemeralPublic::from(eph_pubkey_bytes)
+            EphemeralPublic(eph_pubkey_bytes)
         } else {
             // Equivalent Go implementation:
             // https://github.com/tendermint/tendermint/blob/013b9ce/p2p/conn/secret_connection.go#L220-L225
@@ -94,7 +94,7 @@ impl Version {
             }
 
             let eph_pubkey_bytes: [u8; 32] = bytes[1..].try_into().expect("framing failed");
-            EphemeralPublic::from(eph_pubkey_bytes)
+            EphemeralPublic(eph_pubkey_bytes)
         };
 
         // Reject the key if it is of low order
