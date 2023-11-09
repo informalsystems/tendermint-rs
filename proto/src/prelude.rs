@@ -2,10 +2,8 @@
 // https://doc.rust-lang.org/src/alloc/prelude/v1.rs.html
 pub use alloc::{
     borrow::ToOwned,
-    boxed::Box,
     format,
     string::{String, ToString},
-    vec,
     vec::Vec,
 };
 pub use core::prelude::v1::*;
