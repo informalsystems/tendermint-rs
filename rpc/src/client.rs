@@ -15,10 +15,10 @@ pub mod sync;
 mod transport;
 
 #[cfg(feature = "http-client")]
-pub use transport::http::{HttpClient, HttpClientUrl};
+pub use transport::http::{self, HttpClient, HttpClientUrl};
 #[cfg(feature = "websocket-client")]
 pub use transport::websocket::{
-    WebSocketClient, WebSocketClientDriver, WebSocketClientUrl, WebSocketConfig,
+    self, WebSocketClient, WebSocketClientDriver, WebSocketClientUrl, WebSocketConfig,
 };
 
 #[cfg(any(feature = "http-client", feature = "websocket-client"))]
