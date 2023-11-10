@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
+use crate::serializers;
 
 /// An event that occurred while processing a request.
 ///
@@ -119,8 +120,10 @@ where
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Hash)]
 pub struct EventAttribute {
     /// The event key.
+    #[serde(with = "serializers::allow_null")]
     pub key: String,
     /// The event value.
+    #[serde(with = "serializers::allow_null")]
     pub value: String,
     /// Whether Tendermint's indexer should index this event.
     ///
