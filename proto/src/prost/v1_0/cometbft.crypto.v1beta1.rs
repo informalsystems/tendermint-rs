@@ -1,13 +1,18 @@
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Proof {
     #[prost(int64, tag = "1")]
+    #[serde(with = "crate::serializers::from_str")]
     pub total: i64,
     #[prost(int64, tag = "2")]
+    #[serde(with = "crate::serializers::from_str")]
     pub index: i64,
     #[prost(bytes = "vec", tag = "3")]
+    #[serde(with = "crate::serializers::bytes::base64string")]
     pub leaf_hash: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", repeated, tag = "4")]
+    #[serde(with = "crate::serializers::bytes::vec_base64string")]
     pub aunts: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -59,12 +64,22 @@ pub struct PublicKey {
 }
 /// Nested message and enum types in `PublicKey`.
 pub mod public_key {
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[serde(tag = "type", content = "value")]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Sum {
         #[prost(bytes, tag = "1")]
+        #[serde(
+            rename = "tendermint/PubKeyEd25519",
+            with = "crate::serializers::bytes::base64string"
+        )]
         Ed25519(::prost::alloc::vec::Vec<u8>),
         #[prost(bytes, tag = "2")]
+        #[serde(
+            rename = "tendermint/PubKeySecp256k1",
+            with = "crate::serializers::bytes::base64string"
+        )]
         Secp256k1(::prost::alloc::vec::Vec<u8>),
     }
 }

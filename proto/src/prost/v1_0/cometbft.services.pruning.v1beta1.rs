@@ -78,6 +78,7 @@ pub struct GetBlockIndexerRetainHeightResponse {
     pub height: u64,
 }
 /// Generated server implementations.
+#[cfg(feature = "grpc-server")]
 pub mod pruning_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;

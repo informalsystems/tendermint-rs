@@ -433,6 +433,7 @@ pub struct TxResult {
     pub result: ::core::option::Option<ExecTxResult>,
 }
 /// Generated server implementations.
+#[cfg(feature = "grpc-server")]
 pub mod abci_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;

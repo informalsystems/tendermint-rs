@@ -1,11 +1,13 @@
 /// Vote represents a prevote or precommit vote from validators for
 /// consensus.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Vote {
     #[prost(enumeration = "super::v1beta1::SignedMsgType", tag = "1")]
     pub r#type: i32,
     #[prost(int64, tag = "2")]
+    #[serde(with = "crate::serializers::from_str")]
     pub height: i64,
     #[prost(int32, tag = "3")]
     pub round: i32,
@@ -13,14 +15,17 @@ pub struct Vote {
     #[prost(message, optional, tag = "4")]
     pub block_id: ::core::option::Option<super::v1beta1::BlockId>,
     #[prost(message, optional, tag = "5")]
+    #[serde(with = "crate::serializers::optional")]
     pub timestamp: ::core::option::Option<crate::google::protobuf::Timestamp>,
     #[prost(bytes = "vec", tag = "6")]
+    #[serde(with = "crate::serializers::bytes::hexstring")]
     pub validator_address: ::prost::alloc::vec::Vec<u8>,
     #[prost(int32, tag = "7")]
     pub validator_index: i32,
     /// Vote signature by the validator if they participated in consensus for the
     /// associated block.
     #[prost(bytes = "vec", tag = "8")]
+    #[serde(with = "crate::serializers::bytes::base64string")]
     pub signature: ::prost::alloc::vec::Vec<u8>,
     /// Vote extension provided by the application. Only valid for precommit
     /// messages.
@@ -73,16 +78,21 @@ pub struct Evidence {
 }
 /// Nested message and enum types in `Evidence`.
 pub mod evidence {
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[serde(tag = "type", content = "value")]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Sum {
         #[prost(message, tag = "1")]
+        #[serde(rename = "tendermint/DuplicateVoteEvidence")]
         DuplicateVoteEvidence(super::DuplicateVoteEvidence),
         #[prost(message, tag = "2")]
+        #[serde(rename = "tendermint/LightClientAttackEvidence")]
         LightClientAttackEvidence(super::super::v1beta1::LightClientAttackEvidence),
     }
 }
 /// DuplicateVoteEvidence contains evidence of a validator signed two conflicting votes.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DuplicateVoteEvidence {
@@ -91,18 +101,24 @@ pub struct DuplicateVoteEvidence {
     #[prost(message, optional, tag = "2")]
     pub vote_b: ::core::option::Option<Vote>,
     #[prost(int64, tag = "3")]
+    #[serde(rename = "TotalVotingPower", with = "crate::serializers::from_str")]
     pub total_voting_power: i64,
     #[prost(int64, tag = "4")]
+    #[serde(rename = "ValidatorPower", with = "crate::serializers::from_str")]
     pub validator_power: i64,
     #[prost(message, optional, tag = "5")]
+    #[serde(rename = "Timestamp")]
     pub timestamp: ::core::option::Option<crate::google::protobuf::Timestamp>,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EvidenceList {
     #[prost(message, repeated, tag = "1")]
+    #[serde(with = "crate::serializers::nullable")]
     pub evidence: ::prost::alloc::vec::Vec<Evidence>,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Block {

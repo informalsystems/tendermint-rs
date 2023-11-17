@@ -236,18 +236,25 @@ pub struct ResponseEcho {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseFlush {}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseInfo {
     #[prost(string, tag = "1")]
+    #[serde(default)]
     pub data: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
+    #[serde(default)]
     pub version: ::prost::alloc::string::String,
     #[prost(uint64, tag = "3")]
+    #[serde(with = "crate::serializers::from_str", default)]
     pub app_version: u64,
     #[prost(int64, tag = "4")]
+    #[serde(with = "crate::serializers::from_str", default)]
     pub last_block_height: i64,
     #[prost(bytes = "bytes", tag = "5")]
+    #[serde(default)]
+    #[serde(skip_serializing_if = "bytes::Bytes::is_empty")]
     pub last_block_app_hash: ::prost::bytes::Bytes,
 }
 /// nondeterministic
@@ -714,6 +721,7 @@ impl EvidenceType {
     }
 }
 /// Generated server implementations.
+#[cfg(feature = "grpc-server")]
 pub mod abci_application_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;

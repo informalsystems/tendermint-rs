@@ -56,6 +56,7 @@ pub struct GetLatestBlockResultsResponse {
     pub app_hash: ::prost::alloc::vec::Vec<u8>,
 }
 /// Generated server implementations.
+#[cfg(feature = "grpc-server")]
 pub mod block_results_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
