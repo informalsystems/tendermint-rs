@@ -159,7 +159,7 @@ fn find_reference_or_commit<'a>(
 }
 
 /// Copy generated files to target folder
-pub fn copy_files(src_dir: &Path, target_dir: &Path) {
+pub fn copy_files(src_dir: &Path, target_dir: &Path, project:&str) {
     // Remove old compiled files
     remove_dir_all(target_dir).unwrap_or_default();
     create_dir_all(target_dir).unwrap();
@@ -172,7 +172,7 @@ pub fn copy_files(src_dir: &Path, target_dir: &Path) {
             e.file_type().is_file()
                 && e.file_name()
                     .to_str()
-                    .map(|name| name.starts_with("tendermint."))
+                    .map(|name| name.starts_with(&format!("{project}.")))
                     .unwrap_or(false)
         })
         .map(|res| {
@@ -212,12 +212,14 @@ pub fn find_proto_files(proto_path: &Path) -> Vec<PathBuf> {
 /// Tendermint source version.
 pub fn generate_tendermint_mod(prost_dir: &Path, version: &TendermintVersion, target_dir: &Path) {
     create_dir_all(target_dir).unwrap();
+
+    let project_dot = format!("{}.", version.project);
     let file_names = WalkDir::new(prost_dir)
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| {
             e.file_type().is_file()
-                && e.file_name().to_str().unwrap().starts_with("tendermint.")
+                && e.file_name().to_str().unwrap().starts_with(&project_dot)
                 && e.file_name().to_str().unwrap().ends_with(".rs")
         })
         .map(|d| d.file_name().to_str().unwrap().to_owned())
@@ -230,7 +232,7 @@ pub fn generate_tendermint_mod(prost_dir: &Path, version: &TendermintVersion, ta
 
     for file_name in file_names {
         let parts: Vec<_> = file_name
-            .strip_prefix("tendermint.")
+            .strip_prefix(&project_dot)
             .unwrap()
             .strip_suffix(".rs")
             .unwrap()
@@ -276,12 +278,16 @@ pub fn generate_tendermint_mod(prost_dir: &Path, version: &TendermintVersion, ta
         .expect("tendermint module file write failed");
 }
 
-pub fn generate_tendermint_lib(versions: &[TendermintVersion], tendermint_lib_target: &Path) {
+pub fn generate_tendermint_lib(versions: &[TendermintVersion], tendermint_lib_target_dir: &Path, project: &str, write_use: bool) {
+    let tendermint_lib_target = tendermint_lib_target_dir.join(format!("{project}.rs"));
     let mut file =
         File::create(tendermint_lib_target).expect("tendermint library file create failed");
-    for version in versions {
+    let project_versions = versions.iter().filter(|v| v.project == project).collect::<Vec<_>>();
+    for version in &project_versions {
         writeln!(&mut file, "pub mod {};", version.ident).unwrap();
     }
-    let last_version = versions.last().unwrap();
-    writeln!(&mut file, "pub use {}::*;", last_version.ident).unwrap();
+    if write_use {
+        let last_version = project_versions.last().unwrap();
+        writeln!(&mut file, "pub use {}::*;", last_version.ident).unwrap();
+    }
 }

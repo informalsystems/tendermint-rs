@@ -12,6 +12,8 @@ pub struct TendermintVersion {
     /// - Branch: `main`
     /// - Commit ID (full length): `d7d0ffea13c60c98b812d243ba5a2c375f341c15`
     pub commitish: &'static str,
+    /// Project name
+    pub project: &'static str,
 }
 
 /// All Tendermint versions to generate code for
@@ -20,16 +22,25 @@ pub const TENDERMINT_VERSIONS: &[TendermintVersion] = &[
         repo: "https://github.com/cometbft/cometbft",
         ident: "v0_34",
         commitish: "v0.34.29",
+        project:"tendermint",
     },
     TendermintVersion {
         repo: "https://github.com/cometbft/cometbft",
         ident: "v0_37",
         commitish: "v0.37.2",
+        project:"tendermint",
     },
     TendermintVersion {
         repo: "https://github.com/cometbft/cometbft",
         ident: "v0_38",
         commitish: "v0.38.0",
+        project:"tendermint",
+    },
+    TendermintVersion {
+        repo: "https://github.com/cometbft/cometbft",
+        ident: "v1_0",
+        commitish: "feature/proto-upgrade",
+        project:"cometbft",
     },
 ];
 
@@ -109,6 +120,40 @@ pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.BlockMeta", SERIALIZED),
     (".tendermint.types.TxProof", SERIALIZED),
     (".tendermint.crypto.Proof", SERIALIZED),
+    (".cometbft.libs.bits.BitArray", SERIALIZED),//TODO Revisit
+    (".cometbft.types.BlockIDFlag", PRIMITIVE_ENUM),
+    (".cometbft.types.Block", SERIALIZED),
+    (".cometbft.types.Data", SERIALIZED),
+    (".cometbft.types.EvidenceParams", SERIALIZED),
+    (".cometbft.types.Evidence.sum", SERIALIZED),
+    (".cometbft.types.Evidence.sum", TYPE_TAG),
+    (".cometbft.types.EvidenceList", SERIALIZED),
+    (".cometbft.types.DuplicateVoteEvidence", SERIALIZED),
+    (".cometbft.types.Vote", SERIALIZED),
+    (".cometbft.types.BlockID", SERIALIZED),
+    (".cometbft.types.PartSetHeader", SERIALIZED),
+    (".cometbft.types.LightClientAttackEvidence", SERIALIZED),
+    (
+        ".cometbft.types.LightClientAttackEvidence",
+        RENAME_ALL_PASCALCASE,
+    ),
+    (".cometbft.types.LightBlock", SERIALIZED),
+    (".cometbft.types.SignedHeader", SERIALIZED),
+    (".cometbft.types.Header", SERIALIZED),
+    (".cometbft.version.Consensus", SERIALIZED),
+    (".cometbft.types.Commit", SERIALIZED),
+    (".cometbft.types.CommitSig", SERIALIZED),
+    (".cometbft.types.ValidatorSet", SERIALIZED),
+    (".cometbft.crypto.PublicKey.sum", SERIALIZED),
+    (".cometbft.crypto.PublicKey.sum", TYPE_TAG),
+    (".cometbft.abci.ResponseInfo", SERIALIZED),
+    (".cometbft.types.CanonicalBlockID", SERIALIZED),
+    (".cometbft.types.CanonicalPartSetHeader", SERIALIZED),
+    (".cometbft.types.Validator", SERIALIZED),
+    (".cometbft.types.CanonicalVote", SERIALIZED),
+    (".cometbft.types.BlockMeta", SERIALIZED),
+    (".cometbft.types.TxProof", SERIALIZED),
+    (".cometbft.crypto.Proof", SERIALIZED),
 ];
 
 /// Custom field attributes applied on top of protobuf fields in (a) struct(s)
@@ -231,4 +276,118 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.crypto.Proof.total", QUOTED),
     (".tendermint.crypto.Proof.aunts", VEC_BASE64STRING),
     (".tendermint.crypto.Proof.leaf_hash", BASE64STRING),
+    (
+        ".cometbft.types.EvidenceParams.max_bytes",
+        QUOTED_WITH_DEFAULT,
+    ), //TODO Revisit
+    (
+        ".cometbft.types.EvidenceParams.max_age_num_blocks",
+        QUOTED_WITH_DEFAULT,
+    ),
+    (".cometbft.version.Consensus.block", QUOTED),
+    (".cometbft.version.Consensus.app", QUOTED_WITH_DEFAULT),
+    (".cometbft.abci.ResponseInfo.data", DEFAULT),
+    (".cometbft.abci.ResponseInfo.version", DEFAULT),
+    (
+        ".cometbft.abci.ResponseInfo.app_version",
+        QUOTED_WITH_DEFAULT,
+    ),
+    (
+        ".cometbft.abci.ResponseInfo.last_block_height",
+        QUOTED_WITH_DEFAULT,
+    ),
+    (".cometbft.abci.ResponseInfo.last_block_app_hash", DEFAULT),
+    (
+        ".cometbft.abci.ResponseInfo.last_block_app_hash",
+        BYTES_SKIP_IF_EMPTY,
+    ),
+    (".cometbft.types.BlockID.hash", HEXSTRING),
+    (".cometbft.types.BlockID.part_set_header", RENAME_PARTS),
+    (
+        ".cometbft.types.PartSetHeader.total",
+        PART_SET_HEADER_TOTAL,
+    ),
+    (".cometbft.types.PartSetHeader.hash", HEXSTRING),
+    (".cometbft.types.Header.height", QUOTED),
+    (".cometbft.types.Header.time", OPTIONAL),
+    (".cometbft.types.Header.last_commit_hash", HEXSTRING),
+    (".cometbft.types.Header.data_hash", HEXSTRING),
+    (".cometbft.types.Header.validators_hash", HEXSTRING),
+    (".cometbft.types.Header.next_validators_hash", HEXSTRING),
+    (".cometbft.types.Header.consensus_hash", HEXSTRING),
+    (".cometbft.types.Header.app_hash", HEXSTRING),
+    (".cometbft.types.Header.last_results_hash", HEXSTRING),
+    (".cometbft.types.Header.evidence_hash", HEXSTRING),
+    (".cometbft.types.Header.proposer_address", HEXSTRING),
+    (".cometbft.types.Data.txs", NULLABLEVECARRAY),
+    (".cometbft.types.EvidenceList.evidence", NULLABLE),
+    (".cometbft.types.Commit.height", QUOTED),
+    (".cometbft.types.Commit.signatures", NULLABLE),
+    (".cometbft.types.CommitSig.validator_address", HEXSTRING),
+    (".cometbft.types.CommitSig.timestamp", OPTIONAL),
+    (".cometbft.types.CommitSig.signature", BASE64STRING),
+    (
+        ".cometbft.types.DuplicateVoteEvidence.total_voting_power",
+        RENAME_TOTAL_VOTING_POWER_QUOTED,
+    ),
+    (
+        ".cometbft.types.DuplicateVoteEvidence.validator_power",
+        RENAME_VALIDATOR_POWER_QUOTED,
+    ),
+    (
+        ".cometbft.types.DuplicateVoteEvidence.timestamp",
+        RENAME_TIMESTAMP,
+    ),
+    (
+        ".cometbft.types.LightClientAttackEvidence.common_height",
+        QUOTED,
+    ),
+    (
+        ".cometbft.types.LightClientAttackEvidence.total_voting_power",
+        QUOTED,
+    ),
+    (".cometbft.types.Vote.height", QUOTED),
+    (".cometbft.types.Vote.validator_address", HEXSTRING),
+    (".cometbft.types.Vote.signature", BASE64STRING),
+    (".cometbft.types.Vote.timestamp", OPTIONAL),
+    (".cometbft.types.Validator.address", HEXSTRING),
+    (
+        ".cometbft.types.Validator.voting_power",
+        ALIAS_POWER_QUOTED,
+    ), // https://github.com/tendermint/tendermint/issues/5549
+    (
+        ".cometbft.types.Validator.proposer_priority",
+        QUOTED_ALLOW_NULL,
+    ), // null occurs in some LightBlock data
+    (".cometbft.types.Validator.proposer_priority", DEFAULT), // Default is for /genesis deserialization
+    (
+        ".cometbft.types.ValidatorSet.total_voting_power",
+        QUOTED_WITH_DEFAULT,
+    ),
+    (
+        ".cometbft.types.ValidatorSet.total_voting_power",
+        SKIP_SERIALIZING,
+    ),
+    (".cometbft.types.BlockMeta.block_size", QUOTED),
+    (".cometbft.types.BlockMeta.num_txs", QUOTED),
+    (".cometbft.crypto.PublicKey.sum.ed25519", RENAME_EDPUBKEY),
+    (
+        ".cometbft.crypto.PublicKey.sum.secp256k1",
+        RENAME_SECPPUBKEY,
+    ),
+    (".cometbft.crypto.PublicKey.sum.sr25519", RENAME_SRPUBKEY),
+    (
+        ".cometbft.types.Evidence.sum.duplicate_vote_evidence",
+        RENAME_DUPLICATEVOTE,
+    ),
+    (
+        ".cometbft.types.Evidence.sum.light_client_attack_evidence",
+        RENAME_LIGHTCLIENTATTACK,
+    ),
+    (".cometbft.types.TxProof.data", BASE64STRING),
+    (".cometbft.types.TxProof.root_hash", HEXSTRING),
+    (".cometbft.crypto.Proof.index", QUOTED),
+    (".cometbft.crypto.Proof.total", QUOTED),
+    (".cometbft.crypto.Proof.aunts", VEC_BASE64STRING),
+    (".cometbft.crypto.Proof.leaf_hash", BASE64STRING),
 ];

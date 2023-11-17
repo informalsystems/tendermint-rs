@@ -21,10 +21,10 @@ use constants::{CUSTOM_FIELD_ATTRIBUTES, CUSTOM_TYPE_ATTRIBUTES, TENDERMINT_VERS
 fn main() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let target_dir = ["..", "..", "proto", "src"].iter().collect::<PathBuf>();
-    let tendermint_dir = PathBuf::from(var("TENDERMINT_DIR").unwrap_or_else(|_| {
+    let comet_dir = PathBuf::from(var("COMETBFT_DIR").unwrap_or_else(|_| {
         root.join("..")
             .join("target")
-            .join("tendermint")
+            .join("cometbft")
             .to_str()
             .unwrap()
             .to_string()
@@ -32,14 +32,14 @@ fn main() {
 
     for version in TENDERMINT_VERSIONS {
         println!(
-            "[info] => Fetching {} at {} into {tendermint_dir:?}",
+            "[info] => Fetching {} at {} into {comet_dir:?}",
             version.repo, version.commitish,
         );
-        get_commitish(&tendermint_dir, &version.repo, &version.commitish); // This panics if it fails.
+        get_commitish(&comet_dir, &version.repo, &version.commitish); // This panics if it fails.
 
-        let proto_path = tendermint_dir.join("proto");
+        let proto_path = comet_dir.join("proto");
 
-        let mut proto_includes_paths = vec![tendermint_dir.join("proto")];
+        let mut proto_includes_paths = vec![comet_dir.join("proto")];
 
         let buf_lock_path = proto_path.join("buf.lock");
         let _temp_dirs = if fs::metadata(&buf_lock_path).is_ok() {
@@ -68,7 +68,7 @@ fn main() {
             }
         } else {
             // Old school, assume the dependency protos are bundled in the tree.
-            proto_includes_paths.push(tendermint_dir.join("third_party").join("proto"));
+            proto_includes_paths.push(comet_dir.join("third_party").join("proto"));
             vec![]
         };
 
@@ -76,7 +76,7 @@ fn main() {
         let protos = find_proto_files(&proto_path);
 
         let ver_target_dir = target_dir.join("prost").join(version.ident);
-        let ver_module_dir = target_dir.join("tendermint");
+        let ver_module_dir = target_dir.join(version.project);
 
         let out_dir = var("OUT_DIR")
             .map(|d| Path::new(&d).join(version.ident))
@@ -86,7 +86,7 @@ fn main() {
         let mut pb = prost_build::Config::new();
 
         // Use shared Bytes buffers for ABCI messages:
-        pb.bytes([".tendermint.abci"]);
+        pb.bytes([".tendermint.abci", ".cometbft.abci"]);
 
         // Compile proto files with added annotations, exchange prost_types to our own
         pb.out_dir(&out_dir);
@@ -113,6 +113,8 @@ fn main() {
             .out_dir(&out_dir)
             .build_server(true)
             .build_client(false)
+            .server_mod_attribute("cometbft.abci", "#[cfg(feature = \"grpc-server\")]") //TODO Revisit
+            .server_mod_attribute("cometbft.rpc.grpc", "#[cfg(feature = \"grpc-server\")]")
             .server_mod_attribute("tendermint.abci", "#[cfg(feature = \"grpc-server\")]")
             .server_mod_attribute("tendermint.rpc.grpc", "#[cfg(feature = \"grpc-server\")]");
         // TODO: this is tracked in https://github.com/informalsystems/tendermint-rs/issues/1134
@@ -130,10 +132,12 @@ fn main() {
             "[info] => Removing old structs and copying new structs to {}",
             ver_target_dir.to_string_lossy(),
         );
-        copy_files(&out_dir, &ver_target_dir); // This panics if it fails.
-        generate_tendermint_mod(&out_dir, version, &ver_module_dir);
+        copy_files(&out_dir, &ver_target_dir, version.project); // This panics if it fails.
+        generate_tendermint_mod(&out_dir, version, &ver_module_dir)
+        ;
     }
-    generate_tendermint_lib(TENDERMINT_VERSIONS, &target_dir.join("tendermint.rs"));
+    generate_tendermint_lib(TENDERMINT_VERSIONS, &target_dir, "tendermint", false);
+    generate_tendermint_lib(TENDERMINT_VERSIONS, &target_dir, "cometbft", true);
 
     println!("[info] => Done!");
 }
