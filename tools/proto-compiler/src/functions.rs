@@ -11,6 +11,7 @@ use git2::{
 };
 use subtle_encoding::hex;
 use walkdir::WalkDir;
+use std::io::Error;
 
 use crate::constants::TendermintVersion;
 
@@ -208,10 +209,65 @@ pub fn find_proto_files(proto_path: &Path) -> Vec<PathBuf> {
     protos
 }
 
+struct ModNode {
+    name: String,
+    children: Vec<ModNode>,
+}
+
+impl ModNode {
+    fn new(name: String) -> Self {
+        ModNode {
+            name: name,
+            children: vec![],
+        }
+    }
+    fn get_or_add_child(&mut self, child_name: String) -> &mut Self {
+        let idx = self.children
+                .iter()
+                .position(|c| c.name == child_name)
+                .unwrap_or_else(| | {
+                    let new_child = ModNode::new(child_name);
+                    self.children.push(new_child);
+                    self.children.len() - 1
+                });
+        &mut self.children[idx]
+    }
+    fn traverse_children(&self, version: &str, file: &mut File, mod_names: &Vec<String>) -> Result<(), Error> {
+        for child in &self.children {
+            child.generate_mods(version, file, &mod_names)?;
+            if mod_names.len() == 1 {
+                writeln!(file)?
+            }
+        }
+        Ok(())
+    }
+    fn generate_mods(&self, version: &str, file: &mut File, mod_names: &Vec<String>) -> Result<(), Error> {
+        if mod_names.is_empty() { // Top module, shouldn't be present
+            return self.traverse_children(version, file, &vec![self.name.clone()]);
+        }
+
+        let tabs = "    ".to_owned().repeat(mod_names.len() - 1);
+        writeln!(file, "{}pub mod {} {{", tabs, self.name)?;
+
+        let mut updated_mod_names = mod_names.clone();
+        updated_mod_names.push(self.name.clone());
+        self.traverse_children(version, file, &updated_mod_names)?;
+        if self.children.is_empty() {
+            writeln!(file, "    {}include!(\"../prost/{}/{}.rs\");",
+                tabs,
+                version,
+                updated_mod_names.join(".")
+            )?;
+        }
+
+        writeln!(file, "{tabs}}}")
+    }
+}
+
 /// Create a module including generated content for the specified
 /// Tendermint source version.
-pub fn generate_tendermint_mod(prost_dir: &Path, version: &TendermintVersion, target_dir: &Path) {
-    create_dir_all(target_dir).unwrap();
+pub fn generate_tendermint_mod(prost_dir: &Path, version: &TendermintVersion, target_dir: &Path) -> Result<(), Error> {
+    create_dir_all(target_dir)?;
 
     let project_dot = format!("{}.", version.project);
     let file_names = WalkDir::new(prost_dir)
@@ -226,10 +282,13 @@ pub fn generate_tendermint_mod(prost_dir: &Path, version: &TendermintVersion, ta
         .collect::<BTreeSet<_>>();
     let file_names = Vec::from_iter(file_names);
 
-    let mut content =
-        String::from("//! Tendermint-proto auto-generated sub-modules for Tendermint\n");
-    let tab = "    ".to_string();
+    let tendermint_mod_target = target_dir.join(format!("{}.rs", version.ident));
+    let mut file =
+        File::create(tendermint_mod_target)?;
 
+    writeln!(&mut file, "//! Protobuf auto-generated sub-modules for Tendermint. DO NOT EDIT\n")?;
+
+    let mut root_mod = ModNode::new(version.project.to_owned());
     for file_name in file_names {
         let parts: Vec<_> = file_name
             .strip_prefix(&project_dot)
@@ -237,57 +296,37 @@ pub fn generate_tendermint_mod(prost_dir: &Path, version: &TendermintVersion, ta
             .strip_suffix(".rs")
             .unwrap()
             .split('.')
-            .rev()
             .collect();
-
-        let mut tab_count = parts.len();
-
-        let mut inner_content = format!(
-            "{}include!(\"../prost/{}/{}\");",
-            tab.repeat(tab_count),
-            &version.ident,
-            file_name
-        );
-
+        let mut curr_mod = &mut root_mod;
         for part in parts {
-            tab_count -= 1;
-            let tabs = tab.repeat(tab_count);
-            //{tabs} pub mod {part} {
-            //{inner_content}
-            //{tabs} }
-            inner_content = format!("{tabs}pub mod {part} {{\n{inner_content}\n{tabs}}}");
+            //eprintln!("Part: {part}");
+            curr_mod = curr_mod.get_or_add_child(part.to_owned());
         }
-
-        content = format!("{content}\n{inner_content}\n");
     }
+    root_mod.generate_mods(&version.ident, &mut file, &vec![])?;
 
     // Add meta
-    content = format!(
-        "{}\npub mod meta {{\n{}pub const REPOSITORY: &str = \"{}\";\n{}pub const COMMITISH: &str = \"{}\";\n}}\n",
-        content,
+    let tab = "    ".to_string();
+    writeln!(&mut file,
+        "pub mod meta {{\n{}pub const REPOSITORY: &str = \"{}\";\n{}pub const COMMITISH: &str = \"{}\";\n}}",
         tab,
         version.repo,
         tab,
         version.commitish,
-    );
-
-    let tendermint_mod_target = target_dir.join(format!("{}.rs", version.ident));
-    let mut file =
-        File::create(tendermint_mod_target).expect("tendermint module file create failed");
-    file.write_all(content.as_bytes())
-        .expect("tendermint module file write failed");
+    )
 }
 
-pub fn generate_tendermint_lib(versions: &[TendermintVersion], tendermint_lib_target_dir: &Path, project: &str, write_use: bool) {
+pub fn generate_tendermint_lib(versions: &[TendermintVersion], tendermint_lib_target_dir: &Path, project: &str, write_use: bool) -> Result<(), Error> {
     let tendermint_lib_target = tendermint_lib_target_dir.join(format!("{project}.rs"));
     let mut file =
         File::create(tendermint_lib_target).expect("tendermint library file create failed");
     let project_versions = versions.iter().filter(|v| v.project == project).collect::<Vec<_>>();
     for version in &project_versions {
-        writeln!(&mut file, "pub mod {};", version.ident).unwrap();
+        writeln!(&mut file, "pub mod {};", version.ident)?;
     }
     if write_use {
         let last_version = project_versions.last().unwrap();
-        writeln!(&mut file, "pub use {}::*;", last_version.ident).unwrap();
+        writeln!(&mut file, "pub use {}::*;", last_version.ident)?
     }
+    Ok(())
 }

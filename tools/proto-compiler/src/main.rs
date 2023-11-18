@@ -142,11 +142,10 @@ fn main() {
             ver_target_dir.to_string_lossy(),
         );
         copy_files(&out_dir, &ver_target_dir, version.project); // This panics if it fails.
-        generate_tendermint_mod(&out_dir, version, &ver_module_dir)
-        ;
+        generate_tendermint_mod(&out_dir, version, &ver_module_dir).unwrap();
     }
-    generate_tendermint_lib(TENDERMINT_VERSIONS, &target_dir, "tendermint", false);
-    generate_tendermint_lib(TENDERMINT_VERSIONS, &target_dir, "cometbft", true);
+    generate_tendermint_lib(TENDERMINT_VERSIONS, &target_dir, "tendermint", false).unwrap();
+    generate_tendermint_lib(TENDERMINT_VERSIONS, &target_dir, "cometbft", true).unwrap();
 
     println!("[info] => Done!");
 }
