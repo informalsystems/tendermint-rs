@@ -1,4 +1,4 @@
-//! Tendermint-proto auto-generated sub-modules for Tendermint
+//! Protobuf auto-generated sub-modules for Tendermint. DO NOT EDIT
 
 pub mod abci {
     include!("../prost/v0_38/tendermint.abci.rs");
