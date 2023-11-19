@@ -69,3 +69,27 @@ mod v0_38 {
         }
     }
 }
+
+mod v1_0 {
+    use crate::v1_0::crypto::v1beta1::{public_key, PublicKey};
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    impl<'de> Deserialize<'de> for PublicKey {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            let sum = Option::<public_key::Sum>::deserialize(deserializer)?;
+            Ok(Self { sum })
+        }
+    }
+
+    impl Serialize for PublicKey {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            self.sum.serialize(serializer)
+        }
+    }
+}
