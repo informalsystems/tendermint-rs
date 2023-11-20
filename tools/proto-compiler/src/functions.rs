@@ -166,6 +166,7 @@ pub fn copy_files(src_dir: &Path, target_dir: &Path, project:&str) {
     create_dir_all(target_dir).unwrap();
 
     // Copy new compiled files (prost does not use folder structures)
+    let project_dot = format!("{project}.");
     let errors = WalkDir::new(src_dir)
         .contents_first(true)
         .into_iter()
@@ -173,7 +174,7 @@ pub fn copy_files(src_dir: &Path, target_dir: &Path, project:&str) {
             e.file_type().is_file()
                 && e.file_name()
                     .to_str()
-                    .map(|name| name.starts_with(&format!("{project}.")))
+                    .map(|name| name.starts_with(&project_dot))
                     .unwrap_or(false)
         })
         .map(|res| {
