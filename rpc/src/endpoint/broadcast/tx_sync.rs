@@ -38,6 +38,9 @@ impl<S: Dialect> crate::SimpleRequest<S> for Request {
 /// Response from either an async or sync transaction broadcast request.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {
+    /// Code space
+    pub codespace: String,
+
     /// Code
     pub code: Code,
 
