@@ -45,7 +45,8 @@ use crate::{
 /// [`SubscriptionClient`] trait.
 ///
 /// [`SubscriptionClient`]: trait.SubscriptionClient.html
-#[async_trait]
+#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
+#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 pub trait Client {
     /// `/abci_info`: get information about the ABCI application.
     async fn abci_info(&self) -> Result<abci::response::Info, Error> {
