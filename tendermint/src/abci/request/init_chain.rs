@@ -5,7 +5,7 @@ use crate::{block, consensus, prelude::*, validator, Time};
 /// Called on genesis to initialize chain state.
 ///
 /// [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#initchain)
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct InitChain {
     /// The genesis time.
     pub time: Time,

@@ -125,7 +125,7 @@ impl AsRef<[Evidence]> for List {
 /// EvidenceParams determine how we handle evidence of malfeasance.
 ///
 /// [Tendermint documentation](https://docs.tendermint.com/master/spec/core/data_structures.html#evidenceparams)
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct Params {
     /// Max age of evidence, in blocks.
     #[serde(with = "serializers::from_str")]
@@ -352,7 +352,7 @@ tendermint_pb_modules! {
 /// i.e. you can avoid using serde annotations everywhere
 /// Todo: harmonize google::protobuf::Duration, core::time::Duration and this. Too many structs.
 /// <https://github.com/informalsystems/tendermint-rs/issues/741>
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Deserialize, Serialize, Default)]
 pub struct Duration(#[serde(with = "serializers::time_duration")] pub core::time::Duration);
 
 impl From<Duration> for core::time::Duration {

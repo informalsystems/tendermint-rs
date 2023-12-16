@@ -38,6 +38,12 @@ use crate::{error::Error, prelude::*};
 #[serde(try_from = "Timestamp", into = "Timestamp")]
 pub struct Time(PrimitiveDateTime);
 
+impl Default for Time {
+    fn default() -> Self {
+        Self::unix_epoch()
+    }
+}
+
 impl Protobuf<Timestamp> for Time {}
 
 impl TryFrom<Timestamp> for Time {

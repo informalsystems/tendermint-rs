@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::serializers;
 
 /// Block size parameters
-#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Default)]
 pub struct Size {
     /// Maximum number of bytes in a block
     #[serde(with = "serializers::from_str")]

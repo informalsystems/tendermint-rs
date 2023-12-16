@@ -7,7 +7,7 @@ use crate::{block, evidence, prelude::*, public_key};
 /// All consensus-relevant parameters that can be adjusted by the ABCI app.
 ///
 /// [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#consensusparams)
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, Default)]
 pub struct Params {
     /// Parameters limiting the size of a block and time between consecutive blocks.
     pub block: block::Size,
@@ -29,7 +29,7 @@ pub struct Params {
 /// ValidatorParams restrict the public key types validators can use.
 ///
 /// [Tendermint documentation](https://docs.tendermint.com/master/spec/core/data_structures.html#validatorparams)
-#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Default)]
 pub struct ValidatorParams {
     /// List of accepted public key types.
     pub pub_key_types: Vec<public_key::Algorithm>,
