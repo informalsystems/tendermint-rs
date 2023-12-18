@@ -19,7 +19,8 @@ use crate::{
 
 /// A client that exclusively provides [`Event`] subscription capabilities,
 /// without any other RPC method support.
-#[async_trait]
+#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
+#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 pub trait SubscriptionClient {
     /// `/subscribe`: subscribe to receive events produced by the given query.
     async fn subscribe(&self, query: Query) -> Result<Subscription, Error>;
