@@ -38,7 +38,6 @@ impl TryFrom<SigningKey> for ed25519_consensus::SigningKey {
     type Error = Error;
 
     fn try_from(src: SigningKey) -> Result<Self, Error> {
-        ed25519_consensus::SigningKey::try_from(src.0)
-            .map_err(|_| Error::invalid_key("malformed Ed25519 private key".into()))
+        Ok(ed25519_consensus::SigningKey::from(src.0))
     }
 }
