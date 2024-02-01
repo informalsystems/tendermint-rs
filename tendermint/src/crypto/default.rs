@@ -15,11 +15,7 @@ pub use sha2::Sha256;
 
 impl super::Sha256 for Sha256 {
     fn digest(data: impl AsRef<[u8]>) -> [u8; HASH_SIZE] {
-        let digest = <Self as Digest>::digest(data);
-        // copy the GenericArray out
-        let mut hash = [0u8; HASH_SIZE];
-        hash.copy_from_slice(&digest);
-        hash
+        <Self as Digest>::digest(data).into()
     }
 }
 
