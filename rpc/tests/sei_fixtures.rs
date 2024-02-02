@@ -37,11 +37,11 @@ fn incoming_fixtures() {
 
         match file_name {
             "block_results_with_failed_txs" => {
-                let r = endpoint::block_results::Response::from_string(content);
+                let r = endpoint::block_results::Response::from_string(&content);
                 dbg!(&r);
                 assert!(r.is_ok(), "block_results_with_failed_txs (v0.37+): {r:?}");
 
-                let r = endpoint::block_results::v0_34::DialectResponse::from_string(content);
+                let r = endpoint::block_results::v0_34::DialectResponse::from_string(&content);
                 dbg!(&r);
                 assert!(r.is_ok(), "block_results_with_failed_txs (v0.34): {r:?}");
             },
