@@ -538,16 +538,7 @@ fn encrypt_and_write<IoHandler: Write>(
     data: &[u8],
 ) -> io::Result<usize> {
     let mut n = 0_usize;
-    let mut remaining = data;
-    while !remaining.is_empty() {
-        let chunk: &[u8];
-        if DATA_MAX_SIZE < remaining.len() {
-            chunk = &remaining[..DATA_MAX_SIZE];
-            remaining = &remaining[DATA_MAX_SIZE..];
-        } else {
-            chunk = remaining;
-            remaining = &[];
-        }
+    for chunk in data.chunks(DATA_MAX_SIZE) {
         let sealed_frame = &mut [0_u8; TAG_SIZE + TOTAL_FRAME_SIZE];
         encrypt(chunk, &send_state.cipher, &send_state.nonce, sealed_frame)
             .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
