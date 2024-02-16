@@ -61,6 +61,35 @@ fn test_read_write_single_message() {
 }
 
 #[test]
+fn test_read_write_long_message() {
+    let mut message: [u8; 1025] = [0x5a; 1025];
+    message[1024] = 0xa5;
+
+    let (pipe1, pipe2) = pipe::async_bipipe_buffered();
+
+    let sender = thread::spawn(move || {
+        let mut conn1 = new_peer_conn(pipe2).expect("handshake to succeed");
+
+        conn1
+            .write_all(&message)
+            .expect("expected to write message");
+    });
+
+    let receiver = thread::spawn(move || {
+        let mut conn2 = new_peer_conn(pipe1).expect("handshake to succeed");
+
+        let mut buf = [0; 1025];
+        conn2
+            .read_exact(&mut buf)
+            .expect("expected to read message");
+        assert_eq!(&message, &buf);
+    });
+
+    sender.join().expect("sender thread has panicked");
+    receiver.join().expect("receiver thread has panicked");
+}
+
+#[test]
 fn test_evil_peer_shares_invalid_eph_key() {
     let csprng = OsRng {};
     let local_privkey = ed25519_consensus::SigningKey::new(csprng);
