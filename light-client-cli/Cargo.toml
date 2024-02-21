@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint-light-client-cli"
-version    = "0.34.0"
+version    = "0.34.1"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -23,10 +23,10 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-tendermint = { version = "0.34.0", path = "../tendermint" }
-tendermint-rpc = { version = "0.34.0", path = "../rpc", features = ["http-client"] }
-tendermint-light-client = { version = "0.34.0", path = "../light-client" }
-tendermint-light-client-detector = { version = "0.34.0", path = "../light-client-detector" }
+tendermint = { version = "0.34.1", path = "../tendermint" }
+tendermint-rpc = { version = "0.34.1", path = "../rpc", features = ["http-client"] }
+tendermint-light-client = { version = "0.34.1", path = "../light-client" }
+tendermint-light-client-detector = { version = "0.34.1", path = "../light-client-detector" }
 
 clap = { version = "4.1.8", features = ["derive"] }
 color-eyre = "0.6.2"

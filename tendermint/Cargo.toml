@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint"
-version    = "0.34.0" # Also update depending crates (rpc, light-node, etc..) when bumping this .
+version    = "0.34.1" # Also update depending crates (rpc, light-node, etc..) when bumping this .
 license    = "Apache-2.0"
 homepage   = "https://www.tendermint.com/"
 repository = "https://github.com/informalsystems/tendermint-rs/tree/main/tendermint"
@@ -44,7 +44,7 @@ serde_repr = { version = "0.1", default-features = false }
 signature = { version = "2", default-features = false, features = ["alloc"] }
 subtle = { version = "2", default-features = false }
 subtle-encoding = { version = "0.5", default-features = false, features = ["bech32-preview"] }
-tendermint-proto = { version = "0.34.0", default-features = false, path = "../proto" }
+tendermint-proto = { version = "0.34.1", default-features = false, path = "../proto" }
 time = { version = "0.3", default-features = false, features = ["macros", "parsing"] }
 zeroize = { version = "1.1", default-features = false, features = ["zeroize_derive", "alloc"] }
 flex-error = { version = "0.4.4", default-features = false }
