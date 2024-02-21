@@ -28,7 +28,6 @@ tendermint-rpc = { version = "0.34.0", path = "../rpc", features = ["http-client
 tendermint-proto = { version = "0.34.0", path = "../proto" }
 tendermint-light-client = { version = "0.34.0", path = "../light-client" }
 
-contracts = { version = "0.6.2", default-features = false }
 crossbeam-channel = { version = "0.4.2", default-features = false }
 derive_more = { version = "0.99.5", default-features = false, features = ["display"] }
 futures = { version = "0.3.4", default-features = false }

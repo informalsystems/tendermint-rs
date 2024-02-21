@@ -120,7 +120,7 @@ mod mbt {
                 None
             } else {
                 let mut rng = rand::thread_rng();
-                let i = rng.gen_range(0, indices.len());
+                let i = rng.gen_range(0..indices.len());
                 Some((i, tc.input.get_mut(i).unwrap()))
             }
         }
@@ -170,7 +170,7 @@ mod mbt {
         fn fuzz_input(input: &mut BlockVerdict) -> (String, LiteVerdict) {
             let mut rng = rand::thread_rng();
             let h: u64 = input.block.signed_header.header.height.into();
-            let mut height: u64 = rng.gen_range(0u64, i64::MAX as u64);
+            let mut height: u64 = rng.gen_range(0u64..i64::MAX as u64);
             while height == h {
                 height = rng.gen();
             }
@@ -190,7 +190,7 @@ mod mbt {
                 .duration_since(tendermint::Time::unix_epoch())
                 .unwrap()
                 .as_secs();
-            let rand_secs = rng.gen_range(1, secs);
+            let rand_secs = rng.gen_range(1..secs);
             input.block.signed_header.header.time = (tendermint::Time::unix_epoch()
                 + std::time::Duration::from_secs(rand_secs))
             .unwrap();

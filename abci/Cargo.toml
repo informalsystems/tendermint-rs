@@ -37,4 +37,4 @@ tendermint-proto = { version = "0.34.0", default-features = false, path = "../pr
 tracing = { version = "0.1", default-features = false }
 flex-error = { version = "0.4.4", default-features = false }
 structopt = { version = "0.3", optional = true, default-features = false }
-tracing-subscriber = { version = "0.2", optional = true, default-features = false }
+tracing-subscriber = { version = "0.3", optional = true, default-features = false }
