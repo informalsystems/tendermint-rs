@@ -131,6 +131,7 @@ impl<V: signature::Verifier> VotingPowerCalculator for ProvidedVotingPowerCalcul
         trust_threshold: TrustThreshold,
     ) -> Result<VotingPowerTally, VerificationError> {
         let signatures = &signed_header.commit.signatures;
+        let total_voting_power = self.total_power_of(validator_set);
 
         let mut tallied_voting_power = 0_u64;
         let mut seen_validators = HashSet::new();
@@ -185,12 +186,14 @@ impl<V: signature::Verifier> VotingPowerCalculator for ProvidedVotingPowerCalcul
                 // to measure validator availability.
             }
 
-            // TODO: Break out of the loop when we have enough voting power.
-            // See https://github.com/informalsystems/tendermint-rs/issues/235
+            // Break out of the loop when we have enough voting power.
+            if trust_threshold.is_enough_power(tallied_voting_power, total_voting_power) {
+                break;
+            }
         }
 
         let voting_power = VotingPowerTally {
-            total: self.total_power_of(validator_set),
+            total: total_voting_power,
             tallied: tallied_voting_power,
             trust_threshold,
         };
