@@ -19,6 +19,9 @@ pub struct Kdf {
 
 impl Kdf {
     /// Returns recv secret, send secret, challenge as 32 byte arrays
+    ///
+    /// # Panics
+    /// Panics if the HKDF secret expansion fails
     #[must_use]
     pub fn derive_secrets_and_challenge(shared_secret: &[u8; 32], loc_is_lo: bool) -> Self {
         let mut key_material = [0_u8; 96];

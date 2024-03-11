@@ -86,7 +86,7 @@ impl Handshake<AwaitingEphKey> {
     ) -> (Self, EphemeralPublic) {
         // Generate an ephemeral key for perfect forward secrecy.
         let local_eph_privkey = EphemeralSecret::random(&mut OsRng);
-        let local_eph_pubkey = X25519_BASEPOINT * &local_eph_privkey;
+        let local_eph_pubkey = X25519_BASEPOINT * local_eph_privkey;
 
         (
             Self {
@@ -104,9 +104,11 @@ impl Handshake<AwaitingEphKey> {
     /// Transitions Handshake into `AwaitingAuthSig` state.
     ///
     /// # Errors
-    ///
     /// * if protocol order was violated, e.g. handshake missing
     /// * if challenge signing fails
+    ///
+    /// # Panics
+    /// Panics if Protobuf encoding of `AuthSigMessage` fails.
     pub fn got_key(
         &mut self,
         remote_eph_pubkey: EphemeralPublic,
@@ -114,10 +116,10 @@ impl Handshake<AwaitingEphKey> {
         let Some(local_eph_privkey) = self.state.local_eph_privkey.take() else {
             return Err(Error::missing_secret());
         };
-        let local_eph_pubkey = X25519_BASEPOINT * &local_eph_privkey;
+        let local_eph_pubkey = X25519_BASEPOINT * local_eph_privkey;
 
         // Compute common shared secret.
-        let shared_secret = &local_eph_privkey * &remote_eph_pubkey;
+        let shared_secret = local_eph_privkey * remote_eph_pubkey;
 
         let mut transcript = Transcript::new(b"TENDERMINT_SECRET_CONNECTION_TRANSCRIPT_HASH");
 
@@ -268,6 +270,9 @@ pub struct SecretConnection<IoHandler> {
 
 impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
     /// Returns the remote pubkey. Panics if there's no key.
+    ///
+    /// # Panics
+    /// Panics if the remote pubkey is not initialized.
     pub fn remote_pubkey(&self) -> PublicKey {
         self.remote_pubkey.expect("remote_pubkey uninitialized")
     }
@@ -340,9 +345,11 @@ where
     /// This facilitates full-duplex communications when each half is used in
     /// a separate thread.
     ///
-    /// ## Errors
-    /// Fails when the `try_clone` operation for the underlying I/O handler
-    /// fails.
+    /// # Errors
+    /// Fails when the `try_clone` operation for the underlying I/O handler fails.
+    ///
+    /// # Panics
+    /// Panics if the remote pubkey is not initialized.
     pub fn split(self) -> Result<(Sender<IoHandler>, Receiver<IoHandler>), Error> {
         let remote_pubkey = self.remote_pubkey.expect("remote_pubkey to be initialized");
         Ok((

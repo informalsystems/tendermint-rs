@@ -71,8 +71,10 @@ impl Version {
     /// Decode the initial handshake message
     ///
     /// # Errors
-    ///
     /// * if the message is malformed
+    ///
+    /// # Panics
+    /// This method does not panic
     pub fn decode_initial_handshake(self, bytes: &[u8]) -> Result<EphemeralPublic, Error> {
         let eph_pubkey = if self.is_protobuf() {
             // Equivalent Go implementation:
@@ -106,6 +108,9 @@ impl Version {
     }
 
     /// Encode signature which authenticates the handshake
+    ///
+    /// # Panics
+    /// Panics if the Protobuf encoding of `AuthSigMessage` fails
     #[must_use]
     pub fn encode_auth_signature(
         self,
