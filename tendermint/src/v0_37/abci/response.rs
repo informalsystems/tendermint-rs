@@ -244,7 +244,7 @@ impl TryFrom<pb::Response> for Response {
             Some(Value::ApplySnapshotChunk(x)) => Ok(Response::ApplySnapshotChunk(x.try_into()?)),
             Some(Value::PrepareProposal(x)) => Ok(Response::PrepareProposal(x.try_into()?)),
             Some(Value::ProcessProposal(x)) => Ok(Response::ProcessProposal(x.try_into()?)),
-            None => Err(crate::Error::missing_data()),
+            None => Err(Error::missing_data()),
         }
     }
 }

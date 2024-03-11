@@ -96,10 +96,7 @@ tendermint_pb_modules! {
 
 #[cfg(test)]
 mod tests {
-    use core::{
-        convert::{TryFrom, TryInto},
-        str::FromStr,
-    };
+    use core::str::FromStr;
     use std::println;
 
     use time::macros::datetime;

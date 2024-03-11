@@ -25,7 +25,7 @@ use std::{
     io::{self, BufRead, Read, Write},
 };
 
-use flume::{self, Receiver, SendError, Sender, TrySendError};
+use flume::{Receiver, SendError, Sender, TrySendError};
 
 // value for libstd
 const DEFAULT_BUF_SIZE: usize = 8 * 1024;

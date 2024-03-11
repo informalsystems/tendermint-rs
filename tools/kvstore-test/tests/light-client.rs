@@ -12,7 +12,7 @@
 //!
 //! (Make sure you install cargo-make using `cargo install cargo-make` first.)
 
-use std::{convert::TryFrom, time::Duration};
+use std::time::Duration;
 
 use tendermint_light_client::{
     builder::LightClientBuilder,

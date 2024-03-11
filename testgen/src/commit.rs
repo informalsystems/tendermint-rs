@@ -1,4 +1,4 @@
-use std::{collections::BTreeSet, convert::TryFrom, iter::FromIterator};
+use std::collections::BTreeSet;
 
 use gumdrop::Options;
 use serde::{Deserialize, Serialize};

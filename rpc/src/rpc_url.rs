@@ -1,6 +1,6 @@
 //! URL representation for RPC clients.
 
-use core::{convert::TryFrom, fmt, str::FromStr};
+use core::{fmt, str::FromStr};
 
 use serde::{de::Error as SerdeError, Deserialize, Deserializer, Serialize, Serializer};
 

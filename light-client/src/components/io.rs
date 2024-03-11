@@ -131,8 +131,6 @@ pub use self::prod::ProdIo;
 
 #[cfg(feature = "rpc-client")]
 mod prod {
-    use std::time::Duration;
-
     use tendermint::{
         account::Id as TMAccountId, block::signed_header::SignedHeader as TMSignedHeader,
         validator::Set as TMValidatorSet,
