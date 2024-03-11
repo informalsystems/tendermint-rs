@@ -135,8 +135,6 @@ impl Serialize for Address {
 
 #[cfg(test)]
 mod tests {
-    use tendermint::node;
-
     use super::*;
 
     const EXAMPLE_TCP_ADDR: &str =

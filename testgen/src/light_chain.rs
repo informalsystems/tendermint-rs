@@ -1,5 +1,3 @@
-use std::convert::{TryFrom, TryInto};
-
 use tendermint::{
     block::{self, Height},
     chain::Info,

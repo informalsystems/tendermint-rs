@@ -2,9 +2,7 @@
 
 use std::{
     cmp,
-    convert::{TryFrom, TryInto},
     io::{self, Read, Write},
-    marker::{Send, Sync},
     slice,
     sync::{
         atomic::{AtomicBool, Ordering},

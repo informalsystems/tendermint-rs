@@ -1,7 +1,5 @@
 //! Secret Connection nonces
 
-use std::convert::TryInto;
-
 /// Size of a `ChaCha20` (IETF) nonce
 pub const SIZE: usize = 12;
 

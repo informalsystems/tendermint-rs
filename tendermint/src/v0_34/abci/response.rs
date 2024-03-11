@@ -235,7 +235,7 @@ impl TryFrom<pb::Response> for Response {
             Some(Value::OfferSnapshot(x)) => Ok(Response::OfferSnapshot(x.try_into()?)),
             Some(Value::LoadSnapshotChunk(x)) => Ok(Response::LoadSnapshotChunk(x.try_into()?)),
             Some(Value::ApplySnapshotChunk(x)) => Ok(Response::ApplySnapshotChunk(x.try_into()?)),
-            None => Err(crate::Error::missing_data()),
+            None => Err(Error::missing_data()),
         }
     }
 }

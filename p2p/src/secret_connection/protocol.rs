@@ -1,7 +1,5 @@
 //! Secret Connection Protocol: message framing and versioning
 
-use std::convert::TryInto;
-
 use curve25519_dalek_ng::montgomery::MontgomeryPoint as EphemeralPublic;
 use prost::Message as _;
 use tendermint_proto::v0_38 as proto;

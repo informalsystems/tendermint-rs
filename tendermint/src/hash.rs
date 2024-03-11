@@ -1,7 +1,6 @@
 //! Hash functions and their outputs
 
 use core::{
-    convert::TryFrom,
     fmt::{self, Debug, Display},
     str::FromStr,
 };

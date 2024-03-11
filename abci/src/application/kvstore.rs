@@ -258,10 +258,7 @@ impl KeyValueStoreDriver {
                 },
                 Command::Get { key, result_tx } => {
                     debug!("Getting value for \"{}\"", key);
-                    channel_send(
-                        &result_tx,
-                        (self.height, self.store.get(&key).map(Clone::clone)),
-                    )?;
+                    channel_send(&result_tx, (self.height, self.store.get(&key).cloned()))?;
                 },
                 Command::Set {
                     key,

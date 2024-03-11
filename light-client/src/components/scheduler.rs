@@ -1,7 +1,5 @@
 //! Provides an interface and default implementation of the `Scheduler` component
 
-use core::convert::TryInto;
-
 use contracts::*;
 
 use crate::{store::LightStore, verifier::types::Height};

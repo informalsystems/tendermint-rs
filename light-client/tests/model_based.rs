@@ -1,10 +1,6 @@
 #[cfg(feature = "mbt")]
 mod mbt {
-    use std::{
-        convert::{TryFrom, TryInto},
-        str::FromStr,
-        time::Duration,
-    };
+    use std::{str::FromStr, time::Duration};
 
     use rand::Rng;
     use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -708,7 +704,7 @@ mod mbt {
         output_env.copy_file_from_env_as(env, "test.json", &json_test);
 
         let mut tc: SingleStepTestCase = env.parse_file("test.json").unwrap();
-        tc.description = json_test.clone();
+        tc.description.clone_from(&json_test);
         output_env.write_file(json_test, &serde_json::to_string_pretty(&tc).unwrap());
         single_step_test(tc, env, root_env, output_env);
     }
