@@ -32,8 +32,10 @@ where
 }
 
 #[cfg(test)]
+#[allow(unused_imports)]
 mod tests {
     use crate::prelude::*;
+    use alloc::borrow::ToOwned;
     use core::convert::Infallible;
     use core::str::FromStr;
     use serde::Deserialize;

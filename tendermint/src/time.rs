@@ -1,7 +1,6 @@
 //! Timestamps used by Tendermint blockchains
 
 use core::{
-    convert::{TryFrom, TryInto},
     fmt,
     ops::{Add, Sub},
     str::FromStr,

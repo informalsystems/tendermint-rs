@@ -2,7 +2,6 @@
 
 use core::{
     cmp::Ordering,
-    convert::TryFrom,
     fmt::{self, Debug, Display},
     hash::{Hash, Hasher},
     str::{self, FromStr},

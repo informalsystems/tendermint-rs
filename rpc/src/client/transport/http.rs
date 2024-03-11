@@ -1,9 +1,6 @@
 //! HTTP-based transport for Tendermint RPC Client.
 
-use core::{
-    convert::{TryFrom, TryInto},
-    str::FromStr,
-};
+use core::str::FromStr;
 
 use async_trait::async_trait;
 use reqwest::{header, Proxy};

@@ -1,5 +1,3 @@
-use std::convert::TryFrom;
-
 use gumdrop::Options;
 use serde::{Deserialize, Serialize};
 use simple_error::*;

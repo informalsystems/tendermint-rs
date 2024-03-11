@@ -204,7 +204,6 @@ impl<K: Into<String>, V: Into<String>> From<(K, V)> for EventAttribute {
 mod v0_34 {
     use super::{Event, EventAttribute};
     use crate::prelude::*;
-    use core::convert::{TryFrom, TryInto};
 
     use tendermint_proto::v0_34::abci as pb;
     use tendermint_proto::Protobuf;
@@ -266,7 +265,6 @@ mod v0_34 {
 mod v0_37 {
     use super::{Event, EventAttribute};
     use crate::prelude::*;
-    use core::convert::{TryFrom, TryInto};
 
     use tendermint_proto::v0_37::abci as pb;
     use tendermint_proto::Protobuf;
@@ -325,7 +323,6 @@ mod v0_37 {
 mod v0_38 {
     use super::{Event, EventAttribute};
     use crate::prelude::*;
-    use core::convert::{TryFrom, TryInto};
 
     use tendermint_proto::v0_38::abci as pb;
     use tendermint_proto::Protobuf;
@@ -382,9 +379,9 @@ mod v0_38 {
 }
 
 #[cfg(test)]
+#[allow(clippy::bool_assert_comparison)]
+#[allow(clippy::redundant_clone)]
 mod tests {
-    #![allow(clippy::bool_assert_comparison)]
-    #![allow(clippy::redundant_clone)]
 
     use serde::Deserialize;
 

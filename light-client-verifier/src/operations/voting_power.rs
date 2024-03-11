@@ -1,7 +1,7 @@
 //! Provides an interface and default implementation for the `VotingPower` operation
 
 use alloc::collections::BTreeSet as HashSet;
-use core::{convert::TryFrom, fmt, marker::PhantomData};
+use core::{fmt, marker::PhantomData};
 
 use serde::{Deserialize, Serialize};
 use tendermint::{

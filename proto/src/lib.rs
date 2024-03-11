@@ -22,7 +22,7 @@ mod error;
 #[allow(warnings)]
 mod tendermint;
 
-use core::{convert::TryFrom, fmt::Display};
+use core::fmt::Display;
 
 use bytes::{Buf, BufMut};
 pub use error::Error;

@@ -229,7 +229,7 @@ pub trait VerificationPredicates: Send + Sync {
 
 #[cfg(all(test, feature = "rust-crypto"))]
 mod tests {
-    use core::{convert::TryInto, time::Duration};
+    use core::time::Duration;
 
     use tendermint::{block::CommitSig, validator::Set};
     use tendermint_testgen::{
@@ -516,7 +516,7 @@ mod tests {
         // 3. commit.signatures.len() != validator_set.validators().len()
         // must return error
         let mut bad_sigs = vec![signatures.clone().swap_remove(1)];
-        signed_header.commit.signatures = bad_sigs.clone();
+        signed_header.commit.signatures.clone_from(&bad_sigs);
 
         result_err = vp.valid_commit(&signed_header, &val_set, &commit_validator);
 

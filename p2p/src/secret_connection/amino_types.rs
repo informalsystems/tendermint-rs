@@ -1,6 +1,5 @@
 //! Amino types used by Secret Connection
 
-use core::convert::TryFrom;
 use prost_derive::Message;
 use tendermint_proto::v0_38 as proto;
 
