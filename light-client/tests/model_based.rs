@@ -1,10 +1,6 @@
 #[cfg(feature = "mbt")]
 mod mbt {
-    use std::{
-        convert::{TryFrom, TryInto},
-        str::FromStr,
-        time::Duration,
-    };
+    use std::{str::FromStr, time::Duration};
 
     use rand::Rng;
     use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -120,7 +116,7 @@ mod mbt {
                 None
             } else {
                 let mut rng = rand::thread_rng();
-                let i = rng.gen_range(0, indices.len());
+                let i = rng.gen_range(0..indices.len());
                 Some((i, tc.input.get_mut(i).unwrap()))
             }
         }
@@ -170,7 +166,7 @@ mod mbt {
         fn fuzz_input(input: &mut BlockVerdict) -> (String, LiteVerdict) {
             let mut rng = rand::thread_rng();
             let h: u64 = input.block.signed_header.header.height.into();
-            let mut height: u64 = rng.gen_range(0u64, i64::MAX as u64);
+            let mut height: u64 = rng.gen_range(0u64..i64::MAX as u64);
             while height == h {
                 height = rng.gen();
             }
@@ -190,7 +186,7 @@ mod mbt {
                 .duration_since(tendermint::Time::unix_epoch())
                 .unwrap()
                 .as_secs();
-            let rand_secs = rng.gen_range(1, secs);
+            let rand_secs = rng.gen_range(1..secs);
             input.block.signed_header.header.time = (tendermint::Time::unix_epoch()
                 + std::time::Duration::from_secs(rand_secs))
             .unwrap();
@@ -708,7 +704,7 @@ mod mbt {
         output_env.copy_file_from_env_as(env, "test.json", &json_test);
 
         let mut tc: SingleStepTestCase = env.parse_file("test.json").unwrap();
-        tc.description = json_test.clone();
+        tc.description.clone_from(&json_test);
         output_env.write_file(json_test, &serde_json::to_string_pretty(&tc).unwrap());
         single_step_test(tc, env, root_env, output_env);
     }

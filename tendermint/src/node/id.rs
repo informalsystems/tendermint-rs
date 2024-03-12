@@ -6,7 +6,7 @@ use core::{
 };
 
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-use subtle::{self, ConstantTimeEq};
+use subtle::ConstantTimeEq;
 use subtle_encoding::hex;
 
 use crate::{error::Error, prelude::*};

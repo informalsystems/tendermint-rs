@@ -1,8 +1,6 @@
 //! Provides [proptest](https://github.com/AltSysrq/proptest) generators for
 //! time-like objects.
 
-use std::convert::TryInto;
-
 use proptest::prelude::*;
 use time::{
     format_description::well_known::Rfc3339,

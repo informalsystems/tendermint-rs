@@ -4,7 +4,6 @@
 #![allow(unused_imports)]
 
 pub use alloc::{
-    borrow::ToOwned,
     format,
     string::{String, ToString},
     vec,

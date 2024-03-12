@@ -9,7 +9,6 @@ mod pub_key_response;
 pub use pub_key_request::PubKeyRequest;
 pub use pub_key_response::PubKeyResponse;
 
-use core::convert::TryFrom;
 use core::{cmp::Ordering, fmt, str::FromStr};
 use serde::{de, ser, Deserialize, Deserializer, Serialize};
 use serde_json::Value;
@@ -112,7 +111,7 @@ where
     } else {
         serde_json::from_value::<PublicKey>(v)
     }
-    .map_err(serde::de::Error::custom)
+    .map_err(de::Error::custom)
 }
 
 tendermint_pb_modules! {

@@ -1,14 +1,13 @@
 //! Tendermint accounts
 
 use core::{
-    convert::{TryFrom, TryInto},
     fmt::{self, Debug, Display},
     str::FromStr,
 };
 
 use bytes::Bytes;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-use subtle::{self, ConstantTimeEq};
+use subtle::ConstantTimeEq;
 use subtle_encoding::hex;
 
 use tendermint_proto::Protobuf;

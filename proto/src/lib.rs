@@ -9,6 +9,7 @@ extern crate alloc;
 
 mod error;
 mod prelude;
+#[allow(warnings)]
 mod tendermint;
 
 use bytes::{Buf, BufMut};

@@ -3,7 +3,6 @@
 #![forbid(unsafe_code)]
 #![deny(
     nonstandard_style,
-    private_in_public,
     rust_2018_idioms,
     trivial_casts,
     trivial_numeric_casts,

@@ -1,6 +1,6 @@
 //! Pagination-related data structures for the Tendermint RPC.
 
-use core::{convert::TryInto, str::FromStr};
+use core::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 

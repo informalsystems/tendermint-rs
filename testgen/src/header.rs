@@ -1,8 +1,5 @@
 use core::time::Duration;
-use std::{
-    convert::{TryFrom, TryInto},
-    str::FromStr,
-};
+use std::str::FromStr;
 
 use gumdrop::Options;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -223,10 +220,6 @@ impl Generator<block::Header> for Header {
 
 #[cfg(test)]
 mod tests {
-    use core::time::Duration;
-
-    use tendermint::Time;
-
     use super::*;
 
     #[test]

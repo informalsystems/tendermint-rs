@@ -1,9 +1,6 @@
 //! Evidence of malfeasance by validators (i.e. signing conflicting votes).
 
-use core::{
-    convert::{TryFrom, TryInto},
-    slice,
-};
+use core::slice;
 
 use serde::{Deserialize, Serialize};
 use tendermint_proto::google::protobuf::Duration as RawDuration;
