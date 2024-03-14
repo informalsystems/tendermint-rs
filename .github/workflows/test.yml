@@ -110,7 +110,7 @@ jobs:
           components: llvm-tools-preview
       - run: cargo test-all-features
         env:
-          RUSTFLAGS: '-Zinstrument-coverage'
+          RUSTFLAGS: '-C instrument-coverage -C link-dead-code'
           LLVM_PROFILE_FILE: '%p-%m.profraw'
       - name: Install grcov
         run: |

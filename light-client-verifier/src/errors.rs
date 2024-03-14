@@ -188,7 +188,7 @@ pub trait ErrorExt {
     /// querying a node.
     fn is_timeout(&self) -> Option<Duration>;
 
-    /// Whether an I/O error occured when querying a node.
+    /// Whether an I/O error occurred when querying a node.
     fn is_io(&self) -> bool;
 
     /// Whether the height of the requested light block is higher than the

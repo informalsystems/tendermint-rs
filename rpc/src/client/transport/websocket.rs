@@ -1,11 +1,7 @@
 //! WebSocket-based clients for accessing Tendermint RPC functionality.
 
 use alloc::{borrow::Cow, collections::BTreeMap as HashMap, fmt};
-use core::{
-    convert::{TryFrom, TryInto},
-    ops::Add,
-    str::FromStr,
-};
+use core::{ops::Add, str::FromStr};
 
 use async_trait::async_trait;
 use async_tungstenite::{
@@ -1013,16 +1009,13 @@ impl WebSocketClientDriver {
 #[cfg(test)]
 mod test {
     use alloc::collections::BTreeMap as HashMap;
-    use core::str::FromStr;
     use std::{path::PathBuf, println};
 
     use async_tungstenite::{
         tokio::{accept_async, TokioAdapter},
         tungstenite::client::IntoClientRequest,
     };
-    use futures::StreamExt;
     use http::{header::AUTHORIZATION, Uri};
-    use tendermint_config::net;
     use tokio::{
         fs,
         net::{TcpListener, TcpStream},
@@ -1030,7 +1023,7 @@ mod test {
     };
 
     use super::*;
-    use crate::{client::sync::unbounded, event, query::EventType, request, Id, Method};
+    use crate::{client::sync::unbounded, query::EventType, request, Method};
 
     // Interface to a driver that manages all incoming WebSocket connections.
     struct TestServer {

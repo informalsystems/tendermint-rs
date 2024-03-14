@@ -20,7 +20,7 @@ use tendermint_light_client_verifier::{
     types::{LightBlock, TrustThreshold},
     Verifier,
 };
-use wasm_bindgen::{prelude::*, JsValue};
+use wasm_bindgen::prelude::*;
 
 // TODO: Use Web Crypto API for cryptographic routines.
 // https://github.com/informalsystems/tendermint-rs/issues/1241

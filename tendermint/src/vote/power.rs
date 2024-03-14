@@ -1,9 +1,6 @@
 //! Voting power
 
-use core::{
-    convert::{TryFrom, TryInto},
-    fmt,
-};
+use core::fmt;
 
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 

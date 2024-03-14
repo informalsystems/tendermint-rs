@@ -2,9 +2,7 @@
 
 use std::{
     cmp,
-    convert::{TryFrom, TryInto},
     io::{self, Read, Write},
-    marker::{Send, Sync},
     slice,
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -86,7 +84,7 @@ impl Handshake<AwaitingEphKey> {
     ) -> (Self, EphemeralPublic) {
         // Generate an ephemeral key for perfect forward secrecy.
         let local_eph_privkey = EphemeralSecret::random(&mut OsRng);
-        let local_eph_pubkey = X25519_BASEPOINT * &local_eph_privkey;
+        let local_eph_pubkey = X25519_BASEPOINT * local_eph_privkey;
 
         (
             Self {
@@ -104,9 +102,11 @@ impl Handshake<AwaitingEphKey> {
     /// Transitions Handshake into `AwaitingAuthSig` state.
     ///
     /// # Errors
-    ///
     /// * if protocol order was violated, e.g. handshake missing
     /// * if challenge signing fails
+    ///
+    /// # Panics
+    /// Panics if Protobuf encoding of `AuthSigMessage` fails.
     pub fn got_key(
         &mut self,
         remote_eph_pubkey: EphemeralPublic,
@@ -114,10 +114,10 @@ impl Handshake<AwaitingEphKey> {
         let Some(local_eph_privkey) = self.state.local_eph_privkey.take() else {
             return Err(Error::missing_secret());
         };
-        let local_eph_pubkey = X25519_BASEPOINT * &local_eph_privkey;
+        let local_eph_pubkey = X25519_BASEPOINT * local_eph_privkey;
 
         // Compute common shared secret.
-        let shared_secret = &local_eph_privkey * &remote_eph_pubkey;
+        let shared_secret = local_eph_privkey * remote_eph_pubkey;
 
         let mut transcript = Transcript::new(b"TENDERMINT_SECRET_CONNECTION_TRANSCRIPT_HASH");
 
@@ -268,6 +268,9 @@ pub struct SecretConnection<IoHandler> {
 
 impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
     /// Returns the remote pubkey. Panics if there's no key.
+    ///
+    /// # Panics
+    /// Panics if the remote pubkey is not initialized.
     pub fn remote_pubkey(&self) -> PublicKey {
         self.remote_pubkey.expect("remote_pubkey uninitialized")
     }
@@ -340,9 +343,11 @@ where
     /// This facilitates full-duplex communications when each half is used in
     /// a separate thread.
     ///
-    /// ## Errors
-    /// Fails when the `try_clone` operation for the underlying I/O handler
-    /// fails.
+    /// # Errors
+    /// Fails when the `try_clone` operation for the underlying I/O handler fails.
+    ///
+    /// # Panics
+    /// Panics if the remote pubkey is not initialized.
     pub fn split(self) -> Result<(Sender<IoHandler>, Receiver<IoHandler>), Error> {
         let remote_pubkey = self.remote_pubkey.expect("remote_pubkey to be initialized");
         Ok((
@@ -538,16 +543,7 @@ fn encrypt_and_write<IoHandler: Write>(
     data: &[u8],
 ) -> io::Result<usize> {
     let mut n = 0_usize;
-    let mut data_copy = data;
-    while !data_copy.is_empty() {
-        let chunk: &[u8];
-        if DATA_MAX_SIZE < data.len() {
-            chunk = &data[..DATA_MAX_SIZE];
-            data_copy = &data_copy[DATA_MAX_SIZE..];
-        } else {
-            chunk = data_copy;
-            data_copy = &[0_u8; 0];
-        }
+    for chunk in data.chunks(DATA_MAX_SIZE) {
         let sealed_frame = &mut [0_u8; TAG_SIZE + TOTAL_FRAME_SIZE];
         encrypt(chunk, &send_state.cipher, &send_state.nonce, sealed_frame)
             .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;

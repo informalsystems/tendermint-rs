@@ -10,6 +10,7 @@ use tendermint::crypto::{sha256::HASH_SIZE, Sha256};
 use tendermint::{PublicKey, Signature};
 
 #[derive(Debug, Default)]
+#[allow(dead_code)]
 struct SubstrateSha256(sha2::Sha256);
 
 #[derive(Debug, Default)]

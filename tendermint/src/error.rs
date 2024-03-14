@@ -98,7 +98,7 @@ define_error! {
 
         InvalidPartSetHeader
             { detail : String }
-            |_| { format_args!("invalid part set header") },
+            |e| { format_args!("invalid part set header: {}", e.detail) },
 
         MissingHeader
             |_| { format_args!("missing header field") },

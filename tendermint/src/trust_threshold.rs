@@ -1,9 +1,6 @@
 //! Define traits and instances for dealing with trust thresholds.
 
-use core::{
-    convert::TryFrom,
-    fmt::{self, Debug, Display},
-};
+use core::fmt::{self, Debug, Display};
 
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 

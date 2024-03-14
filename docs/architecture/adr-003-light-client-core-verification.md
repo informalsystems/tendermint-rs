@@ -129,7 +129,7 @@ in `voting_power_in`.
 
 By abstracting over the underlying vote type, this trait can support
 optimizations like batch verification of signatures, and the use of
-agreggate signatures instead of individual votes.
+aggregate signatures instead of individual votes.
 So long as it can be determined what voting power of a given validator set
 signed correctly for the commit.
 

@@ -323,9 +323,7 @@ impl Tester {
     }
 
     fn results_for(&mut self, name: &str) -> &mut Vec<(String, TestResult)> {
-        self.results
-            .entry(name.to_string())
-            .or_insert_with(Vec::new)
+        self.results.entry(name.to_string()).or_default()
     }
 
     fn add_result(&mut self, name: &str, path: &str, result: TestResult) {
