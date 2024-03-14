@@ -25,6 +25,8 @@ a performance optimization for `tendermint-light-client-verifier`.
 
 - `[tendermint-p2p]` Fix data corruption on sending long messages via `SecretConnection`
   ([\#1393](https://github.com/informalsystems/tendermint-rs/pull/1393))
+- `[tendermint-rpc]` Fix deserialization of `/block_results` response when some
+  tx results are non-ok ([\#1391](https://github.com/informalsystems/tendermint-rs/pull/1391))
 
 ### IMPROVEMENTS
 
@@ -35,6 +37,8 @@ a performance optimization for `tendermint-light-client-verifier`.
   `http::Builder` now provides a `.timeout(Duration)` method to specify the request timeout.
   If not specified, the default value is 30 seconds.
   ([\#1379](https://github.com/informalsystems/tendermint-rs/issues/1379))
+- `[tendermint-rpc]` Add `FromStr`, `Serialize` and `Deserialize` instances
+  to `CompatMode` ([\#1374](https://github.com/informalsystems/tendermint-rs/issues/1374))
 - `[tendermint-light-client-verifier]` Optimizing voting power calculation by breaking the loop when we have enough voting power 
   ([#1378](https://github.com/informalsystems/tendermint-rs/pull/1395)).
 

@@ -1,6 +1,9 @@
 //! Support for dynamic compatibility with older protocol versions.
 
 use core::fmt;
+use core::str::FromStr;
+
+use serde::{de::Deserializer, Deserialize, Serialize, Serializer};
 
 use tendermint::Version;
 
@@ -14,6 +17,12 @@ pub enum CompatMode {
     V0_34,
     /// Use version 0.37 of the protocol.
     V0_37,
+    // NOTE: When adding a newer version, do not forget to update:
+    // - CompatMode::latest()
+    // - CompatMode::from_version()
+    // - impl Display for CompatMode
+    // - impl FromStr for CompatMode
+    // - The tests
 }
 
 impl Default for CompatMode {
@@ -64,6 +73,45 @@ impl fmt::Display for CompatMode {
     }
 }
 
+impl FromStr for CompatMode {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        const VALID_COMPAT_MODES: &str = "v0.34, v0.37";
+
+        // Trim leading 'v', if present
+        match s.trim_start_matches('v') {
+            "0.34" => Ok(CompatMode::V0_34),
+            "0.37" => Ok(CompatMode::V0_37),
+            _ => Err(Error::invalid_compat_mode(
+                s.to_string(),
+                VALID_COMPAT_MODES,
+            )),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for CompatMode {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        use serde::de;
+
+        let s = String::deserialize(deserializer)?;
+        FromStr::from_str(&s).map_err(de::Error::custom)
+    }
+}
+
+impl Serialize for CompatMode {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.to_string().serialize(serializer)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::CompatMode;
@@ -98,6 +146,19 @@ mod tests {
         let res = CompatMode::from_version(parse_version("v1.0.0"));
         assert!(res.is_err());
         let res = CompatMode::from_version(parse_version("poobah"));
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_from_str() {
+        assert_eq!("0.34".parse::<CompatMode>().unwrap(), CompatMode::V0_34);
+        assert_eq!("0.37".parse::<CompatMode>().unwrap(), CompatMode::V0_37);
+
+        let res = "0.33".parse::<CompatMode>();
+        assert!(res.is_err());
+        let res = "0.38".parse::<CompatMode>();
+        assert!(res.is_err());
+        let res = "foobar".parse::<CompatMode>();
         assert!(res.is_err());
     }
 }

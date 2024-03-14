@@ -203,27 +203,38 @@ pub struct ExecTxResult {
     /// This code should be `Ok` only if the transaction is fully valid. However,
     /// invalid transactions included in a block will still be executed against
     /// the application state.
+    #[serde(default)]
     pub code: Code,
+
     /// Result bytes, if any.
-    #[serde(with = "serializers::nullable")]
+    #[serde(default, with = "serializers::nullable")]
     pub data: Bytes,
+
     /// The output of the application's logger.
     ///
     /// **May be non-deterministic**.
+    #[serde(default)]
     pub log: String,
+
     /// Additional information.
     ///
     /// **May be non-deterministic**.
+    #[serde(default)]
     pub info: String,
     /// Amount of gas requested for the transaction.
-    #[serde(with = "serializers::from_str")]
+    #[serde(default, with = "serializers::from_str")]
     pub gas_wanted: i64,
+
     /// Amount of gas consumed by the transaction.
-    #[serde(with = "serializers::from_str")]
+    #[serde(default, with = "serializers::from_str")]
     pub gas_used: i64,
+
     /// Events that occurred while executing the transaction.
+    #[serde(default)]
     pub events: Vec<Event>,
+
     /// The namespace for the `code`.
+    #[serde(default)]
     pub codespace: String,
 }
 
