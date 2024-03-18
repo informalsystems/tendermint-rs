@@ -46,3 +46,10 @@ impl TryFrom<SigningKey> for ed25519_consensus::SigningKey {
         Ok(ed25519_consensus::SigningKey::from(src.0))
     }
 }
+
+#[cfg(feature = "rust-crypto")]
+impl From<ed25519_consensus::SigningKey> for SigningKey {
+    fn from(sk: ed25519_consensus::SigningKey) -> Self {
+        Self::new(sk.to_bytes())
+    }
+}
