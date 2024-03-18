@@ -7,6 +7,11 @@ use crate::Error;
 pub struct SigningKey([u8; 32]);
 
 impl SigningKey {
+    #[allow(dead_code)]
+    pub(super) fn new(bytes: [u8; 32]) -> Self {
+        Self(bytes)
+    }
+
     pub fn as_bytes(&self) -> &[u8] {
         &self.0
     }
