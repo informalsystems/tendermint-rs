@@ -240,6 +240,13 @@ impl From<Secp256k1> for PublicKey {
     }
 }
 
+#[cfg(feature = "rust-crypto")]
+impl From<ed25519_consensus::VerificationKey> for PublicKey {
+    fn from(vk: ed25519_consensus::VerificationKey) -> PublicKey {
+        PublicKey::Ed25519(vk.into())
+    }
+}
+
 impl PartialOrd for PublicKey {
     fn partial_cmp(&self, other: &PublicKey) -> Option<Ordering> {
         Some(self.cmp(other))
