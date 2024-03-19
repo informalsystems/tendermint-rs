@@ -9,11 +9,10 @@ extern crate alloc;
 
 mod error;
 mod prelude;
-#[allow(warnings)]
 mod tendermint;
 
 use bytes::{Buf, BufMut};
-use core::{convert::TryFrom, fmt::Display};
+use core::fmt::Display;
 use prost::Message;
 
 pub use error::Error;
