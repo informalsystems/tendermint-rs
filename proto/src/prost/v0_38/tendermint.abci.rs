@@ -1,3 +1,4 @@
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Request {
@@ -9,6 +10,7 @@ pub struct Request {
 }
 /// Nested message and enum types in `Request`.
 pub mod request {
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Value {
@@ -46,15 +48,18 @@ pub mod request {
         FinalizeBlock(super::RequestFinalizeBlock),
     }
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestEcho {
     #[prost(string, tag = "1")]
     pub message: ::prost::alloc::string::String,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestFlush {}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestInfo {
@@ -67,6 +72,7 @@ pub struct RequestInfo {
     #[prost(string, tag = "4")]
     pub abci_version: ::prost::alloc::string::String,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestInitChain {
@@ -83,6 +89,7 @@ pub struct RequestInitChain {
     #[prost(int64, tag = "6")]
     pub initial_height: i64,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestQuery {
@@ -95,6 +102,7 @@ pub struct RequestQuery {
     #[prost(bool, tag = "4")]
     pub prove: bool,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestCheckTx {
@@ -103,14 +111,17 @@ pub struct RequestCheckTx {
     #[prost(enumeration = "CheckTxType", tag = "2")]
     pub r#type: i32,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestCommit {}
 /// lists available snapshots
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestListSnapshots {}
 /// offers a snapshot to the application
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestOfferSnapshot {
@@ -122,6 +133,7 @@ pub struct RequestOfferSnapshot {
     pub app_hash: ::prost::bytes::Bytes,
 }
 /// loads a snapshot chunk
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestLoadSnapshotChunk {
@@ -133,6 +145,7 @@ pub struct RequestLoadSnapshotChunk {
     pub chunk: u32,
 }
 /// Applies a snapshot chunk
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestApplySnapshotChunk {
@@ -143,6 +156,7 @@ pub struct RequestApplySnapshotChunk {
     #[prost(string, tag = "3")]
     pub sender: ::prost::alloc::string::String,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestPrepareProposal {
@@ -167,6 +181,7 @@ pub struct RequestPrepareProposal {
     #[prost(bytes = "bytes", tag = "8")]
     pub proposer_address: ::prost::bytes::Bytes,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestProcessProposal {
@@ -190,6 +205,7 @@ pub struct RequestProcessProposal {
     pub proposer_address: ::prost::bytes::Bytes,
 }
 /// Extends a vote with application-injected data
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestExtendVote {
@@ -215,6 +231,7 @@ pub struct RequestExtendVote {
     pub proposer_address: ::prost::bytes::Bytes,
 }
 /// Verify the vote extension
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestVerifyVoteExtension {
@@ -229,6 +246,7 @@ pub struct RequestVerifyVoteExtension {
     #[prost(bytes = "bytes", tag = "4")]
     pub vote_extension: ::prost::bytes::Bytes,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestFinalizeBlock {
@@ -251,6 +269,7 @@ pub struct RequestFinalizeBlock {
     #[prost(bytes = "bytes", tag = "8")]
     pub proposer_address: ::prost::bytes::Bytes,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Response {
@@ -262,6 +281,7 @@ pub struct Response {
 }
 /// Nested message and enum types in `Response`.
 pub mod response {
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Value {
@@ -302,18 +322,21 @@ pub mod response {
     }
 }
 /// nondeterministic
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseException {
     #[prost(string, tag = "1")]
     pub error: ::prost::alloc::string::String,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseEcho {
     #[prost(string, tag = "1")]
     pub message: ::prost::alloc::string::String,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseFlush {}
@@ -338,6 +361,7 @@ pub struct ResponseInfo {
     #[serde(skip_serializing_if = "bytes::Bytes::is_empty")]
     pub last_block_app_hash: ::prost::bytes::Bytes,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseInitChain {
@@ -348,6 +372,7 @@ pub struct ResponseInitChain {
     #[prost(bytes = "bytes", tag = "3")]
     pub app_hash: ::prost::bytes::Bytes,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseQuery {
@@ -374,6 +399,7 @@ pub struct ResponseQuery {
     #[prost(string, tag = "10")]
     pub codespace: ::prost::alloc::string::String,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseCheckTx {
@@ -396,18 +422,21 @@ pub struct ResponseCheckTx {
     #[prost(string, tag = "8")]
     pub codespace: ::prost::alloc::string::String,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseCommit {
     #[prost(int64, tag = "3")]
     pub retain_height: i64,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseListSnapshots {
     #[prost(message, repeated, tag = "1")]
     pub snapshots: ::prost::alloc::vec::Vec<Snapshot>,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseOfferSnapshot {
@@ -416,6 +445,7 @@ pub struct ResponseOfferSnapshot {
 }
 /// Nested message and enum types in `ResponseOfferSnapshot`.
 pub mod response_offer_snapshot {
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[derive(
         Clone,
         Copy,
@@ -471,12 +501,14 @@ pub mod response_offer_snapshot {
         }
     }
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseLoadSnapshotChunk {
     #[prost(bytes = "bytes", tag = "1")]
     pub chunk: ::prost::bytes::Bytes,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseApplySnapshotChunk {
@@ -491,6 +523,7 @@ pub struct ResponseApplySnapshotChunk {
 }
 /// Nested message and enum types in `ResponseApplySnapshotChunk`.
 pub mod response_apply_snapshot_chunk {
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[derive(
         Clone,
         Copy,
@@ -546,12 +579,14 @@ pub mod response_apply_snapshot_chunk {
         }
     }
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponsePrepareProposal {
     #[prost(bytes = "bytes", repeated, tag = "1")]
     pub txs: ::prost::alloc::vec::Vec<::prost::bytes::Bytes>,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseProcessProposal {
@@ -560,6 +595,7 @@ pub struct ResponseProcessProposal {
 }
 /// Nested message and enum types in `ResponseProcessProposal`.
 pub mod response_process_proposal {
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[derive(
         Clone,
         Copy,
@@ -600,12 +636,14 @@ pub mod response_process_proposal {
         }
     }
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseExtendVote {
     #[prost(bytes = "bytes", tag = "1")]
     pub vote_extension: ::prost::bytes::Bytes,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseVerifyVoteExtension {
@@ -614,6 +652,7 @@ pub struct ResponseVerifyVoteExtension {
 }
 /// Nested message and enum types in `ResponseVerifyVoteExtension`.
 pub mod response_verify_vote_extension {
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
     #[derive(
         Clone,
         Copy,
@@ -658,6 +697,7 @@ pub mod response_verify_vote_extension {
         }
     }
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseFinalizeBlock {
@@ -679,6 +719,7 @@ pub struct ResponseFinalizeBlock {
     #[prost(bytes = "bytes", tag = "5")]
     pub app_hash: ::prost::bytes::Bytes,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CommitInfo {
@@ -690,6 +731,7 @@ pub struct CommitInfo {
 /// ExtendedCommitInfo is similar to CommitInfo except that it is only used in
 /// the PrepareProposal request such that CometBFT can provide vote extensions
 /// to the application.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ExtendedCommitInfo {
@@ -704,6 +746,7 @@ pub struct ExtendedCommitInfo {
 /// Event allows application developers to attach additional information to
 /// ResponseFinalizeBlock and ResponseCheckTx.
 /// Later, transactions may be queried using these events.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Event {
@@ -713,6 +756,7 @@ pub struct Event {
     pub attributes: ::prost::alloc::vec::Vec<EventAttribute>,
 }
 /// EventAttribute is a single key-value pair, associated with an event.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventAttribute {
@@ -727,6 +771,7 @@ pub struct EventAttribute {
 /// ExecTxResult contains results of executing one individual transaction.
 ///
 /// * Its structure is equivalent to #ResponseDeliverTx which will be deprecated/deleted
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ExecTxResult {
@@ -753,6 +798,7 @@ pub struct ExecTxResult {
 /// TxResult contains results of executing the transaction.
 ///
 /// One usage is indexing transaction results.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxResult {
@@ -765,6 +811,7 @@ pub struct TxResult {
     #[prost(message, optional, tag = "4")]
     pub result: ::core::option::Option<ExecTxResult>,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Validator {
@@ -777,6 +824,7 @@ pub struct Validator {
     #[prost(int64, tag = "3")]
     pub power: i64,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorUpdate {
@@ -785,6 +833,7 @@ pub struct ValidatorUpdate {
     #[prost(int64, tag = "2")]
     pub power: i64,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct VoteInfo {
@@ -793,6 +842,7 @@ pub struct VoteInfo {
     #[prost(enumeration = "super::types::BlockIdFlag", tag = "3")]
     pub block_id_flag: i32,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ExtendedVoteInfo {
@@ -809,6 +859,7 @@ pub struct ExtendedVoteInfo {
     #[prost(enumeration = "super::types::BlockIdFlag", tag = "5")]
     pub block_id_flag: i32,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Misbehavior {
@@ -829,6 +880,7 @@ pub struct Misbehavior {
     #[prost(int64, tag = "5")]
     pub total_voting_power: i64,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Snapshot {
@@ -848,6 +900,7 @@ pub struct Snapshot {
     #[prost(bytes = "bytes", tag = "5")]
     pub metadata: ::prost::bytes::Bytes,
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum CheckTxType {
@@ -874,6 +927,7 @@ impl CheckTxType {
         }
     }
 }
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum MisbehaviorType {

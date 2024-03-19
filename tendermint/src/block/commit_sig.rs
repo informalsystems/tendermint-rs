@@ -84,14 +84,13 @@ tendermint_pb_modules! {
     use super::{CommitSig, ZERO_TIMESTAMP};
     use crate::{error::Error, prelude::*, Signature};
 
-    use num_traits::ToPrimitive;
     use pb::types::{BlockIdFlag, CommitSig as RawCommitSig};
 
     impl TryFrom<RawCommitSig> for CommitSig {
         type Error = Error;
 
         fn try_from(value: RawCommitSig) -> Result<Self, Self::Error> {
-            if value.block_id_flag == BlockIdFlag::Absent.to_i32().unwrap() {
+            if value.block_id_flag == BlockIdFlag::Absent as i32 {
                 if value.timestamp.is_some() {
                     let timestamp = value.timestamp.unwrap();
                     // 0001-01-01T00:00:00.000Z translates to EPOCH-62135596800 seconds
@@ -111,7 +110,7 @@ tendermint_pb_modules! {
                 return Ok(CommitSig::BlockIdFlagAbsent);
             }
 
-            if value.block_id_flag == BlockIdFlag::Commit.to_i32().unwrap() {
+            if value.block_id_flag == BlockIdFlag::Commit as i32 {
                 if value.signature.is_empty() {
                     return Err(Error::invalid_signature(
                         "expected non-empty signature for regular commitsig".to_string(),
@@ -133,7 +132,7 @@ tendermint_pb_modules! {
                     signature: Signature::new(value.signature)?,
                 });
             }
-            if value.block_id_flag == BlockIdFlag::Nil.to_i32().unwrap() {
+            if value.block_id_flag == BlockIdFlag::Nil as i32 {
                 if value.signature.is_empty() {
                     return Err(Error::invalid_signature(
                         "nil commitsig has no signature".to_string(),
@@ -159,7 +158,7 @@ tendermint_pb_modules! {
         fn from(commit: CommitSig) -> RawCommitSig {
             match commit {
                 CommitSig::BlockIdFlagAbsent => RawCommitSig {
-                    block_id_flag: BlockIdFlag::Absent.to_i32().unwrap(),
+                    block_id_flag: BlockIdFlag::Absent as i32,
                     validator_address: Vec::new(),
                     timestamp: Some(ZERO_TIMESTAMP),
                     signature: Vec::new(),
@@ -169,7 +168,7 @@ tendermint_pb_modules! {
                     timestamp,
                     signature,
                 } => RawCommitSig {
-                    block_id_flag: BlockIdFlag::Nil.to_i32().unwrap(),
+                    block_id_flag: BlockIdFlag::Nil as i32,
                     validator_address: validator_address.into(),
                     timestamp: Some(timestamp.into()),
                     signature: signature.map(|s| s.into_bytes()).unwrap_or_default(),
@@ -179,7 +178,7 @@ tendermint_pb_modules! {
                     timestamp,
                     signature,
                 } => RawCommitSig {
-                    block_id_flag: BlockIdFlag::Commit.to_i32().unwrap(),
+                    block_id_flag: BlockIdFlag::Commit as i32,
                     validator_address: validator_address.into(),
                     timestamp: Some(timestamp.into()),
                     signature: signature.map(|s| s.into_bytes()).unwrap_or_default(),
