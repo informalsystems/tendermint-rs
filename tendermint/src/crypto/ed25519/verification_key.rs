@@ -51,3 +51,10 @@ impl TryFrom<VerificationKey> for ed25519_consensus::VerificationKey {
             .map_err(|_| Error::invalid_key("malformed Ed25519 public key".into()))
     }
 }
+
+#[cfg(feature = "rust-crypto")]
+impl From<ed25519_consensus::VerificationKey> for VerificationKey {
+    fn from(vk: ed25519_consensus::VerificationKey) -> Self {
+        Self::new(vk.to_bytes())
+    }
+}

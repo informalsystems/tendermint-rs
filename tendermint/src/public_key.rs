@@ -175,6 +175,12 @@ impl PublicKey {
         Ed25519::try_from(bytes).map(PublicKey::Ed25519).ok()
     }
 
+    /// From an [`ed25519_consensus::VerificationKey`]
+    #[cfg(feature = "rust-crypto")]
+    pub fn from_ed25519_consensus(vk: ed25519_consensus::VerificationKey) -> Self {
+        Self::from(vk)
+    }
+
     /// Get Ed25519 public key
     pub fn ed25519(self) -> Option<Ed25519> {
         #[allow(unreachable_patterns)]
@@ -237,6 +243,13 @@ impl From<Ed25519> for PublicKey {
 impl From<Secp256k1> for PublicKey {
     fn from(pk: Secp256k1) -> PublicKey {
         PublicKey::Secp256k1(pk)
+    }
+}
+
+#[cfg(feature = "rust-crypto")]
+impl From<ed25519_consensus::VerificationKey> for PublicKey {
+    fn from(vk: ed25519_consensus::VerificationKey) -> PublicKey {
+        PublicKey::Ed25519(vk.into())
     }
 }
 
