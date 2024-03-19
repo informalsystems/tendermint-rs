@@ -1,5 +1,47 @@
 # CHANGELOG
 
+## v0.35.0
+
+This release brings breaking changes related to `flex-error`,
+`EventAttribute` fields and `/tx_broadcast` `Response`  struct,
+as well as a critical bug fix for `tendermint-p2p`, 
+multiple improvements to `tendermint-rpc` and
+a performance optimization for `tendermint-light-client-verifier`.
+
+### BREAKING CHANGES
+
+- Don’t enable `flex-error/eyre_tracer` feature in crates which don’t
+  use eyre directly.  If you’re using eyre, and no other crate enables
+  it, you may need to enable that explicitly.
+  ([\#1371](https://github.com/informalsystems/tendermint-rs/pull/1371))
+- `[tendermint]` Allow null values in `key` and `value` fields of
+  `EventAttribute` when deserializing. The serialization schema for the fields
+  is changed to `Option<String>`
+  ([\#1375](https://github.com/informalsystems/tendermint-rs/issues/1375)).
+- `[tendermint-rpc]` Add the `codespace` field to the Tx sync and async broadcast `Response`
+  ([\#1382](https://github.com/informalsystems/tendermint-rs/issues/1382))
+
+### BUG FIXES
+
+- `[tendermint-p2p]` Fix data corruption on sending long messages via `SecretConnection`
+  ([\#1393](https://github.com/informalsystems/tendermint-rs/pull/1393))
+- `[tendermint-rpc]` Fix deserialization of `/block_results` response when some
+  tx results are non-ok ([\#1391](https://github.com/informalsystems/tendermint-rs/pull/1391))
+
+### IMPROVEMENTS
+
+- `[tendermint-rpc]` Export the `http`, `websocket`
+  modules under `client`, each with the public `Builder` type
+  ([\#1378](https://github.com/informalsystems/tendermint-rs/pull/1378)).
+- `[tendermint-rpc]` Allow specifying a request timeout for the RPC `HttpClient`.
+  `http::Builder` now provides a `.timeout(Duration)` method to specify the request timeout.
+  If not specified, the default value is 30 seconds.
+  ([\#1379](https://github.com/informalsystems/tendermint-rs/issues/1379))
+- `[tendermint-rpc]` Add `FromStr`, `Serialize` and `Deserialize` instances
+  to `CompatMode` ([\#1374](https://github.com/informalsystems/tendermint-rs/issues/1374))
+- `[tendermint-light-client-verifier]` Optimizing voting power calculation by breaking the loop when we have enough voting power 
+  ([#1378](https://github.com/informalsystems/tendermint-rs/pull/1395)).
+
 ## v0.34.0
 
 This release brings breaking changes, updating the `ExtendVote` request

@@ -4,6 +4,7 @@ use core::str::FromStr;
 
 use async_trait::async_trait;
 use reqwest::{header, Proxy};
+use std::time::Duration;
 
 use tendermint::{block::Height, evidence::Evidence, Hash};
 use tendermint_config::net;
@@ -60,6 +61,7 @@ pub struct Builder {
     url: HttpClientUrl,
     compat: CompatMode,
     proxy_url: Option<HttpClientUrl>,
+    timeout: Duration,
 }
 
 impl Builder {
@@ -82,9 +84,20 @@ impl Builder {
         self
     }
 
+    /// The timeout is applied from when the request starts connecting until
+    /// the response body has finished.
+    ///
+    /// The default is 30 seconds.
+    pub fn timeout(mut self, duration: Duration) -> Self {
+        self.timeout = duration;
+        self
+    }
+
     /// Try to create a client with the options specified for this builder.
     pub fn build(self) -> Result<HttpClient, Error> {
-        let builder = reqwest::ClientBuilder::new().user_agent(USER_AGENT);
+        let builder = reqwest::ClientBuilder::new()
+            .user_agent(USER_AGENT)
+            .timeout(self.timeout);
         let inner = match self.proxy_url {
             None => builder.build().map_err(Error::http)?,
             Some(proxy_url) => {
@@ -139,6 +152,7 @@ impl HttpClient {
             url,
             compat: Default::default(),
             proxy_url: None,
+            timeout: Duration::from_secs(30),
         }
     }
 
