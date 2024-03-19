@@ -34,7 +34,6 @@ pub const TENDERMINT_VERSIONS: &[TendermintVersion] = &[
 ];
 
 /// Predefined custom attributes for message annotations
-const PRIMITIVE_ENUM: &str = r#"#[derive(::num_derive::FromPrimitive, ::num_derive::ToPrimitive)]"#;
 const SERIALIZED: &str = r#"#[derive(::serde::Deserialize, ::serde::Serialize)]"#;
 const TYPE_TAG: &str = r#"#[serde(tag = "type", content = "value")]"#;
 
@@ -86,7 +85,6 @@ pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.ABCIParams", SERIALIZED),
     (".tendermint.types.Block", SERIALIZED),
     (".tendermint.types.BlockID", SERIALIZED),
-    (".tendermint.types.BlockIDFlag", PRIMITIVE_ENUM),
     (".tendermint.types.BlockMeta", SERIALIZED),
     (".tendermint.types.CanonicalBlockID", SERIALIZED),
     (".tendermint.types.CanonicalPartSetHeader", SERIALIZED),

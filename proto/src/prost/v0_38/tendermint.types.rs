@@ -37,7 +37,6 @@ pub struct SimpleValidator {
     pub voting_power: i64,
 }
 /// BlockIdFlag indicates which BlockID the signature is for
-#[derive(::num_derive::FromPrimitive, ::num_derive::ToPrimitive)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum BlockIdFlag {
