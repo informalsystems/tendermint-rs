@@ -45,7 +45,7 @@ The current API of `Time` has the following problems:
   If `Time` is meant to be used in performance-sensitive workloads
   for operations with date-time values, such as offsetting by a duration,
   time difference, or time comparisons, its internal representation should be
-  more optimized for integer arithmetics.
+  more optimized for integer arithmetic.
 
 * The `Time::as_rfc3339` conversion method is
   [named improperly][guideline-naming] with regard to Rust naming guidelines.

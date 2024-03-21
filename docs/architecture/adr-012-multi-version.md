@@ -47,7 +47,7 @@ multiple versions of CometBFT APIs, at this moment being 0.34 and 0.37.
 
 ### tendermint-proto
 
-The generated Rust files providing bindings for Tendermint protobuf defitions
+The generated Rust files providing bindings for Tendermint protobuf definitions
 will be emitted in two side-by-side modules, `tendermint::v0_34` and
 `tendermint::v0_37`. All names under the latter module are also reexported under
 the `tendermint` module, providing a low-change migration path for code bases
