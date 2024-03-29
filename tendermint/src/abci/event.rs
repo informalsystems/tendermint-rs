@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
-use crate::serializers;
 
 /// An event that occurred while processing a request.
 ///
@@ -23,6 +22,62 @@ pub struct Event {
     pub kind: String,
     /// A list of [`EventAttribute`]s describing the event.
     pub attributes: Vec<EventAttribute>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Hash)]
+#[serde(untagged)]
+pub enum EventAttribute {
+    /// EventAttribute value in TM34 is a byte array.
+    V034(v0_34::EventAttribute),
+    /// EventAttribute value in TM37 and later is a string.
+    V037(v0_37::EventAttribute),
+}
+
+impl EventAttribute {
+    /// Access the `key` field common to all variants of the enum.
+    pub fn key(&self) -> &String {
+        match self {
+            EventAttribute::V034(attr) => &attr.key,
+            EventAttribute::V037(attr) => &attr.key,
+        }
+    }
+
+    /// Access the `value` field common to all variants of the enum. Will return error if the value
+    /// is malformed UTF8.
+    pub fn value_str(&self) -> Result<&str, crate::Error> {
+        match self {
+            EventAttribute::V034(attr) => {
+                Ok(std::str::from_utf8(&attr.value)
+                    .map_err(|e| crate::Error::parse(e.to_string()))?)
+            },
+            EventAttribute::V037(attr) => Ok(&attr.value),
+        }
+    }
+
+    /// Access the `value` field common to all variants of the enum. This is useful if you have
+    /// binary values for TM34.
+    pub fn value_as_bytes(&self) -> &[u8] {
+        match self {
+            EventAttribute::V034(attr) => &attr.value,
+            EventAttribute::V037(attr) => &attr.value.as_bytes(),
+        }
+    }
+
+    /// Access the `index` field common to all variants of the enum.
+    pub fn index(&self) -> bool {
+        match self {
+            EventAttribute::V034(attr) => attr.index,
+            EventAttribute::V037(attr) => attr.index,
+        }
+    }
+
+    /// Set `index` field common to all variants of the enum.
+    pub fn set_index(&mut self, index: bool) {
+        match self {
+            EventAttribute::V034(attr) => attr.index = index,
+            EventAttribute::V037(attr) => attr.index = index,
+        }
+    }
 }
 
 impl Event {
@@ -111,47 +166,44 @@ where
     }
 }
 
-/// A key-value pair describing an [`Event`].
-///
-/// Generic methods are provided for more ergonomic attribute construction, see
-/// [`Event::new`] for details.
-///
-/// [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#events)
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Hash)]
-pub struct EventAttribute {
-    /// The event key.
-    #[serde(with = "serializers::allow_null")]
-    pub key: String,
-    /// The event value.
-    #[serde(with = "serializers::allow_null")]
-    pub value: String,
-    /// Whether Tendermint's indexer should index this event.
-    ///
-    /// **This field is nondeterministic**.
-    pub index: bool,
-}
-
 impl EventAttribute {
     /// Checks whether `&self` is equal to `other`, ignoring the `index` field.
     pub fn eq_ignoring_index(&self, other: &Self) -> bool {
-        self.key == other.key && self.value == other.value
+        match (self, other) {
+            (EventAttribute::V034(a), EventAttribute::V034(b)) => {
+                a.key == b.key && a.value == b.value
+            },
+            (EventAttribute::V037(a), EventAttribute::V037(b)) => {
+                a.key == b.key && a.value == b.value
+            },
+            // Shouldn't happen, comparing event attributes from different versions
+            _ => false,
+        }
     }
 
     /// A variant of [`core::hash::Hash::hash`] that ignores the `index` field.
     pub fn hash_ignoring_index<H: core::hash::Hasher>(&self, state: &mut H) {
         use core::hash::Hash;
         // Call the `Hash` impl on the (k,v) tuple to avoid prefix collision issues.
-        (&self.key, &self.value).hash(state);
+        match self {
+            EventAttribute::V034(attr) => {
+                (&attr.key, &attr.value).hash(state);
+            },
+            EventAttribute::V037(attr) => {
+                (&attr.key, &attr.value).hash(state);
+            },
+        }
     }
 }
 
 impl<K: Into<String>, V: Into<String>> From<(K, V, bool)> for EventAttribute {
     fn from((key, value, index): (K, V, bool)) -> Self {
-        EventAttribute {
+        // TODO: support all versions
+        Self::V037(v0_37::EventAttribute {
             key: key.into(),
             value: value.into(),
             index,
-        }
+        })
     }
 }
 
@@ -201,12 +253,35 @@ impl<K: Into<String>, V: Into<String>> From<(K, V)> for EventAttribute {
 // Protobuf conversions
 // =============================================================================
 
-mod v0_34 {
-    use super::{Event, EventAttribute};
+pub mod v0_34 {
+    use super::Event;
     use crate::prelude::*;
+    use crate::serializers;
+    use core::convert::{TryFrom, TryInto};
 
+    use serde::{Deserialize, Serialize};
     use tendermint_proto::v0_34::abci as pb;
     use tendermint_proto::Protobuf;
+
+    /// A key-value pair describing an [`Event`].
+    ///
+    /// Generic methods are provided for more ergonomic attribute construction, see
+    /// [`Event::new`] for details.
+    ///
+    /// [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#events)
+    #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Hash)]
+    pub struct EventAttribute {
+        /// The event key.
+        #[serde(with = "serializers::allow_null")]
+        pub key: String,
+        /// The event value.
+        #[serde(with = "serializers::bytes::base64string")]
+        pub value: Vec<u8>,
+        /// Whether Tendermint's indexer should index this event.
+        ///
+        /// **This field is nondeterministic**.
+        pub index: bool,
+    }
 
     impl From<EventAttribute> for pb::EventAttribute {
         fn from(event: EventAttribute) -> Self {
@@ -226,8 +301,7 @@ mod v0_34 {
             Ok(Self {
                 key: String::from_utf8(event.key.to_vec())
                     .map_err(|e| crate::Error::parse(e.to_string()))?,
-                value: String::from_utf8(event.value.to_vec())
-                    .map_err(|e| crate::Error::parse(e.to_string()))?,
+                value: event.value.to_vec(),
                 index: event.index,
             })
         }
@@ -239,7 +313,16 @@ mod v0_34 {
         fn from(event: Event) -> Self {
             Self {
                 r#type: event.kind,
-                attributes: event.attributes.into_iter().map(Into::into).collect(),
+                attributes: event
+                    .attributes
+                    .into_iter()
+                    .filter_map(|t| {
+                        let super::EventAttribute::V034(ea) = t else {
+                            return None;
+                        };
+                        Some(ea.into())
+                    })
+                    .collect(),
             }
         }
     }
@@ -254,7 +337,10 @@ mod v0_34 {
                     .attributes
                     .into_iter()
                     .map(TryInto::try_into)
-                    .collect::<Result<_, _>>()?,
+                    .collect::<Result<Vec<EventAttribute>, _>>()?
+                    .into_iter()
+                    .map(super::EventAttribute::V034)
+                    .collect(),
             })
         }
     }
@@ -263,11 +349,34 @@ mod v0_34 {
 }
 
 mod v0_37 {
-    use super::{Event, EventAttribute};
+    use super::Event;
     use crate::prelude::*;
+    use crate::serializers;
+    use core::convert::{TryFrom, TryInto};
 
+    use serde::{Deserialize, Serialize};
     use tendermint_proto::v0_37::abci as pb;
     use tendermint_proto::Protobuf;
+
+    /// A key-value pair describing an [`Event`].
+    ///
+    /// Generic methods are provided for more ergonomic attribute construction, see
+    /// [`Event::new`] for details.
+    ///
+    /// [ABCI documentation](https://docs.tendermint.com/master/spec/abci/abci.html#events)
+    #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Hash)]
+    pub struct EventAttribute {
+        /// The event key.
+        #[serde(with = "serializers::allow_null")]
+        pub key: String,
+        /// The event value.
+        #[serde(with = "serializers::allow_null")]
+        pub value: String,
+        /// Whether Tendermint's indexer should index this event.
+        ///
+        /// **This field is nondeterministic**.
+        pub index: bool,
+    }
 
     impl From<EventAttribute> for pb::EventAttribute {
         fn from(event: EventAttribute) -> Self {
@@ -297,7 +406,16 @@ mod v0_37 {
         fn from(event: Event) -> Self {
             Self {
                 r#type: event.kind,
-                attributes: event.attributes.into_iter().map(Into::into).collect(),
+                attributes: event
+                    .attributes
+                    .into_iter()
+                    .filter_map(|t| {
+                        let super::EventAttribute::V037(ea) = t else {
+                            return None;
+                        };
+                        Some(ea.into())
+                    })
+                    .collect(),
             }
         }
     }
@@ -312,7 +430,10 @@ mod v0_37 {
                     .attributes
                     .into_iter()
                     .map(TryInto::try_into)
-                    .collect::<Result<_, _>>()?,
+                    .collect::<Result<Vec<EventAttribute>, _>>()?
+                    .into_iter()
+                    .map(super::EventAttribute::V037)
+                    .collect(),
             })
         }
     }
@@ -321,11 +442,13 @@ mod v0_37 {
 }
 
 mod v0_38 {
-    use super::{Event, EventAttribute};
+    use super::Event;
     use crate::prelude::*;
 
     use tendermint_proto::v0_38::abci as pb;
     use tendermint_proto::Protobuf;
+
+    pub use super::v0_37::EventAttribute;
 
     impl From<EventAttribute> for pb::EventAttribute {
         fn from(event: EventAttribute) -> Self {
@@ -355,7 +478,16 @@ mod v0_38 {
         fn from(event: Event) -> Self {
             Self {
                 r#type: event.kind,
-                attributes: event.attributes.into_iter().map(Into::into).collect(),
+                attributes: event
+                    .attributes
+                    .into_iter()
+                    .filter_map(|t| {
+                        let super::EventAttribute::V037(ea) = t else {
+                            return None;
+                        };
+                        Some(ea.into())
+                    })
+                    .collect(),
             }
         }
     }
@@ -370,7 +502,10 @@ mod v0_38 {
                     .attributes
                     .into_iter()
                     .map(TryInto::try_into)
-                    .collect::<Result<_, _>>()?,
+                    .collect::<Result<Vec<EventAttribute>, _>>()?
+                    .into_iter()
+                    .map(super::EventAttribute::V037)
+                    .collect(),
             })
         }
     }
@@ -434,15 +569,19 @@ mod tests {
                 let a = event
                     .attributes
                     .iter()
-                    .find(|attr| attr.key == "a")
+                    .find(|attr| attr.key() == "a")
                     .ok_or(())
-                    .and_then(|attr| serde_json::from_str(&attr.value).map_err(|_| ()))?;
+                    .and_then(|attr| {
+                        serde_json::from_str(&attr.value_str().unwrap()).map_err(|_| ())
+                    })?;
                 let b = event
                     .attributes
                     .iter()
-                    .find(|attr| attr.key == "b")
+                    .find(|attr| attr.key() == "b")
                     .ok_or(())
-                    .and_then(|attr| serde_json::from_str(&attr.value).map_err(|_| ()))?;
+                    .and_then(|attr| {
+                        serde_json::from_str(&attr.value_str().unwrap()).map_err(|_| ())
+                    })?;
 
                 Ok(MyEvent { a, b })
             }
@@ -459,8 +598,8 @@ mod tests {
         // e2 is like e1 but with different indexing.
         let e2 = {
             let mut e = e1.clone();
-            e.attributes[0].index = false;
-            e.attributes[1].index = false;
+            e.attributes[0].set_index(false);
+            e.attributes[1].set_index(false);
             e
         };
 

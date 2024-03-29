@@ -53,6 +53,7 @@ pub use crate::v0_38::abci::response::{
     ConsensusResponse, InfoResponse, MempoolResponse, SnapshotResponse,
 };
 
+pub use event::v0_34;
 pub use event::{Event, EventAttribute, EventAttributeIndexExt, TypedEvent};
 
 #[doc(inline)]
