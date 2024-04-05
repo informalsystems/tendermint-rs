@@ -295,11 +295,13 @@ pub mod v0_34 {
     #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Hash)]
     pub struct EventAttribute {
         /// The event key.
-        #[serde(with = "serializers::allow_null")]
-        pub key: String,
+        #[serde(with = "serializers::bytes::base64string")]
+        pub key: Vec<u8>,
+
         /// The event value.
         #[serde(with = "serializers::bytes::base64string")]
         pub value: Vec<u8>,
+
         /// Whether Tendermint's indexer should index this event.
         ///
         /// **This field is nondeterministic**.
@@ -320,10 +322,8 @@ pub mod v0_34 {
         type Error = crate::Error;
 
         fn try_from(event: pb::EventAttribute) -> Result<Self, Self::Error> {
-            // We insist that keys and values are strings, like tm 0.35 did.
             Ok(Self {
-                key: String::from_utf8(event.key.to_vec())
-                    .map_err(|e| crate::Error::parse(e.to_string()))?,
+                key: event.value.to_vec(),
                 value: event.value.to_vec(),
                 index: event.index,
             })
@@ -594,7 +594,7 @@ mod tests {
                 let a = event
                     .attributes
                     .iter()
-                    .find(|attr| attr.key() == "a")
+                    .find(|attr| attr.key_bytes() == b"a")
                     .ok_or(())
                     .and_then(|attr| {
                         serde_json::from_str(attr.value_str().unwrap()).map_err(|_| ())
@@ -602,7 +602,7 @@ mod tests {
                 let b = event
                     .attributes
                     .iter()
-                    .find(|attr| attr.key() == "b")
+                    .find(|attr| attr.key_bytes() == b"b")
                     .ok_or(())
                     .and_then(|attr| {
                         serde_json::from_str(attr.value_str().unwrap()).map_err(|_| ())
