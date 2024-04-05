@@ -40,10 +40,11 @@ pub struct Event {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Hash)]
 #[serde(untagged)]
 pub enum EventAttribute {
-    /// EventAttribute value in TM34 is a byte array.
-    V034(v0_34::EventAttribute),
-    /// EventAttribute value in TM37 and later is a string.
+    /// EventAttribute keys and values in TM37 and later are plain strings.
     V037(v0_37::EventAttribute),
+
+    /// EventAttribute keys and values in TM34 are base64-encoded strings.
+    V034(v0_34::EventAttribute),
 }
 
 impl EventAttribute {
