@@ -280,7 +280,6 @@ pub mod v0_34 {
     use super::Event;
     use crate::prelude::*;
     use crate::serializers;
-    use core::convert::{TryFrom, TryInto};
 
     use serde::{Deserialize, Serialize};
     use tendermint_proto::v0_34::abci as pb;
@@ -375,7 +374,6 @@ mod v0_37 {
     use super::Event;
     use crate::prelude::*;
     use crate::serializers;
-    use core::convert::{TryFrom, TryInto};
 
     use serde::{Deserialize, Serialize};
     use tendermint_proto::v0_37::abci as pb;
