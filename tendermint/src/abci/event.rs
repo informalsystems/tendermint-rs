@@ -59,7 +59,7 @@ impl EventAttribute {
     pub fn value_as_bytes(&self) -> &[u8] {
         match self {
             EventAttribute::V034(attr) => &attr.value,
-            EventAttribute::V037(attr) => &attr.value.as_bytes(),
+            EventAttribute::V037(attr) => attr.value.as_bytes(),
         }
     }
 
@@ -572,7 +572,7 @@ mod tests {
                     .find(|attr| attr.key() == "a")
                     .ok_or(())
                     .and_then(|attr| {
-                        serde_json::from_str(&attr.value_str().unwrap()).map_err(|_| ())
+                        serde_json::from_str(attr.value_str().unwrap()).map_err(|_| ())
                     })?;
                 let b = event
                     .attributes
@@ -580,7 +580,7 @@ mod tests {
                     .find(|attr| attr.key() == "b")
                     .ok_or(())
                     .and_then(|attr| {
-                        serde_json::from_str(&attr.value_str().unwrap()).map_err(|_| ())
+                        serde_json::from_str(attr.value_str().unwrap()).map_err(|_| ())
                     })?;
 
                 Ok(MyEvent { a, b })
