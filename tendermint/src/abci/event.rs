@@ -222,7 +222,6 @@ impl EventAttribute {
 
 impl<K: Into<String>, V: Into<String>> From<(K, V, bool)> for EventAttribute {
     fn from((key, value, index): (K, V, bool)) -> Self {
-        // TODO: support all versions
         Self::V037(v0_37::EventAttribute {
             key: key.into(),
             value: value.into(),
