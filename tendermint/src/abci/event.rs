@@ -20,10 +20,23 @@ pub struct Event {
     /// with Rust types and follow Rust conventions.
     #[serde(rename = "type")]
     pub kind: String,
+
     /// A list of [`EventAttribute`]s describing the event.
     pub attributes: Vec<EventAttribute>,
 }
 
+/// The attributes of an Event consist of a key, a value, and an index flag.
+/// The index flag notifies the Tendermint indexer to index the attribute.
+/// The value of the index flag is non-deterministic and may vary across different nodes in the network.
+///
+/// Before Tendermint v0.37, the key and value can contain arbitrary byte arrays.
+/// Since Tendermint v0.37, the key and value are defined to be valud UTF-8 encoded strings.
+///
+/// IMPORTANT: The order of the two variants below is significant and nmust not be changed.
+/// The `EventAttribute` enum is serialized and deserialized using the `untagged` attribute,
+/// meaning that the first variant is tried first when deserializing, if that fails
+/// then the second variant is tried. This allows us to deserialize v0.37+ events which
+/// are vald UTF-8 strings, and fall back to deserializing v0.34 events which are arbitrary byte arrays.
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Hash)]
 #[serde(untagged)]
 pub enum EventAttribute {
@@ -34,28 +47,38 @@ pub enum EventAttribute {
 }
 
 impl EventAttribute {
-    /// Access the `key` field common to all variants of the enum.
-    pub fn key(&self) -> &String {
+    /// Access the `key` field common to all variants of the enum as a string.
+    /// Will return error if the value is malformed UTF8.
+    pub fn key_str(&self) -> Result<&str, crate::Error> {
         match self {
-            EventAttribute::V034(attr) => &attr.key,
-            EventAttribute::V037(attr) => &attr.key,
+            EventAttribute::V034(attr) => {
+                std::str::from_utf8(&attr.key).map_err(|e| crate::Error::parse(e.to_string()))
+            },
+            EventAttribute::V037(attr) => Ok(&attr.key),
         }
     }
 
-    /// Access the `value` field common to all variants of the enum. Will return error if the value
-    /// is malformed UTF8.
+    /// Access the `key` field common to all variants of the enum as bytes.
+    pub fn key_bytes(&self) -> &[u8] {
+        match self {
+            EventAttribute::V034(attr) => &attr.key,
+            EventAttribute::V037(attr) => attr.key.as_bytes(),
+        }
+    }
+
+    /// Access the `value` field common to all variants of the enum as a string.
+    /// Will return error if the value is malformed UTF8.
     pub fn value_str(&self) -> Result<&str, crate::Error> {
         match self {
             EventAttribute::V034(attr) => {
-                Ok(std::str::from_utf8(&attr.value)
-                    .map_err(|e| crate::Error::parse(e.to_string()))?)
+                std::str::from_utf8(&attr.value).map_err(|e| crate::Error::parse(e.to_string()))
             },
             EventAttribute::V037(attr) => Ok(&attr.value),
         }
     }
 
-    /// Access the `value` field common to all variants of the enum. This is useful if you have
-    /// binary values for TM34.
+    /// Access the `value` field common to all variants of the enum as bytes.
+    /// This is useful if you have binary values for TM34.
     pub fn value_bytes(&self) -> &[u8] {
         match self {
             EventAttribute::V034(attr) => &attr.value,
@@ -369,9 +392,11 @@ mod v0_37 {
         /// The event key.
         #[serde(with = "serializers::allow_null")]
         pub key: String,
+
         /// The event value.
         #[serde(with = "serializers::allow_null")]
         pub value: String,
+
         /// Whether Tendermint's indexer should index this event.
         ///
         /// **This field is nondeterministic**.
