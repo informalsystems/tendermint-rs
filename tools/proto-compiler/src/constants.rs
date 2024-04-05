@@ -34,7 +34,6 @@ pub const TENDERMINT_VERSIONS: &[TendermintVersion] = &[
 ];
 
 /// Predefined custom attributes for message annotations
-const PRIMITIVE_ENUM: &str = r#"#[derive(::num_derive::FromPrimitive, ::num_derive::ToPrimitive)]"#;
 const SERIALIZED: &str = r#"#[derive(::serde::Deserialize, ::serde::Serialize)]"#;
 const TYPE_TAG: &str = r#"#[serde(tag = "type", content = "value")]"#;
 
@@ -75,40 +74,47 @@ const RENAME_PARTS: &str = r#"#[serde(rename = "parts", alias = "part_set_header
 /// The first item is a path as defined in the prost_build::Config::btree_map here:
 /// https://docs.rs/prost-build/0.6.1/prost_build/struct.Config.html#method.btree_map
 pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
+    (".tendermint.abci", SERIALIZED),
+    (".tendermint.crypto.Proof", SERIALIZED),
+    (".tendermint.crypto.ProofOp", SERIALIZED),
+    (".tendermint.crypto.ProofOps", SERIALIZED),
+    (".tendermint.crypto.PublicKey.sum", SERIALIZED),
+    (".tendermint.crypto.PublicKey.sum", TYPE_TAG),
     (".tendermint.libs.bits.BitArray", SERIALIZED),
-    (".tendermint.types.BlockIDFlag", PRIMITIVE_ENUM),
+    (".tendermint.p2p", SERIALIZED),
+    (".tendermint.types.ABCIParams", SERIALIZED),
     (".tendermint.types.Block", SERIALIZED),
+    (".tendermint.types.BlockID", SERIALIZED),
+    (".tendermint.types.BlockMeta", SERIALIZED),
+    (".tendermint.types.CanonicalBlockID", SERIALIZED),
+    (".tendermint.types.CanonicalPartSetHeader", SERIALIZED),
+    (".tendermint.types.CanonicalVote", SERIALIZED),
+    (".tendermint.types.Commit", SERIALIZED),
+    (".tendermint.types.CommitSig", SERIALIZED),
+    (".tendermint.types.ConsensusParams", SERIALIZED),
     (".tendermint.types.Data", SERIALIZED),
-    (".tendermint.types.EvidenceParams", SERIALIZED),
+    (".tendermint.types.DuplicateVoteEvidence", SERIALIZED),
     (".tendermint.types.Evidence.sum", SERIALIZED),
     (".tendermint.types.Evidence.sum", TYPE_TAG),
     (".tendermint.types.EvidenceList", SERIALIZED),
-    (".tendermint.types.DuplicateVoteEvidence", SERIALIZED),
-    (".tendermint.types.Vote", SERIALIZED),
-    (".tendermint.types.BlockID", SERIALIZED),
-    (".tendermint.types.PartSetHeader", SERIALIZED),
+    (".tendermint.types.EvidenceParams", SERIALIZED),
+    (".tendermint.types.Header", SERIALIZED),
+    (".tendermint.types.LightBlock", SERIALIZED),
     (".tendermint.types.LightClientAttackEvidence", SERIALIZED),
     (
         ".tendermint.types.LightClientAttackEvidence",
         RENAME_ALL_PASCALCASE,
     ),
-    (".tendermint.types.LightBlock", SERIALIZED),
+    (".tendermint.types.PartSetHeader", SERIALIZED),
     (".tendermint.types.SignedHeader", SERIALIZED),
-    (".tendermint.types.Header", SERIALIZED),
-    (".tendermint.version.Consensus", SERIALIZED),
-    (".tendermint.types.Commit", SERIALIZED),
-    (".tendermint.types.CommitSig", SERIALIZED),
-    (".tendermint.types.ValidatorSet", SERIALIZED),
-    (".tendermint.crypto.PublicKey.sum", SERIALIZED),
-    (".tendermint.crypto.PublicKey.sum", TYPE_TAG),
-    (".tendermint.abci.ResponseInfo", SERIALIZED),
-    (".tendermint.types.CanonicalBlockID", SERIALIZED),
-    (".tendermint.types.CanonicalPartSetHeader", SERIALIZED),
-    (".tendermint.types.Validator", SERIALIZED),
-    (".tendermint.types.CanonicalVote", SERIALIZED),
-    (".tendermint.types.BlockMeta", SERIALIZED),
     (".tendermint.types.TxProof", SERIALIZED),
-    (".tendermint.crypto.Proof", SERIALIZED),
+    (".tendermint.types.Validator", SERIALIZED),
+    (".tendermint.types.ValidatorSet", SERIALIZED),
+    (".tendermint.types.VersionParams", SERIALIZED),
+    (".tendermint.types.ValidatorParams", SERIALIZED),
+    (".tendermint.types.BlockParams", SERIALIZED),
+    (".tendermint.types.Vote", SERIALIZED),
+    (".tendermint.version.Consensus", SERIALIZED),
 ];
 
 /// Custom field attributes applied on top of protobuf fields in (a) struct(s)
@@ -200,7 +206,8 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         ".tendermint.types.Validator.proposer_priority",
         QUOTED_ALLOW_NULL,
     ), // null occurs in some LightBlock data
-    (".tendermint.types.Validator.proposer_priority", DEFAULT), // Default is for /genesis deserialization
+    (".tendermint.types.Validator.proposer_priority", DEFAULT), /* Default is for /genesis
+                                                                 * deserialization */
     (
         ".tendermint.types.ValidatorSet.total_voting_power",
         QUOTED_WITH_DEFAULT,

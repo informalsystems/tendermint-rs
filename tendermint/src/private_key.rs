@@ -68,6 +68,19 @@ impl PrivateKey {
             PrivateKey::Secp256k1(_signing_key) => None,
         }
     }
+
+    /// From an [`ed25519_consensus::SigningKey`]
+    #[cfg(feature = "rust-crypto")]
+    pub fn from_ed25519_consensus(sk: ed25519_consensus::SigningKey) -> Self {
+        Self::Ed25519(sk.into())
+    }
+}
+
+#[cfg(feature = "rust-crypto")]
+impl From<ed25519_consensus::SigningKey> for PrivateKey {
+    fn from(sk: ed25519_consensus::SigningKey) -> Self {
+        Self::Ed25519(sk.into())
+    }
 }
 
 /// Serialize a Secp256k1 privkey as Base64
