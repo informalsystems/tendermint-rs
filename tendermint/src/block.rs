@@ -62,30 +62,20 @@ tendermint_pb_modules! {
 
         fn try_from(value: RawBlock) -> Result<Self, Self::Error> {
             let header: Header = value.header.ok_or_else(Error::missing_header)?.try_into()?;
-            // if last_commit is Commit::Default, it is considered nil by Go.
+
+            // If last_commit is the default Commit, it is considered nil by Go.
             let last_commit = value
                 .last_commit
                 .map(TryInto::try_into)
                 .transpose()?
                 .filter(|c| c != &Commit::default());
-            if last_commit.is_none() && header.height.value() != 1 {
-                return Err(Error::invalid_block(
-                    "last_commit is empty on non-first block".to_string(),
-                ));
-            }
 
-            // Todo: Figure out requirements.
-            // if last_commit.is_some() && header.height.value() == 1 {
-            //    return Err(Kind::InvalidFirstBlock.context("last_commit is not null on first
-            // height").into());
-            //}
-
-            Ok(Block {
+            Ok(Block::new_unchecked(
                 header,
-                data: value.data.ok_or_else(Error::missing_data)?.txs,
-                evidence: value.evidence.map(TryInto::try_into).transpose()?.unwrap_or_default(),
+                value.data.ok_or_else(Error::missing_data)?.txs,
+                value.evidence.map(TryInto::try_into).transpose()?.unwrap_or_default(),
                 last_commit,
-            })
+            ))
         }
     }
 
@@ -103,29 +93,64 @@ tendermint_pb_modules! {
 }
 
 impl Block {
-    /// constructor
+    /// Builds a new [`Block`], enforcing a couple invariants on the given [`Commit`]:
+    /// - `last_commit` cannot be empty if the block is not the first one (ie. at height > 1)
+    /// - `last_commit` must be empty if the block is the first one (ie. at height == 1)
+    ///
+    /// # Errors
+    /// - If `last_commit` is empty on a non-first block
+    /// - If `last_commit` is filled on the first block
     pub fn new(
         header: Header,
         data: Vec<Vec<u8>>,
         evidence: evidence::List,
         last_commit: Option<Commit>,
     ) -> Result<Self, Error> {
-        if last_commit.is_none() && header.height.value() != 1 {
+        let block = Self::new_unchecked(header, data, evidence, last_commit);
+        block.validate()?;
+        Ok(block)
+    }
+
+    /// Check that the following invariants hold for this block:
+    ///
+    /// - `last_commit` cannot be empty if the block is not the first one (ie. at height > 1)
+    /// - `last_commit` must be empty if the block is the first one (ie. at height == 1)
+    ///
+    /// # Errors
+    /// - If `last_commit` is empty on a non-first block
+    /// - If `last_commit` is filled on the first block
+    pub fn validate(&self) -> Result<(), Error> {
+        if self.last_commit.is_none() && self.header.height.value() != 1 {
             return Err(Error::invalid_block(
                 "last_commit is empty on non-first block".to_string(),
             ));
         }
-        if last_commit.is_some() && header.height.value() == 1 {
+        if self.last_commit.is_some() && self.header.height.value() == 1 {
             return Err(Error::invalid_block(
                 "last_commit is filled on first block".to_string(),
             ));
         }
-        Ok(Block {
+
+        Ok(())
+    }
+
+    /// Builds a new [`Block`], but does not enforce any invariants on the given [`Commit`].
+    ///
+    /// Use [`Block::new`] or [`Block::validate`] instead to enforce the following invariants, if necessary:
+    /// - `last_commit` cannot be empty if the block is not the first one (ie. at height > 1)
+    /// - `last_commit` must be empty if the block is the first one (ie. at height == 1)
+    pub fn new_unchecked(
+        header: Header,
+        data: Vec<Vec<u8>>,
+        evidence: evidence::List,
+        last_commit: Option<Commit>,
+    ) -> Self {
+        Self {
             header,
             data,
             evidence,
             last_commit,
-        })
+        }
     }
 
     /// Get header
