@@ -73,7 +73,7 @@ impl From<abci::EventAttribute> for EventAttribute {
     fn from(msg: abci::EventAttribute) -> Self {
         Self {
             key: msg.key().clone(),
-            value: msg.value_as_bytes().to_vec(),
+            value: msg.value_bytes().to_vec(),
             index: msg.index(),
         }
     }

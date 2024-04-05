@@ -56,7 +56,7 @@ impl EventAttribute {
 
     /// Access the `value` field common to all variants of the enum. This is useful if you have
     /// binary values for TM34.
-    pub fn value_as_bytes(&self) -> &[u8] {
+    pub fn value_bytes(&self) -> &[u8] {
         match self {
             EventAttribute::V034(attr) => &attr.value,
             EventAttribute::V037(attr) => attr.value.as_bytes(),
