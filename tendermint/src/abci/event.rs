@@ -53,7 +53,7 @@ impl EventAttribute {
     pub fn key_str(&self) -> Result<&str, crate::Error> {
         match self {
             EventAttribute::V034(attr) => {
-                std::str::from_utf8(&attr.key).map_err(|e| crate::Error::parse(e.to_string()))
+                core::str::from_utf8(&attr.key).map_err(|e| crate::Error::parse(e.to_string()))
             },
             EventAttribute::V037(attr) => Ok(&attr.key),
         }
@@ -72,7 +72,7 @@ impl EventAttribute {
     pub fn value_str(&self) -> Result<&str, crate::Error> {
         match self {
             EventAttribute::V034(attr) => {
-                std::str::from_utf8(&attr.value).map_err(|e| crate::Error::parse(e.to_string()))
+                core::str::from_utf8(&attr.value).map_err(|e| crate::Error::parse(e.to_string()))
             },
             EventAttribute::V037(attr) => Ok(&attr.value),
         }
