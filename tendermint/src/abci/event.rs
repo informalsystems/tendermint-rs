@@ -30,7 +30,7 @@ pub struct Event {
 /// The value of the index flag is non-deterministic and may vary across different nodes in the network.
 ///
 /// Before Tendermint v0.37, the key and value can contain arbitrary byte arrays.
-/// Since Tendermint v0.37, the key and value are defined to be valud UTF-8 encoded strings.
+/// Since Tendermint v0.37, the key and value are defined to be valid UTF-8 encoded strings.
 ///
 /// IMPORTANT: The order of the two variants below is significant and must not be changed.
 /// The `EventAttribute` enum is serialized and deserialized using the `untagged` attribute,
