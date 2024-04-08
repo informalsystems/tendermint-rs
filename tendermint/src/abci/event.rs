@@ -32,7 +32,7 @@ pub struct Event {
 /// Before Tendermint v0.37, the key and value can contain arbitrary byte arrays.
 /// Since Tendermint v0.37, the key and value are defined to be valud UTF-8 encoded strings.
 ///
-/// IMPORTANT: The order of the two variants below is significant and nmust not be changed.
+/// IMPORTANT: The order of the two variants below is significant and must not be changed.
 /// The `EventAttribute` enum is serialized and deserialized using the `untagged` attribute,
 /// meaning that the first variant is tried first when deserializing, if that fails
 /// then the second variant is tried. This allows us to deserialize v0.37+ events which
