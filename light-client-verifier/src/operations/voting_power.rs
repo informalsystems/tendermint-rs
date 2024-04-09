@@ -1,6 +1,6 @@
 //! Provides an interface and default implementation for the `VotingPower` operation
 
-use alloc::collections::BTreeSet as HashSet;
+use alloc::vec::Vec;
 use core::{fmt, marker::PhantomData};
 
 use serde::{Deserialize, Serialize};
@@ -134,7 +134,6 @@ impl<V: signature::Verifier> VotingPowerCalculator for ProvidedVotingPowerCalcul
         let total_voting_power = self.total_power_of(validator_set);
 
         let mut tallied_voting_power = 0_u64;
-        let mut seen_validators = HashSet::new();
 
         // Get non-absent votes from the signatures
         let non_absent_votes = signatures.iter().enumerate().flat_map(|(idx, signature)| {
@@ -146,20 +145,37 @@ impl<V: signature::Verifier> VotingPowerCalculator for ProvidedVotingPowerCalcul
             .map(|vote| (signature, vote))
         });
 
+        // Create index of validators sorted by address.  The index stores
+        // reference to the validaotr’s Info object held by the validator_set
+        // and boolean flag indicating whether we've already seen that
+        // validator.
+        let mut validators: Vec<(&_, bool)> = validator_set
+            .validators()
+            .iter()
+            .map(|v| (v, false))
+            .collect();
+        validators.sort_unstable_by_key(|item| &item.0.address);
+
         for (signature, vote) in non_absent_votes {
+            // Find the validator by address.
+            let index = validators
+                .binary_search_by_key(&&vote.validator_address, |item| &item.0.address)
+                .map(|index| {
+                    let item = &mut validators[index];
+                    (item.0, &mut item.1)
+                });
+            let (validator, seen) = match index {
+                Ok(it) => it,
+                Err(_) => continue, // Cannot find matching validator, so we skip the vote
+            };
+
             // Ensure we only count a validator's power once
-            if seen_validators.contains(&vote.validator_address) {
+            if *seen {
                 return Err(VerificationError::duplicate_validator(
                     vote.validator_address,
                 ));
-            } else {
-                seen_validators.insert(vote.validator_address);
             }
-
-            let validator = match validator_set.validator(vote.validator_address) {
-                Some(validator) => validator,
-                None => continue, // Cannot find matching validator, so we skip the vote
-            };
+            *seen = true;
 
             let signed_vote =
                 SignedVote::from_vote(vote.clone(), signed_header.header.chain_id.clone())
@@ -173,7 +189,7 @@ impl<V: signature::Verifier> VotingPowerCalculator for ProvidedVotingPowerCalcul
             {
                 return Err(VerificationError::invalid_signature(
                     signed_vote.signature().as_bytes().to_vec(),
-                    Box::new(validator),
+                    Box::new(validator.clone()),
                     sign_bytes,
                 ));
             }
