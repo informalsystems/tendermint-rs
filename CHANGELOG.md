@@ -1,5 +1,31 @@
 # CHANGELOG
 
+## v0.35.1
+
+This release brings improvement to the handling of misformed blocks (eg. with empty `last_commit` on non-first block) when decoding them from Protobuf or RPC responses, and adds missing `serde` derives on some Protobuf definitions.
+
+### BREAKING CHANGES
+
+- `[tendermint-proto]` Remove redundant impl of `num_traits::ToPrimitive` for `BlockIDFlag`
+  ([\#1389](https://github.com/informalsystems/tendermint-rs/pull/1389))
+
+### FEATURES
+
+- `[tendermint-proto]` Add missing `serde` derives on Protobuf definitions
+  ([\#1389](https://github.com/informalsystems/tendermint-rs/pull/1389))
+- `[tendermint]` Add the following impls for `ed25519-consensus`:
+  * `From<ed25519_consensus::SigningKey` for `tendermint::PrivateKey`
+  * `From<ed25519_consensus::SigningKey>` for `tendermint::SigningKey`
+  * `From<ed25519_consensus::VerificationKey>` for `tendermint::PublicKey`
+  * `From<ed25519_consensus::VerificationKey>` for `tendermint::VerificationKey`
+  ([\#1401](https://github.com/informalsystems/tendermint-rs/pull/1401))
+
+### IMPROVEMENTS
+
+- `[tendermint]` Allow misformed blocks (eg. with empty `last_commit`
+  on non-first block) when decoding them from Protobuf or RPC responses
+  ([\#1403](https://github.com/informalsystems/tendermint-rs/issues/1403))
+
 ## v0.35.0
 
 This release brings breaking changes related to `flex-error`,
