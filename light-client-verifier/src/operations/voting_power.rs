@@ -5,9 +5,11 @@ use core::{fmt, marker::PhantomData};
 
 use serde::{Deserialize, Serialize};
 use tendermint::{
+    account,
     block::CommitSig,
     crypto::signature,
     trust_threshold::TrustThreshold as _,
+    validator,
     vote::{SignedVote, ValidatorIndex, Vote},
 };
 
@@ -118,6 +120,58 @@ impl<V> Default for ProvidedVotingPowerCalculator<V> {
     }
 }
 
+/// Dictionary of validators sorted by address.
+///
+/// The map stores reference to [`validator::Info`] object (typically held by
+/// a `ValidatorSet`) and a boolean flag indicating whether the validator has
+/// already been seen.  The validators are sorted by their address such that
+/// lookup by address is a logarithmic operation.
+struct ValidatorMap<'a> {
+    validators: Vec<(&'a validator::Info, bool)>,
+}
+
+/// Error during validator lookup.
+enum LookupError {
+    NotFound,
+    AlreadySeen,
+}
+
+impl<'a> ValidatorMap<'a> {
+    /// Constructs a new map from given list of validators.
+    ///
+    /// Sorts the validators by address which makes the operation’s time
+    /// complexity `O(N lng N)`.
+    ///
+    /// Produces unspecified result if two objects with the same address are
+    /// found.  Unspecified in that it’s not guaranteed which entry will be
+    /// subsequently returned by [`Self::find_mut`] however it will always be
+    /// consistently the same entry.
+    pub fn new(validators: &'a [validator::Info]) -> Self {
+        let mut validators = validators.iter().map(|v| (v, false)).collect::<Vec<_>>();
+        validators.sort_unstable_by_key(|item| &item.0.address);
+        Self { validators }
+    }
+
+    /// Finds entry for validator with given address; returns error if validator
+    /// has been returned already by previous call to `find`.
+    ///
+    /// Uses binary search resulting in logarithmic lookup time.
+    pub fn find(&mut self, address: &account::Id) -> Result<&'a validator::Info, LookupError> {
+        let index = self
+            .validators
+            .binary_search_by_key(&address, |item| &item.0.address)
+            .map_err(|_| LookupError::NotFound)?;
+
+        let (validator, seen) = &mut self.validators[index];
+        if *seen {
+            Err(LookupError::AlreadySeen)
+        } else {
+            *seen = true;
+            Ok(validator)
+        }
+    }
+}
+
 /// Default implementation of a `VotingPowerCalculator`.
 #[cfg(feature = "rust-crypto")]
 pub type ProdVotingPowerCalculator =
@@ -145,37 +199,24 @@ impl<V: signature::Verifier> VotingPowerCalculator for ProvidedVotingPowerCalcul
             .map(|vote| (signature, vote))
         });
 
-        // Create index of validators sorted by address.  The index stores
-        // reference to the validaotr’s Info object held by the validator_set
-        // and boolean flag indicating whether we've already seen that
-        // validator.
-        let mut validators: Vec<(&_, bool)> = validator_set
-            .validators()
-            .iter()
-            .map(|v| (v, false))
-            .collect();
-        validators.sort_unstable_by_key(|item| &item.0.address);
+        // Create index of validators sorted by address.
+        let mut validators = ValidatorMap::new(validator_set.validators());
 
         for (signature, vote) in non_absent_votes {
             // Find the validator by address.
-            let index = validators
-                .binary_search_by_key(&&vote.validator_address, |item| &item.0.address)
-                .map(|index| {
-                    let item = &mut validators[index];
-                    (item.0, &mut item.1)
-                });
-            let (validator, seen) = match index {
-                Ok(it) => it,
-                Err(_) => continue, // Cannot find matching validator, so we skip the vote
+            let validator = match validators.find(&vote.validator_address) {
+                Ok(validator) => validator,
+                Err(LookupError::NotFound) => {
+                    // Cannot find matching validator, so we skip the vote
+                    continue;
+                },
+                Err(LookupError::AlreadySeen) => {
+                    // Ensure we only count a validator's power once
+                    return Err(VerificationError::duplicate_validator(
+                        vote.validator_address,
+                    ));
+                },
             };
-
-            // Ensure we only count a validator's power once
-            if *seen {
-                return Err(VerificationError::duplicate_validator(
-                    vote.validator_address,
-                ));
-            }
-            *seen = true;
 
             let signed_vote =
                 SignedVote::from_vote(vote.clone(), signed_header.header.chain_id.clone())
