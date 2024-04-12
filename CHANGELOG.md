@@ -2,7 +2,8 @@
 
 ## v0.35.1
 
-This release brings improvement to the handling of misformed blocks (eg. with empty `last_commit` on non-first block) when decoding them from Protobuf or RPC responses, and adds missing `serde` derives on some Protobuf definitions.
+This release brings improvement to the handling of misformed blocks (eg. with empty `last_commit` on non-first block) 
+when decoding them from Protobuf or RPC responses, and adds missing `serde` derives on some Protobuf definitions.
 
 ### BREAKING CHANGES
 
@@ -25,6 +26,9 @@ This release brings improvement to the handling of misformed blocks (eg. with em
 - `[tendermint]` Allow misformed blocks (eg. with empty `last_commit`
   on non-first block) when decoding them from Protobuf or RPC responses
   ([\#1403](https://github.com/informalsystems/tendermint-rs/issues/1403))
+- `[light-client-verifier]` Optimise validators lookup in
+  `ProvidedVotingPowerCalculator::voting_power_in` method.
+  ([\#1407](https://github.com/informalsystems/tendermint-rs/pull/1407))
 
 ## v0.35.0
 
