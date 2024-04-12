@@ -264,6 +264,11 @@ impl NonAbsentCommitVote {
 struct NonAbsentCommitVotes {
     /// Votes sorted by validator address.
     votes: Vec<NonAbsentCommitVote>,
+    /// Internal buffer for storing sign_bytes.
+    ///
+    /// The buffer is reused for each canonical vote so that we allocate it
+    /// once.
+    sign_bytes: Vec<u8>,
 }
 
 impl NonAbsentCommitVotes {
@@ -297,7 +302,12 @@ impl NonAbsentCommitVotes {
                 pair[0].validator_id(),
             ))
         } else {
-            Ok(Self { votes })
+            // As of protocol 0.38, 160 buffer is enough for chain identifier up
+            // to 44 bytes.
+            Ok(Self {
+                votes,
+                sign_bytes: Vec::with_capacity(160),
+            })
         }
     }
 
@@ -319,14 +329,18 @@ impl NonAbsentCommitVotes {
         };
 
         if !vote.verified {
-            let sign_bytes = vote.signed_vote.sign_bytes();
+            self.sign_bytes.truncate(0);
+            vote.signed_vote
+                .sign_bytes_into(&mut self.sign_bytes)
+                .unwrap();
+            let sign_bytes = self.sign_bytes.as_slice();
             validator
-                .verify_signature::<V>(&sign_bytes, vote.signed_vote.signature())
+                .verify_signature::<V>(sign_bytes, vote.signed_vote.signature())
                 .map_err(|_| {
                     VerificationError::invalid_signature(
                         vote.signed_vote.signature().as_bytes().to_vec(),
                         Box::new(validator.clone()),
-                        sign_bytes,
+                        sign_bytes.to_vec(),
                     )
                 })?;
         }
