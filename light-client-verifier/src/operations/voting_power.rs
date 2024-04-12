@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use tendermint::{
     account,
     block::CommitSig,
+    chain,
     crypto::signature,
     trust_threshold::TrustThreshold as _,
     validator,
@@ -80,17 +81,28 @@ pub trait VotingPowerCalculator: Send + Sync {
             .fold(0u64, |total, val_info| total + val_info.power.value())
     }
 
-    /// Check against the given threshold that there is enough trust
-    /// between an untrusted header and a trusted validator set
-    fn check_enough_trust(
+    /// Check a) against the given threshold that there is enough trust between
+    /// an untrusted header and a trusted validator set and b) if there is 2/3rd
+    /// overlap between an untrusted header and untrusted validator set.
+    fn check_enough_trust_and_signers(
         &self,
         untrusted_header: &SignedHeader,
         trusted_validators: &ValidatorSet,
         trust_threshold: TrustThreshold,
+        untrusted_validators: &ValidatorSet,
     ) -> Result<(), VerificationError> {
-        self.voting_power_in(untrusted_header, trusted_validators, trust_threshold)?
+        let (trusted_power, untrusted_power) = self.voting_power_in_sets(
+            untrusted_header,
+            (trusted_validators, trust_threshold),
+            (untrusted_validators, TrustThreshold::TWO_THIRDS),
+        )?;
+        trusted_power
             .check()
-            .map_err(VerificationError::not_enough_trust)
+            .map_err(VerificationError::not_enough_trust)?;
+        untrusted_power
+            .check()
+            .map_err(VerificationError::insufficient_signers_overlap)?;
+        Ok(())
     }
 
     /// Check if there is 2/3rd overlap between an untrusted header and untrusted validator set
@@ -105,16 +117,32 @@ pub trait VotingPowerCalculator: Send + Sync {
             .map_err(VerificationError::insufficient_signers_overlap)
     }
 
-    /// Compute the voting power in a header and its commit against a validator set.
+    /// Compute the voting power in a header and its commit against a validator
+    /// set.
     ///
-    /// The `trust_threshold` is currently not used, but might be in the future
-    /// for optimization purposes.
+    /// Note that the returned tally may be lower than actual tally so long as
+    /// it meets the `trust_threshold`.
+    ///
+    /// If you have two separate sets of validators and need to check voting
+    /// power for both of them, prefer [`Self::voting_power_in_sets`] method.
     fn voting_power_in(
         &self,
         signed_header: &SignedHeader,
         validator_set: &ValidatorSet,
         trust_threshold: TrustThreshold,
     ) -> Result<VotingPowerTally, VerificationError>;
+
+    /// Compute the voting power in a header and its commit against two separate
+    /// validator sets.
+    ///
+    /// This is equivalent to calling [`Self::voting_power_in`] on each set
+    /// separately but may be more optimised.
+    fn voting_power_in_sets(
+        &self,
+        signed_header: &SignedHeader,
+        first_set: (&ValidatorSet, TrustThreshold),
+        second_set: (&ValidatorSet, TrustThreshold),
+    ) -> Result<(VotingPowerTally, VotingPowerTally), VerificationError>;
 }
 
 /// Default implementation of a `VotingPowerCalculator`, parameterized with
@@ -136,55 +164,135 @@ impl<V> Default for ProvidedVotingPowerCalculator<V> {
     }
 }
 
-/// Dictionary of validators sorted by address.
-///
-/// The map stores reference to [`validator::Info`] object (typically held by
-/// a `ValidatorSet`) and a boolean flag indicating whether the validator has
-/// already been seen.  The validators are sorted by their address such that
-/// lookup by address is a logarithmic operation.
-struct ValidatorMap<'a> {
-    validators: Vec<(&'a validator::Info, bool)>,
+/// A signed non-nill vote.
+struct NonAbsentCommitVote {
+    signed_vote: SignedVote,
+    /// Flag indicating whether the signature has already been verified.
+    verified: bool,
 }
 
-/// Error during validator lookup.
-enum LookupError {
-    NotFound,
-    AlreadySeen,
-}
+impl NonAbsentCommitVote {
+    /// Returns a signed non-nil vote for given commit.
+    ///
+    /// If the CimmtSig represents a missing vote or a vote for nil returns
+    /// `None`.  Otherwise, if the vote is missing a signature returns
+    /// `Some(Err)`.  Otherwise, returns a `SignedVote` corresponding to given
+    /// `CommitSig`.
+    pub fn new(
+        commit_sig: &CommitSig,
+        validator_index: ValidatorIndex,
+        commit: &Commit,
+        chain_id: &chain::Id,
+    ) -> Option<Result<Self, VerificationError>> {
+        let (validator_address, timestamp, signature) = match commit_sig {
+            CommitSig::BlockIdFlagAbsent { .. } => return None,
+            CommitSig::BlockIdFlagCommit {
+                validator_address,
+                timestamp,
+                signature,
+            } => (*validator_address, *timestamp, signature),
+            CommitSig::BlockIdFlagNil { .. } => return None,
+        };
 
-impl<'a> ValidatorMap<'a> {
-    /// Constructs a new map from given list of validators.
-    ///
-    /// Sorts the validators by address which makes the operation’s time
-    /// complexity `O(N lng N)`.
-    ///
-    /// Produces unspecified result if two objects with the same address are
-    /// found.  Unspecified in that it’s not guaranteed which entry will be
-    /// subsequently returned by [`Self::find_mut`] however it will always be
-    /// consistently the same entry.
-    pub fn new(validators: &'a [validator::Info]) -> Self {
-        let mut validators = validators.iter().map(|v| (v, false)).collect::<Vec<_>>();
-        validators.sort_unstable_by_key(|item| &item.0.address);
-        Self { validators }
+        let vote = Vote {
+            vote_type: tendermint::vote::Type::Precommit,
+            height: commit.height,
+            round: commit.round,
+            block_id: Some(commit.block_id),
+            timestamp: Some(timestamp),
+            validator_address,
+            validator_index,
+            signature: signature.clone(),
+            extension: Default::default(),
+            extension_signature: None,
+        };
+        Some(
+            SignedVote::from_vote(vote, chain_id.clone())
+                .ok_or_else(VerificationError::missing_signature)
+                .map(|signed_vote| Self {
+                    signed_vote,
+                    verified: false,
+                }),
+        )
     }
 
-    /// Finds entry for validator with given address; returns error if validator
-    /// has been returned already by previous call to `find`.
-    ///
-    /// Uses binary search resulting in logarithmic lookup time.
-    pub fn find(&mut self, address: &account::Id) -> Result<&'a validator::Info, LookupError> {
-        let index = self
-            .validators
-            .binary_search_by_key(&address, |item| &item.0.address)
-            .map_err(|_| LookupError::NotFound)?;
+    /// Returns address of the validator making the vote.
+    pub fn validator_id(&self) -> account::Id {
+        self.signed_vote.validator_id()
+    }
+}
 
-        let (validator, seen) = &mut self.validators[index];
-        if *seen {
-            Err(LookupError::AlreadySeen)
+/// Collection of non-absent commit votes.
+struct NonAbsentCommitVotes {
+    /// Votes sorted by validator address.
+    votes: Vec<NonAbsentCommitVote>,
+}
+
+impl NonAbsentCommitVotes {
+    pub fn new(signed_header: &SignedHeader) -> Result<Self, VerificationError> {
+        let mut votes = signed_header
+            .commit
+            .signatures
+            .iter()
+            .enumerate()
+            .flat_map(|(idx, signature)| {
+                let idx = ValidatorIndex::try_from(idx).unwrap();
+                NonAbsentCommitVote::new(
+                    signature,
+                    idx,
+                    &signed_header.commit,
+                    &signed_header.header.chain_id,
+                )
+            })
+            .collect::<Result<Vec<_>, VerificationError>>()?;
+        votes.sort_unstable_by_key(NonAbsentCommitVote::validator_id);
+
+        // Check if there are duplicate signatures.  If at least one duplicate
+        // is found, report it as an error.
+        let duplicate = votes
+            .windows(2)
+            .find(|pair| pair[0].validator_id() == pair[1].validator_id());
+        if let Some(pair) = duplicate {
+            Err(VerificationError::duplicate_validator(
+                pair[0].validator_id(),
+            ))
         } else {
-            *seen = true;
-            Ok(validator)
+            Ok(Self { votes })
         }
+    }
+
+    /// Looks up a vote cast by given validator.
+    ///
+    /// If the validator didn’t cast a vote or voted for `nil`, returns
+    /// `Ok(false)`.  Otherwise, if the vote had valid signature, returns
+    /// `Ok(true)`.  If the vote had invalid signature, returns `Err`.
+    pub fn has_voted<V: signature::Verifier>(
+        &mut self,
+        validator: &validator::Info,
+    ) -> Result<bool, VerificationError> {
+        let idx = self
+            .votes
+            .binary_search_by_key(&validator.address, NonAbsentCommitVote::validator_id);
+        let vote = match idx {
+            Ok(idx) => &mut self.votes[idx],
+            Err(_) => return Ok(false),
+        };
+
+        if !vote.verified {
+            let sign_bytes = vote.signed_vote.sign_bytes();
+            validator
+                .verify_signature::<V>(&sign_bytes, vote.signed_vote.signature())
+                .map_err(|_| {
+                    VerificationError::invalid_signature(
+                        vote.signed_vote.signature().as_bytes().to_vec(),
+                        Box::new(validator.clone()),
+                        sign_bytes,
+                    )
+                })?;
+        }
+
+        vote.verified = true;
+        Ok(true)
     }
 }
 
@@ -200,110 +308,55 @@ impl<V: signature::Verifier> VotingPowerCalculator for ProvidedVotingPowerCalcul
         validator_set: &ValidatorSet,
         trust_threshold: TrustThreshold,
     ) -> Result<VotingPowerTally, VerificationError> {
-        let signatures = &signed_header.commit.signatures;
-        let mut voting_power =
-            VotingPowerTally::new(self.total_power_of(validator_set), trust_threshold);
+        let mut votes = NonAbsentCommitVotes::new(signed_header)?;
+        voting_power_in_impl::<V>(
+            &mut votes,
+            validator_set,
+            trust_threshold,
+            self.total_power_of(validator_set),
+        )
+    }
 
-        // Get non-absent votes from the signatures
-        let non_absent_votes = signatures.iter().enumerate().flat_map(|(idx, signature)| {
-            non_absent_vote(
-                signature,
-                ValidatorIndex::try_from(idx).unwrap(),
-                &signed_header.commit,
-            )
-            .map(|vote| (signature, vote))
-        });
-
-        // Create index of validators sorted by address.
-        let mut validators = ValidatorMap::new(validator_set.validators());
-
-        for (signature, vote) in non_absent_votes {
-            // Find the validator by address.
-            let validator = match validators.find(&vote.validator_address) {
-                Ok(validator) => validator,
-                Err(LookupError::NotFound) => {
-                    // Cannot find matching validator, so we skip the vote
-                    continue;
-                },
-                Err(LookupError::AlreadySeen) => {
-                    // Ensure we only count a validator's power once
-                    return Err(VerificationError::duplicate_validator(
-                        vote.validator_address,
-                    ));
-                },
-            };
-
-            let signed_vote =
-                SignedVote::from_vote(vote.clone(), signed_header.header.chain_id.clone())
-                    .ok_or_else(VerificationError::missing_signature)?;
-
-            // Check vote is valid
-            let sign_bytes = signed_vote.sign_bytes();
-            if validator
-                .verify_signature::<V>(&sign_bytes, signed_vote.signature())
-                .is_err()
-            {
-                return Err(VerificationError::invalid_signature(
-                    signed_vote.signature().as_bytes().to_vec(),
-                    Box::new(validator.clone()),
-                    sign_bytes,
-                ));
-            }
-
-            // If the vote is neither absent nor nil, tally its power
-            if signature.is_commit() {
-                voting_power.tally(validator.power());
-            } else {
-                // It's OK. We include stray signatures (~votes for nil)
-                // to measure validator availability.
-            }
-
-            // Break out of the loop when we have enough voting power.
-            if voting_power.check().is_ok() {
-                break;
-            }
-        }
-
-        Ok(voting_power)
+    fn voting_power_in_sets(
+        &self,
+        signed_header: &SignedHeader,
+        first_set: (&ValidatorSet, TrustThreshold),
+        second_set: (&ValidatorSet, TrustThreshold),
+    ) -> Result<(VotingPowerTally, VotingPowerTally), VerificationError> {
+        let mut votes = NonAbsentCommitVotes::new(signed_header)?;
+        let first_tally = voting_power_in_impl::<V>(
+            &mut votes,
+            first_set.0,
+            first_set.1,
+            self.total_power_of(first_set.0),
+        )?;
+        let second_tally = voting_power_in_impl::<V>(
+            &mut votes,
+            second_set.0,
+            second_set.1,
+            self.total_power_of(second_set.0),
+        )?;
+        Ok((first_tally, second_tally))
     }
 }
 
-fn non_absent_vote(
-    commit_sig: &CommitSig,
-    validator_index: ValidatorIndex,
-    commit: &Commit,
-) -> Option<Vote> {
-    let (validator_address, timestamp, signature, block_id) = match commit_sig {
-        CommitSig::BlockIdFlagAbsent { .. } => return None,
-        CommitSig::BlockIdFlagCommit {
-            validator_address,
-            timestamp,
-            signature,
-        } => (
-            *validator_address,
-            *timestamp,
-            signature,
-            Some(commit.block_id),
-        ),
-        CommitSig::BlockIdFlagNil {
-            validator_address,
-            timestamp,
-            signature,
-        } => (*validator_address, *timestamp, signature, None),
-    };
-
-    Some(Vote {
-        vote_type: tendermint::vote::Type::Precommit,
-        height: commit.height,
-        round: commit.round,
-        block_id,
-        timestamp: Some(timestamp),
-        validator_address,
-        validator_index,
-        signature: signature.clone(),
-        extension: Default::default(),
-        extension_signature: None,
-    })
+fn voting_power_in_impl<V: signature::Verifier>(
+    votes: &mut NonAbsentCommitVotes,
+    validator_set: &ValidatorSet,
+    trust_threshold: TrustThreshold,
+    total_voting_power: u64,
+) -> Result<VotingPowerTally, VerificationError> {
+    let mut power = VotingPowerTally::new(total_voting_power, trust_threshold);
+    for validator in validator_set.validators() {
+        if votes.has_voted::<V>(validator)? {
+            power.tally(validator.power());
+            // Break out of the loop when we have enough voting power.
+            if power.check().is_ok() {
+                break;
+            }
+        }
+    }
+    Ok(power)
 }
 
 // The below unit tests replaces the static voting power test files
