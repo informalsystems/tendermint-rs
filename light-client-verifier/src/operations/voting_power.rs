@@ -30,6 +30,34 @@ pub struct VotingPowerTally {
     pub trust_threshold: TrustThreshold,
 }
 
+impl VotingPowerTally {
+    fn new(total: u64, trust_threshold: TrustThreshold) -> Self {
+        Self {
+            total,
+            tallied: 0,
+            trust_threshold,
+        }
+    }
+
+    /// Adds given amount of power to tallied voting power amount.
+    fn tally(&mut self, power: u64) {
+        self.tallied += power;
+        debug_assert!(self.tallied <= self.total);
+    }
+
+    /// Checks whether tallied amount meets trust threshold.
+    fn check(&self) -> Result<(), Self> {
+        if self
+            .trust_threshold
+            .is_enough_power(self.tallied, self.total)
+        {
+            Ok(())
+        } else {
+            Err(*self)
+        }
+    }
+}
+
 impl fmt::Display for VotingPowerTally {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -60,14 +88,9 @@ pub trait VotingPowerCalculator: Send + Sync {
         trusted_validators: &ValidatorSet,
         trust_threshold: TrustThreshold,
     ) -> Result<(), VerificationError> {
-        let voting_power =
-            self.voting_power_in(untrusted_header, trusted_validators, trust_threshold)?;
-
-        if trust_threshold.is_enough_power(voting_power.tallied, voting_power.total) {
-            Ok(())
-        } else {
-            Err(VerificationError::not_enough_trust(voting_power))
-        }
+        self.voting_power_in(untrusted_header, trusted_validators, trust_threshold)?
+            .check()
+            .map_err(VerificationError::not_enough_trust)
     }
 
     /// Check if there is 2/3rd overlap between an untrusted header and untrusted validator set
@@ -77,16 +100,9 @@ pub trait VotingPowerCalculator: Send + Sync {
         untrusted_validators: &ValidatorSet,
     ) -> Result<(), VerificationError> {
         let trust_threshold = TrustThreshold::TWO_THIRDS;
-        let voting_power =
-            self.voting_power_in(untrusted_header, untrusted_validators, trust_threshold)?;
-
-        if trust_threshold.is_enough_power(voting_power.tallied, voting_power.total) {
-            Ok(())
-        } else {
-            Err(VerificationError::insufficient_signers_overlap(
-                voting_power,
-            ))
-        }
+        self.voting_power_in(untrusted_header, untrusted_validators, trust_threshold)?
+            .check()
+            .map_err(VerificationError::insufficient_signers_overlap)
     }
 
     /// Compute the voting power in a header and its commit against a validator set.
@@ -185,9 +201,8 @@ impl<V: signature::Verifier> VotingPowerCalculator for ProvidedVotingPowerCalcul
         trust_threshold: TrustThreshold,
     ) -> Result<VotingPowerTally, VerificationError> {
         let signatures = &signed_header.commit.signatures;
-        let total_voting_power = self.total_power_of(validator_set);
-
-        let mut tallied_voting_power = 0_u64;
+        let mut voting_power =
+            VotingPowerTally::new(self.total_power_of(validator_set), trust_threshold);
 
         // Get non-absent votes from the signatures
         let non_absent_votes = signatures.iter().enumerate().flat_map(|(idx, signature)| {
@@ -237,23 +252,17 @@ impl<V: signature::Verifier> VotingPowerCalculator for ProvidedVotingPowerCalcul
 
             // If the vote is neither absent nor nil, tally its power
             if signature.is_commit() {
-                tallied_voting_power += validator.power();
+                voting_power.tally(validator.power());
             } else {
                 // It's OK. We include stray signatures (~votes for nil)
                 // to measure validator availability.
             }
 
             // Break out of the loop when we have enough voting power.
-            if trust_threshold.is_enough_power(tallied_voting_power, total_voting_power) {
+            if voting_power.check().is_ok() {
                 break;
             }
         }
-
-        let voting_power = VotingPowerTally {
-            total: total_voting_power,
-            tallied: tallied_voting_power,
-            trust_threshold,
-        };
 
         Ok(voting_power)
     }
