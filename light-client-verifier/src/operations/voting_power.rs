@@ -236,6 +236,8 @@ impl NonAbsentCommitVotes {
             .iter()
             .enumerate()
             .flat_map(|(idx, signature)| {
+                // We never have more than 2³¹ signatures so this always
+                // succeeds.
                 let idx = ValidatorIndex::try_from(idx).unwrap();
                 NonAbsentCommitVote::new(
                     signature,
