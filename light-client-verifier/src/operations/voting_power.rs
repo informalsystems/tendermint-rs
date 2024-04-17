@@ -164,7 +164,7 @@ impl<V> Default for ProvidedVotingPowerCalculator<V> {
     }
 }
 
-/// A signed non-nill vote.
+/// A signed non-nil vote.
 struct NonAbsentCommitVote {
     signed_vote: SignedVote,
     /// Flag indicating whether the signature has already been verified.
