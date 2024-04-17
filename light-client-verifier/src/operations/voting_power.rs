@@ -174,7 +174,7 @@ struct NonAbsentCommitVote {
 impl NonAbsentCommitVote {
     /// Returns a signed non-nil vote for given commit.
     ///
-    /// If the CimmtSig represents a missing vote or a vote for nil returns
+    /// If the CommitSig represents a missing vote or a vote for nil returns
     /// `None`.  Otherwise, if the vote is missing a signature returns
     /// `Some(Err)`.  Otherwise, returns a `SignedVote` corresponding to given
     /// `CommitSig`.
