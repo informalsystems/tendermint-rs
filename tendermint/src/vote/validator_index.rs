@@ -44,9 +44,9 @@ impl TryFrom<usize> for ValidatorIndex {
     type Error = Error;
 
     fn try_from(value: usize) -> Result<Self, Self::Error> {
-        Ok(ValidatorIndex(
-            value.try_into().map_err(Error::integer_overflow)?,
-        ))
+        // Convert to i32 first to perform ≤ i32::MAX check.
+        let value = i32::try_from(value).map_err(Error::integer_overflow)?;
+        ValidatorIndex::try_from(value)
     }
 }
 
@@ -87,4 +87,12 @@ impl FromStr for ValidatorIndex {
                 .map_err(|e| Error::parse_int("validator index decode".to_string(), e))?,
         )
     }
+}
+
+#[test]
+fn test_i32_max_limit() {
+    assert!(ValidatorIndex::try_from(u32::MAX).is_err());
+    assert!(ValidatorIndex::try_from(u32::MAX as usize).is_err());
+    let value = u32::MAX.to_string();
+    assert!(ValidatorIndex::from_str(&value).is_err());
 }
