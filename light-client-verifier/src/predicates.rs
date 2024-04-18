@@ -184,18 +184,6 @@ pub trait VerificationPredicates: Send + Sync {
         }
     }
 
-    /// Check that there is enough signers overlap between the given, untrusted
-    /// validator set and the untrusted signed header.
-    fn has_sufficient_signers_overlap(
-        &self,
-        untrusted_sh: &SignedHeader,
-        untrusted_validators: &ValidatorSet,
-        calculator: &dyn VotingPowerCalculator,
-    ) -> Result<(), VerificationError> {
-        calculator.check_signers_overlap(untrusted_sh, untrusted_validators)?;
-        Ok(())
-    }
-
     /// Check that there is enough a) validators overlap between the trusted
     /// validator set and the untrusted signed header and b) signers overlap
     /// between the given, untrusted validator set and the untrusted signed
@@ -214,6 +202,18 @@ pub trait VerificationPredicates: Send + Sync {
             *trust_threshold,
             untrusted_validators,
         )?;
+        Ok(())
+    }
+
+    /// Check that there is enough signers overlap between the given, untrusted
+    /// validator set and the untrusted signed header.
+    fn has_sufficient_signers_overlap(
+        &self,
+        untrusted_sh: &SignedHeader,
+        untrusted_validators: &ValidatorSet,
+        calculator: &dyn VotingPowerCalculator,
+    ) -> Result<(), VerificationError> {
+        calculator.check_signers_overlap(untrusted_sh, untrusted_validators)?;
         Ok(())
     }
 
@@ -638,7 +638,7 @@ mod tests {
         let signed_header = light_block.signed_header;
 
         let vp = ProdPredicates;
-        let mut trust_threshold = TrustThreshold::new(1, 3).expect("Cannot make trust threshold");
+        let mut trust_threshold = TrustThreshold::ONE_THIRD;
         let voting_power_calculator = ProdVotingPowerCalculator::default();
 
         // Test scenarios -->
