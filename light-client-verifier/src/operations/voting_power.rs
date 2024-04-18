@@ -81,9 +81,19 @@ pub trait VotingPowerCalculator: Send + Sync {
             .fold(0u64, |total, val_info| total + val_info.power.value())
     }
 
-    /// Check a) against the given threshold that there is enough trust between
-    /// an untrusted header and a trusted validator set and b) if there is 2/3rd
-    /// overlap between an untrusted header and untrusted validator set.
+    /// Check that there is enough trust between an untrusted header and given
+    /// trusted and untrusted validator sets.
+    ///
+    /// First of all, checks that enough validators from the
+    /// `trusted_validators` set signed the `untrusted_header` to reach given
+    /// `trust_threshold`.
+    ///
+    /// Second of all, checks that enough validators from the
+    /// `untrusted_validators` set signed the `untrusted_header` to reach
+    /// a trust threshold of ⅔.
+    ///
+    /// If both of those conditions aren’t met, it’s unspecified which error is
+    /// returned.
     fn check_enough_trust_and_signers(
         &self,
         untrusted_header: &SignedHeader,
@@ -121,7 +131,10 @@ pub trait VotingPowerCalculator: Send + Sync {
     /// set.
     ///
     /// Note that the returned tally may be lower than actual tally so long as
-    /// it meets the `trust_threshold`.
+    /// it meets the `trust_threshold`.  Furthermore, the method isn’t
+    /// guaranteed to verify all the signatures present in the signed header.
+    /// If there are invalid signatures, the method may or may not return an
+    /// error depending on which validators those signatures correspond to.
     ///
     /// If you have two separate sets of validators and need to check voting
     /// power for both of them, prefer [`Self::voting_power_in_sets`] method.
@@ -136,7 +149,32 @@ pub trait VotingPowerCalculator: Send + Sync {
     /// validator sets.
     ///
     /// This is equivalent to calling [`Self::voting_power_in`] on each set
-    /// separately but may be more optimised.
+    /// separately but may be more optimised.  Implementators are encouraged to
+    /// write a properly optimised method which avoids checking the same
+    /// signature twice but for a simple unoptimised implementation the
+    /// following works:
+    ///
+    /// ```ignore
+    ///     fn voting_power_in_sets(
+    ///         &self,
+    ///         signed_header: &SignedHeader,
+    ///         first_set: (&ValidatorSet, TrustThreshold),
+    ///         second_set: (&ValidatorSet, TrustThreshold),
+    ///     ) -> Result<(VotingPowerTally, VotingPowerTally), VerificationError> {
+    ///         let first_tally = self.voting_power_in(
+    ///             signed_header,
+    ///             first_set.0,
+    ///             first_set.1,
+    ///         )?;
+    ///         let second_tally = self.voting_power_in(
+    ///             signed_header,
+    ///             first_set.0,
+    ///             first_set.1,
+    ///         )?;
+    ///         Ok((first_tally, second_tally))
+    ///     }
+    ///
+    /// ```
     fn voting_power_in_sets(
         &self,
         signed_header: &SignedHeader,

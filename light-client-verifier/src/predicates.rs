@@ -184,10 +184,24 @@ pub trait VerificationPredicates: Send + Sync {
         }
     }
 
-    /// Check that there is enough a) validators overlap between the trusted
-    /// validator set and the untrusted signed header and b) signers overlap
-    /// between the given, untrusted validator set and the untrusted signed
-    /// header.
+    /// Checks that there is enough overlap between validators and the untrusted
+    /// signed header.
+    ///
+    /// First of all, checks that enough validators from the
+    /// `trusted_validators` set signed the untrusted header to reach given
+    /// `trust_threshold`.
+    ///
+    /// Second of all, checks that enough validators from the
+    /// `untrusted_validators` set signed the untrusted header to reach a trust
+    /// threshold of ⅔.
+    ///
+    /// If both of those conditions aren’t met, it’s unspecified which error is
+    /// returned.
+    ///
+    /// Note also that the method isn’t guaranteed to verify all the signatures
+    /// present in the signed header.  If there are invalid signatures, the
+    /// method may or may not return an error depending on which validators
+    /// those signatures correspond to.
     fn has_sufficient_validators_and_signers_overlap(
         &self,
         untrusted_sh: &SignedHeader,
