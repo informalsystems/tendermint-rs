@@ -32,9 +32,9 @@ pub struct VotingPowerTally {
 }
 
 impl VotingPowerTally {
-    fn new(validators: &[validator::Info], trust_threshold: TrustThreshold) -> Self {
+    fn new(total: u64, trust_threshold: TrustThreshold) -> Self {
         Self {
-            total: validators.iter().map(|info| info.power.value()).sum(),
+            total,
             tallied: 0,
             trust_threshold,
         }
@@ -73,6 +73,14 @@ impl fmt::Display for VotingPowerTally {
 ///
 /// This trait provides default implementation of some helper functions.
 pub trait VotingPowerCalculator: Send + Sync {
+    /// Compute the total voting power in a validator set
+    fn total_power_of(&self, validator_set: &ValidatorSet) -> u64 {
+        validator_set
+            .validators()
+            .iter()
+            .fold(0u64, |total, val_info| total + val_info.power.value())
+    }
+
     /// Check a) against the given threshold that there is enough trust between
     /// an untrusted header and a trusted validator set and b) if there is 2/3rd
     /// overlap between an untrusted header and untrusted validator set.
@@ -82,14 +90,59 @@ pub trait VotingPowerCalculator: Send + Sync {
         trusted_validators: &ValidatorSet,
         trust_threshold: TrustThreshold,
         untrusted_validators: &ValidatorSet,
-    ) -> Result<(), VerificationError>;
+    ) -> Result<(), VerificationError> {
+        let (trusted_power, untrusted_power) = self.voting_power_in_sets(
+            untrusted_header,
+            (trusted_validators, trust_threshold),
+            (untrusted_validators, TrustThreshold::TWO_THIRDS),
+        )?;
+        trusted_power
+            .check()
+            .map_err(VerificationError::not_enough_trust)?;
+        untrusted_power
+            .check()
+            .map_err(VerificationError::insufficient_signers_overlap)?;
+        Ok(())
+    }
 
     /// Check if there is 2/3rd overlap between an untrusted header and untrusted validator set
     fn check_signers_overlap(
         &self,
         untrusted_header: &SignedHeader,
         untrusted_validators: &ValidatorSet,
-    ) -> Result<(), VerificationError>;
+    ) -> Result<(), VerificationError> {
+        let trust_threshold = TrustThreshold::TWO_THIRDS;
+        self.voting_power_in(untrusted_header, untrusted_validators, trust_threshold)?
+            .check()
+            .map_err(VerificationError::insufficient_signers_overlap)
+    }
+
+    /// Compute the voting power in a header and its commit against a validator
+    /// set.
+    ///
+    /// Note that the returned tally may be lower than actual tally so long as
+    /// it meets the `trust_threshold`.
+    ///
+    /// If you have two separate sets of validators and need to check voting
+    /// power for both of them, prefer [`Self::voting_power_in_sets`] method.
+    fn voting_power_in(
+        &self,
+        signed_header: &SignedHeader,
+        validator_set: &ValidatorSet,
+        trust_threshold: TrustThreshold,
+    ) -> Result<VotingPowerTally, VerificationError>;
+
+    /// Compute the voting power in a header and its commit against two separate
+    /// validator sets.
+    ///
+    /// This is equivalent to calling [`Self::voting_power_in`] on each set
+    /// separately but may be more optimised.
+    fn voting_power_in_sets(
+        &self,
+        signed_header: &SignedHeader,
+        first_set: (&ValidatorSet, TrustThreshold),
+        second_set: (&ValidatorSet, TrustThreshold),
+    ) -> Result<(VotingPowerTally, VotingPowerTally), VerificationError>;
 }
 
 /// Default implementation of a `VotingPowerCalculator`, parameterized with
@@ -251,42 +304,51 @@ pub type ProdVotingPowerCalculator =
     ProvidedVotingPowerCalculator<tendermint::crypto::default::signature::Verifier>;
 
 impl<V: signature::Verifier> VotingPowerCalculator for ProvidedVotingPowerCalculator<V> {
-    fn check_enough_trust_and_signers(
+    fn voting_power_in(
         &self,
-        untrusted_header: &SignedHeader,
-        trusted_validators: &ValidatorSet,
+        signed_header: &SignedHeader,
+        validator_set: &ValidatorSet,
         trust_threshold: TrustThreshold,
-        untrusted_validators: &ValidatorSet,
-    ) -> Result<(), VerificationError> {
-        let mut votes = NonAbsentCommitVotes::new(untrusted_header)?;
-        voting_power_in::<V>(&mut votes, trusted_validators, trust_threshold)?
-            .check()
-            .map_err(VerificationError::not_enough_trust)?;
-        voting_power_in::<V>(&mut votes, untrusted_validators, TrustThreshold::TWO_THIRDS)?
-            .check()
-            .map_err(VerificationError::insufficient_signers_overlap)?;
-        Ok(())
+    ) -> Result<VotingPowerTally, VerificationError> {
+        let mut votes = NonAbsentCommitVotes::new(signed_header)?;
+        voting_power_in_impl::<V>(
+            &mut votes,
+            validator_set,
+            trust_threshold,
+            self.total_power_of(validator_set),
+        )
     }
 
-    /// Check if there is 2/3rd overlap between an untrusted header and untrusted validator set
-    fn check_signers_overlap(
+    fn voting_power_in_sets(
         &self,
-        untrusted_header: &SignedHeader,
-        untrusted_validators: &ValidatorSet,
-    ) -> Result<(), VerificationError> {
-        let mut votes = NonAbsentCommitVotes::new(untrusted_header)?;
-        voting_power_in::<V>(&mut votes, untrusted_validators, TrustThreshold::TWO_THIRDS)?
-            .check()
-            .map_err(VerificationError::insufficient_signers_overlap)
+        signed_header: &SignedHeader,
+        first_set: (&ValidatorSet, TrustThreshold),
+        second_set: (&ValidatorSet, TrustThreshold),
+    ) -> Result<(VotingPowerTally, VotingPowerTally), VerificationError> {
+        let mut votes = NonAbsentCommitVotes::new(signed_header)?;
+        let first_tally = voting_power_in_impl::<V>(
+            &mut votes,
+            first_set.0,
+            first_set.1,
+            self.total_power_of(first_set.0),
+        )?;
+        let second_tally = voting_power_in_impl::<V>(
+            &mut votes,
+            second_set.0,
+            second_set.1,
+            self.total_power_of(second_set.0),
+        )?;
+        Ok((first_tally, second_tally))
     }
 }
 
-fn voting_power_in<V: signature::Verifier>(
+fn voting_power_in_impl<V: signature::Verifier>(
     votes: &mut NonAbsentCommitVotes,
     validator_set: &ValidatorSet,
     trust_threshold: TrustThreshold,
+    total_voting_power: u64,
 ) -> Result<VotingPowerTally, VerificationError> {
-    let mut power = VotingPowerTally::new(validator_set.validators(), trust_threshold);
+    let mut power = VotingPowerTally::new(total_voting_power, trust_threshold);
     for validator in validator_set.validators() {
         if votes.has_voted::<V>(validator)? {
             power.tally(validator.power());
@@ -299,7 +361,6 @@ fn voting_power_in<V: signature::Verifier>(
     Ok(power)
 }
 
-/*
 // The below unit tests replaces the static voting power test files
 // see https://github.com/informalsystems/tendermint-rs/pull/383
 // This is essentially to remove the heavy dependency on MBT
@@ -459,4 +520,3 @@ mod tests {
         assert_eq!(result_ok.unwrap(), EXPECTED_RESULT);
     }
 }
-*/
