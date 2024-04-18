@@ -188,7 +188,7 @@ pub trait VerificationPredicates: Send + Sync {
     /// validator set and the untrusted signed header and b) signers overlap
     /// between the given, untrusted validator set and the untrusted signed
     /// header.
-    fn has_sufficient_signers_and_validators_overlap(
+    fn has_sufficient_validators_and_signers_overlap(
         &self,
         untrusted_sh: &SignedHeader,
         trusted_validators: &ValidatorSet,
@@ -629,30 +629,27 @@ mod tests {
         }
     }
 
-    // TODO: Fix the test.  DO NOT SUBMIT
-    /*
     #[test]
-    fn test_has_sufficient_validators_overlap() {
+    fn test_has_sufficient_validators_and_signers_overlap() {
         let light_block: LightBlock = TestgenLightBlock::new_default(1).generate().unwrap().into();
         let val_set = light_block.validators;
         let signed_header = light_block.signed_header;
 
         let vp = ProdPredicates;
-        let mut trust_threshold = TrustThreshold::ONE_THIRD;
         let voting_power_calculator = ProdVotingPowerCalculator::default();
 
         // Test scenarios -->
-        // 1. > trust_threshold validators overlap
-        let result_ok = vp.has_sufficient_validators_overlap(
+        // 1. Validators and signers overlap ≥ trust_threshold.
+        vp.has_sufficient_validators_and_signers_overlap(
             &signed_header,
             &val_set,
-            &trust_threshold,
+            &TrustThreshold::TWO_THIRDS,
+            &val_set,
             &voting_power_calculator,
-        );
+        )
+        .unwrap();
 
-        assert!(result_ok.is_ok());
-
-        // 2. < trust_threshold validators overlap
+        // 2. Validators overlap < threshold; signers overlap ≥ threshold.
         let mut vals = val_set.validators().clone();
         vals.push(
             Validator::new("extra-val")
@@ -662,30 +659,41 @@ mod tests {
         );
         let bad_valset = Set::without_proposer(vals);
 
-        trust_threshold = TrustThreshold::new(2, 3).expect("Cannot make trust threshold");
-
-        let result_err = vp.has_sufficient_validators_overlap(
+        let result = vp.has_sufficient_validators_and_signers_overlap(
             &signed_header,
             &bad_valset,
-            &trust_threshold,
+            &TrustThreshold::TWO_THIRDS,
+            &val_set,
             &voting_power_calculator,
         );
 
-        match result_err {
+        let expected_tally = VotingPowerTally {
+            total: 200,
+            tallied: 100,
+            trust_threshold: TrustThreshold::TWO_THIRDS,
+        };
+        match result {
             Err(VerificationError(VerificationErrorDetail::NotEnoughTrust(e), _)) => {
-                assert_eq!(
-                    e.tally,
-                    VotingPowerTally {
-                        total: 200,
-                        tallied: 100,
-                        trust_threshold,
-                    }
-                );
+                assert_eq!(expected_tally, e.tally)
             },
-            _ => panic!("expected NotEnoughTrust error"),
+            _ => panic!("expected NotEnoughTrust error, got: {result:?}"),
+        }
+
+        // 3. Validators overlap ≥ threshold; signers overlap < threshold.
+        let result = vp.has_sufficient_validators_and_signers_overlap(
+            &signed_header,
+            &val_set,
+            &TrustThreshold::TWO_THIRDS,
+            &bad_valset,
+            &voting_power_calculator,
+        );
+        match result {
+            Err(VerificationError(VerificationErrorDetail::InsufficientSignersOverlap(e), _)) => {
+                assert_eq!(expected_tally, e.tally)
+            },
+            _ => panic!("expected InsufficientSignersOverlap error, got: {result:?}"),
         }
     }
-    */
 
     #[test]
     fn test_has_sufficient_signers_overlap() {

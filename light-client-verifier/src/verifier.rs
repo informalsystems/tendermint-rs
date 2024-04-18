@@ -226,7 +226,7 @@ where
 
         let result = if need_both {
             self.predicates
-                .has_sufficient_signers_and_validators_overlap(
+                .has_sufficient_validators_and_signers_overlap(
                     untrusted.signed_header,
                     trusted.next_validators,
                     &options.trust_threshold,
