@@ -271,7 +271,6 @@ pub struct TxProof {
     pub proof: ::core::option::Option<super::crypto::Proof>,
 }
 /// BlockIdFlag indicates which BlcokID the signature is for
-#[derive(::num_derive::FromPrimitive, ::num_derive::ToPrimitive)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum BlockIdFlag {
@@ -339,8 +338,19 @@ impl SignedMsgType {
         }
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventDataRoundState {
+    #[prost(int64, tag = "1")]
+    pub height: i64,
+    #[prost(int32, tag = "2")]
+    pub round: i32,
+    #[prost(string, tag = "3")]
+    pub step: ::prost::alloc::string::String,
+}
 /// ConsensusParams contains consensus critical parameters that determine the
 /// validity of blocks.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConsensusParams {
@@ -354,6 +364,7 @@ pub struct ConsensusParams {
     pub version: ::core::option::Option<VersionParams>,
 }
 /// BlockParams contains limits on the block size.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BlockParams {
@@ -400,6 +411,7 @@ pub struct EvidenceParams {
 }
 /// ValidatorParams restrict the public key types validators can use.
 /// NOTE: uses ABCI pubkey naming, not Amino names.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorParams {
@@ -407,6 +419,7 @@ pub struct ValidatorParams {
     pub pub_key_types: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 /// VersionParams contains the ABCI application version.
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct VersionParams {
@@ -423,16 +436,6 @@ pub struct HashedParams {
     pub block_max_bytes: i64,
     #[prost(int64, tag = "2")]
     pub block_max_gas: i64,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventDataRoundState {
-    #[prost(int64, tag = "1")]
-    pub height: i64,
-    #[prost(int32, tag = "2")]
-    pub round: i32,
-    #[prost(string, tag = "3")]
-    pub step: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -504,19 +507,6 @@ pub struct EvidenceList {
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Block {
-    #[prost(message, optional, tag = "1")]
-    pub header: ::core::option::Option<Header>,
-    #[prost(message, optional, tag = "2")]
-    pub data: ::core::option::Option<Data>,
-    #[prost(message, optional, tag = "3")]
-    pub evidence: ::core::option::Option<EvidenceList>,
-    #[prost(message, optional, tag = "4")]
-    pub last_commit: ::core::option::Option<Commit>,
-}
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CanonicalBlockId {
     #[prost(bytes = "vec", tag = "1")]
     pub hash: ::prost::alloc::vec::Vec<u8>,
@@ -572,4 +562,17 @@ pub struct CanonicalVote {
     pub timestamp: ::core::option::Option<crate::google::protobuf::Timestamp>,
     #[prost(string, tag = "6")]
     pub chain_id: ::prost::alloc::string::String,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Block {
+    #[prost(message, optional, tag = "1")]
+    pub header: ::core::option::Option<Header>,
+    #[prost(message, optional, tag = "2")]
+    pub data: ::core::option::Option<Data>,
+    #[prost(message, optional, tag = "3")]
+    pub evidence: ::core::option::Option<EvidenceList>,
+    #[prost(message, optional, tag = "4")]
+    pub last_commit: ::core::option::Option<Commit>,
 }

@@ -555,63 +555,60 @@ mod tests {
         assert_eq!(event_a.eq_ignoring_index(&event_c), false);
     }
 
+    #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
+    struct Payload {
+        x: u32,
+        y: u32,
+    }
+
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    struct MyEvent {
+        a: Payload,
+        b: Payload,
+    }
+
+    impl From<MyEvent> for Event {
+        fn from(event: MyEvent) -> Self {
+            Event::new(
+                "my_event",
+                vec![
+                    ("a", serde_json::to_string(&event.a).unwrap()).index(),
+                    ("b", serde_json::to_string(&event.b).unwrap()).index(),
+                ],
+            )
+        }
+    }
+
+    impl TryFrom<Event> for MyEvent {
+        type Error = (); // Avoid depending on a specific error library in test code
+
+        fn try_from(event: Event) -> Result<Self, Self::Error> {
+            if event.kind != "my_event" {
+                return Err(());
+            }
+
+
+            let a = event
+                .attributes
+                .iter()
+                .find(|attr| attr.key == "a")
+                .ok_or(())
+                .and_then(|attr| serde_json::from_str(&attr.value).map_err(|_| ()))?;
+            let b = event
+                .attributes
+                .iter()
+                .find(|attr| attr.key == "b")
+                .ok_or(())
+                .and_then(|attr| serde_json::from_str(&attr.value).map_err(|_| ()))?;
+
+            Ok(MyEvent { a, b })
+        }
+    }
+
+    impl TypedEvent for MyEvent {}
+
     #[test]
     fn exercise_typed_event() {
-        #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
-        struct Payload {
-            x: u32,
-            y: u32,
-        }
-
-        #[derive(Clone, Debug, PartialEq, Eq)]
-        struct MyEvent {
-            a: Payload,
-            b: Payload,
-        }
-
-        impl From<MyEvent> for Event {
-            fn from(event: MyEvent) -> Self {
-                Event::new(
-                    "my_event",
-                    vec![
-                        ("a", serde_json::to_string(&event.a).unwrap()).index(),
-                        ("b", serde_json::to_string(&event.b).unwrap()).index(),
-                    ],
-                )
-            }
-        }
-
-        impl TryFrom<Event> for MyEvent {
-            type Error = (); // Avoid depending on a specific error library in test code
-
-            fn try_from(event: Event) -> Result<Self, Self::Error> {
-                if event.kind != "my_event" {
-                    return Err(());
-                }
-
-                let a = event
-                    .attributes
-                    .iter()
-                    .find(|attr| attr.key_bytes() == b"a")
-                    .ok_or(())
-                    .and_then(|attr| {
-                        serde_json::from_str(attr.value_str().unwrap()).map_err(|_| ())
-                    })?;
-                let b = event
-                    .attributes
-                    .iter()
-                    .find(|attr| attr.key_bytes() == b"b")
-                    .ok_or(())
-                    .and_then(|attr| {
-                        serde_json::from_str(attr.value_str().unwrap()).map_err(|_| ())
-                    })?;
-
-                Ok(MyEvent { a, b })
-            }
-        }
-
-        impl TypedEvent for MyEvent {}
-
         let t = MyEvent {
             a: Payload { x: 1, y: 2 },
             b: Payload { x: 3, y: 4 },

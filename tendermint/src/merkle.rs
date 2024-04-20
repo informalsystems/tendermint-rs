@@ -152,7 +152,7 @@ mod tests {
         let empty_tree_root_hex =
             "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
         let empty_tree_root = &hex::decode(empty_tree_root_hex).unwrap();
-        let empty_tree: Vec<Vec<u8>> = vec![vec![]; 0];
+        let empty_tree: Vec<Vec<u8>> = vec![];
 
         let root = simple_hash_from_byte_vectors::<Sha256>(&empty_tree);
         assert_eq!(empty_tree_root, &root);

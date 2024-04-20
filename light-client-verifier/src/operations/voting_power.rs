@@ -1,13 +1,15 @@
 //! Provides an interface and default implementation for the `VotingPower` operation
 
-use alloc::collections::BTreeSet as HashSet;
+use alloc::vec::Vec;
 use core::{fmt, marker::PhantomData};
 
 use serde::{Deserialize, Serialize};
 use tendermint::{
+    account,
     block::CommitSig,
     crypto::signature,
     trust_threshold::TrustThreshold as _,
+    validator,
     vote::{SignedVote, ValidatorIndex, Vote},
 };
 
@@ -118,6 +120,58 @@ impl<V> Default for ProvidedVotingPowerCalculator<V> {
     }
 }
 
+/// Dictionary of validators sorted by address.
+///
+/// The map stores reference to [`validator::Info`] object (typically held by
+/// a `ValidatorSet`) and a boolean flag indicating whether the validator has
+/// already been seen.  The validators are sorted by their address such that
+/// lookup by address is a logarithmic operation.
+struct ValidatorMap<'a> {
+    validators: Vec<(&'a validator::Info, bool)>,
+}
+
+/// Error during validator lookup.
+enum LookupError {
+    NotFound,
+    AlreadySeen,
+}
+
+impl<'a> ValidatorMap<'a> {
+    /// Constructs a new map from given list of validators.
+    ///
+    /// Sorts the validators by address which makes the operation’s time
+    /// complexity `O(N lng N)`.
+    ///
+    /// Produces unspecified result if two objects with the same address are
+    /// found.  Unspecified in that it’s not guaranteed which entry will be
+    /// subsequently returned by [`Self::find_mut`] however it will always be
+    /// consistently the same entry.
+    pub fn new(validators: &'a [validator::Info]) -> Self {
+        let mut validators = validators.iter().map(|v| (v, false)).collect::<Vec<_>>();
+        validators.sort_unstable_by_key(|item| &item.0.address);
+        Self { validators }
+    }
+
+    /// Finds entry for validator with given address; returns error if validator
+    /// has been returned already by previous call to `find`.
+    ///
+    /// Uses binary search resulting in logarithmic lookup time.
+    pub fn find(&mut self, address: &account::Id) -> Result<&'a validator::Info, LookupError> {
+        let index = self
+            .validators
+            .binary_search_by_key(&address, |item| &item.0.address)
+            .map_err(|_| LookupError::NotFound)?;
+
+        let (validator, seen) = &mut self.validators[index];
+        if *seen {
+            Err(LookupError::AlreadySeen)
+        } else {
+            *seen = true;
+            Ok(validator)
+        }
+    }
+}
+
 /// Default implementation of a `VotingPowerCalculator`.
 #[cfg(feature = "rust-crypto")]
 pub type ProdVotingPowerCalculator =
@@ -134,7 +188,6 @@ impl<V: signature::Verifier> VotingPowerCalculator for ProvidedVotingPowerCalcul
         let total_voting_power = self.total_power_of(validator_set);
 
         let mut tallied_voting_power = 0_u64;
-        let mut seen_validators = HashSet::new();
 
         // Get non-absent votes from the signatures
         let non_absent_votes = signatures.iter().enumerate().flat_map(|(idx, signature)| {
@@ -146,19 +199,23 @@ impl<V: signature::Verifier> VotingPowerCalculator for ProvidedVotingPowerCalcul
             .map(|vote| (signature, vote))
         });
 
-        for (signature, vote) in non_absent_votes {
-            // Ensure we only count a validator's power once
-            if seen_validators.contains(&vote.validator_address) {
-                return Err(VerificationError::duplicate_validator(
-                    vote.validator_address,
-                ));
-            } else {
-                seen_validators.insert(vote.validator_address);
-            }
+        // Create index of validators sorted by address.
+        let mut validators = ValidatorMap::new(validator_set.validators());
 
-            let validator = match validator_set.validator(vote.validator_address) {
-                Some(validator) => validator,
-                None => continue, // Cannot find matching validator, so we skip the vote
+        for (signature, vote) in non_absent_votes {
+            // Find the validator by address.
+            let validator = match validators.find(&vote.validator_address) {
+                Ok(validator) => validator,
+                Err(LookupError::NotFound) => {
+                    // Cannot find matching validator, so we skip the vote
+                    continue;
+                },
+                Err(LookupError::AlreadySeen) => {
+                    // Ensure we only count a validator's power once
+                    return Err(VerificationError::duplicate_validator(
+                        vote.validator_address,
+                    ));
+                },
             };
 
             let signed_vote =
@@ -173,7 +230,7 @@ impl<V: signature::Verifier> VotingPowerCalculator for ProvidedVotingPowerCalcul
             {
                 return Err(VerificationError::invalid_signature(
                     signed_vote.signature().as_bytes().to_vec(),
-                    Box::new(validator),
+                    Box::new(validator.clone()),
                     sign_bytes,
                 ));
             }
