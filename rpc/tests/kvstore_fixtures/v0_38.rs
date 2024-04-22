@@ -503,21 +503,41 @@ fn incoming_fixtures() {
                 assert!(result.tx_result.data.is_empty());
                 assert_eq!(result.tx_result.events.len(), 2);
                 assert_eq!(result.tx_result.events[0].attributes.len(), 4);
-                assert_eq!(result.tx_result.events[0].attributes[0].key, "creator");
                 assert_eq!(
-                    result.tx_result.events[0].attributes[0].value,
+                    result.tx_result.events[0].attributes[0].key_bytes(),
+                    b"creator"
+                );
+                assert_eq!(
+                    result.tx_result.events[0].attributes[0]
+                        .value_str()
+                        .unwrap(),
                     "Cosmoshi Netowoko"
                 );
-                assert_eq!(result.tx_result.events[0].attributes[1].key, "key");
-                assert_eq!(result.tx_result.events[0].attributes[1].value, "commit-key");
-                assert_eq!(result.tx_result.events[0].attributes[2].key, "index_key");
+                assert_eq!(result.tx_result.events[0].attributes[1].key_bytes(), b"key");
                 assert_eq!(
-                    result.tx_result.events[0].attributes[2].value,
+                    result.tx_result.events[0].attributes[1]
+                        .value_str()
+                        .unwrap(),
+                    "commit-key"
+                );
+                assert_eq!(
+                    result.tx_result.events[0].attributes[2].key_bytes(),
+                    b"index_key"
+                );
+                assert_eq!(
+                    result.tx_result.events[0].attributes[2]
+                        .value_str()
+                        .unwrap(),
                     "index is working"
                 );
-                assert_eq!(result.tx_result.events[0].attributes[3].key, "noindex_key");
                 assert_eq!(
-                    result.tx_result.events[0].attributes[3].value,
+                    result.tx_result.events[0].attributes[3].key_bytes(),
+                    b"noindex_key"
+                );
+                assert_eq!(
+                    result.tx_result.events[0].attributes[3]
+                        .value_str()
+                        .unwrap(),
                     "index is working"
                 );
                 assert_eq!(result.tx_result.events[0].kind, "app");
@@ -1101,18 +1121,18 @@ fn incoming_fixtures() {
                     assert_eq!(tx_result.result.events.len(), 2);
                     assert_eq!(tx_result.result.events[0].kind, "app");
                     for attr in &tx_result.result.events[0].attributes {
-                        match attr.key.as_str() {
+                        match attr.key_str().unwrap() {
                             "creator" => {
-                                assert_eq!(attr.value, "Cosmoshi Netowoko")
+                                assert_eq!(attr.value_str().unwrap(), "Cosmoshi Netowoko")
                             },
-                            "key" => assert_eq!(attr.value, "tx0"),
+                            "key" => assert_eq!(attr.value_str().unwrap(), "tx0"),
                             "index_key" => {
-                                assert_eq!(attr.value, "index is working")
+                                assert_eq!(attr.value_str().unwrap(), "index is working")
                             },
                             "noindex_key" => {
-                                assert_eq!(attr.value, "index is working")
+                                assert_eq!(attr.value_str().unwrap(), "index is working")
                             },
-                            _ => panic!("unknown attribute found {}", attr.key),
+                            other => panic!("unknown attribute found {other}"),
                         }
                     }
                     assert_eq!(tx_result.tx, base64::decode("dHgwPXZhbHVl").unwrap());
@@ -1133,18 +1153,18 @@ fn incoming_fixtures() {
                     assert_eq!(tx_result.result.events.len(), 2);
                     assert_eq!(tx_result.result.events[0].kind, "app");
                     for attr in &tx_result.result.events[0].attributes {
-                        match attr.key.as_str() {
+                        match attr.key_str().unwrap() {
                             "creator" => {
-                                assert_eq!(attr.value, "Cosmoshi Netowoko")
+                                assert_eq!(attr.value_str().unwrap(), "Cosmoshi Netowoko")
                             },
-                            "key" => assert_eq!(attr.value, "tx1"),
+                            "key" => assert_eq!(attr.value_str().unwrap(), "tx1"),
                             "index_key" => {
-                                assert_eq!(attr.value, "index is working")
+                                assert_eq!(attr.value_str().unwrap(), "index is working")
                             },
                             "noindex_key" => {
-                                assert_eq!(attr.value, "index is working")
+                                assert_eq!(attr.value_str().unwrap(), "index is working")
                             },
-                            _ => panic!("unknown attribute found {}", attr.key),
+                            other => panic!("unknown attribute found {other}"),
                         }
                     }
                     assert_eq!(tx_result.tx, base64::decode("dHgxPXZhbHVl").unwrap());
@@ -1166,18 +1186,18 @@ fn incoming_fixtures() {
                     assert_eq!(tx_result.result.events.len(), 2);
                     assert_eq!(tx_result.result.events[0].kind, "app");
                     for attr in &tx_result.result.events[0].attributes {
-                        match attr.key.as_str() {
+                        match attr.key_str().unwrap() {
                             "creator" => {
-                                assert_eq!(attr.value, "Cosmoshi Netowoko")
+                                assert_eq!(attr.value_str().unwrap(), "Cosmoshi Netowoko")
                             },
-                            "key" => assert_eq!(attr.value, "tx2"),
+                            "key" => assert_eq!(attr.value_str().unwrap(), "tx2"),
                             "index_key" => {
-                                assert_eq!(attr.value, "index is working")
+                                assert_eq!(attr.value_str().unwrap(), "index is working")
                             },
                             "noindex_key" => {
-                                assert_eq!(attr.value, "index is working")
+                                assert_eq!(attr.value_str().unwrap(), "index is working")
                             },
-                            _ => panic!("unknown attribute found {}", attr.key),
+                            other => panic!("unknown attribute found {other}"),
                         }
                     }
                     assert_eq!(tx_result.tx, base64::decode("dHgyPXZhbHVl").unwrap());
@@ -1198,18 +1218,18 @@ fn incoming_fixtures() {
                     assert_eq!(tx_result.result.events.len(), 2);
                     assert_eq!(tx_result.result.events[0].kind, "app");
                     for attr in &tx_result.result.events[0].attributes {
-                        match attr.key.as_str() {
+                        match attr.key_str().unwrap() {
                             "creator" => {
-                                assert_eq!(attr.value, "Cosmoshi Netowoko")
+                                assert_eq!(attr.value_str().unwrap(), "Cosmoshi Netowoko")
                             },
-                            "key" => assert_eq!(attr.value, "tx3"),
+                            "key" => assert_eq!(attr.value_str().unwrap(), "tx3"),
                             "index_key" => {
-                                assert_eq!(attr.value, "index is working")
+                                assert_eq!(attr.value_str().unwrap(), "index is working")
                             },
                             "noindex_key" => {
-                                assert_eq!(attr.value, "index is working")
+                                assert_eq!(attr.value_str().unwrap(), "index is working")
                             },
-                            _ => panic!("unknown attribute found {}", attr.key),
+                            other => panic!("unknown attribute found {other}"),
                         }
                     }
                     assert_eq!(tx_result.tx, base64::decode("dHgzPXZhbHVl").unwrap());
@@ -1230,18 +1250,18 @@ fn incoming_fixtures() {
                     assert_eq!(tx_result.result.events.len(), 2);
                     assert_eq!(tx_result.result.events[0].kind, "app");
                     for attr in &tx_result.result.events[0].attributes {
-                        match attr.key.as_str() {
+                        match attr.key_str().unwrap() {
                             "creator" => {
-                                assert_eq!(attr.value, "Cosmoshi Netowoko")
+                                assert_eq!(attr.value_str().unwrap(), "Cosmoshi Netowoko")
                             },
-                            "key" => assert_eq!(attr.value, "tx4"),
+                            "key" => assert_eq!(attr.value_str().unwrap(), "tx4"),
                             "index_key" => {
-                                assert_eq!(attr.value, "index is working")
+                                assert_eq!(attr.value_str().unwrap(), "index is working")
                             },
                             "noindex_key" => {
-                                assert_eq!(attr.value, "index is working")
+                                assert_eq!(attr.value_str().unwrap(), "index is working")
                             },
-                            _ => panic!("unknown attribute found {}", attr.key),
+                            other => panic!("unknown attribute found {other}"),
                         }
                     }
                     assert_eq!(tx_result.tx, base64::decode("dHg0PXZhbHVl").unwrap());

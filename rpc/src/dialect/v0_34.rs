@@ -44,15 +44,17 @@ pub struct EventAttribute {
     /// The event key.
     #[serde(
         serialize_with = "base64string::serialize",
-        deserialize_with = "base64string::deserialize_to_string"
+        deserialize_with = "base64string::deserialize"
     )]
-    pub key: String,
+    pub key: Vec<u8>,
+
     /// The event value.
     #[serde(
         serialize_with = "base64string::serialize",
-        deserialize_with = "base64string::deserialize_to_string"
+        deserialize_with = "base64string::deserialize"
     )]
-    pub value: String,
+    pub value: Vec<u8>,
+
     /// Whether Tendermint's indexer should index this event.
     ///
     /// **This field is nondeterministic**.
@@ -61,20 +63,20 @@ pub struct EventAttribute {
 
 impl From<EventAttribute> for abci::EventAttribute {
     fn from(msg: EventAttribute) -> Self {
-        Self {
+        Self::V034(abci::v0_34::EventAttribute {
             key: msg.key,
             value: msg.value,
             index: msg.index,
-        }
+        })
     }
 }
 
 impl From<abci::EventAttribute> for EventAttribute {
     fn from(msg: abci::EventAttribute) -> Self {
         Self {
-            key: msg.key,
-            value: msg.value,
-            index: msg.index,
+            key: msg.key_bytes().to_vec(),
+            value: msg.value_bytes().to_vec(),
+            index: msg.index(),
         }
     }
 }
