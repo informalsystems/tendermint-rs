@@ -590,15 +590,15 @@ mod tests {
             let a = event
                 .attributes
                 .iter()
-                .find(|attr| attr.key == "a")
+                .find(|attr| attr.key_bytes() == b"a")
                 .ok_or(())
-                .and_then(|attr| serde_json::from_str(&attr.value).map_err(|_| ()))?;
+                .and_then(|attr| serde_json::from_slice(attr.value_bytes()).map_err(|_| ()))?;
             let b = event
                 .attributes
                 .iter()
-                .find(|attr| attr.key == "b")
+                .find(|attr| attr.key_bytes() == b"b")
                 .ok_or(())
-                .and_then(|attr| serde_json::from_str(&attr.value).map_err(|_| ()))?;
+                .and_then(|attr| serde_json::from_slice(attr.value_bytes()).map_err(|_| ()))?;
 
             Ok(MyEvent { a, b })
         }
