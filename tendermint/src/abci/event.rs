@@ -587,7 +587,6 @@ mod tests {
                 return Err(());
             }
 
-
             let a = event
                 .attributes
                 .iter()
