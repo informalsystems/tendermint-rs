@@ -274,14 +274,14 @@ struct NonAbsentCommitVotes {
 impl NonAbsentCommitVotes {
     /// Initial capacity of the `sign_bytes` buffer.
     ///
-    /// The buffer will be resized if happens to be too small so this isn’t
-    /// critical for correctness.  It’s a matter of performance to have a buffer
-    /// which will fit without the need to resize.
+    /// The buffer will be resized if it happens to be too small so this value
+    /// isn’t critical for correctness.  It’s a matter of performance to avoid
+    /// reallocations.
     ///
     /// Note: As of protocol 0.38, maximum length of the sign bytes is `115 + (N
     /// > 13) + N` where `N` is the length of the chain id.  Chain id can be at
     /// most 50 bytes (see [`tendermint::chain::id::MAX_LEN`]) thus the largest
-    /// buffer we’ll ever need is 166 bytes.
+    /// buffer we’ll ever need is 166 bytes long.
     const SIGN_BYTES_INITIAL_CAPACITY: usize = 166;
 
     pub fn new(signed_header: &SignedHeader) -> Result<Self, VerificationError> {
@@ -314,8 +314,6 @@ impl NonAbsentCommitVotes {
                 pair[0].validator_id(),
             ))
         } else {
-            // As of protocol 0.38, 160 buffer is enough for chain identifier up
-            // to 44 bytes.
             Ok(Self {
                 votes,
                 sign_bytes: Vec::with_capacity(Self::SIGN_BYTES_INITIAL_CAPACITY),
