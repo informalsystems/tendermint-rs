@@ -264,9 +264,26 @@ impl NonAbsentCommitVote {
 struct NonAbsentCommitVotes {
     /// Votes sorted by validator address.
     votes: Vec<NonAbsentCommitVote>,
+    /// Internal buffer for storing sign_bytes.
+    ///
+    /// The buffer is reused for each canonical vote so that we allocate it
+    /// once.
+    sign_bytes: Vec<u8>,
 }
 
 impl NonAbsentCommitVotes {
+    /// Initial capacity of the `sign_bytes` buffer.
+    ///
+    /// The buffer will be resized if it happens to be too small so this value
+    /// isn’t critical for correctness.  It’s a matter of performance to avoid
+    /// reallocations.
+    ///
+    /// Note: As of protocol 0.38, maximum length of the sign bytes is `115 + (N
+    /// > 13) + N` where `N` is the length of the chain id.  Chain id can be at
+    /// most 50 bytes (see [`tendermint::chain::id::MAX_LEN`]) thus the largest
+    /// buffer we’ll ever need is 166 bytes long.
+    const SIGN_BYTES_INITIAL_CAPACITY: usize = 166;
+
     pub fn new(signed_header: &SignedHeader) -> Result<Self, VerificationError> {
         let mut votes = signed_header
             .commit
@@ -297,7 +314,10 @@ impl NonAbsentCommitVotes {
                 pair[0].validator_id(),
             ))
         } else {
-            Ok(Self { votes })
+            Ok(Self {
+                votes,
+                sign_bytes: Vec::with_capacity(Self::SIGN_BYTES_INITIAL_CAPACITY),
+            })
         }
     }
 
@@ -319,14 +339,18 @@ impl NonAbsentCommitVotes {
         };
 
         if !vote.verified {
-            let sign_bytes = vote.signed_vote.sign_bytes();
+            self.sign_bytes.truncate(0);
+            vote.signed_vote
+                .sign_bytes_into(&mut self.sign_bytes)
+                .expect("buffer is resized if needed and encoding never fails");
+            let sign_bytes = self.sign_bytes.as_slice();
             validator
-                .verify_signature::<V>(&sign_bytes, vote.signed_vote.signature())
+                .verify_signature::<V>(sign_bytes, vote.signed_vote.signature())
                 .map_err(|_| {
                     VerificationError::invalid_signature(
                         vote.signed_vote.signature().as_bytes().to_vec(),
                         Box::new(validator.clone()),
-                        sign_bytes,
+                        sign_bytes.to_vec(),
                     )
                 })?;
         }

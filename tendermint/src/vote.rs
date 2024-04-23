@@ -329,6 +329,10 @@ impl SignedVote {
         Protobuf::<RawCanonicalVote>::encode_length_delimited_vec(self.vote.clone())
     }
 
+    pub fn sign_bytes_into(&self, buf: &mut impl BufMut) -> Result<(), ProtobufError> {
+        Protobuf::<RawCanonicalVote>::encode_length_delimited(self.vote.clone(), buf)
+    }
+
     /// Return the actual signature on the canonicalized vote.
     pub fn signature(&self) -> &Signature {
         &self.signature
