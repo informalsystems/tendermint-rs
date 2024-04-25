@@ -1,5 +1,63 @@
 # CHANGELOG
 
+## v0.36.0
+
+This release brings substantial performance improvements to the voting power computation within the light client, improves the handling of misformed blocks (eg. with empty `last_commit` on non-first block) when decoding them from Protobuf or RPC responses, and adds missing `serde` derives on some Protobuf definitions.
+
+This release also technically contains a breaking change in `tendermint-proto`, but this should not impact normal use of the library, as the `ToPrimitive` impl that was removed on `BlockIdFlag` trait did not provide any additional functionality.
+
+### BREAKING CHANGES
+
+- `[tendermint-proto]` Remove redundant impl of `num_traits::ToPrimitive` for `BlockIDFlag`
+  ([\#1389](https://github.com/informalsystems/tendermint-rs/pull/1389))
+- `[tendermint]` Change `EventAttribute`'s `key` and `value` fields from `String` to `Vec<u8>` for Tendermint v0.34, as enforced by the Protobuf schema for Tendermint v0.34.
+  `tendermint::abci::EventAttribute` is now an enum, to account for version 0.34 and 0.37+, therefore the `key`, `value` and `index` fields now have to be retrieved through the `key_str()`/`key_bytes`, `value_str()`/`value_bytes()` and `index()` methods.
+  ([\#1400](https://github.com/informalsystems/tendermint-rs/issues/1400)).
+- `[light-client-verifier]` Rework VerificationPredicates and VotingPowerCalculator
+  by introducing methods which check validators and signers overlap at once.
+  The motivation of this is to avoid checking the same signature multiple
+  times.
+
+  Consider a validator is in old and new set.  Previously their signature would
+  be verified twice.  Once by call to `has_sufficient_validators_overlap`
+  method and second time by call to `has_sufficient_signers_overlap` method.
+
+  With the new interface, `has_sufficient_validators_and_signers_overlap` is
+  called and it can be implemented to remember which signatures have been
+  verified.
+
+  As a side effect of those changes, signatures are now verified in the order
+  of validator’s power which may further reduce number of signatures which
+  need to be verified.
+
+  ([\#1410](https://github.com/informalsystems/tendermint-rs/pull/1410))
+
+### FEATURES
+
+- `[tendermint-proto]` Add missing `serde` derives on Protobuf definitions
+  ([\#1389](https://github.com/informalsystems/tendermint-rs/pull/1389))
+- `[tendermint]` Add the following impls for `ed25519-consensus`:
+  * `From<ed25519_consensus::SigningKey` for `tendermint::PrivateKey`
+  * `From<ed25519_consensus::SigningKey>` for `tendermint::SigningKey`
+  * `From<ed25519_consensus::VerificationKey>` for `tendermint::PublicKey`
+  * `From<ed25519_consensus::VerificationKey>` for `tendermint::VerificationKey`
+  ([\#1401](https://github.com/informalsystems/tendermint-rs/pull/1401))
+
+### IMPROVEMENTS
+
+- `[tendermint]` Allow misformed blocks (eg. with empty `last_commit`
+  on non-first block) when decoding them from Protobuf or RPC responses
+  ([\#1403](https://github.com/informalsystems/tendermint-rs/issues/1403))
+- `[tendermint]` Check `index ≤ i32::MAX` invariant when converting `usize`
+  into `ValidatorIndex`.
+  ([\#1411](https://github.com/informalsystems/tendermint-rs/issues/1411))
+- `[light-client-verifier]` Optimise validators lookup in
+  `ProvidedVotingPowerCalculator::voting_power_in` method.
+  ([\#1407](https://github.com/informalsystems/tendermint-rs/pull/1407))
+- `[tendermint-light-client-verifier]` Reuse buffer used to store
+  sign_bytes to reduce number of allocations and deallocations.
+  ([\#1413](https://github.com/informalsystems/tendermint-rs/pull/1413))
+
 ## v0.35.0
 
 This release brings breaking changes related to `flex-error`,
