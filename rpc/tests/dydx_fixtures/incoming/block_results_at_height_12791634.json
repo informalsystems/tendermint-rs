@@ -54,16 +54,6 @@
       }
     ],
     "validator_updates": [
-      {
-        "pub_key": {
-          "Sum": {
-            "type": "tendermint.crypto.PublicKey_Secp256K1",
-            "value": {
-              "secp256k1": "CgZzZW5kZXISK2R5ZHgxbHR5YzZ5NHNrY2x6YWZ2cHpucHQycWp3bWZ3Z3NuZHA0NThybXAYAQ=="
-            }
-          }
-        }
-      }
     ],
     "consensus_param_updates": null,
     "app_hash": null
