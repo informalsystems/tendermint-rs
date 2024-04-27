@@ -88,6 +88,7 @@ tracing = { version = "0.1", optional = true, default-features = false }
 tracing-subscriber = { version = "0.3", optional = true, default-features = false, features = ["fmt"] }
 
 [dev-dependencies]
+tendermint = { version = "0.36.0", default-features = false, path = "../tendermint", features = ["secp256k1"] }
 http = { version = "1", default-features = false, features = ["std"] }
 lazy_static = { version = "1.4.0", default-features = false }
 tokio-test = { version = "0.4", default-features = false }
