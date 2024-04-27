@@ -34,10 +34,11 @@ fn incoming_fixtures() {
             .unwrap();
         let content = fs::read_to_string(&json_file).unwrap();
         match file_name {
-            // NOTE: for the purpose of the test I emptied `validator_updates` which has another
-            // unrelated issue deserializing the Secp256K1 public key
+            // NOTE: for the purpose of the test I manually emptied `validator_updates` from the
+            // block_results, which has another unrelated issue deserializing the Secp256K1 public
+            // key
             "block_results_at_height_12791634" => {
-                let r = endpoint::block_results::v0_34::DialectResponse::from_string(content);
+                let r = endpoint::block_results::Response::from_string(content);
                 assert!(r.is_ok(), "block_results_at_height_12791634: {r:?}");
             },
             _ => {
