@@ -62,6 +62,7 @@ pub struct Builder {
     compat: CompatMode,
     proxy_url: Option<HttpClientUrl>,
     timeout: Duration,
+    client: Option<reqwest::Client>,
 }
 
 impl Builder {
@@ -93,22 +94,35 @@ impl Builder {
         self
     }
 
+    /// Use the provided client instead of building one internally.
+    pub fn client(mut self, client: reqwest::Client) -> Self {
+        self.client = Some(client);
+        self
+    }
+
     /// Try to create a client with the options specified for this builder.
     pub fn build(self) -> Result<HttpClient, Error> {
-        let builder = reqwest::ClientBuilder::new()
-            .user_agent(USER_AGENT)
-            .timeout(self.timeout);
-        let inner = match self.proxy_url {
-            None => builder.build().map_err(Error::http)?,
-            Some(proxy_url) => {
-                let proxy = if self.url.0.is_secure() {
-                    Proxy::https(reqwest::Url::from(proxy_url.0)).map_err(Error::invalid_proxy)?
-                } else {
-                    Proxy::http(reqwest::Url::from(proxy_url.0)).map_err(Error::invalid_proxy)?
-                };
-                builder.proxy(proxy).build().map_err(Error::http)?
-            },
+        let inner = if let Some(inner) = self.client {
+            inner
+        } else {
+            let builder = reqwest::ClientBuilder::new()
+                .user_agent(USER_AGENT)
+                .timeout(self.timeout);
+            match self.proxy_url {
+                None => builder.build().map_err(Error::http)?,
+                Some(proxy_url) => {
+                    let proxy = if self.url.0.is_secure() {
+                        Proxy::https(reqwest::Url::from(proxy_url.0))
+                            .map_err(Error::invalid_proxy)?
+                    } else {
+                        Proxy::http(reqwest::Url::from(proxy_url.0))
+                            .map_err(Error::invalid_proxy)?
+                    };
+                    builder.proxy(proxy).build().map_err(Error::http)?
+                },
+            }
         };
+
         Ok(HttpClient {
             inner,
             url: self.url.into(),
@@ -118,6 +132,13 @@ impl Builder {
 }
 
 impl HttpClient {
+    /// Construct a new Tendermint RPC HTTP/S client connecting to the given
+    /// URL. This avoids using the `Builder` and thus does not perform any
+    /// validation of the configuration.
+    pub fn new_from_parts(inner: reqwest::Client, url: reqwest::Url, compat: CompatMode) -> Self {
+        Self { inner, url, compat }
+    }
+
     /// Construct a new Tendermint RPC HTTP/S client connecting to the given
     /// URL.
     pub fn new<U>(url: U) -> Result<Self, Error>
@@ -153,6 +174,7 @@ impl HttpClient {
             compat: Default::default(),
             proxy_url: None,
             timeout: Duration::from_secs(30),
+            client: None,
         }
     }
 
