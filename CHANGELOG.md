@@ -1,12 +1,5 @@
 # CHANGELOG
 
-## v0.37.0
-
-### IMPROVEMENTS
-
-- `[tendermint-proto]` upgrades its tonic dependency to tonic@0.11.
-  ([\#1422](https://github.com/informalsystems/tendermint-rs/pull/1422))
-
 ## v0.36.0
 
 This release brings substantial performance improvements to the voting power computation within the light client, improves the handling of misformed blocks (eg. with empty `last_commit` on non-first block) when decoding them from Protobuf or RPC responses, and adds missing `serde` derives on some Protobuf definitions.
