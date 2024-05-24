@@ -61,6 +61,7 @@ pub struct Builder {
     url: HttpClientUrl,
     compat: CompatMode,
     proxy_url: Option<HttpClientUrl>,
+    user_agent : Option<String>,
     timeout: Duration,
 }
 
@@ -93,10 +94,16 @@ impl Builder {
         self
     }
 
+    /// Specify the custom User-Agent header the client.
+    pub fn user_agent(mut self, agent: String) -> Self {
+        self.user_agent = Some(agent);
+        self
+    }
+
     /// Try to create a client with the options specified for this builder.
     pub fn build(self) -> Result<HttpClient, Error> {
         let builder = reqwest::ClientBuilder::new()
-            .user_agent(USER_AGENT)
+            .user_agent(self.user_agent.unwrap_or(USER_AGENT.to_string()))
             .timeout(self.timeout);
         let inner = match self.proxy_url {
             None => builder.build().map_err(Error::http)?,
@@ -152,6 +159,7 @@ impl HttpClient {
             url,
             compat: Default::default(),
             proxy_url: None,
+            user_agent: None,
             timeout: Duration::from_secs(30),
         }
     }
