@@ -61,7 +61,7 @@ pub struct Builder {
     url: HttpClientUrl,
     compat: CompatMode,
     proxy_url: Option<HttpClientUrl>,
-    user_agent : Option<String>,
+    user_agent: Option<String>,
     timeout: Duration,
 }
 
