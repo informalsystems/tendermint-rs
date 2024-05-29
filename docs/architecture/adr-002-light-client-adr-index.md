@@ -30,7 +30,7 @@ the core verification library to verify this data, and updates its state accordi
 It also makes requests to other full nodes to detect and report on forks.
 
 That said, as much as possible, we would like the implementation here to be
-re-usable for the IBC protocol, which supports communiction between blockchains. 
+reusable for the IBC protocol, which supports communiction between blockchains. 
 In this case, instead of making RPC requests, IBC-enabled blockchains receive the relevant data in transactions and
 verify it using the same core verification library. Thus implementations should
 abstract over the source of data as necessary.
