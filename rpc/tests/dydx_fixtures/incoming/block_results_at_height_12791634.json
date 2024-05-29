@@ -1,0 +1,61 @@
+{
+  "jsonrpc": "2.0",
+  "id": -1,
+  "result": {
+    "height": "12791634",
+    "txs_results": [
+      {
+        "code": 0,
+        "data": "ChAIgICAAhD///////////8BEg4IoI0GEgQIgMYKGICAQBoJCgdlZDI1NTE5IgA=",
+        "log": "",
+        "info": "",
+        "gas_wanted": "0",
+        "gas_used": "0",
+        "events": [],
+        "codespace": ""
+      }
+    ],
+    "finalize_block_events": [
+      {
+        "attributes": [
+          {
+            "key": "",
+            "value": "\n0/dydxprotocol.clob.MsgProposedOperationsResponse",
+            "index": false
+          }
+        ]
+      },
+      {
+        "attributes": [
+          {
+            "key": "",
+            "value": "\n2/dydxprotocol.bridge.MsgAcknowledgeBridgesResponse",
+            "index": false
+          }
+        ]
+      },
+      {
+        "attributes": [
+          {
+            "key": "",
+            "value": "\n3/dydxprotocol.perpetuals.MsgAddPremiumVotesResponse",
+            "index": false
+          }
+        ]
+      },
+      {
+        "attributes": [
+          {
+            "key": "",
+            "value": "\n2/dydxprotocol.prices.MsgUpdateMarketPricesResponse",
+            "index": false
+          }
+        ]
+      }
+    ],
+    "validator_updates": [
+    ],
+    "consensus_param_updates": null,
+    "app_hash": null
+  }
+}

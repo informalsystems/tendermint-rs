@@ -18,7 +18,7 @@ pub struct Event {
     ///
     /// Tendermint calls this the `type`, but we use `kind` to avoid confusion
     /// with Rust types and follow Rust conventions.
-    #[serde(rename = "type")]
+    #[serde(rename = "type", default)]
     pub kind: String,
 
     /// A list of [`EventAttribute`]s describing the event.
