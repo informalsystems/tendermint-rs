@@ -1,4 +1,4 @@
-//! SignedHeader contains commit and and block header.
+//! SignedHeader contains commit and block header.
 //! It is what the rpc endpoint /commit returns and hence can be used by a
 //! light client.
 

@@ -288,7 +288,7 @@ mod tests {
             ]
         ) {
             // ser/de of rfc3339 timestamps is safe if it never panics.
-            // This differs from the the inverse test in that we are testing on
+            // This differs from the inverse test in that we are testing on
             // arbitrarily generated textual timestamps, rather than times in a
             // range. Tho we do incidentally test the inversion as well.
             let time: Time = stamp.parse().unwrap();
