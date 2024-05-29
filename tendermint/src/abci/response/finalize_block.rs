@@ -16,6 +16,7 @@ pub struct FinalizeBlock {
     pub tx_results: Vec<ExecTxResult>,
     /// A list of updates to the validator set.
     /// These will reflect the validator set at current height + 2.
+    #[serde(with = "serializers::nullable")]
     pub validator_updates: Vec<validator::Update>,
     /// Updates to the consensus params, if any.
     #[serde(default)]
