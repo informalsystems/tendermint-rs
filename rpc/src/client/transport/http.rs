@@ -61,6 +61,7 @@ pub struct Builder {
     url: HttpClientUrl,
     compat: CompatMode,
     proxy_url: Option<HttpClientUrl>,
+    user_agent: Option<String>,
     timeout: Duration,
     client: Option<reqwest::Client>,
 }
@@ -94,7 +95,17 @@ impl Builder {
         self
     }
 
+    /// Specify the custom User-Agent header used by the client.
+    pub fn user_agent(mut self, agent: String) -> Self {
+        self.user_agent = Some(agent);
+        self
+    }
+
     /// Use the provided client instead of building one internally.
+    ///
+    /// ## Warning
+    /// This will override the following options set on the builder:
+    /// `timeout`, `user_agent`, and `proxy_url`.
     pub fn client(mut self, client: reqwest::Client) -> Self {
         self.client = Some(client);
         self
@@ -106,8 +117,9 @@ impl Builder {
             inner
         } else {
             let builder = reqwest::ClientBuilder::new()
-                .user_agent(USER_AGENT)
+                .user_agent(self.user_agent.unwrap_or_else(|| USER_AGENT.to_string()))
                 .timeout(self.timeout);
+
             match self.proxy_url {
                 None => builder.build().map_err(Error::http)?,
                 Some(proxy_url) => {
@@ -173,6 +185,7 @@ impl HttpClient {
             url,
             compat: Default::default(),
             proxy_url: None,
+            user_agent: None,
             timeout: Duration::from_secs(30),
             client: None,
         }

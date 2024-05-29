@@ -209,10 +209,24 @@ where
         Verdict::Success
     }
 
+    /// Verify that more than 2/3 of the validators correctly committed the block.
+    ///
+    /// Use [`PredicateVerifier::verify_commit_against_trusted()`] to also verify that there is
+    /// enough overlap between validator sets.
+    pub fn verify_commit(&self, untrusted: &UntrustedBlockState<'_>) -> Verdict {
+        verdict!(self.predicates.has_sufficient_signers_overlap(
+            untrusted.signed_header,
+            untrusted.validators,
+            &self.voting_power_calculator,
+        ));
+
+        Verdict::Success
+    }
+
     /// Verify that a) there is enough overlap between the validator sets of the
     /// trusted and untrusted blocks and b) more than 2/3 of the validators
     /// correctly committed the block.
-    pub fn verify_commit(
+    pub fn verify_commit_against_trusted(
         &self,
         untrusted: &UntrustedBlockState<'_>,
         trusted: &TrustedBlockState<'_>,
@@ -288,7 +302,7 @@ where
         ensure_verdict_success!(self.verify_validator_sets(&untrusted));
         ensure_verdict_success!(self.validate_against_trusted(&untrusted, &trusted, options, now));
         ensure_verdict_success!(self.check_header_is_from_past(&untrusted, options, now));
-        ensure_verdict_success!(self.verify_commit(&untrusted, &trusted, options));
+        ensure_verdict_success!(self.verify_commit_against_trusted(&untrusted, &trusted, options));
 
         Verdict::Success
     }
@@ -305,7 +319,7 @@ where
     ) -> Verdict {
         ensure_verdict_success!(self.verify_validator_sets(&untrusted));
         ensure_verdict_success!(self.validate_against_trusted(&untrusted, &trusted, options, now));
-        ensure_verdict_success!(self.verify_commit(&untrusted, &trusted, options));
+        ensure_verdict_success!(self.verify_commit_against_trusted(&untrusted, &trusted, options));
         Verdict::Success
     }
 }

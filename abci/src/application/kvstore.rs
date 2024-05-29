@@ -293,7 +293,7 @@ enum Command {
         key: String,
         result_tx: Sender<(i64, Option<String>)>,
     },
-    /// Set the value of `key` to to `value`.
+    /// Set the value of `key` to `value`.
     Set {
         key: String,
         value: String,

@@ -30,7 +30,7 @@ serde_bytes = { version = "0.11", default-features = false, features = ["alloc"]
 subtle-encoding = { version = "0.5", default-features = false, features = ["hex", "base64", "alloc"] }
 time = { version = "0.3", default-features = false, features = ["macros", "parsing"] }
 flex-error = { version = "0.4.4", default-features = false }
-tonic = { version = "0.10", optional = true }
+tonic = { version = "0.11", optional = true }
 
 [dev-dependencies]
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
