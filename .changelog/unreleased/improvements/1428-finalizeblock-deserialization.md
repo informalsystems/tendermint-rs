@@ -1,0 +1,1 @@
+- `[tendermint]` Fix `FinalizeBlock::validator_updates` deserialization as `nullable` ([\#1428](https://github.com/informalsystems/tendermint-rs/pull/1428))
