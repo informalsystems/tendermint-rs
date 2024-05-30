@@ -1,6 +1,37 @@
 # CHANGELOG
 
+## v0.37.0
+
+*May 30th, 2024*
+
+This release restores the commit verification interfaces of `PredicateVerifier` from tendermint-rs `0.35.0` and lower, but retains the performance improvements made in version `0.36.0`.
+
+This version also brings a few new feature to the HTTP RPC client, notably a way to specify the User-Agent to send along HTTP requests, as well as a way to override the underlying `reqwest` client.
+
+Additionally, this release also fixes a couple issues with the `serde`-based deserialization of the `FinalizeBlock` and `Event` types.
+
+### BREAKING CHANGES
+
+- `[tendermint-proto]` Upgrade `tonic` to v0.11 ([\#1422](https://github.com/informalsystems/tendermint-rs/pull/1422))
+- `[tendermint-light-client-verifier]` Restores the commit verification interfaces of `PredicateVerifier<P, C, V>` from `<= 0.35.0` ([\#1423](https://github.com/informalsystems/tendermint-rs/pull/1423))
+  * `verify_commit(&self. untrusted: &UntrustedBlockState<'_>)` is restored, as in <= 0.35.0.
+  * `verify_commit(&self, untrusted: &UntrustedBlockState<'_>, trusted: &TrustedBlockState<'_>,)` introduced in 0.36.0 is renamed to `verify_commit_against_trusted`.
+  The performance improvements made in the `0.36.0` release are still intact.
+
+### FEATURES
+
+* `[tendermint-rpc]` Add a way to specify custom User-Agent for `HttpClient` ([#1425](https://github.com/informalsystems/tendermint-rs/issues/1425))
+- `[tendermint-rpc]` Add a `client()` method on `transport::http::Builder` to override the underlying `reqwest` client ([\#1421](https://github.com/informalsystems/tendermint-rs/pull/1421))
+- `[tendermint-rpc]` Add a `from_raw_parts()` method on `transport::http::HttpClient` to allow supplying the underlying `reqwest` client ([\#1421](https://github.com/informalsystems/tendermint-rs/pull/1421))
+
+### BUG FIXES
+
+- `[tendermint]` Fix `FinalizeBlock::validator_updates` deserialization as `nullable` ([\#1428](https://github.com/informalsystems/tendermint-rs/pull/1428))
+- `[tendermint-abci]` Add serde `default` annotation for `Event::type` to match `omitempty` in the Go implementation ([\#1416](https://github.com/informalsystems/tendermint-rs/pull/1416))
+
 ## v0.36.0
+
+*April 25th, 2024*
 
 This release brings substantial performance improvements to the voting power computation within the light client, improves the handling of misformed blocks (eg. with empty `last_commit` on non-first block) when decoding them from Protobuf or RPC responses, and adds missing `serde` derives on some Protobuf definitions.
 
