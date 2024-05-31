@@ -1,12 +1,18 @@
 //! Event routing for subscriptions.
 
+use core::str::FromStr;
+
 use alloc::collections::{BTreeMap as HashMap, BTreeSet as HashSet};
 
 use tracing::debug;
 
-use crate::{client::subscription::SubscriptionTx, error::Error, event::Event, prelude::*};
+use crate::client::subscription::SubscriptionTx;
+use crate::error::Error;
+use crate::event::Event;
+use crate::prelude::*;
+use crate::query::Query;
 
-pub type SubscriptionQuery = String;
+pub type SubscriptionQuery = Query;
 pub type SubscriptionId = String;
 
 #[cfg_attr(not(feature = "websocket"), allow(dead_code))]
@@ -53,7 +59,17 @@ impl SubscriptionRouter {
     /// event is relevant, based on the associated query.
     #[cfg_attr(not(feature = "websocket"), allow(dead_code))]
     pub fn publish_event(&mut self, ev: Event) -> PublishResult {
-        self.publish(ev.query.clone(), Ok(ev))
+        let query = match Query::from_str(&ev.query) {
+            Ok(query) => query,
+            Err(e) => {
+                return PublishResult::Error(format!(
+                    "Failed to parse query from event: {:?}, reason: {e}",
+                    ev.query
+                ));
+            },
+        };
+
+        self.publish(query, Ok(ev))
     }
 
     /// Publishes the given event/error to all of the subscriptions to which the
@@ -91,23 +107,15 @@ impl SubscriptionRouter {
 
     /// Immediately add a new subscription to the router without waiting for
     /// confirmation.
-    pub fn add(&mut self, id: impl ToString, query: impl ToString, tx: SubscriptionTx) {
-        let query = query.to_string();
-        let subs_for_query = match self.subscriptions.get_mut(&query) {
-            Some(s) => s,
-            None => {
-                self.subscriptions.insert(query.clone(), HashMap::new());
-                self.subscriptions.get_mut(&query).unwrap()
-            },
-        };
-
+    pub fn add(&mut self, id: impl ToString, query: SubscriptionQuery, tx: SubscriptionTx) {
+        let subs_for_query = self.subscriptions.entry(query).or_default();
         subs_for_query.insert(id.to_string(), tx);
     }
 
     /// Removes all the subscriptions relating to the given query.
-    pub fn remove_by_query(&mut self, query: impl ToString) -> usize {
+    pub fn remove_by_query(&mut self, query: &SubscriptionQuery) -> usize {
         self.subscriptions
-            .remove(&query.to_string())
+            .remove(query)
             .map(|subs_for_query| subs_for_query.len())
             .unwrap_or(0)
     }
@@ -116,9 +124,9 @@ impl SubscriptionRouter {
 #[cfg(feature = "websocket-client")]
 impl SubscriptionRouter {
     /// Returns the number of active subscriptions for the given query.
-    pub fn num_subscriptions_for_query(&self, query: impl ToString) -> usize {
+    pub fn num_subscriptions_for_query(&self, query: &SubscriptionQuery) -> usize {
         self.subscriptions
-            .get(&query.to_string())
+            .get(query)
             .map(|subs_for_query| subs_for_query.len())
             .unwrap_or(0)
     }
@@ -129,7 +137,8 @@ pub enum PublishResult {
     Success,
     NoSubscribers,
     // All subscriptions for the given query have disconnected.
-    AllDisconnected(String),
+    AllDisconnected(SubscriptionQuery),
+    Error(String),
 }
 
 #[cfg(test)]
@@ -200,14 +209,17 @@ mod test {
             let (subs2_event_tx, mut subs2_event_rx) = unbounded();
             let (subs3_event_tx, mut subs3_event_rx) = unbounded();
 
+            let query1: Query = "tm.event = 'Tx'".parse().unwrap();
+            let query2: Query = "tm.event = 'NewBlock'".parse().unwrap();
+
             // Two subscriptions with the same query
-            router.add(subs1_id, "query1", subs1_event_tx);
-            router.add(subs2_id, "query1", subs2_event_tx);
+            router.add(subs1_id, query1.clone(), subs1_event_tx);
+            router.add(subs2_id, query1.clone(), subs2_event_tx);
             // Another subscription with a different query
-            router.add(subs3_id, "query2", subs3_event_tx);
+            router.add(subs3_id, query2.clone(), subs3_event_tx);
 
             let mut ev = read_event("subscribe_newblock_0").await;
-            ev.query = "query1".into();
+            ev.query = query1.to_string();
             router.publish_event(ev.clone());
 
             let subs1_ev = must_recv(&mut subs1_event_rx, 500).await.unwrap();
@@ -216,7 +228,7 @@ mod test {
             assert_eq!(ev, subs1_ev);
             assert_eq!(ev, subs2_ev);
 
-            ev.query = "query2".into();
+            ev.query = query2.to_string();
             router.publish_event(ev.clone());
 
             must_not_recv(&mut subs1_event_rx, 50).await;
@@ -248,14 +260,17 @@ mod test {
             let (subs2_event_tx, mut subs2_event_rx) = unbounded();
             let (subs3_event_tx, mut subs3_event_rx) = unbounded();
 
+            let query1: Query = "tm.event = 'Tx'".parse().unwrap();
+            let query2: Query = "tm.event = 'NewBlock'".parse().unwrap();
+
             // Two subscriptions with the same query
-            router.add(subs1_id, "query1", subs1_event_tx);
-            router.add(subs2_id, "query1", subs2_event_tx);
+            router.add(subs1_id, query1.clone(), subs1_event_tx);
+            router.add(subs2_id, query1.clone(), subs2_event_tx);
             // Another subscription with a different query
-            router.add(subs3_id, "query2", subs3_event_tx);
+            router.add(subs3_id, query2.clone(), subs3_event_tx);
 
             let mut ev = read_event("subscribe_newblock_0").await;
-            ev.query = "query1".into();
+            ev.query = query1.to_string();
             router.publish_event(ev.clone());
 
             let subs1_ev = must_recv(&mut subs1_event_rx, 500).await.unwrap();
@@ -264,7 +279,7 @@ mod test {
             assert_eq!(ev, subs1_ev);
             assert_eq!(ev, subs2_ev);
 
-            ev.query = "query2".into();
+            ev.query = query2.to_string();
             router.publish_event(ev.clone());
 
             must_not_recv(&mut subs1_event_rx, 50).await;

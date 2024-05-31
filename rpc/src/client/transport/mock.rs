@@ -164,7 +164,7 @@ impl MockClientDriver {
                         self.subscribe(id, query, subscription_tx, result_tx);
                     }
                     DriverCommand::Unsubscribe { query, result_tx } => {
-                        self.unsubscribe(query, result_tx);
+                        self.unsubscribe(&query, result_tx);
                     }
                     DriverCommand::Publish(event) => self.publish(*event),
                     DriverCommand::Terminate => return Ok(()),
@@ -184,7 +184,7 @@ impl MockClientDriver {
         result_tx.send(Ok(())).unwrap();
     }
 
-    fn unsubscribe(&mut self, query: Query, result_tx: ChannelTx<Result<(), Error>>) {
+    fn unsubscribe(&mut self, query: &Query, result_tx: ChannelTx<Result<(), Error>>) {
         self.router.remove_by_query(query);
         result_tx.send(Ok(())).unwrap();
     }
