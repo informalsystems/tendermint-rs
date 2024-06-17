@@ -26,12 +26,12 @@ pub use self::{
     round::*,
     size::Size,
 };
-use crate::{error::Error, evidence, prelude::*};
+use crate::{evidence, prelude::*};
 
 /// Blocks consist of a header, transactions, votes (the commit), and a list of
 /// evidence of malfeasance (i.e. signing conflicting votes).
 ///
-/// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#block>
+/// <https://github.com/cometbft/cometbft/blob/v1.0.0-alpha.1/spec/core/data_structures.md#block>
 // Default serialization - all fields serialize; used by /block endpoint
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
@@ -46,7 +46,7 @@ pub struct Block {
     /// Evidence of malfeasance
     pub evidence: evidence::List,
 
-    /// Last commit
+    /// Last commit, should be `None` for the initial block.
     pub last_commit: Option<Commit>,
 }
 
@@ -70,7 +70,7 @@ tendermint_pb_modules! {
                 .transpose()?
                 .filter(|c| c != &Commit::default());
 
-            Ok(Block::new_unchecked(
+            Ok(Block::new(
                 header,
                 value.data.ok_or_else(Error::missing_data)?.txs,
                 value.evidence.map(TryInto::try_into).transpose()?.unwrap_or_default(),
@@ -93,53 +93,8 @@ tendermint_pb_modules! {
 }
 
 impl Block {
-    /// Builds a new [`Block`], enforcing a couple invariants on the given [`Commit`]:
-    /// - `last_commit` cannot be empty if the block is not the first one (ie. at height > 1)
-    /// - `last_commit` must be empty if the block is the first one (ie. at height == 1)
-    ///
-    /// # Errors
-    /// - If `last_commit` is empty on a non-first block
-    /// - If `last_commit` is filled on the first block
+    /// Builds a new [`Block`], based on the given [`Header`], data, evidence, and last commit.
     pub fn new(
-        header: Header,
-        data: Vec<Vec<u8>>,
-        evidence: evidence::List,
-        last_commit: Option<Commit>,
-    ) -> Result<Self, Error> {
-        let block = Self::new_unchecked(header, data, evidence, last_commit);
-        block.validate()?;
-        Ok(block)
-    }
-
-    /// Check that the following invariants hold for this block:
-    ///
-    /// - `last_commit` cannot be empty if the block is not the first one (ie. at height > 1)
-    /// - `last_commit` must be empty if the block is the first one (ie. at height == 1)
-    ///
-    /// # Errors
-    /// - If `last_commit` is empty on a non-first block
-    /// - If `last_commit` is filled on the first block
-    pub fn validate(&self) -> Result<(), Error> {
-        if self.last_commit.is_none() && self.header.height.value() != 1 {
-            return Err(Error::invalid_block(
-                "last_commit is empty on non-first block".to_string(),
-            ));
-        }
-        if self.last_commit.is_some() && self.header.height.value() == 1 {
-            return Err(Error::invalid_block(
-                "last_commit is filled on first block".to_string(),
-            ));
-        }
-
-        Ok(())
-    }
-
-    /// Builds a new [`Block`], but does not enforce any invariants on the given [`Commit`].
-    ///
-    /// Use [`Block::new`] or [`Block::validate`] instead to enforce the following invariants, if necessary:
-    /// - `last_commit` cannot be empty if the block is not the first one (ie. at height > 1)
-    /// - `last_commit` must be empty if the block is the first one (ie. at height == 1)
-    pub fn new_unchecked(
         header: Header,
         data: Vec<Vec<u8>>,
         evidence: evidence::List,
