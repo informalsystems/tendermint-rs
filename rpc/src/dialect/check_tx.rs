@@ -42,7 +42,7 @@ pub struct CheckTx<Ev> {
     #[serde(with = "serializers::from_str")]
     pub priority: i64,
     /// mempool_error is set by Tendermint.
-    /// ABCI applictions should not set mempool_error.
+    /// ABCI applications should not set mempool_error.
     pub mempool_error: String,
 }
 

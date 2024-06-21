@@ -705,7 +705,7 @@ pub struct ResponseFinalizeBlock {
     #[prost(message, repeated, tag = "1")]
     pub events: ::prost::alloc::vec::Vec<Event>,
     /// the result of executing each transaction including the events
-    /// the particular transction emitted. This should match the order
+    /// the particular transaction emitted. This should match the order
     /// of the transactions delivered in the block itself
     #[prost(message, repeated, tag = "2")]
     pub tx_results: ::prost::alloc::vec::Vec<ExecTxResult>,

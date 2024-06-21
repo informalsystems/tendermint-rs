@@ -156,7 +156,7 @@ impl Builder {
         self
     }
 
-    /// Use the specfied low-level WebSocket configuration options.
+    /// Use the specified low-level WebSocket configuration options.
     pub fn config(mut self, config: WebSocketConfig) -> Self {
         self.transport_config = Some(config);
         self
