@@ -10,7 +10,7 @@ pub struct FinalizeBlock {
     #[serde(default)]
     pub events: Vec<Event>,
     /// The result of executing each transaction including the events
-    /// the particular transction emitted. This should match the order
+    /// the particular transaction emitted. This should match the order
     /// of the transactions delivered in the block itself
     #[serde(default)]
     pub tx_results: Vec<ExecTxResult>,
