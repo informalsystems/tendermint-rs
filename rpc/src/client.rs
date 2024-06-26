@@ -271,6 +271,14 @@ pub trait Client {
         Ok(self.perform(genesis::Request::default()).await?.genesis)
     }
 
+    /// `/genesis_chunked`: get genesis file in multiple chunks.
+    async fn genesis_chunked(
+        &self,
+        chunk: Option<String>,
+    ) -> Result<genesis_chunked::Response, Error> {
+        self.perform(genesis_chunked::Request::new(chunk)).await
+    }
+
     /// `/net_info`: obtain information about P2P and other network connections.
     async fn net_info(&self) -> Result<net_info::Response, Error> {
         self.perform(net_info::Request).await
