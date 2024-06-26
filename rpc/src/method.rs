@@ -56,7 +56,7 @@ pub enum Method {
     /// Get genesis file
     Genesis,
 
-    /// Get genesis in multiple chunks file
+    /// Get genesis file in multiple chunks
     GenesisChunked,
 
     /// Get block header

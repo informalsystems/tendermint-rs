@@ -1,4 +1,4 @@
-//! `/genesis` endpoint JSON-RPC wrapper
+//! `/genesis_chunked` endpoint JSON-RPC wrapper
 
 use alloc::{string::String, vec::Vec};
 use serde::{Deserialize, Serialize};
