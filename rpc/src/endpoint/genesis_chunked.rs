@@ -1,6 +1,9 @@
 //! `/genesis_chunked` endpoint JSON-RPC wrapper
 
-use alloc::{string::String, vec::Vec};
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
 use serde::{Deserialize, Serialize};
 use tendermint_proto::serializers;
 
@@ -9,12 +12,14 @@ use crate::{dialect::Dialect, request::RequestMessage};
 /// Get the genesis state in multiple chunks for the current chain
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request {
-    pub chunk: Option<String>,
+    pub chunk: String,
 }
 
 impl Request {
-    pub fn new(chunk: Option<String>) -> Self {
-        Self { chunk }
+    pub fn new(chunk: usize) -> Self {
+        Self {
+            chunk: chunk.to_string(),
+        }
     }
 }
 
@@ -41,10 +46,8 @@ where
 /// Block responses
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {
-    #[serde(with = "serializers::from_str")]
-    pub chunk: u64,
-    #[serde(with = "serializers::from_str")]
-    pub total: u64,
+    pub chunk: i32,
+    pub total: i32,
     #[serde(with = "serializers::bytes::base64string")]
     pub data: Vec<u8>,
 }

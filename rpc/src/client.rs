@@ -272,10 +272,7 @@ pub trait Client {
     }
 
     /// `/genesis_chunked`: get genesis file in multiple chunks.
-    async fn genesis_chunked(
-        &self,
-        chunk: Option<String>,
-    ) -> Result<genesis_chunked::Response, Error> {
+    async fn genesis_chunked(&self, chunk: usize) -> Result<genesis_chunked::Response, Error> {
         self.perform(genesis_chunked::Request::new(chunk)).await
     }
 
