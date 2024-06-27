@@ -136,6 +136,8 @@ enum ClientRequest {
     ConsensusState,
     /// Get the node's genesis data.
     Genesis,
+    /// Get the node's genesis data by chunks
+    GenesisChunked,
     /// Get the node's health.
     Health,
     /// Request the latest block.
@@ -412,6 +414,20 @@ where
         ClientRequest::Genesis => {
             serde_json::to_string_pretty(&client.genesis::<serde_json::Value>().await?)
                 .map_err(Error::serde)?
+        },
+        ClientRequest::GenesisChunked => {
+            let mut data = Vec::new();
+            let mut chunks = client.genesis_chunked_stream().await;
+
+            while let Some(chunk) = chunks.next().await {
+                let mut chunk = chunk?;
+                data.append(&mut chunk);
+            }
+
+            let genesis: tendermint::genesis::Genesis<serde_json::Value> =
+                serde_json::from_slice(&data).map_err(Error::serde)?;
+
+            serde_json::to_string_pretty(&genesis).map_err(Error::serde)?
         },
         ClientRequest::Health => {
             serde_json::to_string_pretty(&client.health().await?).map_err(Error::serde)?

@@ -56,6 +56,9 @@ pub enum Method {
     /// Get genesis file
     Genesis,
 
+    /// Get genesis file in multiple chunks
+    GenesisChunked,
+
     /// Get block header
     Header,
 
@@ -109,6 +112,7 @@ impl Method {
             Method::ConsensusParams => "consensus_params",
             Method::ConsensusState => "consensus_state",
             Method::Genesis => "genesis",
+            Method::GenesisChunked => "genesis_chunked",
             Method::Header => "header",
             Method::HeaderByHash => "header_by_hash",
             Method::Health => "health",

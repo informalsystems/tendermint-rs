@@ -271,6 +271,34 @@ pub trait Client {
         Ok(self.perform(genesis::Request::default()).await?.genesis)
     }
 
+    async fn genesis_chunked(&self, chunk: u64) -> Result<genesis_chunked::Response, Error> {
+        self.perform(genesis_chunked::Request::new(chunk)).await
+    }
+
+    /// `/genesis_chunked`: get genesis file in multiple chunks.
+    #[cfg(any(feature = "http-client", feature = "websocket-client"))]
+    async fn genesis_chunked_stream(
+        &self,
+    ) -> core::pin::Pin<Box<dyn futures::Stream<Item = Result<Vec<u8>, Error>> + '_>> {
+        Box::pin(futures::stream::unfold(Some(0), move |chunk| async move {
+            // Verify if there are more chunks to fetch
+            let chunk = chunk?;
+
+            match self.genesis_chunked(chunk).await {
+                Ok(response) => {
+                    if response.chunk + 1 >= response.total {
+                        // No more chunks to fetch
+                        Some((Ok(response.data), None))
+                    } else {
+                        // Emit this chunk and fetch the next chunk
+                        Some((Ok(response.data), Some(response.chunk + 1)))
+                    }
+                },
+                Err(e) => Some((Err(e), None)), // Abort the stream
+            }
+        }))
+    }
+
     /// `/net_info`: obtain information about P2P and other network connections.
     async fn net_info(&self) -> Result<net_info::Response, Error> {
         self.perform(net_info::Request).await
