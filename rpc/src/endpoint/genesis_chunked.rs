@@ -46,7 +46,9 @@ where
 /// Block responses
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {
+    #[serde(with = "serializers::from_str")]
     pub chunk: i32,
+    #[serde(with = "serializers::from_str")]
     pub total: i32,
     #[serde(with = "serializers::bytes::base64string")]
     pub data: Vec<u8>,
