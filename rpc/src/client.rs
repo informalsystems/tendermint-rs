@@ -5,6 +5,7 @@ pub use compat::CompatMode;
 
 #[cfg(any(feature = "http-client", feature = "websocket-client"))]
 mod subscription;
+use futures::Stream;
 #[cfg(any(feature = "http-client", feature = "websocket-client"))]
 pub use subscription::{Subscription, SubscriptionClient};
 
@@ -25,6 +26,7 @@ pub use transport::websocket::{
 pub use transport::mock::{MockClient, MockRequestMatcher, MockRequestMethodMatcher};
 
 use core::fmt;
+use core::pin::Pin;
 
 use async_trait::async_trait;
 use serde::{de::DeserializeOwned, Serialize};
@@ -271,9 +273,31 @@ pub trait Client {
         Ok(self.perform(genesis::Request::default()).await?.genesis)
     }
 
-    /// `/genesis_chunked`: get genesis file in multiple chunks.
-    async fn genesis_chunked(&self, chunk: usize) -> Result<genesis_chunked::Response, Error> {
+    async fn genesis_chunked(&self, chunk: u64) -> Result<genesis_chunked::Response, Error> {
         self.perform(genesis_chunked::Request::new(chunk)).await
+    }
+
+    /// `/genesis_chunked`: get genesis file in multiple chunks.
+    async fn genesis_chunked_stream(
+        &self,
+    ) -> Pin<Box<dyn Stream<Item = Result<Vec<u8>, Error>> + '_>> {
+        Box::pin(futures::stream::unfold(Some(0), move |chunk| async move {
+            // Verify if there are more chunks to fetch
+            let chunk = chunk?;
+
+            match self.genesis_chunked(chunk).await {
+                Ok(response) => {
+                    if response.chunk + 1 >= response.total {
+                        // No more chunks to fetch
+                        Some((Ok(response.data), None))
+                    } else {
+                        // Emit this chunk and fetch the next chunk
+                        Some((Ok(response.data), Some(response.chunk + 1)))
+                    }
+                },
+                Err(e) => Some((Err(e), None)), // Abort the stream
+            }
+        }))
     }
 
     /// `/net_info`: obtain information about P2P and other network connections.

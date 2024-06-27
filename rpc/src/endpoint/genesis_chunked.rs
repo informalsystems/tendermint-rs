@@ -16,7 +16,7 @@ pub struct Request {
 }
 
 impl Request {
-    pub fn new(chunk: usize) -> Self {
+    pub fn new(chunk: u64) -> Self {
         Self {
             chunk: chunk.to_string(),
         }
@@ -47,9 +47,9 @@ where
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {
     #[serde(with = "serializers::from_str")]
-    pub chunk: i32,
+    pub chunk: u64,
     #[serde(with = "serializers::from_str")]
-    pub total: i32,
+    pub total: u64,
     #[serde(with = "serializers::bytes::base64string")]
     pub data: Vec<u8>,
 }
