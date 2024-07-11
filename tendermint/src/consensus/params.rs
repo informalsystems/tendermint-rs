@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    block, deserializers::allow_empty_object::allow_empty_object, evidence, prelude::*, public_key,
+    block, evidence, prelude::*, public_key, serializers::allow_empty_object::allow_empty_object,
 };
 
 /// All consensus-relevant parameters that can be adjusted by the ABCI app.
@@ -19,6 +19,7 @@ pub struct Params {
     pub validator: ValidatorParams,
     /// The ABCI application version. Will default to None if not present.
     #[serde(default, deserialize_with = "allow_empty_object")]
+    //#[serde(skip)]
     pub version: Option<VersionParams>,
     /// Parameters specific to the Application Blockchain Interface.
     ///
@@ -43,7 +44,7 @@ pub struct ValidatorParams {
 #[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq, Default)]
 pub struct VersionParams {
     /// The ABCI application version.
-    #[serde(with = "crate::serializers::from_str")]
+    #[serde(with = "crate::serializers::from_str", alias = "app_version")]
     pub app: u64,
 }
 

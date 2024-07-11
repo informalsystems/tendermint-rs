@@ -7,6 +7,7 @@
 //! risk.
 pub use tendermint_proto::serializers::*;
 
+pub mod allow_empty_object;
 pub mod apphash;
 pub mod apphash_base64;
 pub mod hash;
