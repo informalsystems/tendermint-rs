@@ -1,9 +1,9 @@
 //! `/block_results` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
+use tendermint::deserializers::allow_empty_object::allow_empty_object;
 use tendermint::{abci, block, consensus, serializers, validator, AppHash};
 
-use crate::deserializers::consensus_params::allow_empty_object;
 use crate::dialect::{self, Dialect};
 use crate::prelude::*;
 use crate::request::RequestMessage;

@@ -35,6 +35,7 @@ pub mod chain;
 pub mod channel;
 pub mod consensus;
 pub mod crypto;
+pub mod deserializers;
 pub mod evidence;
 pub mod genesis;
 pub mod hash;

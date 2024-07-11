@@ -2,7 +2,9 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{block, evidence, prelude::*, public_key};
+use crate::{
+    block, deserializers::allow_empty_object::allow_empty_object, evidence, prelude::*, public_key,
+};
 
 /// All consensus-relevant parameters that can be adjusted by the ABCI app.
 ///
@@ -15,8 +17,8 @@ pub struct Params {
     pub evidence: evidence::Params,
     /// Parameters limiting the types of public keys validators can use.
     pub validator: ValidatorParams,
-    /// The ABCI application version.
-    #[serde(skip)] // FIXME: kvstore /genesis returns '{}' instead of '{app_version: "0"}'
+    /// The ABCI application version. Will default to None if not present.
+    #[serde(default, deserialize_with = "allow_empty_object")]
     pub version: Option<VersionParams>,
     /// Parameters specific to the Application Blockchain Interface.
     ///

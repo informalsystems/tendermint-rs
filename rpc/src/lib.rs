@@ -44,7 +44,6 @@ pub use client::{HttpClient, HttpClientUrl};
 #[cfg(feature = "websocket-client")]
 pub use client::{WebSocketClient, WebSocketClientDriver, WebSocketClientUrl, WebSocketConfig};
 
-pub mod deserializers;
 pub mod dialect;
 pub mod endpoint;
 pub mod error;
