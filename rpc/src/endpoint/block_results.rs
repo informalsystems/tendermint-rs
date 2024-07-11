@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 use tendermint::{abci, block, consensus, serializers, validator, AppHash};
 
+use crate::deserializers::consensus_params::allow_empty_object;
 use crate::dialect::{self, Dialect};
 use crate::prelude::*;
 use crate::request::RequestMessage;
@@ -78,6 +79,7 @@ pub struct Response {
     pub validator_updates: Vec<validator::Update>,
 
     /// New consensus params (might be explicit null)
+    #[serde(deserialize_with = "allow_empty_object")]
     pub consensus_param_updates: Option<consensus::Params>,
 
     /// Merkle hash of the application state
