@@ -1,3 +1,5 @@
+use tendermint::consensus::params::VersionParams;
+
 use super::*;
 
 #[test]
@@ -665,7 +667,10 @@ fn incoming_fixtures() {
                     result.genesis.consensus_params.validator.pub_key_types[0],
                     tendermint::public_key::Algorithm::Ed25519
                 );
-                assert!(result.genesis.consensus_params.version.is_none());
+                assert_eq!(
+                    result.genesis.consensus_params.version,
+                    Some(VersionParams { app: 0 })
+                );
                 assert!(
                     result
                         .genesis

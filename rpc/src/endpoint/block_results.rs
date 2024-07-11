@@ -1,6 +1,7 @@
 //! `/block_results` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
+use tendermint::serializers::allow_empty_object::allow_empty_object;
 use tendermint::{abci, block, consensus, serializers, validator, AppHash};
 
 use crate::dialect::{self, Dialect};
@@ -78,6 +79,7 @@ pub struct Response {
     pub validator_updates: Vec<validator::Update>,
 
     /// New consensus params (might be explicit null)
+    #[serde(deserialize_with = "allow_empty_object")]
     pub consensus_param_updates: Option<consensus::Params>,
 
     /// Merkle hash of the application state
@@ -99,6 +101,7 @@ pub mod v0_34 {
     use crate::prelude::*;
     use crate::{dialect, serializers};
     use serde::{Deserialize, Serialize};
+    use tendermint::serializers::allow_empty_object::allow_empty_object;
     use tendermint::{block, consensus, validator};
 
     /// RPC dialect helper for serialization of the response.
@@ -121,6 +124,7 @@ pub mod v0_34 {
         pub validator_updates: Vec<validator::Update>,
 
         /// New consensus params (might be explicit null)
+        #[serde(deserialize_with = "allow_empty_object")]
         pub consensus_param_updates: Option<consensus::Params>,
     }
 
