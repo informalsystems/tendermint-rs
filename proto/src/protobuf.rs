@@ -16,8 +16,11 @@
 /// The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
 /// restricting to that range, we ensure that we can convert to and from [RFC
 /// 3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-#[derive(Clone, PartialEq, ::prost::Message, ::serde::Deserialize, ::serde::Serialize)]
-#[serde(from = "crate::serializers::timestamp::Rfc3339", into = "crate::serializers::timestamp::Rfc3339")]
+#[derive(Copy, Clone, PartialEq, ::prost::Message, ::serde::Deserialize, ::serde::Serialize)]
+#[serde(
+    from = "crate::serializers::timestamp::Rfc3339",
+    into = "crate::serializers::timestamp::Rfc3339"
+)]
 pub struct Timestamp {
     /// Represents seconds of UTC time since Unix epoch
     /// 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to
@@ -38,7 +41,7 @@ pub struct Timestamp {
 /// or "month". It is related to Timestamp in that the difference between
 /// two Timestamp values is a Duration and it can be added or subtracted
 /// from a Timestamp. Range is approximately +-10,000 years.
-#[derive(Clone, PartialEq, ::prost::Message, ::serde::Deserialize, ::serde::Serialize)]
+#[derive(Copy, Clone, PartialEq, ::prost::Message, ::serde::Deserialize, ::serde::Serialize)]
 pub struct Duration {
     /// Signed seconds of the span of time. Must be from -315,576,000,000
     /// to +315,576,000,000 inclusive. Note: these bounds are computed from:
