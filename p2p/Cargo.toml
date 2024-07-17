@@ -34,7 +34,7 @@ eyre = { version = "0.6", default-features = false }
 flume = { version = "0.11.0", default-features = false }
 hkdf = { version = "0.12.3", default-features = false }
 merlin = { version = "3", default-features = false }
-prost = { version = "0.12", default-features = false }
+prost = { version = "0.13", default-features = false }
 rand_core = { version = "0.6", default-features = false, features = ["std"] }
 sha2 = { version = "0.10", default-features = false }
 subtle = { version = "2", default-features = false }
@@ -49,4 +49,4 @@ tendermint-proto = { path = "../proto", version = "0.38.0", default-features = f
 tendermint-std-ext = { path = "../std-ext", version = "0.38.0", default-features = false }
 
 # optional dependencies
-prost-derive = { version = "0.12", optional = true }
+prost-derive = { version = "0.13", optional = true }
