@@ -4,8 +4,8 @@
 
 *July 23rd, 2024*
 
-This release enhances `/block_results` response handling by trying to decode it as base64 if it fails to decode as hex.
-This release also sets the versions of `prost` and `prost-types` their latest versions in the `tendermint` crate.
+This release enhances decoding of the `AppHash` type by trying to decode it as base64 if it fails to decode as hex.
+This release also updates `prost` and `prost-types` to their latest version in the `tendermint` crate, something that was missed in the v0.38.0 release.
 
 ### BREAKING CHANGES
 
