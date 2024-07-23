@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## v0.38.1
+
+*July 23rd, 2024*
+
+This release enhances `/block_results` response handling by trying to decode it as base64 if it fails to decode as hex.
+This release also sets the versions of `prost` and `prost-types` their latest versions in the `tendermint` crate.
+
+### BREAKING CHANGES
+
+- `[tendermint]` Bump `prost` and `prost-types` to their latest versions in the `tendermint` crate.
+  This was missed in [#1444](https://github.com/informalsystems/tendermint-rs/pull/1444),
+  which only updated the two dependencies in `tendermint-rpc`, leading to duplicate versions
+  of both crates to be present in the dependency graph.
+  ([#1446](https://github.com/informalsystems/tendermint-rs/pull/1446))
+
+### IMPROVEMENTS
+
+- `[tendermint-rpc]` If `AppHash` fails to decode as hex, try to decode it as base64.
+  ([\#1449](https://github.com/informalsystems/tendermint-rs/issues/1449))
+
 ## v0.38.0
 
 *July 15th, 2024*
