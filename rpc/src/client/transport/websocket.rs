@@ -552,30 +552,36 @@ mod sealed {
         pub async fn subscribe(&self, query: Query) -> Result<Subscription, Error> {
             let (subscription_tx, subscription_rx) = unbounded();
             let (response_tx, mut response_rx) = unbounded();
+
             // By default we use UUIDs to differentiate subscriptions
             let id = uuid_str();
             self.send_cmd(DriverCommand::Subscribe(SubscribeCommand {
                 id: id.to_string(),
-                query: query.to_string(),
+                query: query.clone(),
                 subscription_tx,
                 response_tx,
             }))?;
+
             // Make sure our subscription request went through successfully.
             response_rx.recv().await.ok_or_else(|| {
                 Error::client_internal("failed to hear back from WebSocket driver".to_string())
             })??;
+
             Ok(Subscription::new(id, query, subscription_rx))
         }
 
         pub async fn unsubscribe(&self, query: Query) -> Result<(), Error> {
             let (response_tx, mut response_rx) = unbounded();
+
             self.send_cmd(DriverCommand::Unsubscribe(UnsubscribeCommand {
-                query: query.to_string(),
+                query,
                 response_tx,
             }))?;
+
             response_rx.recv().await.ok_or_else(|| {
                 Error::client_internal("failed to hear back from WebSocket driver".to_string())
             })??;
+
             Ok(())
         }
     }
@@ -693,7 +699,7 @@ struct SubscribeCommand {
     // The desired ID for the outgoing JSON-RPC request.
     id: String,
     // The query for which we want to receive events.
-    query: String,
+    query: Query,
     // Where to send subscription events.
     subscription_tx: SubscriptionTx,
     // Where to send the result of the subscription request.
@@ -703,7 +709,7 @@ struct SubscribeCommand {
 #[derive(Debug, Clone)]
 struct UnsubscribeCommand {
     // The query from which to unsubscribe.
-    query: String,
+    query: Query,
     // Where to send the result of the unsubscribe request.
     response_tx: ChannelTx<Result<(), Error>>,
 }
@@ -830,7 +836,7 @@ impl WebSocketClientDriver {
         // If we already have an active subscription for the given query,
         // there's no need to initiate another one. Just add this subscription
         // to the router.
-        if self.router.num_subscriptions_for_query(cmd.query.clone()) > 0 {
+        if self.router.num_subscriptions_for_query(&cmd.query) > 0 {
             let (id, query, subscription_tx, response_tx) =
                 (cmd.id, cmd.query, cmd.subscription_tx, cmd.response_tx);
             self.router.add(id, query, subscription_tx);
@@ -840,14 +846,17 @@ impl WebSocketClientDriver {
         // Otherwise, we need to initiate a subscription request.
         let wrapper = Wrapper::new_with_id(
             Id::Str(cmd.id.clone()),
-            subscribe::Request::new(cmd.query.clone()),
+            subscribe::Request::new(cmd.query.to_string()),
         );
+
         if let Err(e) = self.send_request(wrapper).await {
             cmd.response_tx.send(Err(e.clone()))?;
             return Err(e);
         }
+
         self.pending_commands
             .insert(cmd.id.clone(), DriverCommand::Subscribe(cmd));
+
         Ok(())
     }
 
@@ -855,7 +864,7 @@ impl WebSocketClientDriver {
         // Terminate all subscriptions for this query immediately. This
         // prioritizes acknowledgement of the caller's wishes over networking
         // problems.
-        if self.router.remove_by_query(cmd.query.clone()) == 0 {
+        if self.router.remove_by_query(&cmd.query) == 0 {
             // If there were no subscriptions for this query, respond
             // immediately.
             cmd.response_tx.send(Ok(()))?;
@@ -864,14 +873,16 @@ impl WebSocketClientDriver {
 
         // Unsubscribe requests can (and probably should) have distinct
         // JSON-RPC IDs as compared to their subscription IDs.
-        let wrapper = Wrapper::new(unsubscribe::Request::new(cmd.query.clone()));
+        let wrapper = Wrapper::new(unsubscribe::Request::new(cmd.query.to_string()));
         let req_id = wrapper.id().clone();
         if let Err(e) = self.send_request(wrapper).await {
             cmd.response_tx.send(Err(e.clone()))?;
             return Err(e);
         }
+
         self.pending_commands
             .insert(req_id.to_string(), DriverCommand::Unsubscribe(cmd));
+
         Ok(())
     }
 
@@ -937,7 +948,7 @@ impl WebSocketClientDriver {
             // unsubscribe from it. We issue a fire-and-forget unsubscribe
             // message.
             if let Err(e) = self
-                .send_request(Wrapper::new(unsubscribe::Request::new(query)))
+                .send_request(Wrapper::new(unsubscribe::Request::new(query.to_string())))
                 .await
             {
                 error!("Failed to send unsubscribe request: {}", e);
@@ -956,7 +967,7 @@ impl WebSocketClientDriver {
             // unsubscribe from it. We issue a fire-and-forget unsubscribe
             // message.
             if let Err(e) = self
-                .send_request(Wrapper::new(unsubscribe::Request::new(query)))
+                .send_request(Wrapper::new(unsubscribe::Request::new(query.to_string())))
                 .await
             {
                 error!("Failed to send unsubscribe request: {}", e);
