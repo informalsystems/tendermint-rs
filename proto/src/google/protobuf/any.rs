@@ -2,6 +2,7 @@
 // Copyright 2022 Dan Burkert & Tokio Contributors
 
 use prost::{DecodeError, EncodeError, Message, Name};
+use subtle_encoding::base64;
 
 use crate::prelude::*;
 
@@ -33,37 +34,18 @@ use super::PACKAGE;
 ///
 /// # JSON
 ///
-/// > JSON serialization of Any cannot be made compatible with the specification,
-/// > and is therefore left unimplemented at the moment.
-/// > See <https://github.com/influxdata/pbjson/issues/2> for more information.
+/// JSON serialization of Any cannot be made compatible with the specification.
+/// See <https://github.com/influxdata/pbjson/issues/2> for more information.
 ///
-/// The JSON representation of an `Any` value uses the regular
-/// representation of the deserialized, embedded message, with an
-/// additional field `@type` which contains the type URL. Example:
+/// At the moment, an `Any` struct will be serialized as a JSON object with two fields:
+/// - `typeUrl` (string): the type URL of the message
+/// - `value` (string): the base64-encoded serialized message
 ///
-/// ```text
-/// package google.profile;
-/// message Person {
-///    string first_name = 1;
-///    string last_name = 2;
-/// }
-///
+/// For example:
+/// ```json
 /// {
-///    "@type": "type.googleapis.com/google.profile.Person",
-///    "firstName": <string>,
-///    "lastName": <string>
-/// }
-/// ```
-///
-/// If the embedded message type is well-known and has a custom JSON
-/// representation, that representation will be embedded adding a field
-/// `value` which holds the custom JSON in addition to the `@type`
-/// field. Example (for message \[google.protobuf.Duration\]\[\]):
-///
-/// ```text
-/// {
-///    "@type": "type.googleapis.com/google.protobuf.Duration",
-///    "value": "1.212s"
+///    "typeUrl": "type.googleapis.com/google.protobuf.Duration",
+///    "value": "Cg0KB2NvcnA="
 /// }
 /// ```
 #[derive(Clone, PartialEq, Eq, ::prost::Message)]
@@ -146,5 +128,120 @@ impl Name for Any {
 
     fn type_url() -> String {
         type_url_for::<Self>()
+    }
+}
+
+impl serde::Serialize for Any {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.type_url.is_empty() {
+            len += 1;
+        }
+        if !self.value.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("google.protobuf.Any", len)?;
+        if !self.type_url.is_empty() {
+            struct_ser.serialize_field("typeUrl", &self.type_url)?;
+        }
+        if !self.value.is_empty() {
+            // NOTE: A base64 string is always valid UTF-8.
+            struct_ser.serialize_field(
+                "value",
+                &String::from_utf8_lossy(&base64::encode(&self.value)),
+            )?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for Any {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &["type_url", "typeUrl", "value"];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            TypeUrl,
+            Value,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "typeUrl" | "type_url" => Ok(GeneratedField::TypeUrl),
+                            "value" => Ok(GeneratedField::Value),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = Any;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct google.protobuf.Any")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<Any, V::Error>
+            where
+                V: serde::de::MapAccess<'de>,
+            {
+                let mut type_url__ = None;
+                let mut value__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::TypeUrl => {
+                            if type_url__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("typeUrl"));
+                            }
+                            type_url__ = Some(map_.next_value()?);
+                        },
+                        GeneratedField::Value => {
+                            if value__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("value"));
+                            }
+                            let b64_str = map_.next_value::<String>()?;
+                            let value = base64::decode(b64_str.as_bytes()).map_err(|e| {
+                                serde::de::Error::custom(format!("base64 decode error: {e}"))
+                            })?;
+                            value__ = Some(value);
+                        },
+                    }
+                }
+                Ok(Any {
+                    type_url: type_url__.unwrap_or_default(),
+                    value: value__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("google.protobuf.Any", FIELDS, GeneratedVisitor)
     }
 }
