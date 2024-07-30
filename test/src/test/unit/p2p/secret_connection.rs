@@ -109,7 +109,7 @@ fn test_evil_peer_shares_invalid_auth_sig() {
     let res = h.got_key(X25519_BASEPOINT);
     assert!(res.is_ok());
 
-    let mut h = res.unwrap();
+    let h = res.unwrap();
     let res = h.got_signature(proto::p2p::AuthSigMessage {
         pub_key: None,
         sig: vec![],
