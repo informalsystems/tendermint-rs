@@ -177,7 +177,7 @@ impl Handshake<AwaitingAuthSig> {
     ///
     /// * if signature scheme isn't supported
     pub fn got_signature(
-        &mut self,
+        &self,
         auth_sig_msg: proto::p2p::AuthSigMessage,
     ) -> Result<PublicKey, Error> {
         let pk_sum = auth_sig_msg
@@ -296,7 +296,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
             share_eph_pubkey(&mut io_handler, &local_eph_pubkey, protocol_version)?;
 
         // Compute a local signature (also recv_cipher & send_cipher)
-        let mut h = h.got_key(remote_eph_pubkey)?;
+        let h = h.got_key(remote_eph_pubkey)?;
 
         let mut sc = Self {
             io_handler,

@@ -77,10 +77,10 @@ pub fn basic_bisecting_schedule(
 /// following specification.
 ///
 /// - i) If `latest_verified_height == current_height` and `latest_verified_height < target_height`
-/// then `current_height < scheduled_height <= target_height`.
+///      then `current_height < scheduled_height <= target_height`.
 ///
 /// - ii) If `latest_verified_height < current_height` and `latest_verified_height < target_height`
-/// then `latest_verified_height < scheduled_height < current_height`.
+///       then `latest_verified_height < scheduled_height < current_height`.
 ///
 /// - iii) If `latest_verified_height = target_height` then `scheduled_height == target_height`.
 ///
