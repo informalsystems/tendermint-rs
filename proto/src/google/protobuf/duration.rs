@@ -102,7 +102,7 @@ struct DurationVisitor;
 impl<'de> serde::de::Visitor<'de> for DurationVisitor {
     type Value = Duration;
 
-    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn expecting(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter.write_str("a duration string")
     }
 
