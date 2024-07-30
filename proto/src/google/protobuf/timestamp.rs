@@ -1,3 +1,6 @@
+// Original code from <https://github.com/influxdata/pbjson/blob/main/pbjson-types/src/timestamp.rs>
+// Copyright 2022 Dan Burkert & Tokio Contributors
+
 use prost::Name;
 
 use crate::prelude::*;
