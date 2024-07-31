@@ -1,0 +1,1 @@
+- `[tendermint-proto]` Add `Any` type under `tendermint_proto::google::protobuf::Any` ([#1445](https://github.com/informalsystems/tendermint-rs/issues/1445))
