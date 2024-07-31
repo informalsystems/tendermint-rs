@@ -15,9 +15,12 @@ description = """
 
 [features]
 default = []
+std = []
 grpc = ["grpc-server"]
 grpc-server = ["dep:tonic"]
 json-schema = ["dep:schemars"]
+borsh = ["dep:borsh"]
+parity-scale-codec = ["dep:parity-scale-codec", "dep:scale-info"]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -32,7 +35,17 @@ subtle-encoding = { version = "0.5", default-features = false, features = ["hex"
 time = { version = "0.3", default-features = false, features = ["macros", "parsing"] }
 flex-error = { version = "0.4.4", default-features = false }
 tonic = { version = "0.12", optional = true }
+
+## Optional: enabled by the `json-schema` feature
 schemars = { version = "0.8", optional = true }
+
+## Optional: enabled by the `borsh` feature
+## For borsh encode or decode, needs to track `anchor-lang` and `near-sdk-rs` borsh version
+borsh = { version = "1", default-features = false, features = ["derive"], optional = true }
+
+## Optional: enabled by the `parity-scale-codec` feature
+parity-scale-codec = { version = "3.0.0", default-features = false, features = ["full"],   optional = true }
+scale-info         = { version = "2.1.2", default-features = false, features = ["derive"], optional = true }
 
 [dev-dependencies]
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
