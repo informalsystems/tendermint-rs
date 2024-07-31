@@ -4,6 +4,8 @@
 // Original serialization code from <https://github.com/influxdata/pbjson/blob/main/pbjson-types/src/duration.rs>
 // Copyright (c) 2020 InfluxData
 
+use core::convert::TryFrom;
+
 use prost::Name;
 
 use crate::prelude::*;
@@ -44,22 +46,92 @@ impl Name for Duration {
     }
 }
 
-impl TryFrom<Duration> for core::time::Duration {
-    type Error = core::num::TryFromIntError;
+const NANOS_PER_SECOND: i32 = 1_000_000_000;
+const NANOS_MAX: i32 = NANOS_PER_SECOND - 1;
 
-    fn try_from(value: Duration) -> Result<Self, Self::Error> {
-        Ok(Self::new(
-            value.seconds.try_into()?,
-            value.nanos.try_into()?,
-        ))
+impl Duration {
+    /// Normalizes the duration to a canonical format.
+    pub fn normalize(&mut self) {
+        // Make sure nanos is in the range.
+        if self.nanos <= -NANOS_PER_SECOND || self.nanos >= NANOS_PER_SECOND {
+            if let Some(seconds) = self
+                .seconds
+                .checked_add((self.nanos / NANOS_PER_SECOND) as i64)
+            {
+                self.seconds = seconds;
+                self.nanos %= NANOS_PER_SECOND;
+            } else if self.nanos < 0 {
+                // Negative overflow! Set to the least normal value.
+                self.seconds = i64::MIN;
+                self.nanos = -NANOS_MAX;
+            } else {
+                // Positive overflow! Set to the greatest normal value.
+                self.seconds = i64::MAX;
+                self.nanos = NANOS_MAX;
+            }
+        }
+
+        // nanos should have the same sign as seconds.
+        if self.seconds < 0 && self.nanos > 0 {
+            if let Some(seconds) = self.seconds.checked_add(1) {
+                self.seconds = seconds;
+                self.nanos -= NANOS_PER_SECOND;
+            } else {
+                // Positive overflow! Set to the greatest normal value.
+                debug_assert_eq!(self.seconds, i64::MAX);
+                self.nanos = NANOS_MAX;
+            }
+        } else if self.seconds > 0 && self.nanos < 0 {
+            if let Some(seconds) = self.seconds.checked_sub(1) {
+                self.seconds = seconds;
+                self.nanos += NANOS_PER_SECOND;
+            } else {
+                // Negative overflow! Set to the least normal value.
+                debug_assert_eq!(self.seconds, i64::MIN);
+                self.nanos = -NANOS_MAX;
+            }
+        }
     }
 }
 
+/// Converts a `core::time::Duration` to a `Duration`.
 impl From<core::time::Duration> for Duration {
-    fn from(value: core::time::Duration) -> Self {
-        Self {
-            seconds: value.as_secs() as _,
-            nanos: value.subsec_nanos() as _,
+    fn from(duration: core::time::Duration) -> Duration {
+        let seconds = duration.as_secs();
+        let seconds = if seconds > i64::MAX as u64 {
+            i64::MAX
+        } else {
+            seconds as i64
+        };
+        let nanos = duration.subsec_nanos();
+        let nanos = if nanos > i32::MAX as u32 {
+            i32::MAX
+        } else {
+            nanos as i32
+        };
+        let mut duration = Duration { seconds, nanos };
+        duration.normalize();
+        duration
+    }
+}
+
+impl TryFrom<Duration> for core::time::Duration {
+    type Error = core::time::Duration;
+
+    /// Converts a `Duration` to a result containing a positive (`Ok`) or negative (`Err`)
+    /// `std::time::Duration`.
+    fn try_from(mut duration: Duration) -> Result<core::time::Duration, core::time::Duration> {
+        duration.normalize();
+        if duration.seconds >= 0 {
+            Ok(core::time::Duration::new(
+                duration.seconds as u64,
+                duration.nanos as u32,
+            ))
+        } else {
+            Err(core::time::Duration::new(
+                (-duration.seconds) as u64,
+                (-duration.nanos) as u32,
+            ))
         }
     }
 }
