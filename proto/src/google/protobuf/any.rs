@@ -49,6 +49,7 @@ use super::PACKAGE;
 /// }
 /// ```
 #[derive(Clone, PartialEq, Eq, ::prost::Message)]
+#[cfg_attr(feature = "json-schema", derive(::schemars::JsonSchema))]
 pub struct Any {
     /// A URL/resource name that uniquely identifies the type of the serialized
     /// protocol buffer message. This string must contain at least
