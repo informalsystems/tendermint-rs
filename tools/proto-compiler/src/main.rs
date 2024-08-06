@@ -96,9 +96,8 @@ fn main() {
         for field_attribute in CUSTOM_FIELD_ATTRIBUTES {
             pb.field_attribute(field_attribute.0, field_attribute.1);
         }
-        // The below in-place path redirection replaces references to the Duration
-        // and Timestamp WKTs with our own versions that have valid doctest comments.
-        // See also https://github.com/danburkert/prost/issues/374 .
+        // The below in-place path redirection replaces references to the
+        // Duration, Timestamp, and Any "well-know types" with our own versions.
         pb.extern_path(
             ".google.protobuf.Duration",
             "crate::google::protobuf::Duration",
@@ -107,6 +106,7 @@ fn main() {
             ".google.protobuf.Timestamp",
             "crate::google::protobuf::Timestamp",
         );
+        pb.extern_path(".google.protobuf.Any", "crate::google::protobuf::Any");
 
         println!("[info] => Creating structs and interfaces.");
         let builder = tonic_build::configure()

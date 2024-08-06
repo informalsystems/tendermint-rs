@@ -22,13 +22,8 @@ pub mod serializers;
 
 use prelude::*;
 
-/// Built-in prost_types with slight customization to enable JSON-encoding
-pub mod google {
-    pub mod protobuf {
-        // custom Timeout and Duration types that have valid doctest documentation texts
-        include!("protobuf.rs");
-    }
-}
+/// Built-in `prost_types` with slight customization to enable JSON-encoding.
+pub mod google;
 
 /// Allows for easy Google Protocol Buffers encoding and decoding of domain
 /// types with validation.
