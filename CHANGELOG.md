@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## v0.39.0
+
+*August 6th, 2024*
+
+This release bundles the `google.protobuf.Any` Protobuf type in `tendermint-proto` and brings improvements to `google.protobuf.Duration` and `google.protobuf.Timestamp`.
+
+### FEATURES
+
+- `[tendermint-proto]` Add `Any` type under `tendermint_proto::google::protobuf::Any` ([#1445](https://github.com/informalsystems/tendermint-rs/issues/1445))
+
+### IMPROVEMENTS
+
+- `[tendermint-proto]` Implement `prost::Name` for `tendermint_proto::google::protobuf::{Duration, Timestamp}` ([#1452](https://github.com/informalsystems/tendermint-rs/pull/1452/))
+- `[tendermint-proto]` Improve ProtoJSON serialization of `tendermint_proto::google::protobuf::{Duration, Timestamp}` ([#1452](https://github.com/informalsystems/tendermint-rs/pull/1452/))
+
 ## v0.38.1
 
 *July 23rd, 2024*
