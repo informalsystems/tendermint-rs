@@ -48,6 +48,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test -p tendermint-proto
+      - run: cargo test -p tendermint-proto --features std
       - run: cargo test-all-features -p tendermint-proto
 
   tendermint-light-client:
