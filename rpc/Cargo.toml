@@ -52,15 +52,12 @@ websocket-client = [
   "async-tungstenite",
   "futures",
   "tokio/rt-multi-thread",
-  "tokio/fs",
   "tokio/macros",
   "tokio/sync",
   "tokio/time",
   "tracing"
 ]
-mock-client = [
-  "tokio/fs"
-]
+mock-client = []
 
 [dependencies]
 tendermint = { version = "0.39.0", default-features = false, path = "../tendermint" }
@@ -100,3 +97,4 @@ tendermint = { version = "0.39.0", default-features = false, path = "../tendermi
 http = { version = "1", default-features = false, features = ["std"] }
 lazy_static = { version = "1.4.0", default-features = false }
 tokio-test = { version = "0.4", default-features = false }
+tokio = { version = "1.0", default-features = false, features = ["rt-multi-thread", "fs"] }
