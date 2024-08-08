@@ -18,7 +18,7 @@ default = []
 std = []
 grpc = ["grpc-server"]
 grpc-server = ["dep:tonic", "std"]
-json-schema = ["dep:schemars"]
+json-schema = ["dep:schemars", "std"]
 borsh = ["dep:borsh"]
 parity-scale-codec = ["dep:parity-scale-codec", "dep:scale-info"]
 
