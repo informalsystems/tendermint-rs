@@ -21,7 +21,7 @@ pub use transport::websocket::{
     self, WebSocketClient, WebSocketClientDriver, WebSocketClientUrl, WebSocketConfig,
 };
 
-#[cfg(any(feature = "http-client", feature = "websocket-client"))]
+#[cfg(feature = "mock-client")]
 pub use transport::mock::{MockClient, MockRequestMatcher, MockRequestMethodMatcher};
 
 use core::fmt;

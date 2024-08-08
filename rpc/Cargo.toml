@@ -29,7 +29,13 @@ path = "src/client/bin/main.rs"
 required-features = [ "cli" ]
 
 [features]
-default = ["flex-error/std", "flex-error/eyre_tracer"]
+default = [
+  "flex-error/std",
+  "flex-error/eyre_tracer"
+]
+secp256k1 = [
+  "tendermint/secp256k1"
+]
 cli = [
   "http-client",
   "structopt",
@@ -42,7 +48,6 @@ http-client = [
   "tokio/macros",
   "tracing"
 ]
-secp256k1 = [ "tendermint/secp256k1" ]
 websocket-client = [
   "async-tungstenite",
   "futures",
@@ -52,6 +57,9 @@ websocket-client = [
   "tokio/sync",
   "tokio/time",
   "tracing"
+]
+mock-client = [
+  "tokio/fs"
 ]
 
 [dependencies]
