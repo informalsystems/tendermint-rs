@@ -5,6 +5,7 @@
 // Copyright (c) 2020 InfluxData
 
 use core::convert::TryFrom;
+use core::fmt;
 
 use prost::Name;
 
@@ -94,6 +95,38 @@ impl Duration {
     }
 }
 
+/// A duration handling error.
+#[derive(Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum DurationError {
+    /// Indicates failure to convert a [`Duration`] to a [`core::time::Duration`] because
+    /// the duration is negative. The included [`core::time::Duration`] matches the magnitude of the
+    /// original negative [`Duration`].
+    NegativeDuration(core::time::Duration),
+
+    /// Indicates failure to convert a [`core::time::Duration`] to a [`Duration`].
+    ///
+    /// Converting a [`core::time::Duration`] to a [`Duration`] fails if the magnitude
+    /// exceeds that representable by [`Duration`].
+    OutOfRange,
+}
+
+impl fmt::Display for DurationError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            DurationError::NegativeDuration(duration) => {
+                write!(f, "failed to convert negative duration: {duration:?}")
+            },
+            DurationError::OutOfRange => {
+                write!(f, "failed to convert duration out of range")
+            },
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for DurationError {}
+
 /// Converts a `core::time::Duration` to a `Duration`.
 impl From<core::time::Duration> for Duration {
     fn from(duration: core::time::Duration) -> Duration {
@@ -116,23 +149,36 @@ impl From<core::time::Duration> for Duration {
 }
 
 impl TryFrom<Duration> for core::time::Duration {
-    type Error = core::time::Duration;
+    type Error = DurationError;
 
-    /// Converts a `Duration` to a result containing a positive (`Ok`) or negative (`Err`)
-    /// `std::time::Duration`.
-    fn try_from(mut duration: Duration) -> Result<core::time::Duration, core::time::Duration> {
+    /// Converts a `Duration` to a `core::time::Duration`, failing if the duration is negative.
+    fn try_from(mut duration: Duration) -> Result<core::time::Duration, DurationError> {
         duration.normalize();
-        if duration.seconds >= 0 {
+        if duration.seconds >= 0 && duration.nanos >= 0 {
             Ok(core::time::Duration::new(
                 duration.seconds as u64,
                 duration.nanos as u32,
             ))
         } else {
-            Err(core::time::Duration::new(
+            Err(DurationError::NegativeDuration(core::time::Duration::new(
                 (-duration.seconds) as u64,
                 (-duration.nanos) as u32,
-            ))
+            )))
         }
+    }
+}
+
+impl TryFrom<core::time::Duration> for Duration {
+    type Error = DurationError;
+
+    /// Converts a `core::time::Duration` to a `Duration`, failing if the duration is too large.
+    fn try_from(duration: core::time::Duration) -> Result<Duration, DurationError> {
+        let seconds = i64::try_from(duration.as_secs()).map_err(|_| DurationError::OutOfRange)?;
+        let nanos = duration.subsec_nanos() as i32;
+
+        let mut duration = Duration { seconds, nanos };
+        duration.normalize();
+        Ok(duration)
     }
 }
 
