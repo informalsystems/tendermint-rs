@@ -34,7 +34,11 @@ mod prelude;
 
 pub mod client;
 
-#[cfg(any(feature = "http-client", feature = "websocket-client"))]
+#[cfg(any(
+    feature = "http-client",
+    feature = "websocket-client",
+    feature = "mock-client"
+))]
 pub use client::{Client, Subscription, SubscriptionClient};
 #[cfg(feature = "http-client")]
 pub use client::{HttpClient, HttpClientUrl};

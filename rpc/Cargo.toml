@@ -57,7 +57,11 @@ websocket-client = [
   "tokio/time",
   "tracing"
 ]
-mock-client = []
+mock-client = [
+  "futures",
+  "tracing",
+  "tokio/macros"
+]
 
 [dependencies]
 tendermint = { version = "0.39.0", default-features = false, path = "../tendermint" }

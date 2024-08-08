@@ -3,15 +3,31 @@
 mod compat;
 pub use compat::CompatMode;
 
-#[cfg(any(feature = "http-client", feature = "websocket-client"))]
+#[cfg(any(
+    feature = "http-client",
+    feature = "websocket-client",
+    feature = "mock-client"
+))]
 mod subscription;
-#[cfg(any(feature = "http-client", feature = "websocket-client"))]
+#[cfg(any(
+    feature = "http-client",
+    feature = "websocket-client",
+    feature = "mock-client"
+))]
 pub use subscription::{Subscription, SubscriptionClient};
 
-#[cfg(any(feature = "http-client", feature = "websocket-client"))]
+#[cfg(any(
+    feature = "http-client",
+    feature = "websocket-client",
+    feature = "mock-client"
+))]
 pub mod sync;
 
-#[cfg(any(feature = "http-client", feature = "websocket-client"))]
+#[cfg(any(
+    feature = "http-client",
+    feature = "websocket-client",
+    feature = "mock-client"
+))]
 mod transport;
 
 #[cfg(feature = "http-client")]
