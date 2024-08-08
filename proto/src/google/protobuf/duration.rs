@@ -127,27 +127,6 @@ impl fmt::Display for DurationError {
 #[cfg(feature = "std")]
 impl std::error::Error for DurationError {}
 
-/// Converts a `core::time::Duration` to a `Duration`.
-impl From<core::time::Duration> for Duration {
-    fn from(duration: core::time::Duration) -> Duration {
-        let seconds = duration.as_secs();
-        let seconds = if seconds > i64::MAX as u64 {
-            i64::MAX
-        } else {
-            seconds as i64
-        };
-        let nanos = duration.subsec_nanos();
-        let nanos = if nanos > i32::MAX as u32 {
-            i32::MAX
-        } else {
-            nanos as i32
-        };
-        let mut duration = Duration { seconds, nanos };
-        duration.normalize();
-        duration
-    }
-}
-
 impl TryFrom<Duration> for core::time::Duration {
     type Error = DurationError;
 
