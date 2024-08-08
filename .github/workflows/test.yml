@@ -34,34 +34,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo test-all-features -p tendermint
+      - uses: taiki-e/install-action@cargo-hack
+      - run: cargo test -p tendermint
+      - run: cargo hack test --each-feature -p tendermint
 
   tendermint-rpc:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo test-all-features -p tendermint-rpc
+      - uses: taiki-e/install-action@cargo-hack
+      - run: cargo test -p tendermint-rpc
+      - run: cargo hack test --each-feature -p tendermint-rpc
 
   tendermint-proto:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@cargo-hack
       - run: cargo test -p tendermint-proto
-      - run: cargo test -p tendermint-proto --features std
-      - run: cargo test-all-features -p tendermint-proto
+      - run: cargo hack test --each-feature -p tendermint-proto
 
   tendermint-light-client:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      # NOTE: We test with default features to make sure things work without "unstable".
-      - name: Test with default features
-        run: cargo test -p tendermint-light-client
-      - name: Test with all features
-        run: cargo test-all-features -p tendermint-light-client
+      - uses: taiki-e/install-action@cargo-hack
+      - run: cargo test -p tendermint-light-client
+      - run: cargo hack test --each-feature -p tendermint-light-client
 
   # From https://rustwasm.github.io/docs/wasm-bindgen/wasm-bindgen-test/continuous-integration.html#github-actions
   tendermint-light-client-js:
