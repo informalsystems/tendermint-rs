@@ -1,7 +1,6 @@
 //! Tendermint RPC client implementations for different transports.
 
 mod auth;
-pub mod mock;
 mod router;
 
 macro_rules! perform_with_compat {
@@ -24,5 +23,7 @@ macro_rules! perform_with_compat {
 
 #[cfg(feature = "http-client")]
 pub mod http;
+#[cfg(feature = "mock-client")]
+pub mod mock;
 #[cfg(feature = "websocket-client")]
 pub mod websocket;

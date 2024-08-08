@@ -90,7 +90,7 @@ impl Stream for Subscription {
 }
 
 impl Subscription {
-    pub(crate) fn new(id: String, query: Query, rx: SubscriptionRx) -> Self {
+    pub fn new(id: String, query: Query, rx: SubscriptionRx) -> Self {
         Self { id, query, rx }
     }
 

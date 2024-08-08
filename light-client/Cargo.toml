@@ -57,6 +57,7 @@ regex = { version = "1.7.3" }
 
 [dev-dependencies]
 tendermint-testgen = { path = "../testgen", default-features = false }
+tendermint-light-client-verifier = { version = "0.39.0", path = "../light-client-verifier", features = ["rust-crypto"] }
 
 serde_json = { version = "1.0.51", default-features = false }
 gumdrop = { version = "0.8.0", default-features = false }
