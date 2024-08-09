@@ -36,7 +36,7 @@ sample is chosen at random, this adds a level of probabilistic
 reasoning.) If conflicting headers are found, they are evidence that
 can be used for punishing processes.
 
-In this document we will focus onn strengthening the light client, and
+In this document we will focus on strengthening the light client, and
 leave other uses of the detection mechanism (e.g., when run on a full
 node) to the future.
 

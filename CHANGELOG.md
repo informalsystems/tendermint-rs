@@ -110,7 +110,7 @@ Additionally, this release fixes a couple of issues with the `serde`-based deser
 
 *April 25th, 2024*
 
-This release brings substantial performance improvements to the voting power computation within the light client, improves the handling of misformed blocks (eg. with empty `last_commit` on non-first block) when decoding them from Protobuf or RPC responses, and adds missing `serde` derives on some Protobuf definitions.
+This release brings substantial performance improvements to the voting power computation within the light client, improves the handling of malformed blocks (eg. with empty `last_commit` on non-first block) when decoding them from Protobuf or RPC responses, and adds missing `serde` derives on some Protobuf definitions.
 
 This release also technically contains a breaking change in `tendermint-proto`, but this should not impact normal use of the library, as the `ToPrimitive` impl that was removed on `BlockIdFlag` trait did not provide any additional functionality.
 
@@ -153,7 +153,7 @@ This release also technically contains a breaking change in `tendermint-proto`, 
 
 ### IMPROVEMENTS
 
-- `[tendermint]` Allow misformed blocks (eg. with empty `last_commit`
+- `[tendermint]` Allow malformed blocks (eg. with empty `last_commit`
   on non-first block) when decoding them from Protobuf or RPC responses
   ([\#1403](https://github.com/informalsystems/tendermint-rs/issues/1403))
 - `[tendermint]` Check `index ≤ i32::MAX` invariant when converting `usize`
@@ -309,7 +309,7 @@ CometBFT data types are serialized and deserialized.
 - `[tendermint-proto]` In the `Deserialize` impls derived for
   `v*::types::ValidatorSet`, the `total_voting_power` field value is retrieved
   when present.
-- `[tendermint-proto]` Add serialziation helper module
+- `[tendermint-proto]` Add serialization helper module
   `serializers::from_str_allow_null`. Use it to allow the `proposed_priority`
   field value of null in the deserialization of `v*::types::Validator`.
 - Corrected custom serializer helpers to consistently produce the format
@@ -342,8 +342,8 @@ are exposed to the client.
   * Change the `abci::Request` and `abci::Response` reexports to use the
     enums defined in `v0_38`.
 - `[tendermint]` Define version-specific categorized request/response enums:
-  `ConsensusRequest`, `MempoolRequest`, `InfoRequest`, `ShapshotRequest`,
-  `ConsensusResponse`, `MempoolResponse`, `InfoResponse`, `ShapshotResponse`,
+  `ConsensusRequest`, `MempoolRequest`, `InfoRequest`, `SnapshotRequest`,
+  `ConsensusResponse`, `MempoolResponse`, `InfoResponse`, `SnapshotResponse`,
   in each of the `v0_*::abci` modules, so that the variants are trimmed to the
   requests/responses used by the respective protocol version.
   Reexport the types from `v0_38::abci` as aliases for these names in the

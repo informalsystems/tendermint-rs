@@ -340,7 +340,7 @@ impl LightClient {
 
             // `latest` and `current` are linked together by `last_block_id`,
             // therefore it is not relevant which we verified first.
-            // For consistency, we say that `latest` was verifed using
+            // For consistency, we say that `latest` was verified using
             // `current` so that the trace is always pointing down the chain.
             state.light_store.insert(current.clone(), Status::Trusted);
             state.light_store.insert(latest.clone(), Status::Trusted);

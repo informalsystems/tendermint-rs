@@ -702,7 +702,7 @@ pub mod response_verify_vote_extension {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseFinalizeBlock {
-    /// set of block events emmitted as part of executing the block
+    /// set of block events emitted as part of executing the block
     #[prost(message, repeated, tag = "1")]
     pub events: ::prost::alloc::vec::Vec<Event>,
     /// the result of executing each transaction including the events

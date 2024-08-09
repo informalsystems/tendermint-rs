@@ -423,7 +423,7 @@ mod tests {
         }
 
         #[test]
-        fn test_vote_rountrip_with_sig() {
+        fn test_vote_roundtrip_with_sig() {
             let dt = datetime!(2017-12-25 03:00:01.234 UTC);
             let vote = Vote {
                 validator_address: AccountId::try_from(vec![

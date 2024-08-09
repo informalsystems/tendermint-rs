@@ -271,7 +271,7 @@ pub struct TxProof {
     #[prost(message, optional, tag = "3")]
     pub proof: ::core::option::Option<super::crypto::Proof>,
 }
-/// BlockIdFlag indicates which BlcokID the signature is for
+/// BlockIdFlag indicates which BlockID the signature is for
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum BlockIdFlag {
