@@ -37,7 +37,7 @@ pub struct DominoOp {
     pub output: ::prost::alloc::string::String,
 }
 /// ProofOp defines an operation used for calculating Merkle root
-/// The data could be arbitrary format, providing nessecary data
+/// The data could be arbitrary format, providing necessary data
 /// for example neighbouring node hash
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]

@@ -46,7 +46,7 @@ pub fn make_evidence(
     }
 }
 
-/// Take a trusted header and match it againt a conflicting header
+/// Take a trusted header and match it against a conflicting header
 /// to determine whether the conflicting header was the product of a valid state transition
 /// or not. If it is then all the deterministic fields of the header should be the same.
 /// If not, it is an invalid header and constitutes a lunatic attack.
