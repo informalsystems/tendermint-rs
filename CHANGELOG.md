@@ -2,7 +2,7 @@
 
 ## v0.39.1
 
-*August 10th, 2024*
+*August 9th, 2024*
 
 This is a bugfix release which addresses a couple issues found in the v0.39.0 release.
 
