@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint-rpc"
-version    = "0.39.0"
+version    = "0.39.1"
 edition    = "2021"
 license    = "Apache-2.0"
 homepage   = "https://www.tendermint.com/"
@@ -64,9 +64,9 @@ mock-client = [
 ]
 
 [dependencies]
-tendermint = { version = "0.39.0", default-features = false, path = "../tendermint" }
-tendermint-config = { version = "0.39.0", path = "../config", default-features = false }
-tendermint-proto = { version = "0.39.0", path = "../proto", default-features = false }
+tendermint = { version = "0.39.1", default-features = false, path = "../tendermint" }
+tendermint-config = { version = "0.39.1", path = "../config", default-features = false }
+tendermint-proto = { version = "0.39.1", path = "../proto", default-features = false }
 
 async-trait = { version = "0.1", default-features = false }
 bytes = { version = "1.0", default-features = false }
@@ -97,7 +97,7 @@ tracing = { version = "0.1", optional = true, default-features = false }
 tracing-subscriber = { version = "0.3", optional = true, default-features = false, features = ["fmt"] }
 
 [dev-dependencies]
-tendermint = { version = "0.39.0", default-features = false, path = "../tendermint", features = ["secp256k1"] }
+tendermint = { version = "0.39.1", default-features = false, path = "../tendermint", features = ["secp256k1"] }
 http = { version = "1", default-features = false, features = ["std"] }
 lazy_static = { version = "1.4.0", default-features = false }
 tokio-test = { version = "0.4", default-features = false }
