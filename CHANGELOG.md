@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## v0.39.1
+
+*August 10th, 2024*
+
+This is a bugfix release which addresses a couple issues found in the v0.39.0 release.
+
+Users of v0.39.0 are strongly encouraged to upgrade to v0.39.1.
+
+### BUG FIXES
+
+- Fix newly introduced `std` and `json-schema` features, and ensure all feature flag can be used independently and in isolation.
+  ([\#1454](https://github.com/informalsystems/tendermint-rs/issues/1454))
+- Remove dependency on `prost-types` as it is not needed anymore now that
+  [#1452](https://github.com/informalsystems/tendermint-rs/pull/1452) has landed
+  ([\#1457](https://github.com/informalsystems/tendermint-rs/pull/1457))
+
 ## v0.39.0
 
 *August 6th, 2024*
