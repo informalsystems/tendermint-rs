@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint-light-client"
-version    = "0.39.0"
+version    = "0.39.1"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -35,9 +35,9 @@ unstable = ["rust-crypto"]
 mbt = ["rust-crypto"]
 
 [dependencies]
-tendermint = { version = "0.39.0", path = "../tendermint", default-features = false }
-tendermint-rpc = { version = "0.39.0", path = "../rpc", default-features = false }
-tendermint-light-client-verifier = { version = "0.39.0", path = "../light-client-verifier", default-features = false }
+tendermint = { version = "0.39.1", path = "../tendermint", default-features = false }
+tendermint-rpc = { version = "0.39.1", path = "../rpc", default-features = false }
+tendermint-light-client-verifier = { version = "0.39.1", path = "../light-client-verifier", default-features = false }
 
 contracts = { version = "0.6.2", default-features = false }
 crossbeam-channel = { version = "0.5.11", default-features = false, features = ["std"] }
@@ -57,7 +57,7 @@ regex = { version = "1.7.3" }
 
 [dev-dependencies]
 tendermint-testgen = { path = "../testgen", default-features = false }
-tendermint-light-client-verifier = { version = "0.39.0", path = "../light-client-verifier", features = ["rust-crypto"] }
+tendermint-light-client-verifier = { version = "0.39.1", path = "../light-client-verifier", features = ["rust-crypto"] }
 
 serde_json = { version = "1.0.51", default-features = false }
 gumdrop = { version = "0.8.0", default-features = false }
