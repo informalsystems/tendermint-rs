@@ -8,7 +8,7 @@ use tendermint_light_client::{
 use super::{error::Error, provider::Provider, trace::Trace};
 
 // examineConflictingHeaderAgainstTrace takes a trace from one provider and a divergent header that
-// it has received from another and preforms verifySkipping at the heights of each of the intermediate
+// it has received from another and performs verifySkipping at the heights of each of the intermediate
 // headers in the trace until it reaches the divergentHeader. 1 of 2 things can happen.
 //
 //  1. The light client verifies a header that is different to the intermediate header in the trace. This
