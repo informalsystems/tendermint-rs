@@ -127,9 +127,10 @@ impl AsyncSecretConnection {
 
         if chunk_length as usize > DATA_MAX_SIZE {
             return Err(std::io::Error::new(
-                 std::io::ErrorKind::Other,
-                 format!("chunk is too big: {chunk_length}! max: {DATA_MAX_SIZE}"),
-            ).into());
+                std::io::ErrorKind::Other,
+                format!("chunk is too big: {chunk_length}! max: {DATA_MAX_SIZE}"),
+            )
+            .into());
         }
 
         let mut chunk = vec![0; chunk_length as usize];
