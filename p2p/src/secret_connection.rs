@@ -30,10 +30,17 @@ pub use self::{
     protocol::Version,
     public_key::PublicKey,
 };
+
+#[cfg(feature = "async")]
+pub use self::async_connection::AsyncSecretConnection;
+
 use crate::error::Error;
 
 #[cfg(feature = "amino")]
 mod amino_types;
+
+#[cfg(feature = "async")]
+mod async_connection;
 
 mod kdf;
 mod nonce;
