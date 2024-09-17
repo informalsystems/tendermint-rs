@@ -1,25 +1,24 @@
 //! HTTP-based transport for Tendermint RPC Client.
 
 use core::str::FromStr;
+use core::time::Duration;
 
 use async_trait::async_trait;
 use reqwest::{header, Proxy};
-use std::time::Duration;
 
 use tendermint::{block::Height, evidence::Evidence, Hash};
 use tendermint_config::net;
 
-use super::auth;
+use crate::client::{Client, CompatMode};
+use crate::dialect::{v0_34, v0_37, v0_38, Dialect, LatestDialect};
+use crate::endpoint;
 use crate::prelude::*;
-use crate::{
-    client::{Client, CompatMode},
-    dialect::{v0_34, Dialect, LatestDialect},
-    endpoint,
-    query::Query,
-    request::RequestMessage,
-    response::Response,
-    Error, Order, Scheme, SimpleRequest, Url,
-};
+use crate::query::Query;
+use crate::request::RequestMessage;
+use crate::response::Response;
+use crate::{Error, Order, Scheme, SimpleRequest, Url};
+
+use super::auth;
 
 const USER_AGENT: &str = concat!("tendermint.rs/", env!("CARGO_PKG_VERSION"));
 
@@ -275,7 +274,14 @@ impl Client for HttpClient {
     {
         let height = height.into();
         match self.compat {
-            CompatMode::V0_37 => self.perform(endpoint::header::Request::new(height)).await,
+            CompatMode::V0_38 => {
+                self.perform_with_dialect(endpoint::header::Request::new(height), v0_38::Dialect)
+                    .await
+            },
+            CompatMode::V0_37 => {
+                self.perform_with_dialect(endpoint::header::Request::new(height), v0_37::Dialect)
+                    .await
+            },
             CompatMode::V0_34 => {
                 // Back-fill with a request to /block endpoint and
                 // taking just the header from the response.
@@ -292,9 +298,19 @@ impl Client for HttpClient {
         hash: Hash,
     ) -> Result<endpoint::header_by_hash::Response, Error> {
         match self.compat {
+            CompatMode::V0_38 => {
+                self.perform_with_dialect(
+                    endpoint::header_by_hash::Request::new(hash),
+                    v0_38::Dialect,
+                )
+                .await
+            },
             CompatMode::V0_37 => {
-                self.perform(endpoint::header_by_hash::Request::new(hash))
-                    .await
+                self.perform_with_dialect(
+                    endpoint::header_by_hash::Request::new(hash),
+                    v0_37::Dialect,
+                )
+                .await
             },
             CompatMode::V0_34 => {
                 // Back-fill with a request to /block_by_hash endpoint and
@@ -311,11 +327,24 @@ impl Client for HttpClient {
     }
 
     /// `/broadcast_evidence`: broadcast an evidence.
-    async fn broadcast_evidence(&self, e: Evidence) -> Result<endpoint::evidence::Response, Error> {
+    async fn broadcast_evidence(
+        &self,
+        evidence: Evidence,
+    ) -> Result<endpoint::evidence::Response, Error> {
         match self.compat {
-            CompatMode::V0_37 => self.perform(endpoint::evidence::Request::new(e)).await,
+            CompatMode::V0_38 => {
+                let request = endpoint::evidence::Request::new(evidence);
+                self.perform_with_dialect(request, crate::dialect::v0_38::Dialect)
+                    .await
+            },
+            CompatMode::V0_37 => {
+                let request = endpoint::evidence::Request::new(evidence);
+                self.perform_with_dialect(request, crate::dialect::v0_37::Dialect)
+                    .await
+            },
             CompatMode::V0_34 => {
-                self.perform_with_dialect(endpoint::evidence::Request::new(e), v0_34::Dialect)
+                let request = endpoint::evidence::Request::new(evidence);
+                self.perform_with_dialect(request, crate::dialect::v0_34::Dialect)
                     .await
             },
         }

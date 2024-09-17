@@ -16,7 +16,7 @@ use functions::{
 };
 
 mod constants;
-use constants::{CUSTOM_FIELD_ATTRIBUTES, CUSTOM_TYPE_ATTRIBUTES, TENDERMINT_VERSIONS};
+use constants::*;
 
 fn main() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -35,7 +35,8 @@ fn main() {
             "[info] => Fetching {} at {} into {tendermint_dir:?}",
             version.repo, version.commitish,
         );
-        get_commitish(&tendermint_dir, &version.repo, &version.commitish); // This panics if it fails.
+
+        get_commitish(&tendermint_dir, version.repo, version.commitish); // This panics if it fails.
 
         let proto_path = tendermint_dir.join("proto");
 
@@ -90,22 +91,35 @@ fn main() {
 
         // Compile proto files with added annotations, exchange prost_types to our own
         pb.out_dir(&out_dir);
-        for type_attribute in CUSTOM_TYPE_ATTRIBUTES {
+
+        for type_attribute in CUSTOM_TYPE_ATTRIBUTES_COMMON {
             pb.type_attribute(type_attribute.0, type_attribute.1);
         }
+
+        for type_attribute in get_custom_type_attributes(version) {
+            pb.type_attribute(type_attribute.0, type_attribute.1);
+        }
+
         for field_attribute in CUSTOM_FIELD_ATTRIBUTES {
             pb.field_attribute(field_attribute.0, field_attribute.1);
         }
+
+        for field_attribute in get_custom_field_attributes(version) {
+            pb.field_attribute(field_attribute.0, field_attribute.1);
+        }
+
         // The below in-place path redirection replaces references to the
         // Duration, Timestamp, and Any "well-know types" with our own versions.
         pb.extern_path(
             ".google.protobuf.Duration",
             "crate::google::protobuf::Duration",
         );
+
         pb.extern_path(
             ".google.protobuf.Timestamp",
             "crate::google::protobuf::Timestamp",
         );
+
         pb.extern_path(".google.protobuf.Any", "crate::google::protobuf::Any");
 
         println!("[info] => Creating structs and interfaces.");
@@ -133,6 +147,7 @@ fn main() {
         copy_files(&out_dir, &ver_target_dir); // This panics if it fails.
         generate_tendermint_mod(&out_dir, version, &ver_module_dir);
     }
+
     generate_tendermint_lib(TENDERMINT_VERSIONS, &target_dir.join("tendermint.rs"));
 
     println!("[info] => Done!");

@@ -2,8 +2,13 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::dialect;
+use crate::prelude::*;
+use crate::request::RequestMessage;
+use crate::serializers;
+use crate::{Method, Order};
+
 pub use super::{block, block_results};
-use crate::{dialect::Dialect, prelude::*, request::RequestMessage, serializers, Method, Order};
 
 /// Request for searching for blocks by their BeginBlock and EndBlock events.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -34,11 +39,27 @@ impl RequestMessage for Request {
     }
 }
 
-impl<S: Dialect> crate::Request<S> for Request {
+impl crate::Request<dialect::v0_34::Dialect> for Request {
     type Response = Response;
 }
 
-impl<S: Dialect> crate::SimpleRequest<S> for Request {
+impl crate::SimpleRequest<dialect::v0_34::Dialect> for Request {
+    type Output = Response;
+}
+
+impl crate::Request<dialect::v0_37::Dialect> for Request {
+    type Response = Response;
+}
+
+impl crate::SimpleRequest<dialect::v0_37::Dialect> for Request {
+    type Output = Response;
+}
+
+impl crate::Request<dialect::v0_38::Dialect> for Request {
+    type Response = Response;
+}
+
+impl crate::SimpleRequest<dialect::v0_38::Dialect> for Request {
     type Output = Response;
 }
 
@@ -50,3 +71,26 @@ pub struct Response {
 }
 
 impl crate::Response for Response {}
+
+pub mod v0_38 {
+    use super::*;
+
+    #[derive(Clone, Debug, Deserialize, Serialize)]
+    pub struct DialectResponse {
+        pub blocks: Vec<block::v_038::DialectResponse>,
+
+        #[serde(with = "serializers::from_str")]
+        pub total_count: u32,
+    }
+
+    impl crate::Response for DialectResponse {}
+
+    impl From<DialectResponse> for Response {
+        fn from(response: DialectResponse) -> Self {
+            Response {
+                blocks: response.blocks.into_iter().map(Into::into).collect(),
+                total_count: response.total_count,
+            }
+        }
+    }
+}

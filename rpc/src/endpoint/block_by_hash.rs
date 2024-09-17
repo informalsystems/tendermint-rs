@@ -6,7 +6,8 @@ use tendermint::{
     Hash,
 };
 
-use crate::{dialect::Dialect, request::RequestMessage};
+use crate::dialect;
+use crate::request::RequestMessage;
 
 /// Get information about a specific block by its hash
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
@@ -38,11 +39,27 @@ impl RequestMessage for Request {
     }
 }
 
-impl<S: Dialect> crate::Request<S> for Request {
+impl crate::Request<dialect::v0_34::Dialect> for Request {
     type Response = Response;
 }
 
-impl<S: Dialect> crate::SimpleRequest<S> for Request {
+impl crate::SimpleRequest<dialect::v0_34::Dialect> for Request {
+    type Output = Response;
+}
+
+impl crate::Request<dialect::v0_37::Dialect> for Request {
+    type Response = Response;
+}
+
+impl crate::SimpleRequest<dialect::v0_37::Dialect> for Request {
+    type Output = Response;
+}
+
+impl crate::Request<dialect::v0_38::Dialect> for Request {
+    type Response = Response;
+}
+
+impl crate::SimpleRequest<dialect::v0_38::Dialect> for Request {
     type Output = Response;
 }
 
@@ -57,3 +74,28 @@ pub struct Response {
 }
 
 impl crate::Response for Response {}
+
+pub mod v_038 {
+    use super::*;
+    use crate::endpoint::block::v_038::DialectBlock;
+
+    #[derive(Clone, Debug, Deserialize, Serialize)]
+    pub struct DialectResponse {
+        /// Block ID
+        pub block_id: block::Id,
+
+        /// Block data
+        pub block: Option<DialectBlock>,
+    }
+
+    impl crate::Response for DialectResponse {}
+
+    impl From<DialectResponse> for Response {
+        fn from(msg: DialectResponse) -> Self {
+            Self {
+                block_id: msg.block_id,
+                block: msg.block.map(Into::into),
+            }
+        }
+    }
+}
