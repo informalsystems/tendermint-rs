@@ -1,5 +1,5 @@
 use tendermint::evidence;
-use tendermint_proto::v0_37 as raw;
+use tendermint_proto::v0_38 as raw;
 
 use crate::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -37,11 +37,5 @@ impl TryFrom<raw::types::Evidence> for Evidence {
 impl From<evidence::Evidence> for Evidence {
     fn from(evidence: evidence::Evidence) -> Self {
         Self(evidence)
-    }
-}
-
-impl From<Evidence> for evidence::Evidence {
-    fn from(evidence: Evidence) -> Self {
-        evidence.0
     }
 }

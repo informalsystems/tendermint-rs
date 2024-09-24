@@ -214,11 +214,13 @@ pub struct Vote {
     /// Vote extension provided by the application. Only valid for precommit
     /// messages.
     #[prost(bytes = "vec", tag = "9")]
+    #[serde(with = "crate::serializers::nullable")]
     pub extension: ::prost::alloc::vec::Vec<u8>,
     /// Vote extension signature by the validator if they participated in
     /// consensus for the associated block.
     /// Only valid for precommit messages.
     #[prost(bytes = "vec", tag = "10")]
+    #[serde(with = "crate::serializers::nullable")]
     pub extension_signature: ::prost::alloc::vec::Vec<u8>,
 }
 /// Commit contains the evidence that a block was committed by a set of validators.
@@ -418,18 +420,17 @@ pub struct DuplicateVoteEvidence {
     #[prost(message, optional, tag = "2")]
     pub vote_b: ::core::option::Option<Vote>,
     #[prost(int64, tag = "3")]
-    #[serde(rename = "TotalVotingPower", with = "crate::serializers::from_str")]
+    #[serde(alias = "TotalVotingPower", with = "crate::serializers::from_str")]
     pub total_voting_power: i64,
     #[prost(int64, tag = "4")]
-    #[serde(rename = "ValidatorPower", with = "crate::serializers::from_str")]
+    #[serde(alias = "ValidatorPower", with = "crate::serializers::from_str")]
     pub validator_power: i64,
     #[prost(message, optional, tag = "5")]
-    #[serde(rename = "Timestamp")]
+    #[serde(alias = "Timestamp")]
     pub timestamp: ::core::option::Option<crate::google::protobuf::Timestamp>,
 }
 /// LightClientAttackEvidence contains evidence of a set of validators attempting to mislead a light client.
 #[derive(::serde::Deserialize, ::serde::Serialize)]
-#[serde(rename_all = "PascalCase")]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LightClientAttackEvidence {

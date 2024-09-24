@@ -3,7 +3,8 @@
 
 pub mod v0_34;
 pub mod v0_37;
-pub use v0_37::Dialect as LatestDialect;
+pub mod v0_38;
+pub use v0_38::Dialect as LatestDialect;
 
 mod begin_block;
 mod check_tx;
@@ -29,4 +30,5 @@ mod sealed {
 
     impl Sealed for super::v0_34::Dialect {}
     impl Sealed for super::v0_37::Dialect {}
+    impl Sealed for super::v0_38::Dialect {}
 }
