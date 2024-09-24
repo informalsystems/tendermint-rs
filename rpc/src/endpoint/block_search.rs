@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::dialect;
+use crate::dialect::Dialect;
 use crate::prelude::*;
 use crate::request::RequestMessage;
 use crate::serializers;
@@ -43,23 +44,19 @@ impl crate::Request<dialect::v0_34::Dialect> for Request {
     type Response = Response;
 }
 
-impl crate::SimpleRequest<dialect::v0_34::Dialect> for Request {
-    type Output = Response;
-}
-
 impl crate::Request<dialect::v0_37::Dialect> for Request {
     type Response = Response;
 }
 
-impl crate::SimpleRequest<dialect::v0_37::Dialect> for Request {
-    type Output = Response;
-}
-
 impl crate::Request<dialect::v0_38::Dialect> for Request {
-    type Response = Response;
+    type Response = self::v0_38::DialectResponse;
 }
 
-impl crate::SimpleRequest<dialect::v0_38::Dialect> for Request {
+impl<S: Dialect> crate::SimpleRequest<S> for Request
+where
+    Self: crate::Request<S>,
+    Response: From<Self::Response>,
+{
     type Output = Response;
 }
 
@@ -77,7 +74,7 @@ pub mod v0_38 {
 
     #[derive(Clone, Debug, Deserialize, Serialize)]
     pub struct DialectResponse {
-        pub blocks: Vec<block::v_038::DialectResponse>,
+        pub blocks: Vec<block::v0_38::DialectResponse>,
 
         #[serde(with = "serializers::from_str")]
         pub total_count: u32,

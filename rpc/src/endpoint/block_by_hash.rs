@@ -6,7 +6,7 @@ use tendermint::{
     Hash,
 };
 
-use crate::dialect;
+use crate::dialect::{self, Dialect};
 use crate::request::RequestMessage;
 
 /// Get information about a specific block by its hash
@@ -43,23 +43,19 @@ impl crate::Request<dialect::v0_34::Dialect> for Request {
     type Response = Response;
 }
 
-impl crate::SimpleRequest<dialect::v0_34::Dialect> for Request {
-    type Output = Response;
-}
-
 impl crate::Request<dialect::v0_37::Dialect> for Request {
     type Response = Response;
 }
 
-impl crate::SimpleRequest<dialect::v0_37::Dialect> for Request {
-    type Output = Response;
-}
-
 impl crate::Request<dialect::v0_38::Dialect> for Request {
-    type Response = Response;
+    type Response = self::v0_38::DialectResponse;
 }
 
-impl crate::SimpleRequest<dialect::v0_38::Dialect> for Request {
+impl<S: Dialect> crate::SimpleRequest<S> for Request
+where
+    Self: crate::Request<S>,
+    Response: From<Self::Response>,
+{
     type Output = Response;
 }
 
@@ -75,9 +71,9 @@ pub struct Response {
 
 impl crate::Response for Response {}
 
-pub mod v_038 {
+pub mod v0_38 {
     use super::*;
-    use crate::endpoint::block::v_038::DialectBlock;
+    use crate::endpoint::block::v0_38::DialectBlock;
 
     #[derive(Clone, Debug, Deserialize, Serialize)]
     pub struct DialectResponse {

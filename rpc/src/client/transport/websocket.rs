@@ -234,6 +234,24 @@ impl Client for WebSocketClient {
         self.perform_with_dialect(request, LatestDialect).await
     }
 
+    async fn block<H>(&self, height: H) -> Result<endpoint::block::Response, Error>
+    where
+        H: Into<Height> + Send,
+    {
+        perform_with_compat!(self, endpoint::block::Request::new(height.into()))
+    }
+
+    async fn block_by_hash(
+        &self,
+        hash: tendermint::Hash,
+    ) -> Result<endpoint::block_by_hash::Response, Error> {
+        perform_with_compat!(self, endpoint::block_by_hash::Request::new(hash))
+    }
+
+    async fn latest_block(&self) -> Result<endpoint::block::Response, Error> {
+        perform_with_compat!(self, endpoint::block::Request::default())
+    }
+
     async fn block_results<H>(&self, height: H) -> Result<endpoint::block_results::Response, Error>
     where
         H: Into<Height> + Send,
@@ -243,6 +261,19 @@ impl Client for WebSocketClient {
 
     async fn latest_block_results(&self) -> Result<endpoint::block_results::Response, Error> {
         perform_with_compat!(self, endpoint::block_results::Request::default())
+    }
+
+    async fn block_search(
+        &self,
+        query: Query,
+        page: u32,
+        per_page: u8,
+        order: Order,
+    ) -> Result<endpoint::block_search::Response, Error> {
+        perform_with_compat!(
+            self,
+            endpoint::block_search::Request::new(query, page, per_page, order)
+        )
     }
 
     async fn header<H>(&self, height: H) -> Result<endpoint::header::Response, Error>

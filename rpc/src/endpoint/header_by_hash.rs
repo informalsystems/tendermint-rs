@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use tendermint::{block::Header, Hash};
 
-use crate::dialect::{v0_37, v0_38};
+use crate::dialect::{v0_37, v0_38, Dialect};
 use crate::request::RequestMessage;
 
 /// Get information about a specific block by its hash
@@ -40,15 +40,15 @@ impl crate::Request<v0_37::Dialect> for Request {
     type Response = Response;
 }
 
-impl crate::SimpleRequest<v0_37::Dialect> for Request {
-    type Output = Response;
-}
-
 impl crate::Request<v0_38::Dialect> for Request {
     type Response = Response;
 }
 
-impl crate::SimpleRequest<v0_38::Dialect> for Request {
+impl<S: Dialect> crate::SimpleRequest<S> for Request
+where
+    Self: crate::Request<S>,
+    Response: From<Self::Response>,
+{
     type Output = Response;
 }
 
