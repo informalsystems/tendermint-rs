@@ -332,7 +332,7 @@ fn incoming_fixtures() {
                 }
             },
             "block_at_height_1" => {
-                let result = endpoint::block::v_038::DialectResponse::from_string(content).unwrap();
+                let result = endpoint::block::v0_38::DialectResponse::from_string(content).unwrap();
                 assert!(result.block.data.first().is_none());
                 assert!(result.block.evidence.iter().next().is_none());
                 assert_eq!(result.block.header.app_hash.as_bytes(), [0u8; 8]);
@@ -373,7 +373,7 @@ fn incoming_fixtures() {
                 assert_eq!(result.block_id.part_set_header.total, 1);
             },
             "block_at_height_10" => {
-                let result = endpoint::block::v_038::DialectResponse::from_string(content).unwrap();
+                let result = endpoint::block::v0_38::DialectResponse::from_string(content).unwrap();
                 assert!(result.block.data.first().is_none());
                 assert!(result.block.evidence.iter().next().is_none());
                 assert_eq!(result.block.header.app_hash.as_bytes(), &[0u8; 8]);
@@ -430,7 +430,7 @@ fn incoming_fixtures() {
             },
             "block_by_hash" => {
                 let result =
-                    endpoint::block_by_hash::v_038::DialectResponse::from_string(content).unwrap();
+                    endpoint::block_by_hash::v0_38::DialectResponse::from_string(content).unwrap();
                 assert_eq!(
                     result.block_id.hash.to_string(),
                     "47493B51E102705F6DCCE5981E05B7C025BB5BF19CF5E4B54FE28CAFE9D20C8A"
