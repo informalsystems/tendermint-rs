@@ -234,6 +234,24 @@ impl Client for WebSocketClient {
         self.perform_with_dialect(request, LatestDialect).await
     }
 
+    async fn block<H>(&self, height: H) -> Result<endpoint::block::Response, Error>
+    where
+        H: Into<Height> + Send,
+    {
+        perform_with_compat!(self, endpoint::block::Request::new(height.into()))
+    }
+
+    async fn block_by_hash(
+        &self,
+        hash: tendermint::Hash,
+    ) -> Result<endpoint::block_by_hash::Response, Error> {
+        perform_with_compat!(self, endpoint::block_by_hash::Request::new(hash))
+    }
+
+    async fn latest_block(&self) -> Result<endpoint::block::Response, Error> {
+        perform_with_compat!(self, endpoint::block::Request::default())
+    }
+
     async fn block_results<H>(&self, height: H) -> Result<endpoint::block_results::Response, Error>
     where
         H: Into<Height> + Send,
@@ -245,12 +263,26 @@ impl Client for WebSocketClient {
         perform_with_compat!(self, endpoint::block_results::Request::default())
     }
 
+    async fn block_search(
+        &self,
+        query: Query,
+        page: u32,
+        per_page: u8,
+        order: Order,
+    ) -> Result<endpoint::block_search::Response, Error> {
+        perform_with_compat!(
+            self,
+            endpoint::block_search::Request::new(query, page, per_page, order)
+        )
+    }
+
     async fn header<H>(&self, height: H) -> Result<endpoint::header::Response, Error>
     where
         H: Into<Height> + Send,
     {
         let height = height.into();
         match self.compat {
+            CompatMode::V0_38 => self.perform(endpoint::header::Request::new(height)).await,
             CompatMode::V0_37 => self.perform(endpoint::header::Request::new(height)).await,
             CompatMode::V0_34 => {
                 // Back-fill with a request to /block endpoint and
@@ -268,6 +300,10 @@ impl Client for WebSocketClient {
         hash: Hash,
     ) -> Result<endpoint::header_by_hash::Response, Error> {
         match self.compat {
+            CompatMode::V0_38 => {
+                self.perform(endpoint::header_by_hash::Request::new(hash))
+                    .await
+            },
             CompatMode::V0_37 => {
                 self.perform(endpoint::header_by_hash::Request::new(hash))
                     .await
@@ -885,9 +921,11 @@ impl WebSocketClientDriver {
 
     async fn handle_text_msg(&mut self, msg: String) -> Result<(), Error> {
         let parse_res = match self.compat {
+            CompatMode::V0_38 => event::v0_38::DeEvent::from_string(&msg).map(Into::into),
             CompatMode::V0_37 => event::v0_37::DeEvent::from_string(&msg).map(Into::into),
             CompatMode::V0_34 => event::v0_34::DeEvent::from_string(&msg).map(Into::into),
         };
+
         if let Ok(ev) = parse_res {
             debug!("JSON-RPC event: {}", msg);
             self.publish_event(ev).await;

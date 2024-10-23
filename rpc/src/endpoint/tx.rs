@@ -41,6 +41,10 @@ impl crate::Request<dialect::v0_37::Dialect> for Request {
     type Response = Response;
 }
 
+impl crate::Request<dialect::v0_38::Dialect> for Request {
+    type Response = Response;
+}
+
 impl<S: Dialect> crate::SimpleRequest<S> for Request
 where
     Self: crate::Request<S>,

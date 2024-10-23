@@ -332,7 +332,7 @@ fn incoming_fixtures() {
                 }
             },
             "block_at_height_1" => {
-                let result = endpoint::block::Response::from_string(content).unwrap();
+                let result = endpoint::block::v0_38::DialectResponse::from_string(content).unwrap();
                 assert!(result.block.data.first().is_none());
                 assert!(result.block.evidence.iter().next().is_none());
                 assert_eq!(result.block.header.app_hash.as_bytes(), [0u8; 8]);
@@ -373,7 +373,7 @@ fn incoming_fixtures() {
                 assert_eq!(result.block_id.part_set_header.total, 1);
             },
             "block_at_height_10" => {
-                let result = endpoint::block::Response::from_string(content).unwrap();
+                let result = endpoint::block::v0_38::DialectResponse::from_string(content).unwrap();
                 assert!(result.block.data.first().is_none());
                 assert!(result.block.evidence.iter().next().is_none());
                 assert_eq!(result.block.header.app_hash.as_bytes(), &[0u8; 8]);
@@ -429,21 +429,24 @@ fn incoming_fixtures() {
                 assert!(result.validator_updates.is_empty());
             },
             "block_by_hash" => {
-                let result = endpoint::block_by_hash::Response::from_string(content).unwrap();
+                let result =
+                    endpoint::block_by_hash::v0_38::DialectResponse::from_string(content).unwrap();
                 assert_eq!(
                     result.block_id.hash.to_string(),
                     "47493B51E102705F6DCCE5981E05B7C025BB5BF19CF5E4B54FE28CAFE9D20C8A"
                 );
             },
             "block_search" => {
-                let result = endpoint::block_search::Response::from_string(content).unwrap();
+                let result =
+                    endpoint::block_search::v0_38::DialectResponse::from_string(content).unwrap();
                 assert_eq!(result.total_count as usize, result.blocks.len());
                 for response in result.blocks {
                     assert!(response.block.header.height.value() > 1);
                 }
             },
             "block_search_evidence" => {
-                let result = endpoint::block_search::Response::from_string(content).unwrap();
+                let result =
+                    endpoint::block_search::v0_38::DialectResponse::from_string(content).unwrap();
                 assert_eq!(result.total_count as usize, result.blocks.len());
 
                 // Test a few selected attributes of the results.
@@ -454,21 +457,21 @@ fn incoming_fixtures() {
 
                     fn check_vote(vote: &Vote) {
                         assert_eq!(vote.vote_type, vote::Type::Precommit);
-                        assert_eq!(vote.height.value(), 8009);
+                        assert_eq!(vote.height.value(), 547);
                         assert_eq!(vote.round.value(), 0);
                         assert_eq!(
                             vote.validator_address,
-                            "9319035301DA526CC78DCF174A47A74F81401291".parse().unwrap(),
+                            "C888306A908A217B9A943D1DAD8790044D0947A4".parse().unwrap(),
                         );
-                        assert_eq!(vote.validator_index.value(), 8);
+                        assert_eq!(vote.validator_index.value(), 2);
                     }
 
                     if let Evidence::DuplicateVote(dup) = evidence {
-                        assert_eq!(dup.total_voting_power.value(), 121);
-                        assert_eq!(dup.validator_power.value(), 1);
+                        assert_eq!(dup.total_voting_power.value(), 1509);
+                        assert_eq!(dup.validator_power.value(), 99);
                         assert_eq!(
                             dup.timestamp,
-                            "2022-09-12T19:49:49.984608464Z".parse().unwrap()
+                            "2024-09-13T15:58:27.05956617Z".parse().unwrap()
                         );
 
                         check_vote(&dup.vote_a);

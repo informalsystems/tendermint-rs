@@ -19,17 +19,17 @@ pub const TENDERMINT_VERSIONS: &[TendermintVersion] = &[
     TendermintVersion {
         repo: "https://github.com/cometbft/cometbft",
         ident: "v0_34",
-        commitish: "v0.34.29",
+        commitish: "v0.34.35",
     },
     TendermintVersion {
         repo: "https://github.com/cometbft/cometbft",
         ident: "v0_37",
-        commitish: "v0.37.2",
+        commitish: "v0.37.11",
     },
     TendermintVersion {
         repo: "https://github.com/cometbft/cometbft",
         ident: "v0_38",
-        commitish: "v0.38.0",
+        commitish: "v0.38.12",
     },
 ];
 
@@ -65,7 +65,12 @@ const RENAME_TOTAL_VOTING_POWER_QUOTED: &str =
     r#"#[serde(rename = "TotalVotingPower", with = "crate::serializers::from_str")]"#;
 const RENAME_VALIDATOR_POWER_QUOTED: &str =
     r#"#[serde(rename = "ValidatorPower", with = "crate::serializers::from_str")]"#;
+const ALIAS_TOTAL_VOTING_POWER_QUOTED: &str =
+    r#"#[serde(alias = "TotalVotingPower", with = "crate::serializers::from_str")]"#;
+const ALIAS_VALIDATOR_POWER_QUOTED: &str =
+    r#"#[serde(alias = "ValidatorPower", with = "crate::serializers::from_str")]"#;
 const RENAME_TIMESTAMP: &str = r#"#[serde(rename = "Timestamp")]"#;
+const ALIAS_TIMESTAMP: &str = r#"#[serde(alias = "Timestamp")]"#;
 const RENAME_PARTS: &str = r#"#[serde(rename = "parts", alias = "part_set_header")]"#;
 
 /// Custom type attributes applied on top of protobuf structs
@@ -73,7 +78,7 @@ const RENAME_PARTS: &str = r#"#[serde(rename = "parts", alias = "part_set_header
 /// the second item is the string that should be added as annotation.
 /// The first item is a path as defined in the prost_build::Config::btree_map here:
 /// https://docs.rs/prost-build/0.6.1/prost_build/struct.Config.html#method.btree_map
-pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
+pub static CUSTOM_TYPE_ATTRIBUTES_COMMON: &[(&str, &str)] = &[
     (".tendermint.abci", SERIALIZED),
     (".tendermint.crypto.Proof", SERIALIZED),
     (".tendermint.crypto.ProofOp", SERIALIZED),
@@ -101,10 +106,6 @@ pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.Header", SERIALIZED),
     (".tendermint.types.LightBlock", SERIALIZED),
     (".tendermint.types.LightClientAttackEvidence", SERIALIZED),
-    (
-        ".tendermint.types.LightClientAttackEvidence",
-        RENAME_ALL_PASCALCASE,
-    ),
     (".tendermint.types.PartSetHeader", SERIALIZED),
     (".tendermint.types.SignedHeader", SERIALIZED),
     (".tendermint.types.TxProof", SERIALIZED),
@@ -116,6 +117,18 @@ pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.Vote", SERIALIZED),
     (".tendermint.version.Consensus", SERIALIZED),
 ];
+
+pub static CUSTOM_TYPE_ATTRIBUTES_V_034: &[(&str, &str)] = &[(
+    ".tendermint.types.LightClientAttackEvidence",
+    RENAME_ALL_PASCALCASE,
+)];
+
+pub static CUSTOM_TYPE_ATTRIBUTES_V_037: &[(&str, &str)] = &[(
+    ".tendermint.types.LightClientAttackEvidence",
+    RENAME_ALL_PASCALCASE,
+)];
+
+pub static CUSTOM_TYPE_ATTRIBUTES_V_038: &[(&str, &str)] = &[];
 
 /// Custom field attributes applied on top of protobuf fields in (a) struct(s)
 /// The first item in the tuple defines the field where the annotation should apply and
@@ -174,16 +187,12 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.CommitSig.timestamp", OPTIONAL),
     (".tendermint.types.CommitSig.signature", BASE64STRING),
     (
-        ".tendermint.types.DuplicateVoteEvidence.total_voting_power",
-        RENAME_TOTAL_VOTING_POWER_QUOTED,
+        ".tendermint.types.Evidence.sum.duplicate_vote_evidence",
+        RENAME_DUPLICATEVOTE,
     ),
     (
-        ".tendermint.types.DuplicateVoteEvidence.validator_power",
-        RENAME_VALIDATOR_POWER_QUOTED,
-    ),
-    (
-        ".tendermint.types.DuplicateVoteEvidence.timestamp",
-        RENAME_TIMESTAMP,
+        ".tendermint.types.Evidence.sum.light_client_attack_evidence",
+        RENAME_LIGHTCLIENTATTACK,
     ),
     (
         ".tendermint.types.LightClientAttackEvidence.common_height",
@@ -197,6 +206,8 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.Vote.validator_address", HEXSTRING),
     (".tendermint.types.Vote.signature", BASE64STRING),
     (".tendermint.types.Vote.timestamp", OPTIONAL),
+    (".tendermint.types.Vote.extension", NULLABLE),
+    (".tendermint.types.Vote.extension_signature", NULLABLE),
     (".tendermint.types.Validator.address", HEXSTRING),
     (
         ".tendermint.types.Validator.voting_power",
@@ -224,14 +235,6 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         RENAME_SECPPUBKEY,
     ),
     (".tendermint.crypto.PublicKey.sum.sr25519", RENAME_SRPUBKEY),
-    (
-        ".tendermint.types.Evidence.sum.duplicate_vote_evidence",
-        RENAME_DUPLICATEVOTE,
-    ),
-    (
-        ".tendermint.types.Evidence.sum.light_client_attack_evidence",
-        RENAME_LIGHTCLIENTATTACK,
-    ),
     (".tendermint.types.TxProof.data", BASE64STRING),
     (".tendermint.types.TxProof.root_hash", HEXSTRING),
     (".tendermint.crypto.Proof.index", QUOTED),
@@ -239,3 +242,66 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.crypto.Proof.aunts", VEC_BASE64STRING),
     (".tendermint.crypto.Proof.leaf_hash", BASE64STRING),
 ];
+
+pub static CUSTOM_FIELD_ATTRIBUTES_V_034: &[(&str, &str)] = &[
+    (
+        ".tendermint.types.DuplicateVoteEvidence.total_voting_power",
+        RENAME_TOTAL_VOTING_POWER_QUOTED,
+    ),
+    (
+        ".tendermint.types.DuplicateVoteEvidence.validator_power",
+        RENAME_VALIDATOR_POWER_QUOTED,
+    ),
+    (
+        ".tendermint.types.DuplicateVoteEvidence.timestamp",
+        RENAME_TIMESTAMP,
+    ),
+];
+
+pub static CUSTOM_FIELD_ATTRIBUTES_V_037: &[(&str, &str)] = &[
+    (
+        ".tendermint.types.DuplicateVoteEvidence.total_voting_power",
+        RENAME_TOTAL_VOTING_POWER_QUOTED,
+    ),
+    (
+        ".tendermint.types.DuplicateVoteEvidence.validator_power",
+        RENAME_VALIDATOR_POWER_QUOTED,
+    ),
+    (
+        ".tendermint.types.DuplicateVoteEvidence.timestamp",
+        RENAME_TIMESTAMP,
+    ),
+];
+
+pub static CUSTOM_FIELD_ATTRIBUTES_V_038: &[(&str, &str)] = &[
+    (
+        ".tendermint.types.DuplicateVoteEvidence.total_voting_power",
+        ALIAS_TOTAL_VOTING_POWER_QUOTED,
+    ),
+    (
+        ".tendermint.types.DuplicateVoteEvidence.validator_power",
+        ALIAS_VALIDATOR_POWER_QUOTED,
+    ),
+    (
+        ".tendermint.types.DuplicateVoteEvidence.timestamp",
+        ALIAS_TIMESTAMP,
+    ),
+];
+
+pub fn get_custom_field_attributes(version: &TendermintVersion) -> &[(&str, &str)] {
+    match version.ident {
+        "v0_34" => CUSTOM_FIELD_ATTRIBUTES_V_034,
+        "v0_37" => CUSTOM_FIELD_ATTRIBUTES_V_037,
+        "v0_38" => CUSTOM_FIELD_ATTRIBUTES_V_038,
+        _ => unreachable!(),
+    }
+}
+
+pub fn get_custom_type_attributes(version: &TendermintVersion) -> &[(&str, &str)] {
+    match version.ident {
+        "v0_34" => CUSTOM_TYPE_ATTRIBUTES_V_034,
+        "v0_37" => CUSTOM_TYPE_ATTRIBUTES_V_037,
+        "v0_38" => CUSTOM_TYPE_ATTRIBUTES_V_038,
+        _ => unreachable!(),
+    }
+}

@@ -4,7 +4,7 @@ use alloc::collections::BTreeMap as HashMap;
 
 use async_trait::async_trait;
 
-use crate::dialect::{v0_37, Dialect};
+use crate::dialect::{v0_38, Dialect};
 use crate::{
     client::{
         subscription::SubscriptionTx,
@@ -65,7 +65,7 @@ pub struct MockClient<M: MockRequestMatcher> {
 impl<M: MockRequestMatcher> Client for MockClient<M> {
     async fn perform<R>(&self, request: R) -> Result<R::Output, Error>
     where
-        R: SimpleRequest<v0_37::Dialect>,
+        R: SimpleRequest<v0_38::Dialect>,
     {
         self.matcher
             .response_for(request)
