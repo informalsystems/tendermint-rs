@@ -102,7 +102,6 @@ pub mod v0_38 {
         pub data: Vec<Vec<u8>>,
 
         /// Evidence of malfeasance
-        // #[serde(with = "self::evidence_serializers")]
         pub evidence: evidence::List,
 
         /// Last commit, should be `None` for the initial block.
