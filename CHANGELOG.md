@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## v0.40.0
+
+*October 23rd, 2024*
+
+This release adds a new dialect for CometBFT `v0.38.x`, enabling the correct serialization of misbehavior `Evidence`. This improvement ensures compatibility with CometBFT `v0.38.x`, addressing specific issues in evidence handling for this version.
+
+### BREAKING CHANGES
+
+- [tendermint-rpc] Add new dialect for CometBFT v0.38.x
+  ([\#1467](https://github.com/informalsystems/tendermint-rs/pull/1467))
+
+### BUG FIXES
+
+- [tendermint-rpc] Fix serialization of misbehaviour `Evidence`
+  on CometBFT v0.38.x using the newly introduced dialect
+  ([\#1467](https://github.com/informalsystems/tendermint-rs/pull/1467))
+
 ## v0.39.1
 
 *August 9th, 2024*
