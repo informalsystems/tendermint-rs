@@ -411,6 +411,7 @@ impl Tester {
                 match batch(path, input) {
                     None => continue,
                     Some(tests) => {
+                        res_tests.reserve_exact(tests.len());
                         for (name, input) in tests {
                             let test_path = path.to_string() + "/" + &name;
                             res_tests.push((test_path, input));

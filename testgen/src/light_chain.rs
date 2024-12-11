@@ -20,7 +20,8 @@ impl LightChain {
     // TODO: like how does someone generate a chain with different validators at each height
     pub fn default_with_length(num: u64) -> Self {
         let mut last_block = LightBlock::new_default(1);
-        let mut light_blocks: Vec<LightBlock> = vec![last_block.clone()];
+        let mut light_blocks: Vec<LightBlock> = Vec::with_capacity(num as usize);
+        light_blocks.push(last_block.clone());
 
         for _i in 2..=num {
             // add "next" light block to the vector
