@@ -393,17 +393,49 @@ where
 }
 
 /// The types of Tendermint events for which we can query at present.
+///
+/// Ref: <https://github.com/cometbft/cometbft/blob/68e5e1b4e3bd342a653a73091a1af7cc5e88b86b/types/events.go#L12-L40>
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EventType {
     NewBlock,
+    NewBlockHeader,
+    NewBlockEvents,
+    NewEvidence,
     Tx,
+    ValidatorSetUpdates,
+    CompleteProposal,
+    Lock,
+    NewRound,
+    NewRoundStep,
+    Polka,
+    Relock,
+    TimeoutPropose,
+    TimeoutWait,
+    Unlock,
+    ValidBlock,
+    Vote,
 }
 
 impl fmt::Display for EventType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             EventType::NewBlock => write!(f, "NewBlock"),
+            EventType::NewBlockHeader => write!(f, "NewBlockHeader"),
+            EventType::NewBlockEvents => write!(f, "NewBlockEvents"),
+            EventType::NewEvidence => write!(f, "NewEvidence"),
             EventType::Tx => write!(f, "Tx"),
+            EventType::ValidatorSetUpdates => write!(f, "ValidatorSetUpdates"),
+            EventType::CompleteProposal => write!(f, "CompleteProposal"),
+            EventType::Lock => write!(f, "Lock"),
+            EventType::NewRound => write!(f, "NewRound"),
+            EventType::NewRoundStep => write!(f, "NewRoundStep"),
+            EventType::Polka => write!(f, "Polka"),
+            EventType::Relock => write!(f, "Relock"),
+            EventType::TimeoutPropose => write!(f, "TimeoutPropose"),
+            EventType::TimeoutWait => write!(f, "TimeoutWait"),
+            EventType::Unlock => write!(f, "Unlock"),
+            EventType::ValidBlock => write!(f, "ValidBlock"),
+            EventType::Vote => write!(f, "Vote"),
         }
     }
 }
@@ -411,10 +443,25 @@ impl fmt::Display for EventType {
 impl FromStr for EventType {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Error> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "NewBlock" => Ok(Self::NewBlock),
+            "NewBlockHeader" => Ok(Self::NewBlockHeader),
+            "NewBlockEvents" => Ok(Self::NewBlockEvents),
+            "NewEvidence" => Ok(Self::NewEvidence),
             "Tx" => Ok(Self::Tx),
+            "ValidatorSetUpdates" => Ok(Self::ValidatorSetUpdates),
+            "CompleteProposal" => Ok(Self::CompleteProposal),
+            "Lock" => Ok(Self::Lock),
+            "NewRound" => Ok(Self::NewRound),
+            "NewRoundStep" => Ok(Self::NewRoundStep),
+            "Polka" => Ok(Self::Polka),
+            "Relock" => Ok(Self::Relock),
+            "TimeoutPropose" => Ok(Self::TimeoutPropose),
+            "TimeoutWait" => Ok(Self::TimeoutWait),
+            "Unlock" => Ok(Self::Unlock),
+            "ValidBlock" => Ok(Self::ValidBlock),
+            "Vote" => Ok(Self::Vote),
             invalid => Err(Error::unrecognized_event_type(invalid.to_string())),
         }
     }
