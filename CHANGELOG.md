@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## 0.40.1
+
+*December 24th, 2024*
+
+This is a bug fix release that address omissions in the `v0.40.0` release.
+
+### BUG FIXES
+
+- [tendermint] export `abci::event::v0_37` to construct `EventAttribute::V037` variants.
+  ([\#1479](https://github.com/informalsystems/tendermint-rs/pull/1479), ([\#1480](https://github.com/informalsystems/tendermint-rs/pull/1480))
+- [tendermint-light-client-js] bump `serde-wasm-bindgen` to `v0.6.5` and `js-sys` to `=v0.3.70` to
+  fix compilation failure of `wasm-bindgen-test`. ([\#1481](https://github.com/informalsystems/tendermint-rs/pull/1481))
+
 ## v0.40.0
 
 *October 23rd, 2024*
