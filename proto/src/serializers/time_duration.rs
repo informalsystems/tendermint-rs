@@ -4,13 +4,14 @@ use core::time::Duration;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::prelude::*;
+use crate::serializers::cow_str::CowStr;
 
 /// Deserialize string into Duration
 pub fn deserialize<'de, D>(deserializer: D) -> Result<Duration, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let value = String::deserialize(deserializer)?
+    let value = CowStr::deserialize(deserializer)?
         .parse::<u64>()
         .map_err(|e| D::Error::custom(format!("{e}")))?;
 
