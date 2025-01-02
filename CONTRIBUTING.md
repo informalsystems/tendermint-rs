@@ -38,7 +38,7 @@ We consider a PR to be "small" if it's under 100 lines' worth of meaningful code
 changes, but we will accommodate PRs of up to about 300 lines. Only in
 exceptional circumstances will we review larger PRs.
 
-Keeping PRs small helps reduce maintainers' workloads, increases speed of
+Keeping PRs small helps reduce the maintainers' workloads, increases speed of
 getting feedback, and prevents PRs from standing open for long periods of time.
 If you need to make bigger changes, it's recommended that you plan out your
 changes in smaller, more manageable chunks (e.g. one issue may take several PRs
