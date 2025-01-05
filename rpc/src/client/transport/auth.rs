@@ -1,5 +1,5 @@
 //! This module defines the `Authorization` type for
-//! authorizing a HTTP or WebSocket RPC client using
+//! authorizing an HTTP or WebSocket RPC client using
 //! HTTP Basic authentication.
 
 use alloc::string::{String, ToString};
