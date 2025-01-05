@@ -66,7 +66,7 @@ Config includes:
 The configuration contains an initial list of full nodes (peers).
 For the sake of simplicity, one of the peers is selected as the "primary", while the
 rest are considered "backups". Most of the data is downloaded from the primary,
-and double checked against the backups.
+and double-checked against the backups.
 
 The state is considered "expired" if the difference between the current time and
 the time from the trusted header is greater than a configurable "trusting

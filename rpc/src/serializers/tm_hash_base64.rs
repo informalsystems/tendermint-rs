@@ -6,7 +6,7 @@ use tendermint::hash::{Algorithm::Sha256, Hash, SHA256_HASH_SIZE};
 
 use crate::prelude::*;
 
-/// Deserialize a base64-encoded string into an tendermint::Hash
+/// Deserialize a base64-encoded string into a tendermint::Hash
 pub fn deserialize<'de, D>(deserializer: D) -> Result<Hash, D::Error>
 where
     D: Deserializer<'de>,
