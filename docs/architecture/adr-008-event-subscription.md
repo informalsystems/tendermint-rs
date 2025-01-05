@@ -324,7 +324,7 @@ pub enum EventType {
 }
 
 // A condition specifies a key (first parameter) and, depending on the
-// operation, an value which is an operand of some kind.
+// operation, a value which is an operand of some kind.
 pub enum Condition {
     // Equals
     Eq(String, Operand),
