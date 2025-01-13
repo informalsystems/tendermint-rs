@@ -293,6 +293,7 @@ pub trait Client {
 
     /// `/genesis_chunked`: get genesis file in multiple chunks.
     #[cfg(any(feature = "http-client", feature = "websocket-client"))]
+    #[cfg_attr(target_arch = "wasm32", allow(elided_named_lifetimes))]
     async fn genesis_chunked_stream(
         &self,
     ) -> core::pin::Pin<Box<dyn futures::Stream<Item = Result<Vec<u8>, Error>> + '_>> {
@@ -366,7 +367,12 @@ pub trait Client {
             }
 
             attempts_remaining -= 1;
-            tokio::time::sleep(poll_interval).await;
+
+            cfg_if::cfg_if! { if #[cfg(target_arch = "wasm32")] {
+                wasmtimer::tokio::sleep(poll_interval).await;
+            } else {
+                tokio::time::sleep(poll_interval).await;
+            }}
         }
 
         Ok(())

@@ -4,7 +4,8 @@ use core::str::FromStr;
 use core::time::Duration;
 
 use async_trait::async_trait;
-use reqwest::{header, Proxy};
+use cfg_if::cfg_if;
+use reqwest::header;
 
 use tendermint::{block::Height, evidence::Evidence, Hash};
 use tendermint_config::net;
@@ -20,6 +21,7 @@ use crate::{Error, Order, Scheme, SimpleRequest, Url};
 
 use super::auth;
 
+#[cfg(not(target_arch = "wasm32"))]
 const USER_AGENT: &str = concat!("tendermint.rs/", env!("CARGO_PKG_VERSION"));
 
 /// A JSON-RPC/HTTP Tendermint RPC client (implements [`crate::Client`]).
@@ -115,23 +117,30 @@ impl Builder {
         let inner = if let Some(inner) = self.client {
             inner
         } else {
-            let builder = reqwest::ClientBuilder::new()
-                .user_agent(self.user_agent.unwrap_or_else(|| USER_AGENT.to_string()))
-                .timeout(self.timeout);
+            cfg_if! {if #[cfg(target_arch = "wasm32")] {
+                // .user_agent method will become available in reqwest 0.12
+                reqwest::ClientBuilder::new()
+                    // .user_agent(self.user_agent.unwrap_or_else(|| USER_AGENT.to_string()))
+                    .build().map_err(Error::http)?
+            } else {
+                let builder = reqwest::ClientBuilder::new()
+                    .user_agent(self.user_agent.unwrap_or_else(|| USER_AGENT.to_string()))
+                    .timeout(self.timeout);
 
-            match self.proxy_url {
-                None => builder.build().map_err(Error::http)?,
-                Some(proxy_url) => {
-                    let proxy = if self.url.0.is_secure() {
-                        Proxy::https(reqwest::Url::from(proxy_url.0))
-                            .map_err(Error::invalid_proxy)?
-                    } else {
-                        Proxy::http(reqwest::Url::from(proxy_url.0))
-                            .map_err(Error::invalid_proxy)?
-                    };
-                    builder.proxy(proxy).build().map_err(Error::http)?
-                },
-            }
+               match self.proxy_url {
+                    None => builder.build().map_err(Error::http)?,
+                    Some(proxy_url) => {
+                        let proxy = if self.url.0.is_secure() {
+                            reqwest::Proxy::https(reqwest::Url::from(proxy_url.0))
+                                .map_err(Error::invalid_proxy)?
+                        } else {
+                            reqwest::Proxy::http(reqwest::Url::from(proxy_url.0))
+                                .map_err(Error::invalid_proxy)?
+                        };
+                        builder.proxy(proxy).build().map_err(Error::http)?
+                    },
+                }
+            }}
         };
 
         Ok(HttpClient {
@@ -248,7 +257,8 @@ impl HttpClient {
     }
 }
 
-#[async_trait]
+#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
+#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 impl Client for HttpClient {
     async fn perform<R>(&self, request: R) -> Result<R::Output, Error>
     where
