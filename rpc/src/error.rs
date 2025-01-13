@@ -18,10 +18,10 @@ type HttpStatusCode = reqwest::StatusCode;
 #[cfg(not(feature = "reqwest"))]
 type HttpStatusCode = core::num::NonZeroU16;
 
-#[cfg(feature = "tokio")]
+#[cfg(all(feature = "tokio", not(target_arch = "wasm32")))]
 type JoinError = flex_error::DisplayOnly<tokio::task::JoinError>;
 
-#[cfg(not(feature = "tokio"))]
+#[cfg(any(not(feature = "tokio"), target_arch = "wasm32"))]
 type JoinError = flex_error::NoSource;
 
 #[cfg(feature = "async-tungstenite")]
