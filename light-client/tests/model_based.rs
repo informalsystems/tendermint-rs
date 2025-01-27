@@ -710,7 +710,7 @@ mod mbt {
     }
 
     fn model_based_test_batch(batch: ApalacheTestBatch) -> Vec<(String, String)> {
-        let mut res = Vec::new();
+        let mut res = Vec::with_capacity(batch.tests.len());
         for test in batch.tests {
             let tc = ApalacheTestCase {
                 model: batch.model.clone(),

@@ -191,7 +191,7 @@ impl Application for KeyValueStoreApp {
     }
 
     fn finalize_block(&self, request: RequestFinalizeBlock) -> ResponseFinalizeBlock {
-        let mut events = Vec::new();
+        let mut events = Vec::with_capacity(request.txs.len());
         for tx in request.txs {
             let tx = std::str::from_utf8(&tx).unwrap();
             let tx_parts = tx.split('=').collect::<Vec<&str>>();
