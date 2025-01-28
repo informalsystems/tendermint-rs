@@ -1,10 +1,12 @@
 //! RPC subscription event-related data structures.
 
-use alloc::collections::BTreeMap as HashMap;
+use alloc::collections::BTreeMap;
 
-use tendermint::{abci, block, Block};
+use tendermint::abci;
+use tendermint::{block, Block};
 
-use crate::{prelude::*, query::EventType};
+use crate::prelude::*;
+use crate::query::EventType;
 
 /// An incoming event produced by a [`Subscription`].
 ///
@@ -16,7 +18,7 @@ pub struct Event {
     /// The data associated with the event.
     pub data: EventData,
     /// Event type and attributes map.
-    pub events: Option<HashMap<String, Vec<String>>>,
+    pub events: Option<BTreeMap<String, Vec<String>>>,
 }
 
 impl Event {
@@ -80,7 +82,7 @@ pub mod v0_34 {
     use crate::dialect::v0_34::Event as RpcEvent;
     use crate::prelude::*;
     use crate::{dialect, serializers, Response};
-    use alloc::collections::BTreeMap as HashMap;
+    use alloc::collections::BTreeMap;
     use serde::{Deserialize, Serialize};
     use tendermint::Block;
 
@@ -91,7 +93,7 @@ pub mod v0_34 {
         /// The data associated with the event.
         pub data: DialectEventData,
         /// Event type and attributes map.
-        pub events: Option<HashMap<String, Vec<String>>>,
+        pub events: Option<BTreeMap<String, Vec<String>>>,
     }
 
     pub type DeEvent = DialectEvent;
@@ -256,7 +258,7 @@ mod latest {
     use super::{Event, EventData, TxInfo, TxResult};
     use crate::prelude::*;
     use crate::{serializers, Response};
-    use alloc::collections::BTreeMap as HashMap;
+    use alloc::collections::BTreeMap;
     use serde::{Deserialize, Serialize};
     use tendermint::abci::Event as RpcEvent;
     use tendermint::{abci, block, Block};
@@ -268,7 +270,7 @@ mod latest {
         /// The data associated with the event.
         pub data: DeEventData,
         /// Event type and attributes map.
-        pub events: Option<HashMap<String, Vec<String>>>,
+        pub events: Option<BTreeMap<String, Vec<String>>>,
     }
 
     impl Response for DeEvent {}
@@ -408,7 +410,7 @@ mod latest {
 pub mod v0_37 {
     use super::{Event, EventData};
     use crate::prelude::*;
-    use alloc::collections::BTreeMap as HashMap;
+    use alloc::collections::BTreeMap;
     use serde::Serialize;
     use tendermint::{abci, Block};
 
@@ -421,7 +423,7 @@ pub mod v0_37 {
         /// The data associated with the event.
         pub data: SerEventData,
         /// Event type and attributes map.
-        pub events: Option<HashMap<String, Vec<String>>>,
+        pub events: Option<BTreeMap<String, Vec<String>>>,
     }
 
     impl From<Event> for SerEvent {
@@ -487,7 +489,7 @@ pub mod v0_37 {
 pub mod v0_38 {
     use super::{Event, EventData};
     use crate::prelude::*;
-    use alloc::collections::BTreeMap as HashMap;
+    use alloc::collections::BTreeMap;
     use serde::Serialize;
     use tendermint::{abci, block, Block};
 
@@ -500,7 +502,7 @@ pub mod v0_38 {
         /// The data associated with the event.
         pub data: SerEventData,
         /// Event type and attributes map.
-        pub events: Option<HashMap<String, Vec<String>>>,
+        pub events: Option<BTreeMap<String, Vec<String>>>,
     }
 
     impl From<Event> for SerEvent {
