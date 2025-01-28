@@ -149,7 +149,7 @@ pub trait VotingPowerCalculator: Send + Sync {
     /// validator sets.
     ///
     /// This is equivalent to calling [`Self::voting_power_in`] on each set
-    /// separately but may be more optimised.  Implementators are encouraged to
+    /// separately but may be more optimised.  Implementers are encouraged to
     /// write a properly optimised method which avoids checking the same
     /// signature twice but for a simple unoptimised implementation the
     /// following works:

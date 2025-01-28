@@ -378,7 +378,7 @@ impl Tester {
         tests
     }
 
-    pub fn unparseable_tests(&self) -> Vec<String> {
+    pub fn unparsable_tests(&self) -> Vec<String> {
         let mut tests = Vec::new();
         if let Some(results) = self.results.get("") {
             for (path, res) in results {
@@ -522,7 +522,7 @@ impl Tester {
                 print(&format!("  {path}"))
             }
         }
-        let tests = self.unparseable_tests();
+        let tests = self.unparsable_tests();
         if !tests.is_empty() {
             do_panic = true;
             print("\nUnparseable tests:  ");

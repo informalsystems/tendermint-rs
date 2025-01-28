@@ -557,7 +557,7 @@ func (ls LightStore) LatestVerified() LightBlock
 
 #### **[LCV-FUNC-UPDATE.1]**:
 ```go
-func (ls LightStore) Update(lightBlock LightBlock, verfiedState VerifiedState)
+func (ls LightStore) Update(lightBlock LightBlock, verifiedState VerifiedState)
 ```
 - Expected postcondition
    - The state of the LightBlock is set to *verifiedState*.

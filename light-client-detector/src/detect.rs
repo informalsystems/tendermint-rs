@@ -111,7 +111,7 @@ where
     }
 }
 
-/// An error that arised when comparing a header from the primary with a header from a witness
+/// An error that arose when comparing a header from the primary with a header from a witness
 /// with [`compare_new_header_with_witness`].
 #[derive(Debug)]
 pub enum CompareError {
