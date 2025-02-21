@@ -1,0 +1,1 @@
+- [tendermint-rpc] update reqwest dependency and add re-export reqwest::Client. ([\#1487](https://github.com/informalsystems/tendermint-rs/pull/1487))
