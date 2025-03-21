@@ -59,10 +59,11 @@ pub const fn min_protobuf_time() -> OffsetDateTime {
 pub const fn max_protobuf_time() -> OffsetDateTime {
     datetime!(9999-12-31 23:59:59.999999999 UTC)
 }
+use time::Month;
 
 fn num_days_in_month(year: i32, month: u8) -> u8 {
-    let month = month.try_into().unwrap();
-    time::util::days_in_year_month(year, month)
+    let month_enum = Month::try_from(month).expect("Invalid month"); 
+    time::util::days_in_month(month_enum, year)
 }
 
 prop_compose! {
