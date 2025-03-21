@@ -91,6 +91,7 @@ impl SubscriptionRouter {
 
     /// Immediately add a new subscription to the router without waiting for
     /// confirmation.
+    #[allow(dead_code)]
     pub fn add(&mut self, id: impl ToString, query: impl ToString, tx: SubscriptionTx) {
         let query = query.to_string();
         let subs_for_query = match self.subscriptions.get_mut(&query) {
@@ -105,6 +106,7 @@ impl SubscriptionRouter {
     }
 
     /// Removes all the subscriptions relating to the given query.
+    #[allow(dead_code)]
     pub fn remove_by_query(&mut self, query: impl ToString) -> usize {
         self.subscriptions
             .remove(&query.to_string())
