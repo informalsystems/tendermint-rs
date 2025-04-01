@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Unreleased
+
+### BUG FIXES
+
+- [tendermint-rpc] strip auth info from url to avoid double authorization header [\#1494](https://github.com/informalsystems/tendermint-rs/pull/1494)
+
 ## 0.40.1
 
 *December 24th, 2024*
