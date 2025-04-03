@@ -197,7 +197,7 @@ impl serde::Serialize for Duration {
 
 struct DurationVisitor;
 
-impl<'de> serde::de::Visitor<'de> for DurationVisitor {
+impl serde::de::Visitor<'_> for DurationVisitor {
     type Value = Duration;
 
     fn expecting(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
