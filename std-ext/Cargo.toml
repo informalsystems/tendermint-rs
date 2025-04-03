@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint-std-ext"
-version    = "0.40.1"
+version    = "0.40.2"
 edition    = "2021"
 license    = "Apache-2.0"
 homepage   = "https://www.tendermint.com/"
