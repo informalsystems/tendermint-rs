@@ -1,6 +1,6 @@
 # tendermint-rs
 
-[![Crate][crate-image]][crate-link]
+[![Crate][create-image]][crate-link]
 [![Docs][docs-image]][docs-link]
 [![Build Status][build-image]][build-link]
 [![Audit Status][audit-image]][audit-link]
