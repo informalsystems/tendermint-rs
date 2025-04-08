@@ -231,7 +231,6 @@ impl Generator<TmLightBlock> for LightBlock {
 
         Ok(light_block)
     }
-
 }
 
 /// A helper function to generate SignedHeader used by TmLightBlock
