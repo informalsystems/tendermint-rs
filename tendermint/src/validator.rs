@@ -315,14 +315,12 @@ tendermint_pb_modules! {
         type Error = Error;
 
         fn try_from(value: RawValidator) -> Result<Self, Self::Error> {
-            let pub_key = value
-                    .pub_key
-                    .ok_or_else(Error::missing_public_key)?
-                    .try_into()?;
+            let raw_pub_key = value.pub_key.ok_or_else(Error::missing_public_key)?;
             let address = value.address.try_into()?;
-            if account::Id::from(pub_key) != address {
+            if account::Id::try_from(raw_pub_key.clone())? != address {
                 return Err(Error::invalid_validator_address());
             }
+            let pub_key = raw_pub_key.try_into()?;
             Ok(Info {
                 address: address,
                 pub_key: pub_key,
@@ -336,8 +334,7 @@ tendermint_pb_modules! {
     impl From<Info> for RawValidator {
         fn from(value: Info) -> Self {
             RawValidator {
-                address: account::Id::from(value.pub_key).into(), // overwrite the address for
-                                                                  // safety
+                address: value.address.into(),
                 pub_key: Some(value.pub_key.into()),
                 voting_power: value.power.into(),
                 proposer_priority: value.proposer_priority.into(),

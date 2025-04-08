@@ -48,7 +48,7 @@ time = { version = "0.3", default-features = false, features = ["macros", "parsi
 zeroize = { version = "1.1", default-features = false, features = ["zeroize_derive", "alloc"] }
 flex-error = { version = "0.4.4", default-features = false }
 ed25519-consensus = { version = "2", optional = true, default-features = false }
-sha2 = { version = "0.10", optional = true, default-features = false }
+sha2 = { version = "0.10", default-features = false }
 k256 = { version = "0.13", optional = true, default-features = false, features = ["alloc", "ecdsa"] }
 ripemd = { version = "0.1.3", optional = true, default-features = false }
 
@@ -57,7 +57,7 @@ default = ["std", "rust-crypto"]
 std = ["flex-error/std", "clock"]
 clock = ["time/std"]
 secp256k1 = ["rust-crypto", "dep:k256", "dep:ripemd"]
-rust-crypto = ["dep:sha2", "dep:ed25519-consensus"]
+rust-crypto = ["dep:ed25519-consensus"]
 
 [dev-dependencies]
 k256 = { version = "0.13", default-features = false, features = ["ecdsa"] }
