@@ -118,17 +118,14 @@ tendermint_pb_modules! {
                 .sum
                 .ok_or_else(|| Error::invalid_key("empty sum".to_string()))?;
             if let Sum::Ed25519(b) = sum {
-
-                let mut hasher = Sha256::new();
-                hasher.update(b);
-                let digest = hasher.finalize();
+                let digest = Sha256::digest(b);
                 return Ok(Id(digest[..LENGTH].try_into().unwrap()))
             }
             #[cfg(feature = "secp256k1")]
             if let Sum::Secp256k1(b) = sum {
                 use ripemd::Ripemd160;
 
-                let sha_digest = Sha256::digest(bz);
+                let sha_digest = Sha256::digest(b);
                 let ripemd_digest = Ripemd160::digest(&sha_digest[..]);
                 let mut bytes = [0u8; LENGTH];
                 bytes.copy_from_slice(&ripemd_digest[..LENGTH]);
