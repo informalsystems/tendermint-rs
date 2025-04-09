@@ -6,6 +6,7 @@
 
 use core::{fmt, str::FromStr};
 
+use ordered_float::OrderedFloat;
 use time::{
     format_description::well_known::Rfc3339,
     macros::{format_description, offset},
@@ -54,7 +55,7 @@ use crate::{prelude::*, serializers::timestamp, Error};
 /// ```
 ///
 /// [subscribe endpoint documentation]: https://docs.tendermint.com/v0.34/rpc/#/Websocket/subscribe
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Query {
     // We can only have at most one event type at present in a query.
     pub event_type: Option<EventType>,
@@ -288,7 +289,7 @@ peg::parser! {
             }
 
         rule float_op() -> Operand
-            = f:float() { Operand::Float(f) }
+            = f:float() { Operand::from(f) }
 
         rule tag() -> &'input str
             = $(['a'..='z' | 'A'..='Z'] ['a'..='z' | 'A'..='Z' | '0'..='9' | '_' | '.']*)
@@ -393,7 +394,7 @@ where
 }
 
 /// The types of Tendermint events for which we can query at present.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum EventType {
     NewBlock,
     Tx,
@@ -421,7 +422,7 @@ impl FromStr for EventType {
 }
 
 /// A condition which is part of a [`Query`].
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Condition {
     /// The key this condition applies to.
     pub key: String,
@@ -490,7 +491,7 @@ impl fmt::Display for Condition {
 ///
 /// Those operations apply to a given `key`, which is part of
 /// the enclosing [`Condition`].
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Operation {
     /// Check if the value for the key is equal to this operand
     Eq(Operand),
@@ -516,12 +517,12 @@ pub enum Operation {
 ///
 /// [`Condition`]: enum.Condition.html
 /// [tm-subscribe]: https://docs.tendermint.com/v0.34/rpc/#/Websocket/subscribe
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Operand {
     String(String),
     Signed(i64),
     Unsigned(u64),
-    Float(f64),
+    Float(OrderedFloat<f64>),
     Date(Date),
     DateTime(OffsetDateTime),
 }
@@ -625,13 +626,13 @@ impl From<usize> for Operand {
 
 impl From<f64> for Operand {
     fn from(source: f64) -> Self {
-        Operand::Float(source)
+        Operand::Float(OrderedFloat(source))
     }
 }
 
 impl From<f32> for Operand {
     fn from(source: f32) -> Self {
-        Operand::Float(source as f64)
+        Operand::Float(OrderedFloat(source as f64))
     }
 }
 
@@ -884,7 +885,7 @@ mod test {
                 assert_eq!(tag, "short.pi");
                 match op {
                     Operand::Float(f) => {
-                        assert!(floats_eq(*f, core::f64::consts::PI, 5));
+                        assert!(floats_eq(f.into_inner(), core::f64::consts::PI, 5));
                     },
                     _ => panic!("unexpected operand: {:?}", op),
                 }
@@ -903,7 +904,7 @@ mod test {
                 assert_eq!(tag, "short.pi");
                 match op {
                     Operand::Float(f) => {
-                        assert!(floats_eq(*f, -core::f64::consts::PI, 5));
+                        assert!(floats_eq(f.into_inner(), -core::f64::consts::PI, 5));
                     },
                     _ => panic!("unexpected operand: {:?}", op),
                 }
