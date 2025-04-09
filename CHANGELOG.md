@@ -16,6 +16,17 @@ ASAP.
 - `[light-client-verifier]` check for duplicate votes
   ([ISA-2025-003](https://github.com/informalsystems/tendermint-rs/security/advisories/GHSA-6jrf-4jv4-r9mw))
 
+## v0.40.2
+
+*April 3rd, 2025*
+
+This release fixes a bug in `tendermint-rpc` crate.
+
+### BUG FIXES
+
+- `[tendermint-rpc]` Strip auth info from URL to avoid double `Authorization`
+  header ([\#1494](https://github.com/informalsystems/tendermint-rs/pull/1494))
+
 ## 0.40.1
 
 *December 24th, 2024*
