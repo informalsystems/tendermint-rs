@@ -323,40 +323,43 @@ impl NonAbsentCommitVotes {
 
     /// Looks up a vote cast by given validator.
     ///
-    /// If the validator didn’t cast a vote or voted for `nil`, returns
-    /// `Ok(false)`.  Otherwise, if the vote had valid signature, returns
-    /// `Ok(true)`.  If the vote had invalid signature, returns `Err`.
+    /// If the validator didn’t cast a vote or voted for `nil`, returns `Ok(None)`. Otherwise, if
+    /// the vote had valid signature, returns `Ok(Some(idx))` where idx is the validator's index.
+    /// If the vote had invalid signature, returns `Err`.
     pub fn has_voted<V: signature::Verifier>(
         &mut self,
         validator: &validator::Info,
-    ) -> Result<bool, VerificationError> {
-        let idx = self
+    ) -> Result<Option<usize>, VerificationError> {
+        if let Ok(idx) = self
             .votes
-            .binary_search_by_key(&validator.address, NonAbsentCommitVote::validator_id);
-        let vote = match idx {
-            Ok(idx) => &mut self.votes[idx],
-            Err(_) => return Ok(false),
-        };
+            .binary_search_by_key(&validator.address, NonAbsentCommitVote::validator_id)
+        {
+            let vote = &mut self.votes[idx];
 
-        if !vote.verified {
-            self.sign_bytes.truncate(0);
-            vote.signed_vote
-                .sign_bytes_into(&mut self.sign_bytes)
-                .expect("buffer is resized if needed and encoding never fails");
-            let sign_bytes = self.sign_bytes.as_slice();
-            validator
-                .verify_signature::<V>(sign_bytes, vote.signed_vote.signature())
-                .map_err(|_| {
-                    VerificationError::invalid_signature(
-                        vote.signed_vote.signature().as_bytes().to_vec(),
-                        Box::new(validator.clone()),
-                        sign_bytes.to_vec(),
-                    )
-                })?;
+            if !vote.verified {
+                self.sign_bytes.clear();
+                vote.signed_vote
+                    .sign_bytes_into(&mut self.sign_bytes)
+                    .expect("buffer is resized if needed and encoding never fails");
+
+                let sign_bytes = self.sign_bytes.as_slice();
+                validator
+                    .verify_signature::<V>(sign_bytes, vote.signed_vote.signature())
+                    .map_err(|_| {
+                        VerificationError::invalid_signature(
+                            vote.signed_vote.signature().as_bytes().to_vec(),
+                            Box::new(validator.clone()),
+                            sign_bytes.to_vec(),
+                        )
+                    })?;
+
+                vote.verified = true;
+            }
+
+            Ok(Some(idx))
+        } else {
+            Ok(None)
         }
-
-        vote.verified = true;
-        Ok(true)
     }
 }
 
@@ -411,15 +414,27 @@ fn voting_power_in_impl<V: signature::Verifier>(
     total_voting_power: u64,
 ) -> Result<VotingPowerTally, VerificationError> {
     let mut power = VotingPowerTally::new(total_voting_power, trust_threshold);
+    let mut seen_vals = Vec::new();
+
     for validator in validator_set.validators() {
-        if votes.has_voted::<V>(validator)? {
+        if let Some(idx) = votes.has_voted::<V>(validator)? {
+            // Check if this validator has already voted.
+            //
+            // O(n) complexity.
+            if seen_vals.contains(&idx) {
+                return Err(VerificationError::duplicate_validator(validator.address));
+            }
+            seen_vals.push(idx);
+
             power.tally(validator.power());
-            // Break out of the loop when we have enough voting power.
+
+            // Break early if sufficient voting power is reached.
             if power.check().is_ok() {
                 break;
             }
         }
     }
+
     Ok(power)
 }
 
