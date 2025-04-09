@@ -40,6 +40,13 @@ pub fn authorize(url: &Url) -> Option<Authorization> {
     }
 }
 
+pub fn strip_authority(url: Url) -> Url {
+    let mut stripped = url;
+    stripped.set_username("").unwrap();
+    stripped.set_password(None).unwrap();
+    stripped
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -62,5 +69,17 @@ mod tests {
         let uri = "http://toto:tata@example.com".parse().unwrap();
         let base64 = "dG90bzp0YXRh".to_string();
         assert_eq!(authorize(&uri), Some(Authorization::Basic(base64)));
+    }
+
+    #[test]
+    fn strip_authority_absent() {
+        let uri = "http://example.com".parse().unwrap();
+        assert_eq!(strip_authority(uri), "http://example.com".parse().unwrap());
+    }
+
+    #[test]
+    fn strip_auth_username_password() {
+        let uri = "http://toto:tata@example.com".parse().unwrap();
+        assert_eq!(strip_authority(uri), "http://example.com".parse().unwrap());
     }
 }

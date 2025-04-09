@@ -67,7 +67,7 @@ fn num_days_in_month(year: i32, month: u8) -> u8 {
 }
 
 prop_compose! {
-    /// An abitrary [`OffsetDateTime`], offset in UTC,
+    /// An arbitrary [`OffsetDateTime`], offset in UTC,
     /// that is between the given `min` and `max`.
     ///
     /// # Examples
@@ -151,7 +151,7 @@ prop_compose! {
 }
 
 prop_compose! {
-    /// An abitrary [`UtcOffset`].
+    /// An arbitrary [`UtcOffset`].
     pub fn arb_utc_offset()
         (
             off in prop_oneof![
