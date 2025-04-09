@@ -209,7 +209,7 @@ impl HttpClient {
 
         let mut builder = self
             .inner
-            .post(self.url.clone())
+            .post(auth::strip_authority(self.url.clone()))
             .header(header::CONTENT_TYPE, "application/json")
             .body(request_body.into_bytes());
 
@@ -503,5 +503,11 @@ mod tests {
         let req = HttpClient::build_request(&client, abci_info::Request).unwrap();
 
         assert_eq!(authorization(&req), Some("Basic dG90bzp0YXRh"));
+        let num_auth_headers = req
+            .headers()
+            .iter()
+            .filter(|h| h.0 == AUTHORIZATION)
+            .count();
+        assert_eq!(num_auth_headers, 1);
     }
 }
