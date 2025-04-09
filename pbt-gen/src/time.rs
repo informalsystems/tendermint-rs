@@ -61,12 +61,12 @@ pub const fn max_protobuf_time() -> OffsetDateTime {
 }
 
 fn num_days_in_month(year: i32, month: u8) -> u8 {
-    let month = month.try_into().unwrap();
-    time::util::days_in_year_month(year, month)
+    let month: time::Month = month.try_into().unwrap();
+    month.length(year)
 }
 
 prop_compose! {
-    /// An abitrary [`OffsetDateTime`], offset in UTC,
+    /// An arbitrary [`OffsetDateTime`], offset in UTC,
     /// that is between the given `min` and `max`.
     ///
     /// # Examples
@@ -150,7 +150,7 @@ prop_compose! {
 }
 
 prop_compose! {
-    /// An abitrary [`UtcOffset`].
+    /// An arbitrary [`UtcOffset`].
     pub fn arb_utc_offset()
         (
             off in prop_oneof![

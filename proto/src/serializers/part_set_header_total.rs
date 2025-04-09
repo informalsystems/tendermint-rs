@@ -33,7 +33,7 @@ where
     value.serialize(serializer)
 }
 
-impl<'de> Visitor<'de> for PartSetHeaderTotalStringOrU32 {
+impl Visitor<'_> for PartSetHeaderTotalStringOrU32 {
     type Value = u32;
 
     fn expecting(&self, formatter: &mut Formatter<'_>) -> core::fmt::Result {

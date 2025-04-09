@@ -1,5 +1,32 @@
 # CHANGELOG
 
+## v0.40.3
+
+*April 8, 2025*
+
+This release fixes a security vulnerability. All users are advised to update
+ASAP.
+
+### BUG FIXES
+
+- [tendermint] export `abci::event::v0_37` to construct `EventAttribute::V037` variants.
+  ([\#1479](https://github.com/informalsystems/tendermint-rs/pull/1479), ([\#1480](https://github.com/informalsystems/tendermint-rs/pull/1480))
+- [tendermint-light-client-js] bump `serde-wasm-bindgen` to `v0.6.5` and `js-sys` to `=v0.3.70` to
+  fix compilation failure of `wasm-bindgen-test`. ([\#1481](https://github.com/informalsystems/tendermint-rs/pull/1481))
+- `[light-client-verifier]` check for duplicate votes
+  ([ISA-2025-003](https://github.com/informalsystems/tendermint-rs/security/advisories/GHSA-6jrf-4jv4-r9mw))
+
+## v0.40.2
+
+*April 3rd, 2025*
+
+This release fixes a bug in `tendermint-rpc` crate.
+
+### BUG FIXES
+
+- `[tendermint-rpc]` Strip auth info from URL to avoid double `Authorization`
+  header ([\#1494](https://github.com/informalsystems/tendermint-rs/pull/1494))
+
 ## 0.40.1
 
 *December 24th, 2024*
@@ -34,7 +61,7 @@ This release adds a new dialect for CometBFT `v0.38.x`, enabling the correct ser
 
 *August 9th, 2024*
 
-This is a bugfix release which addresses a couple issues found in the v0.39.0 release.
+This is a bugfix release which addresses a few issues found in the v0.39.0 release.
 
 Users of v0.39.0 are strongly encouraged to upgrade to v0.39.1.
 
@@ -94,7 +121,6 @@ This release enhances `/block_results` response handling, relaxes `Block` valida
 - `[tendermint-proto]`: Update `prost` to v0.13 and `tonic` to v0.12
   ([\#1444](https://github.com/informalsystems/tendermint-rs/pull/1444))
 
-
 ### BUG
 
 - `[tendermint-rpc]` Deserialize an empty JSON object as `None` for the `consensus_param_updates`
@@ -120,25 +146,32 @@ Additionally, this release fixes a couple of issues with the `serde`-based deser
 ### BREAKING CHANGES
 
 - `[tendermint-proto]` Upgrade `tonic` to v0.11 ([\#1422](https://github.com/informalsystems/tendermint-rs/pull/1422))
-- `[tendermint-light-client-verifier]` Restores the commit verification interfaces of `PredicateVerifier<P, C, V>` from `<= 0.35.0` ([\#1423](https://github.com/informalsystems/tendermint-rs/pull/1423))
+- `[tendermint-light-client-verifier]` Restores the commit verification interfaces of `PredicateVerifier<P, C, V>` from `<= 0.35.0`.
   * `verify_commit(&self. untrusted: &UntrustedBlockState<'_>)` is restored, as in <= 0.35.0.
   * `verify_commit(&self, untrusted: &UntrustedBlockState<'_>, trusted: &TrustedBlockState<'_>,)` introduced in 0.36.0 is renamed to `verify_commit_against_trusted`.
   The performance improvements made in the `0.36.0` release are still intact.
-
-### FEATURES
-
-* `[tendermint-rpc]` Add a way to specify custom User-Agent for `HttpClient` ([#1425](https://github.com/informalsystems/tendermint-rs/issues/1425))
-- `[tendermint-rpc]` Add a `client()` method on `transport::http::Builder` to override the underlying `reqwest` client ([\#1421](https://github.com/informalsystems/tendermint-rs/pull/1421))
-- `[tendermint-rpc]` Add a `from_raw_parts()` method on `transport::http::HttpClient` to allow supplying the underlying `reqwest` client ([\#1421](https://github.com/informalsystems/tendermint-rs/pull/1421))
+  ([\#1423](https://github.com/informalsystems/tendermint-rs/pull/1423))
 
 ### BUG FIXES
 
+- `[tendermint-abci]` Add serde default for Event.type since it has omitempty in the Go
+  implementation.
+  ([\#1416](https://github.com/informalsystems/tendermint-rs/pull/1416))
+
+### FEATURES
+
+- `[tendermint-rpc]` Add a `client()` method on `transport::http::Builder` to override the underlying `reqwest` client.
+  ([\#1421](https://github.com/informalsystems/tendermint-rs/pull/1421))
+- `[tendermint-rpc]` Add a `from_raw_parts()` method on `transport::http::HttpClient` to allow supplying the underlying `reqwest` client.
+  ([\#1421](https://github.com/informalsystems/tendermint-rs/pull/1421))
+
+### IMPROVEMENTS
+
+* `[tendermint-rpc]` Add a way to specify custom User-Agent for HttpClient
+  ([#1425](https://github.com/informalsystems/tendermint-rs/issues/1425))
 - `[tendermint]` Fix `FinalizeBlock::validator_updates` deserialization as `nullable` ([\#1428](https://github.com/informalsystems/tendermint-rs/pull/1428))
-- `[tendermint-abci]` Add serde `default` annotation for `Event::type` to match `omitempty` in the Go implementation ([\#1416](https://github.com/informalsystems/tendermint-rs/pull/1416))
 
 ## v0.36.0
-
-*April 25th, 2024*
 
 This release brings substantial performance improvements to the voting power computation within the light client, improves the handling of misformed blocks (eg. with empty `last_commit` on non-first block) when decoding them from Protobuf or RPC responses, and adds missing `serde` derives on some Protobuf definitions.
 
@@ -186,12 +219,12 @@ This release also technically contains a breaking change in `tendermint-proto`, 
 - `[tendermint]` Allow misformed blocks (eg. with empty `last_commit`
   on non-first block) when decoding them from Protobuf or RPC responses
   ([\#1403](https://github.com/informalsystems/tendermint-rs/issues/1403))
-- `[tendermint]` Check `index ≤ i32::MAX` invariant when converting `usize`
-  into `ValidatorIndex`.
-  ([\#1411](https://github.com/informalsystems/tendermint-rs/issues/1411))
 - `[light-client-verifier]` Optimise validators lookup in
   `ProvidedVotingPowerCalculator::voting_power_in` method.
   ([\#1407](https://github.com/informalsystems/tendermint-rs/pull/1407))
+- `[tendermint]` Check `index ≤ i32::MAX` invariant when converting `usize`
+  into `ValidatorIndex`.
+  ([\#1411](https://github.com/informalsystems/tendermint-rs/issues/1411))
 - `[tendermint-light-client-verifier]` Reuse buffer used to store
   sign_bytes to reduce number of allocations and deallocations.
   ([\#1413](https://github.com/informalsystems/tendermint-rs/pull/1413))
@@ -214,28 +247,30 @@ a performance optimization for `tendermint-light-client-verifier`.
   `EventAttribute` when deserializing. The serialization schema for the fields
   is changed to `Option<String>`
   ([\#1375](https://github.com/informalsystems/tendermint-rs/issues/1375)).
-- `[tendermint-rpc]` Add the `codespace` field to the Tx sync and async broadcast `Response`
+- Add the `codespace` field to the Tx sync and async broadcast `Response`
   ([\#1382](https://github.com/informalsystems/tendermint-rs/issues/1382))
 
 ### BUG FIXES
 
+- `[tendermint-rpc]` Fix deserialization of `/block_results` response when some
+  tx results are non-ok ([\#1391](https://github.com/informalsystems/tendermint-
+  rs/pull/1391))
 - `[tendermint-p2p]` Fix data corruption on sending long messages via `SecretConnection`
   ([\#1393](https://github.com/informalsystems/tendermint-rs/pull/1393))
-- `[tendermint-rpc]` Fix deserialization of `/block_results` response when some
-  tx results are non-ok ([\#1391](https://github.com/informalsystems/tendermint-rs/pull/1391))
 
 ### IMPROVEMENTS
 
+- `[tendermint-rpc]` Add `FromStr`, `Serialize` and `Deserialize` instances
+  to `CompatMode` ([\#1374](https://github.com/informalsystems/tendermint-
+  rs/issues/1374))
 - `[tendermint-rpc]` Export the `http`, `websocket`
   modules under `client`, each with the public `Builder` type
   ([\#1378](https://github.com/informalsystems/tendermint-rs/pull/1378)).
-- `[tendermint-rpc]` Allow specifying a request timeout for the RPC `HttpClient`.
+- Allow specifying a request timeout for the RPC `HttpClient`.
   `http::Builder` now provides a `.timeout(Duration)` method to specify the request timeout.
   If not specified, the default value is 30 seconds.
   ([\#1379](https://github.com/informalsystems/tendermint-rs/issues/1379))
-- `[tendermint-rpc]` Add `FromStr`, `Serialize` and `Deserialize` instances
-  to `CompatMode` ([\#1374](https://github.com/informalsystems/tendermint-rs/issues/1374))
-- `[tendermint-light-client-verifier]` Optimizing voting power calculation by breaking the loop when we have enough voting power 
+- `[tendermint-light-client-verifer]` Optimizing voting power calculation by breaking the loop when we have enough voting power 
   ([#1378](https://github.com/informalsystems/tendermint-rs/pull/1395)).
 
 ## v0.34.0
@@ -277,8 +312,6 @@ Support for Secp256k1 consensus keys has been added as an optional feature.
 - `[tendermint-rpc]` Turn non-200 HTTP response into an error
   instead of trying to parse the body as a JSON-RPC response
   ([\#1359](https://github.com/informalsystems/tendermint-rs/issues/1359))
-- `[tendermint-rpc]` Make `rpc::Client` and `SubscriptionClient` traits `?Send` under `wasm32` target.
-  ([\#1385](https://github.com/informalsystems/tendermint-rs/issues/1385))
 
 ### SECURITY
 
@@ -1064,18 +1097,18 @@ not yet support `no_std`.
 - Upgraded Prost to the official v0.9 release to finally resolve the security
   issue introduced by v0.7
   ([#925](https://github.com/informalsystems/tendermint-rs/issues/925))
-- `[tendermint, tendermint-config]` The `tendermint::config`
-  module has now been broken out into its own crate (`tendermint-
-  config`) to help towards facilitating `no_std` compatibility
-  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
-- `[tendermint]` The `tendermint::node::info::OtherInfo::rpc_address`
-  field type has been changed from `tendermint::net::Address`
-  to `String` toward facilitating `no_std` compatibility
-  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
 - `[tendermint]` The `tendermint::node::info::ListenAddress::to_net_address`
   method was replaced with a simple `as_str` method toward facilitating
   `no_std` compatibility ([#983](https://github.com/informalsystems/tendermint-
   rs/issues/983))
+- `[tendermint]` The `tendermint::node::info::OtherInfo::rpc_address`
+  field type has been changed from `tendermint::net::Address`
+  to `String` toward facilitating `no_std` compatibility
+  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
+- `[tendermint, tendermint-config]` The `tendermint::config`
+  module has now been broken out into its own crate (`tendermint-
+  config`) to help towards facilitating `no_std` compatibility
+  ([#983](https://github.com/informalsystems/tendermint-rs/issues/983))
 
 ### FEATURES
 
