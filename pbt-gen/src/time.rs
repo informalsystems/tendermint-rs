@@ -165,10 +165,10 @@ prop_compose! {
 }
 
 // The following components of the timestamp follow
-// Section 5.6 of RFC3339: https://tools.ietf.org/html/rfc3339#ref-ABNF.
+// Section 5.6 of RFC3339: https://datatracker.ietf.org/doc/html/rfc3339#ref-ABNF.
 
 prop_compose! {
-    // See https://tools.ietf.org/html/rfc3339#appendix-A
+    // See https://datatracker.ietf.org/doc/html/rfc3339#appendix-A
     fn arb_rfc339_time_offset()(
         sign in "[+-]",
         hour in 0..23u8,
