@@ -62,7 +62,7 @@ pub const fn max_protobuf_time() -> OffsetDateTime {
 use time::Month;
 
 fn num_days_in_month(year: i32, month: u8) -> u8 {
-    let month_enum = Month::try_from(month).expect("Invalid month"); 
+    let month_enum = Month::try_from(month).expect("Invalid month");
     time::util::days_in_month(month_enum, year)
 }
 
