@@ -45,7 +45,10 @@ cli = [
 http-client = [
   "futures",
   "reqwest",
+  "tokio/sync",
   "tokio/macros",
+  "tokio/time",
+  "wasmtimer/tokio",
   "tracing"
 ]
 websocket-client = [
@@ -70,6 +73,7 @@ tendermint-proto = { version = "0.40.3", path = "../proto", default-features = f
 
 async-trait = { version = "0.1", default-features = false }
 bytes = { version = "1.0", default-features = false }
+cfg-if = "1.0.0"
 getrandom = { version = "0.2", default-features = false, features = ["js"] }
 peg = { version = "0.8", default-features = false }
 pin-project = { version = "1.0.1", default-features = false }
@@ -92,9 +96,13 @@ async-tungstenite = { version = "0.24", default-features = false, features = ["t
 futures = { version = "0.3", optional = true, default-features = false }
 reqwest = { version = "0.11.20", optional = true, default-features = false, features = ["rustls-tls-native-roots"] }
 structopt = { version = "0.3", optional = true, default-features = false }
-tokio = { version = "1.0", optional = true, default-features = false, features = ["rt-multi-thread"] }
+tokio = { version = "1.0", optional = true, default-features = false }
 tracing = { version = "0.1", optional = true, default-features = false }
 tracing-subscriber = { version = "0.3", optional = true, default-features = false, features = ["fmt"] }
+
+[target."cfg(target_arch = \"wasm32\")".dependencies.wasmtimer]
+version = "0.4.1"
+optional = true
 
 [dev-dependencies]
 tendermint = { version = "0.40.3", default-features = false, path = "../tendermint", features = ["secp256k1"] }
