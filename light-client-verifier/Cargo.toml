@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint-light-client-verifier"
-version    = "0.40.0"
+version    = "0.40.3"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -27,7 +27,7 @@ default = ["rust-crypto", "flex-error/std"]
 rust-crypto = ["tendermint/rust-crypto"]
 
 [dependencies]
-tendermint = { version = "0.40.0", path = "../tendermint", default-features = false }
+tendermint = { version = "0.40.3", path = "../tendermint", default-features = false }
 
 derive_more = { version = "0.99.5", default-features = false, features = ["display"] }
 serde = { version = "1.0.106", default-features = false }
@@ -37,3 +37,4 @@ flex-error = { version = "0.4.4", default-features = false }
 [dev-dependencies]
 tendermint-testgen = { path = "../testgen", default-features = false }
 sha2 = { version = "0.10", default-features = false }
+serde_json = { version = "1.0.106", default-features = false }

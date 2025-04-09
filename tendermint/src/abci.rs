@@ -54,6 +54,7 @@ pub use crate::v0_38::abci::response::{
 };
 
 pub use event::v0_34;
+pub use event::v0_37;
 pub use event::{Event, EventAttribute, EventAttributeIndexExt, TypedEvent};
 
 #[doc(inline)]

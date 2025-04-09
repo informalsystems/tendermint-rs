@@ -30,7 +30,7 @@ Several client-related features are provided at present:
 * `websocket-client` - Provides `WebSocketClient`, which provides full
   client functionality, including general RPC functionality as well as
   `Event`] subscription functionality. Can be used over secure
-  (`wss://`) and unsecure (`ws://`) connections.
+  (`wss://`) and insecure (`ws://`) connections.
 
 ### CLI
 

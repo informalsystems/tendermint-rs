@@ -370,7 +370,7 @@ pub mod v0_34 {
     impl Protobuf<pb::Event> for Event {}
 }
 
-mod v0_37 {
+pub mod v0_37 {
     use super::Event;
     use crate::prelude::*;
     use crate::serializers;
