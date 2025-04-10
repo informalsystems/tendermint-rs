@@ -8,7 +8,7 @@ use core::fmt;
 use subtle_encoding::base64;
 use url::Url;
 
-/// a HTTP authorization.
+/// An HTTP authorization.
 ///
 /// Currently only HTTP Basic authentication is supported.
 #[derive(Clone, Debug, PartialEq, Eq)]
