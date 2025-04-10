@@ -354,6 +354,8 @@ impl NonAbsentCommitVotes {
                     })?;
 
                 vote.verified = true;
+            } else {
+                return Err(VerificationError::duplicate_validator(validator.address));
             }
 
             Ok(Some(idx))
