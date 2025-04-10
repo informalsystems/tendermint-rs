@@ -1,5 +1,5 @@
 //! This module defines the `Authorization` type for
-//! authorizing an HTTP or WebSocket RPC client using
+//! authorizing a HTTP or WebSocket RPC client using
 //! HTTP Basic authentication.
 
 use alloc::string::{String, ToString};
@@ -8,7 +8,7 @@ use core::fmt;
 use subtle_encoding::base64;
 use url::Url;
 
-/// An HTTP authorization.
+/// a HTTP authorization.
 ///
 /// Currently only HTTP Basic authentication is supported.
 #[derive(Clone, Debug, PartialEq, Eq)]
