@@ -402,7 +402,98 @@ mod tests {
 
     #[test]
     #[cfg(feature = "rust-crypto")]
-    fn test_successful_verify_maliciousupdate_header() {
+    fn test_successful_verify_maliciousupdate_header_1() {
+        use tendermint::block::CommitSig;
+        use tendermint_testgen::{Header, Validator};
+
+        let now = Time::now();
+
+        // Create options with reasonable values
+        let options = Options {
+            trust_threshold: Default::default(),      // 2/3
+            trusting_period: Duration::from_secs(60), // 60 seconds
+            clock_drift: Duration::from_secs(5),      // 5 seconds
+        };
+
+        // Create verifier
+        let verifier = ProdVerifier::default();
+
+        // Validator Set with one malicious validator
+        let validators = [
+            Validator::new("EVIL").voting_power(51),
+            Validator::new("GOOD").voting_power(50),
+        ];
+
+        let header = Header::new(&validators.clone())
+            .height(1u64)
+            .chain_id("test-chain")
+            .next_validators(&validators)
+            .time(now.sub(Duration::from_secs(20)).unwrap());
+
+        let trusted_block: LightBlock = TestgenLightBlock::new_default_with_header(header)
+            .generate()
+            .unwrap()
+            .into();
+
+        // Generate a untrusted block with the same chain ID and validators
+        // We first generate a valid untrusted block and remove the second validator's signature.
+        // Validating this block will fail as the 2/3 threshold is not reached.
+
+        let header2 = Header::new(&validators)
+            .height(2u64)
+            .chain_id("test-chain")
+            .next_validators(&validators)
+            .time(now.sub(Duration::from_secs(10)).unwrap());
+
+        let mut untrusted_block: LightBlock = TestgenLightBlock::new_default_with_header(header2)
+            .generate()
+            .unwrap()
+            .into();
+        untrusted_block.signed_header.commit.signatures[1] = CommitSig::BlockIdFlagAbsent;
+
+        let verdict = verifier.verify_update_header(
+            untrusted_block.as_untrusted_state(),
+            trusted_block.as_trusted_state(),
+            &options,
+            now,
+        );
+
+        assert_ne!(verdict, Verdict::Success, "Verification should fail");
+
+        // Modify the second validator's address to collide with the malicious one.
+        // This does not change the validator set hash (as the address is not part of it), but will cause the
+        // voting_power_in_impl to double count the single existing commit vote.
+        untrusted_block.validators.validators[1].address =
+            untrusted_block.validators.validators[0].address;
+
+        let verdict = verifier.verify_update_header(
+            untrusted_block.as_untrusted_state(),
+            trusted_block.as_trusted_state(),
+            &options,
+            now,
+        );
+
+        // Test that verification fails
+        match verdict {
+            Verdict::Invalid(VerificationErrorDetail::DuplicateValidator(e)) => {
+                assert_eq!(e.address, untrusted_block.validators.validators[0].address);
+            },
+            v => panic!("expected DuplicateValidator error, got: {:?}", v),
+        }
+
+        // Do a JSON serialization roundtrip.
+        // This isn't needed to perform the attack but verifies that the attack is detected during deserialization.
+        let serialized = serde_json::to_string(&untrusted_block).unwrap();
+        let deserialized: serde_json::Error =
+            serde_json::from_str::<LightBlock>(&serialized).unwrap_err();
+        assert!(deserialized
+            .to_string()
+            .contains("invalid validator address"),);
+    }
+
+    #[test]
+    #[cfg(feature = "rust-crypto")]
+    fn test_successful_verify_malicious_update_header_2() {
         use tendermint::block::CommitSig;
         use tendermint_testgen::{Header, Validator};
 
