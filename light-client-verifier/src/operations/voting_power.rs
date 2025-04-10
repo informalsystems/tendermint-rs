@@ -329,7 +329,7 @@ impl NonAbsentCommitVotes {
     pub fn has_voted<V: signature::Verifier>(
         &mut self,
         validator: &validator::Info,
-    ) -> Result<Option<usize>, VerificationError> {
+    ) -> Result<bool, VerificationError> {
         if let Ok(idx) = self
             .votes
             .binary_search_by_key(&validator.address, NonAbsentCommitVote::validator_id)
@@ -358,9 +358,9 @@ impl NonAbsentCommitVotes {
                 return Err(VerificationError::duplicate_validator(validator.address));
             }
 
-            Ok(Some(idx))
+            Ok(true)
         } else {
-            Ok(None)
+            Ok(false)
         }
     }
 }
@@ -417,7 +417,7 @@ fn voting_power_in_impl<V: signature::Verifier>(
 ) -> Result<VotingPowerTally, VerificationError> {
     let mut power = VotingPowerTally::new(total_voting_power, trust_threshold);
     for validator in validator_set.validators() {
-        if let Some(_) = votes.has_voted::<V>(validator)? {
+        if votes.has_voted::<V>(validator)? {
             power.tally(validator.power());
 
             // Break early if sufficient voting power is reached.
