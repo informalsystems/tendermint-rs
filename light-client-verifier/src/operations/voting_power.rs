@@ -416,18 +416,8 @@ fn voting_power_in_impl<V: signature::Verifier>(
     total_voting_power: u64,
 ) -> Result<VotingPowerTally, VerificationError> {
     let mut power = VotingPowerTally::new(total_voting_power, trust_threshold);
-    let mut seen_vals = Vec::new();
-
     for validator in validator_set.validators() {
-        if let Some(idx) = votes.has_voted::<V>(validator)? {
-            // Check if this validator has already voted.
-            //
-            // O(n) complexity.
-            if seen_vals.contains(&idx) {
-                return Err(VerificationError::duplicate_validator(validator.address));
-            }
-            seen_vals.push(idx);
-
+        if let Some(_) = votes.has_voted::<V>(validator)? {
             power.tally(validator.power());
 
             // Break early if sufficient voting power is reached.
