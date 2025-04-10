@@ -574,7 +574,7 @@ mod tests {
             Verdict::Invalid(VerificationErrorDetail::InvalidSignature(e)) => {
                 assert_eq!(&*e.validator, &untrusted_block.validators.validators[0]);
             },
-            v => panic!("expected DuplicateValidator error, got: {:?}", v),
+            v => panic!("expected InvalidSignature error, got: {:?}", v),
         }
 
         // Do a JSON serialization roundtrip.
