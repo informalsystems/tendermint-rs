@@ -355,6 +355,8 @@ impl NonAbsentCommitVotes {
 
                 vote.verified = true;
             } else {
+                // The signature has already been verified.
+                // Duplicate vote count !
                 return Err(VerificationError::duplicate_validator(validator.address));
             }
 
