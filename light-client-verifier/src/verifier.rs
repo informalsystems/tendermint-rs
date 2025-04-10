@@ -494,6 +494,10 @@ mod tests {
     #[test]
     #[cfg(feature = "rust-crypto")]
     fn test_successful_verify_malicious_update_header_2() {
+        // This test is almost same as the previous one.
+        // The only difference is order of the validator set iteration.
+        // In this case, the verifier will correctly detect invalid signature.
+
         use tendermint::block::CommitSig;
         use tendermint_testgen::{Header, Validator};
 
@@ -511,8 +515,8 @@ mod tests {
 
         // Validator Set with one malicious validator
         let validators = [
-            Validator::new("EVIL").voting_power(51),
             Validator::new("GOOD").voting_power(50),
+            Validator::new("EVIL").voting_power(51),
         ];
 
         let header = Header::new(&validators.clone())
@@ -540,7 +544,8 @@ mod tests {
             .generate()
             .unwrap()
             .into();
-        untrusted_block.signed_header.commit.signatures[1] = CommitSig::BlockIdFlagAbsent;
+
+        untrusted_block.signed_header.commit.signatures[0] = CommitSig::BlockIdFlagAbsent;
 
         let verdict = verifier.verify_update_header(
             untrusted_block.as_untrusted_state(),
@@ -551,11 +556,11 @@ mod tests {
 
         assert_ne!(verdict, Verdict::Success, "Verification should fail");
 
-        // Modify the second validator's address to collide with the malicious one.
+        // Modify the first validator's address to collide with the malicious one.
         // This does not change the validator set hash (as the address is not part of it), but will cause the
         // voting_power_in_impl to double count the single existing commit vote.
-        untrusted_block.validators.validators[1].address =
-            untrusted_block.validators.validators[0].address;
+        untrusted_block.validators.validators[0].address =
+            untrusted_block.validators.validators[1].address;
 
         let verdict = verifier.verify_update_header(
             untrusted_block.as_untrusted_state(),
@@ -564,10 +569,10 @@ mod tests {
             now,
         );
 
-        // Test that verification fails
+        // Test that verification fails because of invalid signature
         match verdict {
-            Verdict::Invalid(VerificationErrorDetail::DuplicateValidator(e)) => {
-                assert_eq!(e.address, untrusted_block.validators.validators[0].address);
+            Verdict::Invalid(VerificationErrorDetail::InvalidSignature(e)) => {
+                assert_eq!(&*e.validator, &untrusted_block.validators.validators[0]);
             },
             v => panic!("expected DuplicateValidator error, got: {:?}", v),
         }
