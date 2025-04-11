@@ -298,7 +298,7 @@ async fn execute_parallel_interactions(
     config: &PlanConfig,
     interaction_sets: Vec<Vec<PlannedInteraction>>,
 ) -> Result<()> {
-    let mut handles = Vec::new();
+    let mut handles = Vec::with_capacity(interaction_sets.len());
     for interactions in interaction_sets {
         let mut inner_client = client.clone();
         let inner_config = config.clone();
