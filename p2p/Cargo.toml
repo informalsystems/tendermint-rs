@@ -25,6 +25,7 @@ test = false
 [features]
 default = ["flex-error/std", "flex-error/eyre_tracer"]
 amino = ["prost-derive"]
+async = ["tokio"]
 
 [dependencies]
 chacha20poly1305 = { version = "0.10", default-features = false, features = ["reduced-round"] }
@@ -50,3 +51,4 @@ tendermint-std-ext = { path = "../std-ext", version = "0.40.3", default-features
 
 # optional dependencies
 prost-derive = { version = "0.13", optional = true }
+tokio = { version = "1", optional = true, features = ["io-util", "net"] }
