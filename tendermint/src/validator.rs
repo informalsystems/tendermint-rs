@@ -322,8 +322,8 @@ tendermint_pb_modules! {
             }
             let pub_key = raw_pub_key.try_into()?;
             Ok(Info {
-                address: address,
-                pub_key: pub_key,
+                address,
+                pub_key,
                 power: value.voting_power.try_into()?,
                 name: None,
                 proposer_priority: value.proposer_priority.into(),
