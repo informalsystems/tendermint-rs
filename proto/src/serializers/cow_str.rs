@@ -113,6 +113,7 @@ impl<'a> From<Cow<'a, str>> for CowStr<'a> {
 }
 
 /// Serialize `Cow<'_, str>`.
+#[allow(clippy::ptr_arg)]
 pub fn serialize<S>(value: &Cow<'_, str>, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
