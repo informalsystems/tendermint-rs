@@ -11,13 +11,13 @@
 //! [`from_str`]: super::from_str
 //! [`allow_null`]: super::allow_null
 
-use alloc::borrow::Cow;
 use core::fmt::Display;
 use core::str::FromStr;
 
 use serde::{de::Error as _, Deserialize, Deserializer, Serializer};
 
 use crate::prelude::*;
+use crate::serializers::cow_str::CowStr;
 
 /// Deserialize a nullable string into T
 pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
@@ -26,7 +26,7 @@ where
     T: FromStr + Default,
     <T as FromStr>::Err: Display,
 {
-    match <Option<Cow<'_, str>>>::deserialize(deserializer)? {
+    match <Option<CowStr<'_>>>::deserialize(deserializer)? {
         Some(s) => s.parse::<T>().map_err(D::Error::custom),
         None => Ok(T::default()),
     }

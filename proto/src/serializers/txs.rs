@@ -3,13 +3,14 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use subtle_encoding::base64;
 
 use crate::prelude::*;
+use crate::serializers::cow_str::CowStr;
 
 /// Deserialize transactions into `Vec<Vec<u8>>`
 pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<Vec<u8>>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let value_vec_base64string = Option::<Vec<String>>::deserialize(deserializer)?;
+    let value_vec_base64string = Option::<Vec<CowStr<'_>>>::deserialize(deserializer)?;
     if value_vec_base64string.is_none() {
         return Ok(Vec::new());
     }

@@ -1,11 +1,11 @@
 //! De/serialize an optional type that must be converted from/to a string.
 
-use alloc::borrow::Cow;
 use core::{fmt::Display, str::FromStr};
 
 use serde::{de::Error, Deserialize, Deserializer, Serializer};
 
 use crate::prelude::*;
+use crate::serializers::cow_str::CowStr;
 
 pub fn serialize<S, T>(value: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
 where
@@ -24,7 +24,7 @@ where
     T: FromStr,
     T::Err: Display,
 {
-    let s = match Option::<Cow<'_, str>>::deserialize(deserializer)? {
+    let s = match Option::<CowStr<'_>>::deserialize(deserializer)? {
         Some(s) => s,
         None => return Ok(None),
     };

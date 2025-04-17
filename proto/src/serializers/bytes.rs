@@ -6,13 +6,14 @@ pub mod hexstring {
     use subtle_encoding::hex;
 
     use crate::prelude::*;
+    use crate::serializers::cow_str::CowStr;
 
     /// Deserialize a hex-encoded string into `Vec<u8>`
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where
         D: Deserializer<'de>,
     {
-        let string = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
+        let string = Option::<CowStr<'_>>::deserialize(deserializer)?.unwrap_or_default();
         hex::decode_upper(&string)
             .or_else(|_| hex::decode(&string))
             .map_err(serde::de::Error::custom)
@@ -36,6 +37,7 @@ pub mod base64string {
     use subtle_encoding::base64;
 
     use crate::prelude::*;
+    use crate::serializers::cow_str::CowStr;
 
     /// Deserialize base64string into `Vec<u8>`
     pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
@@ -43,7 +45,7 @@ pub mod base64string {
         D: Deserializer<'de>,
         Vec<u8>: Into<T>,
     {
-        let s = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
+        let s = Option::<CowStr<'_>>::deserialize(deserializer)?.unwrap_or_default();
         let v = base64::decode(s).map_err(serde::de::Error::custom)?;
         Ok(v.into())
     }
@@ -53,7 +55,7 @@ pub mod base64string {
     where
         D: Deserializer<'de>,
     {
-        let s = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
+        let s = Option::<CowStr<'_>>::deserialize(deserializer)?.unwrap_or_default();
         String::from_utf8(base64::decode(s).map_err(serde::de::Error::custom)?)
             .map_err(serde::de::Error::custom)
     }
@@ -76,13 +78,14 @@ pub mod vec_base64string {
     use subtle_encoding::base64;
 
     use crate::prelude::*;
+    use crate::serializers::cow_str::CowStr;
 
     /// Deserialize array into `Vec<Vec<u8>>`
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<Vec<u8>>, D::Error>
     where
         D: Deserializer<'de>,
     {
-        Option::<Vec<String>>::deserialize(deserializer)?
+        Option::<Vec<CowStr<'_>>>::deserialize(deserializer)?
             .unwrap_or_default()
             .into_iter()
             .map(|s| base64::decode(s).map_err(serde::de::Error::custom))
@@ -111,13 +114,14 @@ pub mod option_base64string {
     use subtle_encoding::base64;
 
     use crate::prelude::*;
+    use crate::serializers::cow_str::CowStr;
 
     /// Deserialize `Option<base64string>` into `Vec<u8>` or null
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where
         D: Deserializer<'de>,
     {
-        let s = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
+        let s = Option::<CowStr<'_>>::deserialize(deserializer)?.unwrap_or_default();
         base64::decode(s).map_err(serde::de::Error::custom)
     }
 
@@ -138,6 +142,7 @@ pub mod string {
     use serde::{Deserialize, Deserializer, Serializer};
 
     use crate::prelude::*;
+    use crate::serializers::cow_str::CowStr;
 
     /// Deserialize string into `Vec<u8>`
     #[allow(dead_code)]
@@ -145,7 +150,7 @@ pub mod string {
     where
         D: Deserializer<'de>,
     {
-        let string = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
+        let string = Option::<CowStr<'_>>::deserialize(deserializer)?.unwrap_or_default();
         Ok(string.as_bytes().to_vec())
     }
 
