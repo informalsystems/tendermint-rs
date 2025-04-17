@@ -13,7 +13,7 @@ pub mod hexstring {
     where
         D: Deserializer<'de>,
     {
-        let string = Option::<CowStr>::deserialize(deserializer)?.unwrap_or_default();
+        let string = Option::<CowStr<'_>>::deserialize(deserializer)?.unwrap_or_default();
         hex::decode_upper(&string)
             .or_else(|_| hex::decode(&string))
             .map_err(serde::de::Error::custom)
@@ -45,7 +45,7 @@ pub mod base64string {
         D: Deserializer<'de>,
         Vec<u8>: Into<T>,
     {
-        let s = Option::<CowStr>::deserialize(deserializer)?.unwrap_or_default();
+        let s = Option::<CowStr<'_>>::deserialize(deserializer)?.unwrap_or_default();
         let v = base64::decode(s).map_err(serde::de::Error::custom)?;
         Ok(v.into())
     }
@@ -55,7 +55,7 @@ pub mod base64string {
     where
         D: Deserializer<'de>,
     {
-        let s = Option::<CowStr>::deserialize(deserializer)?.unwrap_or_default();
+        let s = Option::<CowStr<'_>>::deserialize(deserializer)?.unwrap_or_default();
         String::from_utf8(base64::decode(s).map_err(serde::de::Error::custom)?)
             .map_err(serde::de::Error::custom)
     }
@@ -85,7 +85,7 @@ pub mod vec_base64string {
     where
         D: Deserializer<'de>,
     {
-        Option::<Vec<CowStr>>::deserialize(deserializer)?
+        Option::<Vec<CowStr<'_>>>::deserialize(deserializer)?
             .unwrap_or_default()
             .into_iter()
             .map(|s| base64::decode(s).map_err(serde::de::Error::custom))
@@ -121,7 +121,7 @@ pub mod option_base64string {
     where
         D: Deserializer<'de>,
     {
-        let s = Option::<CowStr>::deserialize(deserializer)?.unwrap_or_default();
+        let s = Option::<CowStr<'_>>::deserialize(deserializer)?.unwrap_or_default();
         base64::decode(s).map_err(serde::de::Error::custom)
     }
 
@@ -150,7 +150,7 @@ pub mod string {
     where
         D: Deserializer<'de>,
     {
-        let string = Option::<CowStr>::deserialize(deserializer)?.unwrap_or_default();
+        let string = Option::<CowStr<'_>>::deserialize(deserializer)?.unwrap_or_default();
         Ok(string.as_bytes().to_vec())
     }
 

@@ -59,7 +59,7 @@ impl<'de> Deserialize<'de> for CowStr<'de> {
     }
 }
 
-impl<'a> Serialize for CowStr<'a> {
+impl Serialize for CowStr<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -68,19 +68,19 @@ impl<'a> Serialize for CowStr<'a> {
     }
 }
 
-impl<'a> Debug for CowStr<'a> {
+impl Debug for CowStr<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         <&str as Debug>::fmt(&&*self.0, f)
     }
 }
 
-impl<'a> Display for CowStr<'a> {
+impl Display for CowStr<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         <&str as Display>::fmt(&&*self.0, f)
     }
 }
 
-impl<'a> Deref for CowStr<'a> {
+impl Deref for CowStr<'_> {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
@@ -88,13 +88,13 @@ impl<'a> Deref for CowStr<'a> {
     }
 }
 
-impl<'a> AsRef<str> for CowStr<'a> {
+impl AsRef<str> for CowStr<'_> {
     fn as_ref(&self) -> &str {
         &self.0
     }
 }
 
-impl<'a> AsRef<[u8]> for CowStr<'a> {
+impl AsRef<[u8]> for CowStr<'_> {
     fn as_ref(&self) -> &[u8] {
         self.0.as_bytes()
     }
@@ -113,7 +113,7 @@ impl<'a> From<Cow<'a, str>> for CowStr<'a> {
 }
 
 /// Serialize `Cow<'_, str>`.
-pub fn serialize<'a, S>(value: &Cow<'a, str>, serializer: S) -> Result<S::Ok, S::Error>
+pub fn serialize<S>(value: &Cow<'_, str>, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
