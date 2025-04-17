@@ -69,47 +69,47 @@ impl Verbosity {
 #[command(author, version, about, long_about = None)]
 struct Cli {
     /// Identifier of the chain
-    #[clap(long)]
+    #[arg(long)]
     chain_id: String,
 
     /// Primary RPC address
-    #[clap(long)]
+    #[arg(long)]
     primary: HttpClientUrl,
 
     /// Comma-separated list of witnesses RPC addresses
-    #[clap(long)]
+    #[arg(long)]
     witnesses: List<HttpClientUrl>,
 
     /// Height of trusted header
-    #[clap(long)]
+    #[arg(long)]
     trusted_height: Height,
 
     /// Hash of trusted header
-    #[clap(long)]
+    #[arg(long)]
     trusted_hash: Hash,
 
     /// Height of the header to verify
-    #[clap(long)]
+    #[arg(long)]
     height: Option<Height>,
 
     /// Trust threshold
-    #[clap(long, value_parser = parse_trust_threshold, default_value_t = TrustThreshold::TWO_THIRDS)]
+    #[arg(long, value_parser = parse_trust_threshold, default_value_t = TrustThreshold::TWO_THIRDS)]
     trust_threshold: TrustThreshold,
 
     /// Trusting period, in seconds (default: two weeks)
-    #[clap(long, default_value = "1209600")]
+    #[arg(long, default_value = "1209600")]
     trusting_period: u64,
 
     /// Maximum clock drift, in seconds
-    #[clap(long, default_value = "5")]
+    #[arg(long, default_value = "5")]
     max_clock_drift: u64,
 
     /// Maximum block lag, in seconds
-    #[clap(long, default_value = "5")]
+    #[arg(long, default_value = "5")]
     max_block_lag: u64,
 
     /// Increase verbosity
-    #[clap(flatten)]
+    #[command(flatten)]
     verbose: Verbosity,
 }
 
