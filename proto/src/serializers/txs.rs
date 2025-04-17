@@ -10,7 +10,7 @@ pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<Vec<u8>>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let value_vec_base64string = Option::<Vec<CowStr>>::deserialize(deserializer)?;
+    let value_vec_base64string = Option::<Vec<CowStr<'_>>>::deserialize(deserializer)?;
     if value_vec_base64string.is_none() {
         return Ok(Vec::new());
     }

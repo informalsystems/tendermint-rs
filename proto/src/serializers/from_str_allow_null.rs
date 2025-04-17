@@ -26,7 +26,7 @@ where
     T: FromStr + Default,
     <T as FromStr>::Err: Display,
 {
-    match <Option<CowStr>>::deserialize(deserializer)? {
+    match <Option<CowStr<'_>>>::deserialize(deserializer)? {
         Some(s) => s.parse::<T>().map_err(D::Error::custom),
         None => Ok(T::default()),
     }

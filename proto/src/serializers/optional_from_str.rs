@@ -24,7 +24,7 @@ where
     T: FromStr,
     T::Err: Display,
 {
-    let s = match Option::<CowStr>::deserialize(deserializer)? {
+    let s = match Option::<CowStr<'_>>::deserialize(deserializer)? {
         Some(s) => s,
         None => return Ok(None),
     };

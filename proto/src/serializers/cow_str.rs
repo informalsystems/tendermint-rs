@@ -29,7 +29,7 @@ impl<'de> Deserialize<'de> for CowStr<'de> {
         impl<'de> serde::de::Visitor<'de> for Visitor {
             type Value = CowStr<'de>;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                 formatter.write_str("a string")
             }
 
